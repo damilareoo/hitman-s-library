@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { autoDetectIndustry } from './autoDetectIndustry' // Declare the variable before using it
+import { detectIndustry } from '../extract/detectIndustry'
 
 export async function POST(req: NextRequest) {
   try {
@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
           ...design, 
           ...extracted,
           // Auto-categorize based on extracted metadata
-          industry: autoDetectIndustry(extracted.title || design.url, extracted.architecture || '', extracted.metadata || {})
+          industry: detectIndustry(extracted.title || design.url, design.url, extracted.metadata || {})
         })
         console.log('[v0] Successfully extracted:', design.url, 'as', enrichedDesigns[enrichedDesigns.length - 1].industry)
       } catch (err) {
@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
         // Still add it with auto-detected industry
         enrichedDesigns.push({
           ...design,
-          industry: autoDetectIndustry(design.title || design.url, '', {})
+          industry: detectIndustry(design.title || design.url, design.url, {})
         })
       }
     }
