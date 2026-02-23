@@ -6,7 +6,8 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
-import { Globe, Loader2, AlertCircle } from "lucide-react"
+import { Globe, Loader2, AlertCircle, Type } from "lucide-react"
+import { TypographyDisplay } from "@/components/typography-display"
 
 interface DesignItem {
   id: number
@@ -15,6 +16,9 @@ interface DesignItem {
   quality_score: number
   tags: string
   analyzed_content: Record<string, unknown>
+  heading_fonts?: string | string[]
+  body_fonts?: string | string[]
+  mono_fonts?: string | string[]
 }
 
 export function DesignBrowser() {
@@ -134,7 +138,7 @@ export function DesignBrowser() {
                   {getQualityBadge(design.quality_score)}
                 </div>
               </CardHeader>
-              <CardContent className="pb-3">
+              <CardContent className="pb-4 space-y-3">
                 {design.tags && (
                   <div className="flex flex-wrap gap-1">
                     {design.tags.split(",").map((tag) => (
@@ -142,6 +146,98 @@ export function DesignBrowser() {
                         {tag.trim()}
                       </Badge>
                     ))}
+                  </div>
+                )}
+                
+                {/* Typography Preview */}
+                {(design.heading_fonts || design.body_fonts || design.mono_fonts) && (
+                  <div className="space-y-2 border-t border-border/40 pt-3">
+                    <div className="flex items-center gap-2">
+                      <Type className="h-3.5 w-3.5 text-muted-foreground" />
+                      <span className="text-xs font-medium text-muted-foreground">Typefaces</span>
+                    </div>
+                    <div className="space-y-1 text-xs">
+                      {/* Heading Fonts */}
+                      {design.heading_fonts && (
+                        <div>
+                          <p className="text-xs font-semibold text-foreground/70 mb-1">Headings:</p>
+                          <div className="flex flex-wrap gap-1">
+                            {(typeof design.heading_fonts === 'string' 
+                              ? design.heading_fonts.split(',').map(f => f.trim()) 
+                              : design.heading_fonts
+                            ).slice(0, 2).map((font) => (
+                              <Badge key={font} variant="outline" className="text-xs font-mono">
+                                {font}
+                              </Badge>
+                            ))}
+                            {(typeof design.heading_fonts === 'string' 
+                              ? design.heading_fonts.split(',').length 
+                              : design.heading_fonts.length
+                            ) > 2 && (
+                              <Badge variant="outline" className="text-xs">
+                                +{(typeof design.heading_fonts === 'string' 
+                                  ? design.heading_fonts.split(',').length 
+                                  : design.heading_fonts.length) - 2} more
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* Body Fonts */}
+                      {design.body_fonts && (
+                        <div>
+                          <p className="text-xs font-semibold text-foreground/70 mb-1">Body:</p>
+                          <div className="flex flex-wrap gap-1">
+                            {(typeof design.body_fonts === 'string' 
+                              ? design.body_fonts.split(',').map(f => f.trim()) 
+                              : design.body_fonts
+                            ).slice(0, 2).map((font) => (
+                              <Badge key={font} variant="outline" className="text-xs font-mono">
+                                {font}
+                              </Badge>
+                            ))}
+                            {(typeof design.body_fonts === 'string' 
+                              ? design.body_fonts.split(',').length 
+                              : design.body_fonts.length
+                            ) > 2 && (
+                              <Badge variant="outline" className="text-xs">
+                                +{(typeof design.body_fonts === 'string' 
+                                  ? design.body_fonts.split(',').length 
+                                  : design.body_fonts.length) - 2} more
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* Mono Fonts */}
+                      {design.mono_fonts && (
+                        <div>
+                          <p className="text-xs font-semibold text-foreground/70 mb-1">Mono:</p>
+                          <div className="flex flex-wrap gap-1">
+                            {(typeof design.mono_fonts === 'string' 
+                              ? design.mono_fonts.split(',').map(f => f.trim()) 
+                              : design.mono_fonts
+                            ).slice(0, 2).map((font) => (
+                              <Badge key={font} variant="outline" className="text-xs font-mono">
+                                {font}
+                              </Badge>
+                            ))}
+                            {(typeof design.mono_fonts === 'string' 
+                              ? design.mono_fonts.split(',').length 
+                              : design.mono_fonts.length
+                            ) > 2 && (
+                              <Badge variant="outline" className="text-xs">
+                                +{(typeof design.mono_fonts === 'string' 
+                                  ? design.mono_fonts.split(',').length 
+                                  : design.mono_fonts.length) - 2} more
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
               </CardContent>
