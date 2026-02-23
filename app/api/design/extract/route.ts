@@ -367,3 +367,50 @@ function extractTags(html: string): string[] {
   if (/glass|blur/i.test(html)) tags.add('glassmorphism')
   return Array.from(tags)
 }
+
+function extractFontsDirectly(html: string): string[] {
+  const fonts = new Set<string>()
+  
+  // Extract from Google Fonts links
+  const googleFontsMatch = html.match(/fonts\.googleapis\.com\/css[^"']*/g)
+  if (googleFontsMatch) {
+    googleFontsMatch.forEach(link => {
+      const familyMatch = link.match(/family=([^&]+)/)
+      if (familyMatch) {
+        const families = decodeURIComponent(familyMatch[1]).split('|')
+        families.forEach(f => {
+          const name = f.split(':')[0].trim()
+          if (name && name.length > 0) fonts.add(name)
+        })
+      }
+    })
+  }
+  
+  // Extract from @font-face rules
+  const fontFaceMatches = html.match(/@font-face\s*\{[^}]*font-family\s*:\s*['"]?([^'"\n;]+)['"]?/gi)
+  if (fontFaceMatches) {
+    fontFaceMatches.forEach(match => {
+      const fontMatch = match.match(/font-family\s*:\s*['"]?([^'"\n;]+)['"]?/i)
+      if (fontMatch && fontMatch[1]) {
+        const cleaned = fontMatch[1].trim().replace(/['"]/g, '')
+        if (cleaned && cleaned.length > 0) fonts.add(cleaned)
+      }
+    })
+  }
+  
+  // Extract from CSS font-family declarations
+  const cssMatches = html.match(/font-family\s*:\s*([^;}\n]+)/gi)
+  if (cssMatches) {
+    cssMatches.forEach(match => {
+      const fonts_list = match.replace(/font-family\s*:\s*/i, '').split(',')
+      fonts_list.forEach(f => {
+        const cleaned = f.trim().replace(/['"]/g, '')
+        if (cleaned && cleaned.length > 1 && !['serif', 'sans-serif', 'monospace', 'cursive', 'fantasy', 'system-ui', 'ui-serif', 'ui-sans-serif', 'ui-monospace'].includes(cleaned.toLowerCase())) {
+          fonts.add(cleaned)
+        }
+      })
+    })
+  }
+  
+  return Array.from(fonts).slice(0, 50)
+}

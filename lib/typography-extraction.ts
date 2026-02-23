@@ -190,11 +190,25 @@ export function extractTypographyEnhanced(html: string): ExtractedTypography {
     
     // Filter more intelligently - keep custom fonts but remove only system generics
     const filteredFonts = Array.from(allFonts)
-      .filter(f => f && f.length > 0)
+      .filter(f => f && f.length > 0 && !['serif', 'sans-serif', 'monospace', 'cursive', 'fantasy', 'system-ui', 'ui-serif', 'ui-sans-serif', 'ui-monospace'].includes(f.toLowerCase()))
       .slice(0, 50) // Allow up to 50 fonts
     
     console.log('[v0] Final fonts after filtering:', filteredFonts.length)
     console.log('[v0] Final font list:', filteredFonts)
+    
+    // Categorize fonts by type
+    if (filteredFonts.length > 0) {
+      filteredFonts.forEach(font => {
+        const lower = font.toLowerCase()
+        if (lower.includes('mono') || lower.includes('courier') || lower.includes('code')) {
+          monoFonts.add(font)
+        } else if (lower.includes('serif') || lower.includes('garamond') || lower.includes('georgia')) {
+          headingFonts.add(font)
+        } else {
+          bodyFonts.add(font)
+        }
+      })
+    }
     
   } catch (error) {
     console.error('[v0] Typography extraction error:', error)
@@ -204,7 +218,7 @@ export function extractTypographyEnhanced(html: string): ExtractedTypography {
     headingFonts: Array.from(headingFonts).map(f => ({ name: f })),
     bodyFonts: Array.from(bodyFonts).map(f => ({ name: f })),
     monoFonts: Array.from(monoFonts).map(f => ({ name: f })),
-    allFonts: Array.from(allFonts),
+    allFonts: Array.from(allFonts).filter(f => f && f.length > 0 && !['serif', 'sans-serif', 'monospace', 'cursive', 'fantasy', 'system-ui', 'ui-serif', 'ui-sans-serif', 'ui-monospace'].includes(f.toLowerCase())),
     fontStack
   }
 }
