@@ -1,0 +1,773 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* ============================================================================
+   SHADCN/UI & PREMIUM THEME CONFIGURATION
+   ============================================================================ */
+:root {
+  /* User-defined colors - PRESERVED */
+  --background: #fafafa;
+  --foreground: #0f0f0f;
+  --card: #ffffff;
+  --card-foreground: #0f0f0f;
+  --popover: #ffffff;
+  --popover-foreground: #0f0f0f;
+  --primary: #000000;
+  --primary-foreground: #ffffff;
+  --secondary: #f0f0f0;
+  --secondary-foreground: #0f0f0f;
+  --muted: #f3f3f3;
+  --muted-foreground: #666666;
+  --accent: #0f0f0f;
+  --accent-foreground: #ffffff;
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+  --border: #e5e5e5;
+  --input: #fafafa;
+  --ring: #000000;
+  --chart-1: #3b82f6;
+  --chart-2: #8b5cf6;
+  --chart-3: #ec4899;
+  --chart-4: #14b8a6;
+  --chart-5: #f59e0b;
+  --radius: 0.5rem; /* User's value */
+
+  /* Additional user-defined colors */
+  --grid-line: #f0f0f0;
+  --grid-hover: #efefef;
+
+  /* RGB values for rgba() calculations */
+  --background-rgb: 250, 250, 250;
+  --card-rgb: 255, 255, 255;
+  --border-rgb: 229, 229, 229;
+  --primary-rgb: 0, 0, 0;
+  --secondary-rgb: 240, 240, 240;
+  --foreground-rgb: 15, 15, 15;
+
+  /* Sidebar colors (from user's existing oklch values) */
+  --sidebar: oklch(0.985 0 0);
+  --sidebar-foreground: oklch(0.145 0 0);
+  --sidebar-primary: oklch(0.205 0 0);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.97 0 0);
+  --sidebar-accent-foreground: oklch(0.205 0 0);
+  --sidebar-border: oklch(0.922 0 0);
+  --sidebar-ring: oklch(0.708 0 0);
+}
+
+.dark {
+  /* User-defined dark mode colors - PRESERVED */
+  --background: #0a0a0a;
+  --foreground: #fafafa;
+  --card: #121212;
+  --card-foreground: #fafafa;
+  --popover: #121212;
+  --popover-foreground: #fafafa;
+  --primary: #ffffff;
+  --primary-foreground: #000000;
+  --secondary: #1a1a1a;
+  --secondary-foreground: #fafafa;
+  --muted: #1a1a1a;
+  --muted-foreground: #999999;
+  --accent: #ffffff;
+  --accent-foreground: #000000;
+  --destructive: #f87171;
+  --destructive-foreground: #000000;
+  --border: #2a2a2a;
+  --input: #1a1a1a;
+  --ring: #ffffff;
+  --chart-1: #60a5fa;
+  --chart-2: #a78bfa;
+  --chart-3: #f472b6;
+  --chart-4: #2dd4bf;
+  --chart-5: #fbbf24;
+
+  /* Additional user-defined dark mode colors */
+  --grid-line: #1f1f1f;
+  --grid-hover: #2a2a2a;
+
+  /* RGB values for dark mode */
+  --background-rgb: 10, 10, 10;
+  --card-rgb: 18, 18, 18;
+  --border-rgb: 42, 42, 42;
+  --primary-rgb: 255, 255, 255;
+  --secondary-rgb: 26, 26, 26;
+  --foreground-rgb: 250, 250, 250;
+
+  /* Sidebar colors (from user's existing oklch values) */
+  --sidebar: oklch(0.205 0 0);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.488 0.243 264.376);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.269 0 0);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(0.269 0 0);
+  --sidebar-ring: oklch(0.439 0 0);
+}
+
+@theme inline {
+  --font-sans: "Inter", system-ui, -apple-system, sans-serif;
+  --font-mono: "JetBrains Mono", "IBM Plex Mono", monospace;
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+/* ============================================================================
+   BASE STYLES & LAYOUT
+   ============================================================================ */
+
+/* Premium theme switching inspired by Emil Kowalski's principles */
+/* Foundation: Spring physics, fast transitions, hardware acceleration only */
+
+html {
+  scroll-behavior: smooth;
+  /* Use color-scheme for native element theming */
+  color-scheme: light;
+  transition: color-scheme 0.3s ease-out !important;
+}
+
+html.dark {
+  color-scheme: dark;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans); /* Kept user's font-sans */
+  background-image:
+    linear-gradient(var(--grid-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+  background-size: 40px 40px;
+  background-attachment: fixed;
+  /* Emil's principle: Fast animations (under 300ms) improve perceived performance */
+  /* ease-out starts fast, slows at end = impression of quick response */
+  transition: background-color 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+              color 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94) !important;
+  will-change: background-color, color;
+}
+
+@media (max-width: 1024px) {
+  body {
+    background-size: 32px 32px;
+  }
+}
+
+@media (max-width: 640px) {
+  body {
+    background-size: 24px 24px;
+  }
+}
+
+/* Interruptible animations - transitions can be interrupted smoothly */
+* {
+  /* Only animate performant properties: transform and opacity */
+  transition: background-color 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+              border-color 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+              color 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+              box-shadow 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+              /* Spring physics for micro-interactions */
+              transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+}
+
+button, a, [role="button"] {
+  position: relative;
+  overflow: hidden;
+}
+
+:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+  transition: outline-color 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+/* Smooth scrollbar with transitions */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--muted);
+  transition: background 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 4px;
+  transition: background 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--muted-foreground);
+}
+
+::selection {
+  background-color: var(--primary);
+  color: var(--primary-foreground);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-sans);
+    font-weight: 700;
+    letter-spacing: -0.025em;
+  }
+}
+
+/* ============================================================================
+   PREMIUM GRID DESIGN LANGUAGE - INSPIRED BY RAUNO, VERCEL, LINEAR
+   ============================================================================
+   This system uses a modular, fluid grid with geometric harmonies and
+   micro-interactions that feel effortless and premium.
+   ============================================================================ */
+
+/* ============================================================================
+   PREMIUM GRID SYSTEM - FLUID, RESPONSIVE, GEOMETRIC
+   ============================================================================ */
+@layer utilities {
+  /* Desktop grid: 12 columns, 1.5rem gap (24px) */
+  .grid-premium {
+    @apply grid gap-6;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  }
+
+  /* Large cards: 2x columns */
+  .grid-premium-lg {
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  }
+
+  /* Small cards: 4+ columns */
+  .grid-premium-sm {
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  }
+
+  /* Golden ratio grid (1.618) - for featured/hero sections */
+  .grid-golden {
+    display: grid;
+    gap: 1.5rem;
+    grid-template-columns: 1fr 1.618fr;
+  }
+
+  /* Masonry-inspired irregular grid */
+  .grid-masonry {
+    display: grid;
+    gap: 1.5rem;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    grid-auto-rows: auto;
+  }
+
+  /* Full-width hero with side panels */
+  .grid-hero {
+    display: grid;
+    grid-template-columns: 1fr 2fr 1fr;
+    gap: 1.5rem;
+  }
+
+  /* Clean transitions without shadows - grid-focused */
+  .grid-transition {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* Ultra-fast state changes */
+  .ultra-fast {
+    transition: all 0.15s ease-out;
+  }
+
+  /* Staggered animation for lists */
+  .stagger {
+    animation: fade-in-up 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  }
+
+  @supports (animation-timeline: view()) {
+    .stagger {
+      animation-timeline: view();
+      animation-range: entry 0% cover 50%;
+    }
+  }
+
+  /* Grid system utilities */
+  .grid-layout-desktop {
+    @apply grid grid-cols-12 gap-6;
+  }
+
+  .grid-layout-tablet {
+    @apply lg:grid-cols-12 md:grid-cols-8 gap-5;
+  }
+
+  .grid-layout-mobile {
+    @apply md:grid-cols-8 sm:grid-cols-4 grid-cols-4 gap-4;
+  }
+
+  .animate-fade-in-up {
+    animation: fade-in-up 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  /* Emil's spring easing for natural motion */
+  .cubic-bezier-spring {
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+  }
+}
+
+/* ============================================================================
+   GRID CARD SYSTEM - CLEAN, NO SHADOWS, GRID-BASED
+   ============================================================================ */
+.premium-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+  display: grid;
+  gap: 1rem;
+}
+
+.premium-card:hover {
+  border-color: rgba(var(--foreground-rgb), 0.3);
+  background: rgba(var(--card-rgb), 0.7);
+}
+
+.premium-card.interactive {
+  cursor: pointer;
+}
+
+.premium-card.interactive:active {
+  transform: scale(0.99);
+  border-color: var(--primary);
+}
+
+/* ============================================================================
+   THEME TOGGLE - GRID-BASED DESIGN
+   ============================================================================ */
+.theme-toggle-btn {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--muted);
+  cursor: pointer;
+  transition: all 0.25s ease-out;
+  display: grid;
+  place-items: center;
+  font-size: 20px;
+}
+
+.theme-toggle-btn:hover {
+  border-color: var(--primary);
+  background: rgba(var(--primary-rgb), 0.05);
+}
+
+.theme-toggle-btn:active {
+  transform: scale(0.96);
+}
+
+/* Icon animation - clean scale */
+.theme-toggle-icon {
+  display: inline-flex;
+  animation: theme-icon-scale 0.3s ease-out forwards;
+}
+
+@keyframes theme-icon-scale {
+  0% {
+    transform: scale(0.8);
+    opacity: 0.5;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* ============================================================================
+   GEOMETRIC GRID LINES - CLEAN VISUAL RHYTHM
+   ============================================================================ */
+.grid-line {
+  position: relative;
+  height: 1px;
+  background: var(--border);
+}
+
+.grid-line::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 3px;
+  height: 100%;
+  background: var(--primary);
+  border-radius: 1px;
+  animation: grid-scan 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes grid-scan {
+  from {
+    transform: scaleX(0);
+    transform-origin: left;
+  }
+  to {
+    transform: scaleX(1);
+    transform-origin: left;
+  }
+}
+
+/* ============================================================================
+   GRID CONTAINER - CLEAN BORDERS
+   ============================================================================ */
+.grid-container {
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+}
+
+.grid-container:hover {
+  border-color: rgba(var(--primary-rgb), 0.2);
+}
+
+/* ============================================================================
+   ANIMATION LIBRARY - MICRO-INTERACTIONS
+   ============================================================================ */
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px); /* Adjusted to match diff's 12px */
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slide-in {
+  from {
+    opacity: 0;
+    transform: translateX(-12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes bounce-subtle {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+
+/* Grid-language hover animations */
+@keyframes grid-glow {
+  from {
+    background-position: 0 0;
+  }
+  to {
+    background-position: 20px 20px;
+  }
+}
+
+@keyframes accent-slide {
+  from {
+    transform: scaleX(0);
+    transform-origin: left;
+  }
+  to {
+    transform: scaleX(1);
+    transform-origin: left;
+  }
+}
+
+
+/* ============================================================================
+   RESPONSIVE GRID SYSTEM - PERFECT BREAKPOINTS
+   ============================================================================ */
+
+/* Mobile-first base (0px - 639px) */
+@media (max-width: 639px) {
+  html {
+    font-size: 14px;
+  }
+  
+  /* Single column gallery on mobile */
+  .gallery-grid {
+    @apply grid-cols-1 gap-3;
+  }
+  
+  /* Mobile sidebar as drawer */
+  aside {
+    @apply fixed left-0 top-16 bottom-0 w-64 bg-background border-r border-border/20 overflow-y-auto;
+  }
+  
+  /* Mobile details as bottom sheet */
+  .details-panel {
+    @apply fixed bottom-0 left-0 right-0 rounded-t-xl;
+  }
+  
+  /* Reduced padding on mobile */
+  .responsive-px {
+    @apply px-4;
+  }
+  
+  .responsive-py {
+    @apply py-3;
+  }
+}
+
+/* Tablet (640px - 1023px) */
+@media (min-width: 640px) and (max-width: 1023px) {
+  html {
+    font-size: 15px;
+  }
+  
+  /* 2 columns on tablet */
+  .gallery-grid {
+    @apply grid-cols-2 gap-4;
+  }
+  
+  /* Tablet sidebar hidden */
+  aside {
+    @apply hidden;
+  }
+  
+  /* Standard padding on tablet */
+  .responsive-px {
+    @apply px-6;
+  }
+  
+  .responsive-py {
+    @apply py-4;
+  }
+}
+
+/* Desktop (1024px+) */
+@media (min-width: 1024px) {
+  html {
+    font-size: 16px;
+  }
+  
+  /* 3 columns on desktop */
+  .gallery-grid {
+    @apply grid-cols-3 gap-6;
+  }
+  
+  /* Desktop three-panel layout */
+  aside {
+    @apply hidden md:flex;
+  }
+  
+  /* Generous padding on desktop */
+  .responsive-px {
+    @apply px-8;
+  }
+  
+  .responsive-py {
+    @apply py-8;
+  }
+}
+
+/* Large Desktop (1280px+) */
+@media (min-width: 1280px) {
+  /* Optional: up to 4 columns on very large screens */
+  .gallery-grid-lg {
+    @apply grid-cols-4 gap-6;
+  }
+}
+
+/* ============================================================================
+   GRID FOUNDATION - NO SHADOWS
+   ============================================================================ */
+
+* {
+  @apply box-border;
+}
+
+html {
+  @apply scroll-smooth;
+}
+
+body {
+  @apply bg-background text-foreground;
+}
+
+/* ============================================================================
+   INTERACTIVE ELEMENTS - GRID TRANSITIONS
+   ============================================================================ */
+
+button,
+a,
+[role="button"] {
+  @apply transition-all duration-300 ease-out;
+}
+
+.grid-transition {
+  @apply transition-all duration-300 ease-out;
+}
+
+.grid-interact {
+  @apply transition-all duration-300 ease-out;
+}
+
+.grid-interact:hover {
+  @apply border-primary/40 bg-primary/3;
+}
+
+/* ============================================================================
+   GRID LAYOUT SYSTEM
+   ============================================================================ */
+
+.grid-header {
+  @apply col-span-full border-b border-border/20 bg-background sticky top-0 z-50;
+}
+
+.grid-sidebar {
+  @apply hidden md:flex flex-col border-r border-border/20 bg-background/50;
+}
+
+.grid-gallery {
+  @apply flex-1 border-r border-border/20 bg-background;
+}
+
+.grid-details {
+  @apply hidden md:flex flex-col border-l border-border/20 bg-background/50;
+}
+
+/* ============================================================================
+   RESPONSIVE PADDING & SPACING
+   ============================================================================ */
+
+.responsive-px {
+  @apply px-3 sm:px-4 md:px-6 lg:px-8;
+}
+
+.responsive-py {
+  @apply py-3 sm:py-4 md:py-6 lg:py-8;
+}
+
+.responsive-p {
+  @apply p-3 sm:p-4 md:p-6 lg:p-8;
+}
+
+.responsive-gap {
+  @apply gap-2 sm:gap-3 md:gap-4 lg:gap-6;
+}
+
+/* Grid-based hover styling - clean borders */
+.grid-hover {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.grid-hover:hover {
+  border-color: var(--primary);
+  background: rgba(var(--primary-rgb), 0.03);
+}
+
+.grid-hover:active {
+  transform: scale(0.98);
+}
+
+
+/* Architectural dividing lines */
+.divider-horizontal {
+  background: var(--border);
+  height: 1px;
+}
+
+.divider-vertical {
+  background: linear-gradient(180deg, transparent, var(--border), transparent);
+  width: 1px;
+}
+
+/* Grid cell hover effect */
+.grid-cell-hover {
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.grid-cell-hover:hover {
+  background-color: var(--grid-hover);
+  box-shadow: inset 0 0 0 1px var(--border);
+}
+
+/* Copy feedback animation */
+.copy-feedback {
+  animation: fade-in 0.2s ease-out, slide-in 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Filter transition */
+.filter-transition {
+  transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.filter-exit {
+  opacity: 0;
+  transform: translateY(-8px);
+}
