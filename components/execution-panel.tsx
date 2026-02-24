@@ -2,9 +2,10 @@
 
 import { useState } from "react"
 import type { Node, Edge } from "@xyflow/react"
-import { Play, X, Check, AlertCircle, Loader2, ChevronDown, ChevronRight, RefreshCw } from "lucide-react"
+import { Play, X, Check, AlertCircle, Loader2, ChevronDown, ChevronRight, RefreshCw, CheckCircle2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import { cn } from "@/lib/utils"
 import type { Run, RunStep } from "@/lib/types"
 
 type ExecutionResult = {
@@ -250,26 +251,32 @@ export function ExecutionPanel({
           )}
         </Button>
 
-        {error && (
-          <div className="mt-4 rounded border border-destructive/30 bg-destructive/5 p-3">
-            <div className="flex items-start gap-2">
-              <AlertCircle className="h-4 w-4 text-destructive mt-0.5" />
-              <p className="text-sm text-destructive">{error}</p>
-            </div>
+      {error && (
+        <div className={cn(
+          "mt-4 rounded border border-destructive/30 bg-destructive/5 p-3",
+          "animate-content-fade animate-shake"
+        )}>
+          <div className="flex items-start gap-2">
+            <AlertCircle className="h-4 w-4 text-destructive mt-0.5 animate-icon-bounce" />
+            <p className="text-sm text-destructive font-medium">{error}</p>
           </div>
-        )}
+        </div>
+      )}
 
         {(executionLog.length > 0 || currentNodeId || iterations.length > 0) && (
           <div className="mt-4">
             <ScrollArea className="h-[calc(100vh-180px)]">
               <div className="space-y-3">
                 {currentNodeId && (
-                  <div className="rounded border border-primary/30 bg-primary/5 p-3">
+                  <div className={cn(
+                    "rounded border border-primary/30 bg-primary/5 p-3",
+                    "animate-node-glow"
+                  )}>
                     <div className="flex items-center gap-2 mb-2">
-                      <RefreshCw className="h-4 w-4 animate-spin text-primary" />
-                      <span className="text-sm font-medium text-foreground">{getNodeLabel(currentNodeId)}</span>
+                      <RefreshCw className="h-4 w-4 animate-spin-fast text-primary" />
+                      <span className="text-sm font-medium text-foreground animate-content-fade">{getNodeLabel(currentNodeId)}</span>
                       {iterations.length > 0 && (
-                        <span className="text-xs text-muted-foreground ml-auto font-mono">
+                        <span className="text-xs text-muted-foreground ml-auto font-mono animate-item-reveal">
                           {iterations.length}/{iterations[0]?.maxIterations || "?"}
                         </span>
                       )}
@@ -312,13 +319,20 @@ export function ExecutionPanel({
                 {executionLog.map((result, index) => (
                   <div
                     key={index}
-                    className={`rounded border p-3 ${result.error ? "border-destructive/30 bg-destructive/5" : "border-border bg-secondary/30"}`}
+                    className={cn(
+                      "rounded border p-3 transition-all duration-300",
+                      result.error 
+                        ? "border-destructive/30 bg-destructive/5 animate-content-fade" 
+                        : "border-border bg-secondary/30 animate-content-fade",
+                      "stagger-item"
+                    )}
+                    style={{ animationDelay: `${index * 100}ms` }}
                   >
                     <div className="flex items-start gap-2">
                       {result.error ? (
-                        <AlertCircle className="h-4 w-4 text-destructive mt-0.5" />
+                        <AlertCircle className="h-4 w-4 text-destructive mt-0.5 animate-icon-bounce" />
                       ) : (
-                        <Check className="h-4 w-4 text-muted-foreground mt-0.5" />
+                        <Check className="h-4 w-4 text-green-600 mt-0.5 animate-checkmark" />
                       )}
                       <div className="flex-1 min-w-0">
                         <span className="text-sm font-medium text-foreground">{getNodeLabel(result.nodeId)}</span>
@@ -348,9 +362,14 @@ export function ExecutionPanel({
         )}
 
         {executionLog.length === 0 && !error && !isExecuting && !currentNodeId && (
-          <div className="mt-6 text-center">
-            <p className="text-sm text-muted-foreground">Click Run to execute</p>
-            <p className="text-xs text-muted-foreground/70 mt-2">Powered by Vercel Workflow</p>
+          <div className="mt-6 text-center space-y-3 animate-content-fade">
+            <div className="flex justify-center">
+              <Play className="h-8 w-8 text-primary/50 animate-icon-bounce" />
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground font-medium">Click Run to execute</p>
+              <p className="text-xs text-muted-foreground/70 mt-2">Powered by Vercel Workflow</p>
+            </div>
           </div>
         )}
       </div>

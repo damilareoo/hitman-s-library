@@ -6,8 +6,10 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
-import { Globe, Loader2, AlertCircle, Type } from "lucide-react"
+import { Globe, Loader2, AlertCircle, Type, CheckCircle2 } from "lucide-react"
 import { TypographyDisplay } from "@/components/typography-display"
+import { LoadingSkeleton, SkeletonCard } from "@/components/ui/loading-skeleton"
+import { cn } from "@/lib/utils"
 
 interface DesignItem {
   id: number
@@ -27,6 +29,7 @@ export function DesignBrowser() {
   const [loading, setLoading] = useState(true)
   const [selectedIndustry, setSelectedIndustry] = useState<string>("all")
   const [error, setError] = useState<string | null>(null)
+  const [loadingComplete, setLoadingComplete] = useState(false)
 
   useEffect(() => {
     loadDesigns()
@@ -36,10 +39,13 @@ export function DesignBrowser() {
   const loadDesigns = async () => {
     try {
       setLoading(true)
+      setLoadingComplete(false)
+      setError(null)
       const response = await fetch("/api/design/core?action=list")
       const result = await response.json()
       if (result.success) {
         setDesigns(result.data || [])
+        setLoadingComplete(true)
       } else {
         setError(result.error)
       }
@@ -97,28 +103,46 @@ export function DesignBrowser() {
       </div>
 
       {error && (
-        <Card className="border-red-200 bg-red-50">
-          <CardContent className="pt-6 flex items-center gap-2 text-red-700">
-            <AlertCircle className="h-4 w-4" />
-            {error}
+        <Card className="border-red-200/50 bg-red-50 dark:bg-red-950/30 animate-content-fade">
+          <CardContent className="pt-6 flex items-center gap-3">
+            <AlertCircle className="h-4 w-4 text-red-600 dark:text-red-400 flex-shrink-0 animate-shake" />
+            <div>
+              <p className="font-semibold text-red-900 dark:text-red-100">Error</p>
+              <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
+            </div>
           </CardContent>
         </Card>
       )}
 
       {loading ? (
-        <div className="flex items-center justify-center py-12">
-          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        <div className="space-y-4">
+          <div className="flex items-center justify-center py-4">
+            <div className="flex flex-col items-center gap-2">
+              <Loader2 className="h-8 w-8 animate-spin-fast text-primary" />
+              <p className="text-sm text-muted-foreground font-medium">Loading designs...</p>
+            </div>
+          </div>
+          <LoadingSkeleton type="card" count={3} />
         </div>
       ) : filteredDesigns.length === 0 ? (
-        <Card className="border-dashed">
-          <CardContent className="pt-6 text-center text-muted-foreground">
-            <p>No designs found. Start by analyzing and storing design references.</p>
+        <Card className="border-dashed hover:border-primary/40 transition-colors animate-content-fade">
+          <CardContent className="pt-12 pb-12 text-center space-y-3">
+            <p className="text-muted-foreground font-medium">No designs found</p>
+            <p className="text-xs text-muted-foreground">Start by analyzing and storing design references.</p>
           </CardContent>
         </Card>
       ) : (
-        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-          {filteredDesigns.map((design) => (
-            <Card key={design.id} className="overflow-hidden hover:shadow-lg transition-shadow">
+        <div className="space-y-4">
+          {loadingComplete && (
+            <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400 animate-content-fade">
+              <CheckCircle2 className="h-4 w-4" />
+              <span>Loaded {filteredDesigns.length} design reference{filteredDesigns.length !== 1 ? 's' : ''}</span>
+            </div>
+          )}
+          <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+            {filteredDesigns.map((design, index) => (
+              <div key={design.id} className="stagger-item" style={{ animationDelay: `${index * 60}ms` }}>
+              <Card className="overflow-hidden hover:border-primary/30 interactive-hover animate-content-fade">
               <CardHeader className="pb-3">
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex-1 min-w-0">
@@ -242,7 +266,9 @@ export function DesignBrowser() {
                 )}
               </CardContent>
             </Card>
-          ))}
+              </div>
+            ))}
+          </div>
         </div>
       )}
       <p className="text-xs text-muted-foreground">Total: {filteredDesigns.length} designs</p>

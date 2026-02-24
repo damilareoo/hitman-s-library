@@ -771,3 +771,549 @@ a,
   opacity: 0;
   transform: translateY(-8px);
 }
+
+/* ============================================================================
+   COMPREHENSIVE MICROINTERACTION ANIMATIONS
+   ============================================================================ */
+
+/* Button Press & Ripple Effects */
+@keyframes button-press {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(0.98);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes ripple-expand {
+  0% {
+    transform: scale(0);
+    opacity: 0.6;
+  }
+  100% {
+    transform: scale(4);
+    opacity: 0;
+  }
+}
+
+@keyframes button-glow {
+  0% {
+    box-shadow: 0 0 0 0 rgba(var(--primary-rgb), 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(var(--primary-rgb), 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(var(--primary-rgb), 0);
+  }
+}
+
+/* Loading States */
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+@keyframes skeleton-loading {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
+/* Success Checkmark */
+@keyframes checkmark-draw {
+  0% {
+    stroke-dashoffset: 50;
+  }
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes checkmark-bounce {
+  0% {
+    transform: scale(0);
+  }
+  50% {
+    transform: scale(1.15);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* Copy Feedback Icon Transform */
+@keyframes copy-to-check {
+  0% {
+    transform: scale(1) rotate(0deg);
+  }
+  50% {
+    transform: scale(0.8) rotate(-10deg);
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+/* Toast Notifications */
+@keyframes toast-slide-in {
+  from {
+    transform: translateX(384px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes toast-slide-out {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(384px);
+    opacity: 0;
+  }
+}
+
+@keyframes toast-bounce {
+  0% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+
+/* Input Focus Effects */
+@keyframes input-focus-ring {
+  0% {
+    box-shadow: 0 0 0 0 rgba(var(--primary-rgb), 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 8px rgba(var(--primary-rgb), 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(var(--primary-rgb), 0);
+  }
+}
+
+@keyframes input-underline-expand {
+  from {
+    transform: scaleX(0);
+    transform-origin: left;
+  }
+  to {
+    transform: scaleX(1);
+    transform-origin: left;
+  }
+}
+
+/* Error Shake */
+@keyframes shake {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  10%, 30%, 50%, 70%, 90% {
+    transform: translateX(-4px);
+  }
+  20%, 40%, 60%, 80% {
+    transform: translateX(4px);
+  }
+}
+
+/* Empty State Animations */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-12px);
+  }
+}
+
+@keyframes pulse-glow {
+  0% {
+    opacity: 0.6;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+  100% {
+    opacity: 0.6;
+    transform: scale(1);
+  }
+}
+
+/* Card/Element Lift Effect */
+@keyframes lift {
+  0% {
+    transform: translateY(0);
+    box-shadow: 0 1px 2px rgba(var(--foreground-rgb), 0.05);
+  }
+  100% {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 16px rgba(var(--foreground-rgb), 0.1);
+  }
+}
+
+/* Stagger Animation for Lists */
+@keyframes item-reveal {
+  0% {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Progress Bar Animation */
+@keyframes progress-advance {
+  0% {
+    transform: scaleX(0);
+    transform-origin: left;
+  }
+  50% {
+    transform: scaleX(1);
+  }
+  100% {
+    transform: scaleX(1);
+    transform-origin: left;
+  }
+}
+
+@keyframes progress-pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+/* Font/Badge Reveal */
+@keyframes badge-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.8) translateY(8px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* Node Execution Glow */
+@keyframes node-glow {
+  0% {
+    box-shadow: 0 0 0 0 rgba(var(--primary-rgb), 0.7);
+  }
+  50% {
+    box-shadow: 0 0 0 10px rgba(var(--primary-rgb), 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(var(--primary-rgb), 0);
+  }
+}
+
+@keyframes node-pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+
+/* Panel/Modal Entrance */
+@keyframes panel-slide-in {
+  from {
+    opacity: 0;
+    transform: translateX(-24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes backdrop-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes modal-scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Icon Animations */
+@keyframes icon-rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes icon-bounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+@keyframes icon-flip {
+  from {
+    transform: rotateY(0deg);
+  }
+  to {
+    transform: rotateY(180deg);
+  }
+}
+
+/* Tab/Menu Transitions */
+@keyframes tab-highlight {
+  from {
+    transform: scaleX(0);
+    transform-origin: left;
+  }
+  to {
+    transform: scaleX(1);
+    transform-origin: left;
+  }
+}
+
+/* Content Reveals */
+@keyframes content-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes content-blur-in {
+  from {
+    opacity: 0;
+    filter: blur(4px);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+  }
+}
+
+/* ============================================================================
+   ANIMATION UTILITY CLASSES
+   ============================================================================ */
+
+/* Reduced Motion Support */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Button Press Animation */
+.animate-press {
+  animation: button-press 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Loading Spinner */
+.animate-spin-slow {
+  animation: spin 2s linear infinite;
+}
+
+.animate-spin-fast {
+  animation: spin 0.8s linear infinite;
+}
+
+/* Pulse Animation */
+.animate-pulse-gentle {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Skeleton Loading */
+.animate-skeleton {
+  animation: skeleton-loading 2s infinite;
+  background: linear-gradient(
+    90deg,
+    var(--muted) 0%,
+    rgba(var(--primary-rgb), 0.05) 50%,
+    var(--muted) 100%
+  );
+  background-size: 1000px 100%;
+}
+
+/* Success Checkmark */
+.animate-checkmark {
+  animation: checkmark-bounce 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Toast Notifications */
+.animate-toast-in {
+  animation: toast-slide-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.animate-toast-out {
+  animation: toast-slide-out 0.3s ease-in forwards;
+}
+
+.animate-toast-bounce {
+  animation: toast-bounce 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Input Focus */
+.animate-input-focus {
+  animation: input-focus-ring 0.5s ease-out;
+}
+
+/* Error Shake */
+.animate-shake {
+  animation: shake 0.5s cubic-bezier(0.36, 0, 0.66, -0.56);
+}
+
+/* Float Animation */
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+/* Glow Pulse */
+.animate-glow {
+  animation: pulse-glow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Card Lift */
+.group:hover .animate-lift-on-hover {
+  animation: lift 0.3s ease-out forwards;
+}
+
+/* Item Reveal (for lists) */
+.animate-item-reveal {
+  animation: item-reveal 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+/* Badge Pop */
+.animate-badge-pop {
+  animation: badge-pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Node Glow */
+.animate-node-glow {
+  animation: node-glow 2s ease-out infinite;
+}
+
+.animate-node-pulse {
+  animation: node-pulse 1.5s ease-in-out infinite;
+}
+
+/* Panel Entrance */
+.animate-panel-in {
+  animation: panel-slide-in 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.animate-backdrop {
+  animation: backdrop-fade 0.3s ease-out;
+}
+
+.animate-modal {
+  animation: modal-scale-in 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Icon Animations */
+.animate-icon-rotate {
+  animation: icon-rotate 1s linear infinite;
+}
+
+.animate-icon-bounce {
+  animation: icon-bounce 0.6s ease-in-out infinite;
+}
+
+.animate-icon-flip {
+  animation: icon-flip 0.6s ease-in-out infinite;
+}
+
+/* Tab Highlight */
+.animate-tab-highlight {
+  animation: tab-highlight 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Content Fade */
+.animate-content-fade {
+  animation: content-fade 0.4s ease-out;
+}
+
+.animate-content-blur {
+  animation: content-blur-in 0.4s ease-out;
+}
+
+/* Stagger Delays (for list items) */
+.stagger-item {
+  animation: item-reveal 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.stagger-item:nth-child(1) { animation-delay: 0ms; }
+.stagger-item:nth-child(2) { animation-delay: 60ms; }
+.stagger-item:nth-child(3) { animation-delay: 120ms; }
+.stagger-item:nth-child(4) { animation-delay: 180ms; }
+.stagger-item:nth-child(5) { animation-delay: 240ms; }
+.stagger-item:nth-child(n+6) { animation-delay: 300ms; }
+
+/* Interactive State Transitions */
+.interactive-hover {
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.interactive-hover:hover {
+  transform: translateY(-2px);
+}
+
+.interactive-active:active {
+  animation: button-press 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
