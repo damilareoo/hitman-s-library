@@ -9,7 +9,8 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { Loader2, Search, Palette, BookOpen, Sparkles } from "lucide-react"
+import { Loader2, Search, Palette, BookOpen, Sparkles, Copy, Check } from "lucide-react"
+import { cn } from "@/lib/utils"
 
 interface DesignSource {
   id: number
@@ -58,6 +59,8 @@ export function DesignPanel() {
   const [designContext, setDesignContext] = useState<DesignContext | null>(null)
   const [loading, setLoading] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
+  const [copiedColor, setCopiedColor] = useState<string | null>(null)
+  const [toastMessage, setToastMessage] = useState<string | null>(null)
 
   // Load industries on mount
   useEffect(() => {
@@ -124,6 +127,26 @@ export function DesignPanel() {
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleCopyColor = (colorHex: string, colorName?: string) => {
+    navigator.clipboard.writeText(colorHex).then(() => {
+      setCopiedColor(colorHex)
+      const displayName = colorName || colorHex
+      setToastMessage(`Copied "${displayName}"`)
+      
+      setTimeout(() => {
+        setCopiedColor(null)
+      }, 2000)
+      
+      setTimeout(() => {
+        setToastMessage(null)
+      }, 2000)
+    }).catch((err) => {
+      console.error("Copy failed:", err)
+      setToastMessage("Failed to copy")
+      setTimeout(() => setToastMessage(null), 2000)
+    })
   }
 
   return (
@@ -254,6 +277,12 @@ export function DesignPanel() {
               Load Context
             </Button>
 
+            {toastMessage && (
+              <div className="fixed bottom-4 right-4 md:bottom-8 md:right-8 bg-foreground text-background px-4 py-2 rounded-sm text-xs font-mono animate-toast-in z-50">
+                {toastMessage}
+              </div>
+            )}
+
             {designContext && (
               <ScrollArea className="flex-1 rounded border">
                 <div className="p-3 space-y-3">
@@ -264,27 +293,60 @@ export function DesignPanel() {
                         Color Palettes
                       </p>
                       {designContext.colors.map((color, i) => (
-                        <div key={i} className="text-xs space-y-1 ml-4 mb-2">
+                        <div key={i} className="text-xs space-y-1 ml-4 mb-2 animate-content-fade" style={{ animationDelay: `${i * 100}ms` }}>
                           <p className="font-mono">{color.palette_name}</p>
-                          <div className="flex gap-2">
-                            <div
-                              className="w-6 h-6 rounded border"
+                          <div className="flex gap-2 flex-wrap">
+                            <button
+                              onClick={() => handleCopyColor(color.primary, "Primary")}
+                              className={cn(
+                                "group relative w-8 h-8 rounded border transition-all duration-200",
+                                "hover:scale-110 hover:shadow-md hover:border-foreground/50",
+                                "active:scale-95 cursor-pointer",
+                                copiedColor === color.primary && "ring-2 ring-green-500"
+                              )}
                               style={{ backgroundColor: color.primary }}
-                              title={color.primary}
-                            />
+                              title={`Primary: ${color.primary}`}
+                              aria-label={`Copy primary color ${color.primary}`}
+                            >
+                              {copiedColor === color.primary && (
+                                <Check className="h-3 w-3 text-white absolute inset-0 m-auto animate-checkmark" />
+                              )}
+                            </button>
                             {color.secondary && (
-                              <div
-                                className="w-6 h-6 rounded border"
+                              <button
+                                onClick={() => handleCopyColor(color.secondary, "Secondary")}
+                                className={cn(
+                                  "group relative w-8 h-8 rounded border transition-all duration-200",
+                                  "hover:scale-110 hover:shadow-md hover:border-foreground/50",
+                                  "active:scale-95 cursor-pointer",
+                                  copiedColor === color.secondary && "ring-2 ring-green-500"
+                                )}
                                 style={{ backgroundColor: color.secondary }}
-                                title={color.secondary}
-                              />
+                                title={`Secondary: ${color.secondary}`}
+                                aria-label={`Copy secondary color ${color.secondary}`}
+                              >
+                                {copiedColor === color.secondary && (
+                                  <Check className="h-3 w-3 text-white absolute inset-0 m-auto animate-checkmark" />
+                                )}
+                              </button>
                             )}
                             {color.accent && (
-                              <div
-                                className="w-6 h-6 rounded border"
+                              <button
+                                onClick={() => handleCopyColor(color.accent, "Accent")}
+                                className={cn(
+                                  "group relative w-8 h-8 rounded border transition-all duration-200",
+                                  "hover:scale-110 hover:shadow-md hover:border-foreground/50",
+                                  "active:scale-95 cursor-pointer",
+                                  copiedColor === color.accent && "ring-2 ring-green-500"
+                                )}
                                 style={{ backgroundColor: color.accent }}
-                                title={color.accent}
-                              />
+                                title={`Accent: ${color.accent}`}
+                                aria-label={`Copy accent color ${color.accent}`}
+                              >
+                                {copiedColor === color.accent && (
+                                  <Check className="h-3 w-3 text-white absolute inset-0 m-auto animate-checkmark" />
+                                )}
+                              </button>
                             )}
                           </div>
                         </div>
