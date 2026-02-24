@@ -10,8 +10,8 @@ const ibmPlexMono = { variable: "--font-mono" } // Placeholder for ibmPlexMono
 
 export const metadata: Metadata = {
   title: {
-    default: "Design Library",
-    template: "%s | Design Library",
+    default: "Hitman's Library",
+    template: "%s | Hitman's Library",
   },
   description:
     "Extract, organize, and reference design systems. Upload links, import Excel sheets, automatically extract colors, typography, layout architecture. Generate prompts for consistent high-quality builds.",
@@ -40,17 +40,29 @@ export const metadata: Metadata = {
     type: "website",
     locale: "en_US",
     url: "/",
-    title: "Design Library",
+    title: "Hitman's Library",
     description:
       "Extract and organize design systems. Automatically extract colors, typography, and architecture from any website.",
-    siteName: "Design Library",
+    siteName: "Hitman's Library",
+    images: [
+      {
+        url: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/OG%20IMAGE%20DESIGN%20LIBRARY-UZQLETmZ75mByj3LCSPaVwycjQESLq.png",
+        width: 1200,
+        height: 630,
+        alt: "Hitman's Library - Design Extraction & Reference",
+        type: "image/png",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Design Library",
+    title: "Hitman's Library",
     description:
       "Extract, organize, and reference design systems from any website.",
     creator: "@vercel",
+    images: [
+      "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/OG%20IMAGE%20DESIGN%20LIBRARY-UZQLETmZ75mByj3LCSPaVwycjQESLq.png",
+    ],
   },
   robots: {
     index: true,

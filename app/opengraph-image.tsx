@@ -1,7 +1,7 @@
 import { ImageResponse } from "next/og"
 
 export const runtime = "edge"
-export const alt = "v0 Agent Builder - Powered by AI Gateway & AI SDK"
+export const alt = "scape Hitman's Library - Design Extraction & Reference"
 export const size = {
   width: 1200,
   height: 630,
@@ -18,36 +18,42 @@ export default async function Image() {
         flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
-        backgroundColor: "#000000",
+        backgroundColor: "#0a0a0a",
         fontFamily: "system-ui, sans-serif",
+        backgroundImage:
+          "radial-gradient(circle at 2px 2px, #1a1a1a 1px, transparent 1px)",
+        backgroundSize: "40px 40px",
       }}
     >
-      {/* Main title */}
-      <div
-        style={{
-          fontSize: 72,
-          fontWeight: 500,
-          color: "#ffffff",
-          marginBottom: 32,
-          textAlign: "center",
-          fontFamily: "monospace",
-          letterSpacing: "-0.02em",
-        }}
-      >
-        v0 Agent Builder
-      </div>
-
       {/* Subtitle */}
       <div
         style={{
-          fontSize: 24,
-          color: "#71717a",
+          fontSize: 32,
+          color: "#ffffff",
+          marginBottom: 16,
           textAlign: "center",
           fontFamily: "system-ui, sans-serif",
           fontWeight: 400,
+          letterSpacing: "0.05em",
         }}
       >
-        Powered by AI Gateway & AI SDK
+        scape
+      </div>
+
+      {/* Main title */}
+      <div
+        style={{
+          fontSize: 96,
+          fontWeight: 700,
+          color: "#ffffff",
+          textAlign: "center",
+          fontFamily: "system-ui, sans-serif",
+          letterSpacing: "-0.02em",
+          lineHeight: 1.1,
+          maxWidth: "90%",
+        }}
+      >
+        HITMAN'S LIBRARY
       </div>
     </div>,
     {
