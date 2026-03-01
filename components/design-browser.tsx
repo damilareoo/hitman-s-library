@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input"
 import { Globe, Loader2, AlertCircle, Type, CheckCircle2 } from "lucide-react"
 import { TypographyDisplay } from "@/components/typography-display"
+import { WebsitePreview } from "@/components/website-preview"
 import { LoadingSkeleton, SkeletonCard } from "@/components/ui/loading-skeleton"
 import { cn } from "@/lib/utils"
 
@@ -21,6 +22,9 @@ interface DesignItem {
   heading_fonts?: string | string[]
   body_fonts?: string | string[]
   mono_fonts?: string | string[]
+  primary_color?: string
+  secondary_color?: string
+  accent_color?: string
 }
 
 export function DesignBrowser() {
@@ -139,7 +143,7 @@ export function DesignBrowser() {
               <span>Loaded {filteredDesigns.length} design reference{filteredDesigns.length !== 1 ? 's' : ''}</span>
             </div>
           )}
-          <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 auto-rows-max">
             {filteredDesigns.map((design, index) => (
               <div key={design.id} className="stagger-item" style={{ animationDelay: `${index * 60}ms` }}>
               <Card className="overflow-hidden hover:border-primary/30 interactive-hover animate-content-fade">
@@ -163,6 +167,18 @@ export function DesignBrowser() {
                 </div>
               </CardHeader>
               <CardContent className="pb-4 space-y-3">
+                {/* Website Preview */}
+                <div className="mb-3">
+                  <WebsitePreview
+                    url={design.url}
+                    colors={{
+                      primary: design.primary_color,
+                      secondary: design.secondary_color,
+                      accent: design.accent_color,
+                    }}
+                  />
+                </div>
+
                 {design.tags && (
                   <div className="flex flex-wrap gap-1">
                     {design.tags.split(",").map((tag) => (
