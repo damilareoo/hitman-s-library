@@ -169,9 +169,14 @@ export async function GET(request: NextRequest) {
       const designs = await sql(
         `SELECT 
           ds.id, ds.url, ds.quality_score, ds.tags,
-          di.industry_name
+          di.industry_name,
+          ds.analyzed_content,
+          dc.primary_color, dc.secondary_color, dc.accent_color,
+          (SELECT json_agg(json_build_object('font_family', dt.font_family)) 
+           FROM design_typography dt WHERE dt.source_id = ds.id LIMIT 3) as typography
         FROM design_sources ds
         LEFT JOIN design_industries di ON ds.industry_id = di.id
+        LEFT JOIN design_colors dc ON ds.id = dc.source_id
         ORDER BY ds.quality_score DESC
         LIMIT 50`
       )
