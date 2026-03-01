@@ -15,13 +15,13 @@ import { cn } from "@/lib/utils"
 interface DesignItem {
   id: number
   url: string
-  industry_name: string
-  quality_score: number
+  source_name: string
+  industry: string
   tags: string
-  analyzed_content: Record<string, unknown>
-  heading_fonts?: string | string[]
-  body_fonts?: string | string[]
-  mono_fonts?: string | string[]
+  metadata?: Record<string, unknown>
+  heading_font?: string
+  body_font?: string
+  mono_font?: string
   primary_color?: string
   secondary_color?: string
   accent_color?: string
@@ -65,7 +65,7 @@ export function DesignBrowser() {
       const response = await fetch("/api/design/core?action=industries")
       const result = await response.json()
       if (result.success) {
-        const industryNames = result.data.map((ind: { industry_name: string }) => ind.industry_name)
+        const industryNames = result.data.map((ind: { name: string }) => ind.name)
         setIndustries(industryNames)
       }
     } catch (err) {
@@ -74,13 +74,9 @@ export function DesignBrowser() {
   }
 
   const filteredDesigns =
-    selectedIndustry === "all" ? designs : designs.filter((d) => d.industry_name === selectedIndustry)
+    selectedIndustry === "all" ? designs : designs.filter((d) => d.industry === selectedIndustry)
 
-  const getQualityBadge = (score: number) => {
-    if (score >= 9) return <Badge className="bg-emerald-500">Premium ({score})</Badge>
-    if (score >= 7) return <Badge className="bg-blue-500">Production ({score})</Badge>
-    return <Badge variant="outline">Reference ({score})</Badge>
-  }
+
 
   return (
     <div className="space-y-4">
@@ -161,9 +157,8 @@ export function DesignBrowser() {
                         {design.url.replace(/^https?:\/\/(www\.)?/, "").split("/")[0]}
                       </a>
                     </div>
-                    <CardDescription className="text-xs">{design.industry_name}</CardDescription>
+                    <CardDescription className="text-xs">{design.industry}</CardDescription>
                   </div>
-                  {getQualityBadge(design.quality_score)}
                 </div>
               </CardHeader>
               <CardContent className="pb-4 space-y-3">
@@ -190,91 +185,40 @@ export function DesignBrowser() {
                 )}
                 
                 {/* Typography Preview */}
-                {(design.heading_fonts || design.body_fonts || design.mono_fonts) && (
+                {(design.heading_font || design.body_font || design.mono_font) && (
                   <div className="space-y-2 border-t border-border/40 pt-3">
                     <div className="flex items-center gap-2">
                       <Type className="h-3.5 w-3.5 text-muted-foreground" />
                       <span className="text-xs font-medium text-muted-foreground">Typefaces</span>
                     </div>
                     <div className="space-y-1 text-xs">
-                      {/* Heading Fonts */}
-                      {design.heading_fonts && (
+                      {/* Heading Font */}
+                      {design.heading_font && (
                         <div>
                           <p className="text-xs font-semibold text-foreground/70 mb-1">Headings:</p>
-                          <div className="flex flex-wrap gap-1">
-                            {(typeof design.heading_fonts === 'string' 
-                              ? design.heading_fonts.split(',').map(f => f.trim()) 
-                              : design.heading_fonts
-                            ).slice(0, 2).map((font) => (
-                              <Badge key={font} variant="outline" className="text-xs font-mono">
-                                {font}
-                              </Badge>
-                            ))}
-                            {(typeof design.heading_fonts === 'string' 
-                              ? design.heading_fonts.split(',').length 
-                              : design.heading_fonts.length
-                            ) > 2 && (
-                              <Badge variant="outline" className="text-xs">
-                                +{(typeof design.heading_fonts === 'string' 
-                                  ? design.heading_fonts.split(',').length 
-                                  : design.heading_fonts.length) - 2} more
-                              </Badge>
-                            )}
-                          </div>
+                          <Badge variant="outline" className="text-xs font-mono">
+                            {design.heading_font}
+                          </Badge>
                         </div>
                       )}
                       
-                      {/* Body Fonts */}
-                      {design.body_fonts && (
+                      {/* Body Font */}
+                      {design.body_font && (
                         <div>
                           <p className="text-xs font-semibold text-foreground/70 mb-1">Body:</p>
-                          <div className="flex flex-wrap gap-1">
-                            {(typeof design.body_fonts === 'string' 
-                              ? design.body_fonts.split(',').map(f => f.trim()) 
-                              : design.body_fonts
-                            ).slice(0, 2).map((font) => (
-                              <Badge key={font} variant="outline" className="text-xs font-mono">
-                                {font}
-                              </Badge>
-                            ))}
-                            {(typeof design.body_fonts === 'string' 
-                              ? design.body_fonts.split(',').length 
-                              : design.body_fonts.length
-                            ) > 2 && (
-                              <Badge variant="outline" className="text-xs">
-                                +{(typeof design.body_fonts === 'string' 
-                                  ? design.body_fonts.split(',').length 
-                                  : design.body_fonts.length) - 2} more
-                              </Badge>
-                            )}
-                          </div>
+                          <Badge variant="outline" className="text-xs font-mono">
+                            {design.body_font}
+                          </Badge>
                         </div>
                       )}
                       
-                      {/* Mono Fonts */}
-                      {design.mono_fonts && (
+                      {/* Mono Font */}
+                      {design.mono_font && (
                         <div>
                           <p className="text-xs font-semibold text-foreground/70 mb-1">Mono:</p>
-                          <div className="flex flex-wrap gap-1">
-                            {(typeof design.mono_fonts === 'string' 
-                              ? design.mono_fonts.split(',').map(f => f.trim()) 
-                              : design.mono_fonts
-                            ).slice(0, 2).map((font) => (
-                              <Badge key={font} variant="outline" className="text-xs font-mono">
-                                {font}
-                              </Badge>
-                            ))}
-                            {(typeof design.mono_fonts === 'string' 
-                              ? design.mono_fonts.split(',').length 
-                              : design.mono_fonts.length
-                            ) > 2 && (
-                              <Badge variant="outline" className="text-xs">
-                                +{(typeof design.mono_fonts === 'string' 
-                                  ? design.mono_fonts.split(',').length 
-                                  : design.mono_fonts.length) - 2} more
-                              </Badge>
-                            )}
-                          </div>
+                          <Badge variant="outline" className="text-xs font-mono">
+                            {design.mono_font}
+                          </Badge>
                         </div>
                       )}
                     </div>
