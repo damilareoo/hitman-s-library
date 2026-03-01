@@ -168,22 +168,22 @@ export async function GET(request: NextRequest) {
     if (action === "list") {
       const designs = await sql(
         `SELECT 
-          dl.id, 
-          dl.source_url as url, 
-          dl.source_name, 
-          dl.industry,
-          dl.tags,
-          dl.metadata,
+          ds.id, 
+          ds.source_url as url, 
+          ds.source_name, 
+          ds.industry,
+          ds.tags,
+          ds.metadata,
           dc.primary_color, 
           dc.secondary_color, 
           dc.accent_color,
           dt.heading_font,
           dt.body_font,
           dt.mono_font
-        FROM design_library dl
-        LEFT JOIN design_colors dc ON dl.id = dc.source_id
-        LEFT JOIN design_typography dt ON dl.id = dt.source_id
-        ORDER BY dl.id DESC
+        FROM design_sources ds
+        LEFT JOIN design_colors dc ON ds.id = dc.source_id
+        LEFT JOIN design_typography dt ON ds.id = dt.source_id
+        ORDER BY ds.id DESC
         LIMIT 50`
       )
       return NextResponse.json({
