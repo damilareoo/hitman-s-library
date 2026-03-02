@@ -174,6 +174,7 @@ export async function GET(request: NextRequest) {
           ds.industry,
           ds.tags,
           ds.metadata,
+          ds.thumbnail_url,
           dc.primary_color, 
           dc.secondary_color, 
           dc.accent_color,

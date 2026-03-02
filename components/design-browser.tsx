@@ -19,6 +19,7 @@ interface DesignItem {
   industry: string
   tags: string
   metadata?: Record<string, unknown>
+  thumbnail_url?: string
   heading_font?: string
   body_font?: string
   mono_font?: string
@@ -166,13 +167,7 @@ export function DesignBrowser() {
                 <div className="mb-3">
                   <WebsitePreview
                     url={design.url}
-                    sourceNameContent={design.source_name || 'Website'}
-                    industryContent={design.industry || 'Design'}
-                    colors={{
-                      primary: design.primary_color,
-                      secondary: design.secondary_color,
-                      accent: design.accent_color,
-                    }}
+                    thumbnailUrl={design.thumbnail_url}
                   />
                 </div>
 
