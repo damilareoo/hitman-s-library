@@ -119,27 +119,19 @@ export function WebsitePreview({ url, colors, className }: WebsitePreviewProps) 
         </div>
       )}
 
-      {/* Website screenshot using multiple sources for better coverage */}
-      <picture>
-        {/* Try screenshot.rocks first (better quality) */}
-        <source
-          srcSet={`https://screenshot.rocks/?url=${encodeURIComponent(url)}&width=1200&height=800`}
-          media="(min-width: 1024px)"
-        />
-        {/* Fallback to opengraph service */}
-        <img
-          key={imageKey}
-          src={`https://opengraph.vercel.pub/api/og?url=${encodeURIComponent(url)}&theme=dark`}
-          alt={`Website preview for ${url}`}
-          onLoad={handleImageLoad}
-          onError={handleImageError}
-          className={cn(
-            'w-full h-full object-cover transition-all duration-300',
-            'group-hover:scale-105',
-            isLoading && 'opacity-0'
-          )}
-        />
-      </picture>
+      {/* Website hero section screenshot */}
+      <img
+        key={imageKey}
+        src={`https://api.screenshotapi.net/v3/capture?token=Free&url=${encodeURIComponent(url)}&viewport=1366x768&format=jpg`}
+        alt={`Website hero preview for ${url}`}
+        onLoad={handleImageLoad}
+        onError={handleImageError}
+        className={cn(
+          'w-full h-full object-cover transition-all duration-300',
+          'group-hover:scale-105',
+          isLoading && 'opacity-0'
+        )}
+      />
 
       {/* Interactive overlay with site link */}
       <div
