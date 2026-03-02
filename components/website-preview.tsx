@@ -31,55 +31,19 @@ export function WebsitePreview({ url, colors, className }: WebsitePreviewProps) 
     setImageKey(prev => prev + 1)
   }
 
-  // Fallback to color palette if preview fails
+  // Fallback to empty state if preview fails
   if (hasError || !url) {
     return (
       <div
         className={cn(
           'relative w-full aspect-[4/3] sm:aspect-video md:aspect-[5/4] rounded-lg overflow-hidden',
-          'bg-gradient-to-br border border-border/40 flex flex-col items-center justify-center p-3 sm:p-4',
+          'bg-muted border border-border/40 flex flex-col items-center justify-center p-3 sm:p-4',
           'animate-content-fade',
           className
         )}
-        style={{
-          backgroundImage: colors?.primary && colors?.secondary
-            ? `linear-gradient(135deg, ${colors.primary}40 0%, ${colors.secondary}40 50%, ${colors.accent || colors.primary}40 100%)`
-            : undefined,
-        }}
       >
-        <div className="text-center space-y-3">
-          <p className="text-xs font-semibold text-muted-foreground">Design Palette</p>
-          {colors && (
-            <div className="flex gap-2 justify-center flex-wrap">
-              {colors.primary && (
-                <button
-                  onClick={() => navigator.clipboard.writeText(colors.primary!)}
-                  className="w-8 h-8 rounded border border-border/40 hover:scale-110 transition-transform"
-                  style={{ backgroundColor: colors.primary }}
-                  title={`Copy ${colors.primary}`}
-                  aria-label={`Copy primary color ${colors.primary}`}
-                />
-              )}
-              {colors.secondary && (
-                <button
-                  onClick={() => navigator.clipboard.writeText(colors.secondary!)}
-                  className="w-8 h-8 rounded border border-border/40 hover:scale-110 transition-transform"
-                  style={{ backgroundColor: colors.secondary }}
-                  title={`Copy ${colors.secondary}`}
-                  aria-label={`Copy secondary color ${colors.secondary}`}
-                />
-              )}
-              {colors.accent && (
-                <button
-                  onClick={() => navigator.clipboard.writeText(colors.accent!)}
-                  className="w-8 h-8 rounded border border-border/40 hover:scale-110 transition-transform"
-                  style={{ backgroundColor: colors.accent }}
-                  title={`Copy ${colors.accent}`}
-                  aria-label={`Copy accent color ${colors.accent}`}
-                />
-              )}
-            </div>
-          )}
+        <div className="text-center space-y-2">
+          <p className="text-xs text-muted-foreground font-medium">Unable to load preview</p>
           {hasError && (
             <button
               onClick={retryImage}
@@ -122,7 +86,7 @@ export function WebsitePreview({ url, colors, className }: WebsitePreviewProps) 
       {/* Website hero section screenshot */}
       <img
         key={imageKey}
-        src={`https://api.screenshotapi.net/v3/capture?token=Free&url=${encodeURIComponent(url)}&viewport=1366x768&format=jpg`}
+        src={`https://urlbox.io/render/${encodeURIComponent(url)}?width=1366&height=768&format=jpg&quality=90&retina=false`}
         alt={`Website hero preview for ${url}`}
         onLoad={handleImageLoad}
         onError={handleImageError}
