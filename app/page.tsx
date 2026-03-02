@@ -156,6 +156,7 @@ export default function DesignLibrary() {
 
       const response = await fetch(`/api/design/filter-advanced?${params}`)
       const data = await response.json()
+      console.log('[v0] First design with thumbnail_url:', data.designs?.[0])
       setDesigns(data.designs || [])
     } catch (error) {
       console.error('Load designs error:', error)
