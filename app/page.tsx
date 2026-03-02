@@ -16,6 +16,7 @@ interface Design {
   url: string
   title: string
   industry: string
+  thumbnail_url?: string
   colors: string[]
   typography: string[]
   layout: string
@@ -418,16 +419,27 @@ export default function DesignLibrary() {
                   onClick={() => setSelectedDesign(design)}
                   className="group flex flex-col border border-border/40 rounded-lg overflow-hidden grid-transition hover:border-border/70 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:ring-offset-2 focus:ring-offset-background text-left"
                 >
-                  {/* Image/Color Area - 2:1 Ratio */}
-                  <div className="relative w-full bg-gradient-to-br from-muted/40 to-muted/10 aspect-video overflow-hidden">
-                    {/* Color Swatch Grid */}
-                    <div className="absolute inset-0 grid grid-cols-3 gap-0">
-                      {design.colors.slice(0, 9).map((color, i) => (
-                        <div key={i} className="relative group/color" style={{ backgroundColor: color }}>
-                          <div className="absolute inset-0 opacity-0 group-hover/color:opacity-100 grid-transition bg-black/10" />
-                        </div>
-                      ))}
-                    </div>
+                  {/* Thumbnail Area - 2:1 Ratio */}
+                  <div className="relative w-full bg-muted aspect-video overflow-hidden group/thumb">
+                    {design.thumbnail_url ? (
+                      <>
+                        <img
+                          src={design.thumbnail_url}
+                          alt={design.title}
+                          className="w-full h-full object-cover group-hover/thumb:scale-105 transition-transform duration-300"
+                        />
+                        <div className="absolute inset-0 bg-black/0 group-hover/thumb:bg-black/20 transition-colors duration-300" />
+                      </>
+                    ) : (
+                      /* Fallback to color blocks if no thumbnail */
+                      <div className="absolute inset-0 grid grid-cols-3 gap-0">
+                        {design.colors.slice(0, 9).map((color, i) => (
+                          <div key={i} className="relative group/color" style={{ backgroundColor: color }}>
+                            <div className="absolute inset-0 opacity-0 group-hover/color:opacity-100 grid-transition bg-black/10" />
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
 
                   {/* Content Area */}
