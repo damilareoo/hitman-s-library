@@ -162,10 +162,12 @@ export function DesignBrowser() {
                 </div>
               </CardHeader>
               <CardContent className="pb-4 space-y-3">
-                {/* Website Preview */}
+                {/* Website Hero Preview */}
                 <div className="mb-3">
                   <WebsitePreview
                     url={design.url}
+                    sourceNameContent={design.source_name || 'Website'}
+                    industryContent={design.industry || 'Design'}
                     colors={{
                       primary: design.primary_color,
                       secondary: design.secondary_color,
