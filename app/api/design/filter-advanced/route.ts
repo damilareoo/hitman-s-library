@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
     const industries = searchParams.getAll('industry')
     const search = searchParams.get('search')
     const sortBy = searchParams.get('sortBy') || 'recent'
-    const limit = parseInt(searchParams.get('limit') || '100')
+    const limit = parseInt(searchParams.get('limit') || '500')
     const offset = parseInt(searchParams.get('offset') || '0')
 
     // Build sort clause (safe - whitelisted values only)
