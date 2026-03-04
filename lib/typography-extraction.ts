@@ -231,7 +231,7 @@ export function extractTypographyEnhanced(html: string): ExtractedTypography {
     headingFonts: Array.from(headingFonts).map(f => ({ name: f })),
     bodyFonts: Array.from(bodyFonts).map(f => ({ name: f })),
     monoFonts: Array.from(monoFonts).map(f => ({ name: f })),
-    allFonts: Array.from(allFonts).filter(f => f && f.length > 0 && !['serif', 'sans-serif', 'monospace', 'cursive', 'fantasy', 'system-ui', 'ui-serif', 'ui-sans-serif', 'ui-monospace'].includes(f.toLowerCase())),
+    allFonts: filteredFonts, // Use filtered fonts, not raw allFonts
     fontStack
   }
 }

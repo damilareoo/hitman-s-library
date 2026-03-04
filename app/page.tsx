@@ -471,14 +471,17 @@ export default function DesignLibrary() {
             {/* Gallery Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-5 md:gap-6">
               {filteredDesigns.map((design) => (
-                <button
+                <div
                   key={design.id}
+                  className="group relative flex flex-col border border-border/40 rounded-lg overflow-hidden grid-transition hover:border-border/70 text-left"
                   onClick={() => setSelectedDesign(design)}
-                  className="group flex flex-col border border-border/40 rounded-lg overflow-hidden grid-transition hover:border-border/70 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:ring-offset-2 focus:ring-offset-background text-left relative"
+                  role="button"
+                  tabIndex={0}
+                  onKeyPress={(e) => e.key === 'Enter' && setSelectedDesign(design)}
                 >
-                  {/* Delete icon overlay - top right corner */}
+                  {/* Delete icon - positioned absolutely over content */}
                   <button
-                    onClick={(e) => handleDelete(design.id, e)}
+                    onClick={(e) => { e.stopPropagation(); handleDelete(design.id, e) }}
                     className="absolute top-2 right-2 z-10 p-1.5 rounded-md bg-background/80 border border-border/40 text-muted-foreground hover:text-red-500 hover:border-red-500/40 hover:bg-red-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-150"
                     title="Delete"
                     aria-label="Delete design"
@@ -520,7 +523,7 @@ export default function DesignLibrary() {
                       <span className="text-xs text-muted-foreground font-mono">{design.colors.length} colors</span>
                     </div>
                   </div>
-                </button>
+                </div>
               ))}
             </div>
           </div>
