@@ -421,25 +421,26 @@ export default function DesignLibrary() {
                 >
                   {/* Thumbnail Area - 2:1 Ratio */}
                   <div className="relative w-full bg-muted aspect-video overflow-hidden group/thumb">
-                    {design.thumbnail_url ? (
-                      <>
-                        <img
-                          src={design.thumbnail_url}
-                          alt={design.title}
-                          className="w-full h-full object-cover group-hover/thumb:scale-105 transition-transform duration-300"
-                        />
-                        <div className="absolute inset-0 bg-black/0 group-hover/thumb:bg-black/20 transition-colors duration-300" />
-                      </>
-                    ) : (
-                      /* Fallback to color blocks if no thumbnail */
-                      <div className="absolute inset-0 grid grid-cols-3 gap-0">
-                        {design.colors.slice(0, 9).map((color, i) => (
-                          <div key={i} className="relative group/color" style={{ backgroundColor: color }}>
-                            <div className="absolute inset-0 opacity-0 group-hover/color:opacity-100 grid-transition bg-black/10" />
-                          </div>
-                        ))}
-                      </div>
-                    )}
+                    {/* Generate screenshot URL directly from website URL */}
+                    <img
+                      src={`https://screenshot.rocks/?url=${encodeURIComponent(design.url)}&width=1366&height=768`}
+                      alt={design.title}
+                      className="w-full h-full object-cover group-hover/thumb:scale-105 transition-transform duration-300"
+                      onError={(e) => {
+                        // If screenshot fails, show color blocks instead
+                        const target = e.currentTarget
+                        target.style.display = 'none'
+                        target.nextElementSibling?.classList.remove('hidden')
+                      }}
+                    />
+                    {/* Fallback to color blocks if screenshot fails */}
+                    <div className="absolute inset-0 grid grid-cols-3 gap-0">
+                      {design.colors.slice(0, 9).map((color, i) => (
+                        <div key={i} className="relative group/color" style={{ backgroundColor: color }}>
+                          <div className="absolute inset-0 opacity-0 group-hover/color:opacity-100 grid-transition bg-black/10" />
+                        </div>
+                      ))}
+                    </div>
                   </div>
 
                   {/* Content Area */}
