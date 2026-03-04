@@ -101,7 +101,7 @@ export default function DesignLibrary() {
   useEffect(() => {
     loadDesigns()
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeFilters])
+  }, [JSON.stringify(activeFilters)])
 
   // Intuitive copy feedback with auto-dismiss
   const handleCopy = (text: string, type: 'color' | 'text') => {
