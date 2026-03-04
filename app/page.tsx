@@ -53,8 +53,7 @@ export default function DesignLibrary() {
   const [selectedDesign, setSelectedDesign] = useState<Design | null>(null)
   const [linkInput, setLinkInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
-  const [mobinUrl, setMobinUrl] = useState('')
-  const [mobinLoading, setMobinLoading] = useState(false)
+
   const [fileInputRef, setFileInputRef] = useState<HTMLInputElement | null>(null)
   const [theme, setTheme] = useState<'light' | 'dark'>('light')
   const [copied, setCopied] = useState(false)
@@ -269,45 +268,6 @@ export default function DesignLibrary() {
     }
   }
 
-  const handleMobinImport = async () => {
-    if (!mobinUrl.trim()) return
-    setMobinLoading(true)
-    try {
-      // First, fetch the sites from Mobbin
-      const fetchRes = await fetch('/api/design/import-mobbin', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mobbin_url: mobinUrl })
-      })
-      const fetchData = await fetchRes.json()
-      
-      if (!fetchData.sites || fetchData.sites.length === 0) {
-        alert('No sites found or error fetching Mobbin page')
-        console.error('[v0] Fetch error:', fetchData)
-        return
-      }
-
-      // Then add them to the database
-      const addRes = await fetch('/api/design/add-sites', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sites: fetchData.sites })
-      })
-      const addData = await addRes.json()
-      
-      alert(`✓ Added ${addData.added} sites from Mobbin!`)
-      setMobinUrl('')
-      
-      // Reload designs
-      loadDesigns()
-    } catch (error) {
-      alert('Error importing from Mobbin: ' + (error instanceof Error ? error.message : String(error)))
-      console.error('[v0] Mobbin import error:', error)
-    } finally {
-      setMobinLoading(false)
-    }
-  }
-
   // Filtering is now done server-side via advanced API
   // Designs are already filtered through the API response
 
@@ -415,17 +375,6 @@ export default function DesignLibrary() {
                 <p className="text-xs text-muted-foreground font-mono">Auto-categorizes designs • Format: URL, Title, Notes</p>
               </div>
               <input ref={(ref) => setFileInputRef(ref)} type="file" accept=".xlsx,.csv" onChange={handleFileUpload} className="hidden" />
-            </div>
-
-            <div className="h-px bg-border/20" />
-
-            {/* Mobbin Import */}
-            <div className="space-y-3">
-              <h3 className="text-xs uppercase font-mono font-semibold tracking-wider text-foreground">Import from Mobbin</h3>
-              <Input placeholder="https://mobbin.com/discover/sites/latest" value={mobinUrl} onChange={(e) => setMobinUrl(e.target.value)} disabled={mobinLoading} className="font-mono text-xs h-9 grid-transition" />
-              <Button onClick={handleMobinImport} disabled={mobinLoading || !mobinUrl.trim()} className="w-full h-9 font-mono text-xs">
-                {mobinLoading ? 'Importing...' : 'Import from Mobbin'}
-              </Button>
             </div>
 
             <div className="h-px bg-border/20" />
