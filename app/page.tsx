@@ -70,6 +70,13 @@ export default function DesignLibrary() {
   })
   const [showMobileMenu, setShowMobileMenu] = useState(false)
   const [copyFeedbacks, setCopyFeedbacks] = useState<CopyFeedback[]>([])
+  const [categories, setCategories] = useState<{ name: string; count: number }[]>([])
+
+  useEffect(() => {
+    fetch('/api/design/categories')
+      .then(r => r.json())
+      .then(d => setCategories(d.categories || []))
+  }, [])
   const filteredDesigns = designs
 
   // Seamless theme switching without any flash or delay
@@ -289,30 +296,33 @@ export default function DesignLibrary() {
                 {/* Category Filters */}
                 <div className="space-y-0.5">
                   <p className="text-xs uppercase font-mono font-semibold tracking-widest text-muted-foreground mb-3">Filter</p>
-                  {['All', 'SaaS', 'FinTech', 'E-commerce', 'HealthTech', 'Media', 'Design', 'Agency', 'Education', 'Travel', 'Food', 'Fashion', 'Real Estate', 'Crypto', 'B2B', 'B2C', 'Marketing', 'Other'].map((cat) => {
-                    const isActive = cat === 'All' ? activeFilters.industries.length === 0 : activeFilters.industries.includes(cat)
+                  {[{ name: 'All', count: designs.length }, ...categories].map(({ name, count }) => {
+                    const isActive = name === 'All' ? activeFilters.industries.length === 0 : activeFilters.industries.includes(name)
                     return (
                       <button
-                        key={cat}
+                        key={name}
                         onClick={() => {
-                          if (cat === 'All') {
+                          if (name === 'All') {
                             setActiveFilters(prev => ({ ...prev, industries: [] }))
                           } else {
                             setActiveFilters(prev => ({
                               ...prev,
-                              industries: isActive ? prev.industries.filter(i => i !== cat) : [cat]
+                              industries: isActive ? prev.industries.filter(i => i !== name) : [name]
                             }))
                           }
                           setShowMobileMenu(false)
                         }}
-                        className={`w-full text-left px-3 py-2 rounded-md text-sm font-mono transition-colors ${
+                        className={`w-full flex items-center justify-between px-3 py-2 rounded-md text-sm font-mono transition-colors ${
                           isActive
-                            ? 'text-foreground font-medium'
-                            : 'text-muted-foreground hover:text-foreground'
+                            ? 'text-foreground bg-muted font-medium'
+                            : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
                         }`}
                       >
-                        {isActive && <span className="inline-block w-1.5 h-1.5 rounded-full bg-foreground mr-2 mb-0.5" />}
-                        {cat}
+                        <span className="flex items-center gap-2.5">
+                          <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${isActive ? 'bg-foreground' : 'bg-transparent'}`} />
+                          {name}
+                        </span>
+                        <span className="text-xs opacity-50 tabular-nums">{count}</span>
                       </button>
                     )
                   })}
@@ -356,29 +366,43 @@ export default function DesignLibrary() {
             <nav className="flex-1 overflow-y-auto p-5" aria-label="Category filters">
               <p className="text-xs uppercase font-mono font-semibold tracking-widest text-muted-foreground mb-3">Filter</p>
               <ul className="space-y-0.5">
-                {['All', 'SaaS', 'FinTech', 'E-commerce', 'HealthTech', 'Media', 'Design', 'Agency', 'Education', 'Travel', 'Food', 'Fashion', 'Real Estate', 'Crypto', 'B2B', 'B2C', 'Marketing', 'Other'].map((cat) => {
-                  const isActive = cat === 'All' ? activeFilters.industries.length === 0 : activeFilters.industries.includes(cat)
+                {/* All */}
+                <li>
+                  <button
+                    onClick={() => setActiveFilters(prev => ({ ...prev, industries: [] }))}
+                    className={`w-full flex items-center justify-between px-3 py-2 rounded-md text-sm font-mono transition-colors ${
+                      activeFilters.industries.length === 0
+                        ? 'text-foreground bg-muted font-medium'
+                        : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                    }`}
+                  >
+                    <span className="flex items-center gap-2.5">
+                      <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${activeFilters.industries.length === 0 ? 'bg-foreground' : 'bg-transparent'}`} />
+                      All
+                    </span>
+                    <span className="text-xs text-muted-foreground tabular-nums">{designs.length}</span>
+                  </button>
+                </li>
+                {categories.map(({ name, count }) => {
+                  const isActive = activeFilters.industries.includes(name)
                   return (
-                    <li key={cat}>
+                    <li key={name}>
                       <button
-                        onClick={() => {
-                          if (cat === 'All') {
-                            setActiveFilters(prev => ({ ...prev, industries: [] }))
-                          } else {
-                            setActiveFilters(prev => ({
-                              ...prev,
-                              industries: isActive ? prev.industries.filter(i => i !== cat) : [cat]
-                            }))
-                          }
-                        }}
-                        className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-sm font-mono transition-colors ${
+                        onClick={() => setActiveFilters(prev => ({
+                          ...prev,
+                          industries: isActive ? prev.industries.filter(i => i !== name) : [name]
+                        }))}
+                        className={`w-full flex items-center justify-between px-3 py-2 rounded-md text-sm font-mono transition-colors ${
                           isActive
                             ? 'text-foreground bg-muted font-medium'
                             : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
                         }`}
                       >
-                        <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 transition-colors ${isActive ? 'bg-foreground' : 'bg-transparent'}`} />
-                        {cat}
+                        <span className="flex items-center gap-2.5">
+                          <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${isActive ? 'bg-foreground' : 'bg-transparent'}`} />
+                          {name}
+                        </span>
+                        <span className="text-xs text-muted-foreground tabular-nums">{count}</span>
                       </button>
                     </li>
                   )
@@ -392,28 +416,29 @@ export default function DesignLibrary() {
         <div className="col-span-1 md:col-span-6 overflow-y-auto">
           {/* Mobile category pill bar */}
           <div className="md:hidden flex gap-2 overflow-x-auto px-4 pt-4 pb-2 no-scrollbar">
-            {['All', 'SaaS', 'FinTech', 'E-commerce', 'HealthTech', 'Media', 'Design', 'Agency', 'Education', 'Travel', 'Food', 'Fashion', 'Crypto', 'B2B', 'Marketing'].map((cat) => {
-              const isActive = cat === 'All' ? activeFilters.industries.length === 0 : activeFilters.industries.includes(cat)
+            {[{ name: 'All', count: designs.length }, ...categories].map(({ name, count }) => {
+              const isActive = name === 'All' ? activeFilters.industries.length === 0 : activeFilters.industries.includes(name)
               return (
                 <button
-                  key={cat}
+                  key={name}
                   onClick={() => {
-                    if (cat === 'All') {
+                    if (name === 'All') {
                       setActiveFilters(prev => ({ ...prev, industries: [] }))
                     } else {
                       setActiveFilters(prev => ({
                         ...prev,
-                        industries: isActive ? prev.industries.filter(i => i !== cat) : [cat]
+                        industries: isActive ? prev.industries.filter(i => i !== name) : [name]
                       }))
                     }
                   }}
-                  className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-mono transition-colors whitespace-nowrap ${
+                  className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-mono transition-colors whitespace-nowrap ${
                     isActive
                       ? 'bg-foreground text-background font-medium'
                       : 'bg-muted text-muted-foreground hover:text-foreground'
                   }`}
                 >
-                  {cat}
+                  {name}
+                  <span className={`text-[10px] tabular-nums ${isActive ? 'opacity-70' : 'opacity-50'}`}>{count}</span>
                 </button>
               )
             })}

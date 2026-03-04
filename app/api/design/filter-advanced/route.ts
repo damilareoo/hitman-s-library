@@ -24,11 +24,11 @@ export async function GET(req: NextRequest) {
     const whereConditions: string[] = []
     const filterParams: any[] = []
 
-    // Add industry filters
+    // Add industry filters (case-insensitive to handle DB inconsistencies)
     if (industries.length > 0 && !industries.includes('all')) {
       const placeholders = industries.map((_, i) => `$${i + 1}`).join(',')
-      whereConditions.push(`ds.industry IN (${placeholders})`)
-      filterParams.push(...industries)
+      whereConditions.push(`LOWER(ds.industry) IN (${placeholders})`)
+      filterParams.push(...industries.map(i => i.toLowerCase()))
     }
 
     // Add search filter
