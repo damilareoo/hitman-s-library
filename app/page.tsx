@@ -10,6 +10,7 @@ import { Upload, X, Copy, Check, Sun, Moon, Menu } from 'lucide-react'
 import AdvancedFilters from '@/components/AdvancedFilters'
 import { BackupUtility } from '@/components/backup-utility'
 import { TypographyDisplay } from '@/components/typography-display'
+import { SiteThumbnail } from '@/components/site-thumbnail'
 
 interface Design {
   id: string
@@ -96,10 +97,11 @@ export default function DesignLibrary() {
     setTheme(isDark ? 'dark' : 'light')
   }, [])
 
-  // Load designs on mount only (not on every filter change to avoid infinite loops)
+  // Load designs on mount and when filters change
   useEffect(() => {
     loadDesigns()
-  }, [])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeFilters])
 
   // Intuitive copy feedback with auto-dismiss
   const handleCopy = (text: string, type: 'color' | 'text') => {
@@ -332,10 +334,8 @@ export default function DesignLibrary() {
                   <p className="text-xs text-muted-foreground font-mono">Auto-detects categories</p>
                 </div>
                 <div className="h-px bg-border/20" />
-                {/* Backup & Restore - Desktop only */}
-                <div className="hidden lg:block">
-                  <BackupUtility onImportComplete={() => loadDesigns()} />
-                </div>
+                {/* Filters */}
+                <AdvancedFilters onFiltersChange={setActiveFilters} onClearAll={() => setActiveFilters({ industries: [], styles: [], layouts: [], colors: [], useCases: [], animations: [], accessibility: [], search: '', sortBy: 'recent' })} />
               </div>
             </nav>
           </>
@@ -419,17 +419,12 @@ export default function DesignLibrary() {
                   onClick={() => setSelectedDesign(design)}
                   className="group flex flex-col border border-border/40 rounded-lg overflow-hidden grid-transition hover:border-border/70 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:ring-offset-2 focus:ring-offset-background text-left"
                 >
-                  {/* Thumbnail Area - Website Hero Screenshot */}
-                  <div className="relative w-full bg-muted/50 aspect-video overflow-hidden">
-                    <img
-                      src={`https://api.microlink.io/?url=${encodeURIComponent(design.url)}&screenshot=true&meta=false&embed=screenshot.url`}
-                      alt={design.title}
-                      referrerPolicy="no-referrer"
-                      crossOrigin="anonymous"
-                      className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-300"
-                      loading="lazy"
-                    />
-                  </div>
+                  {/* Website Hero Screenshot */}
+                  <SiteThumbnail
+                    url={design.url}
+                    alt={design.title}
+                    className="group-hover:scale-[1.02] transition-transform duration-300"
+                  />
 
                   {/* Content Area */}
                   <div className="flex-1 flex flex-col p-4 sm:p-5">
