@@ -159,13 +159,14 @@ export function extractTypographyEnhanced(html: string): ExtractedTypography {
     }
     console.log('[v0] Found', dataAttrCount, 'fonts from data attributes')
     
-    // 10. AGGRESSIVE: Extract font names from any quoted strings containing common font keywords
-    const aggressivePattern = /["']([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*(?:\s+(?:Pro|Display|Text|Light|Regular|Bold|Medium|Italic))*?)["']\s*(?:[,;:\)]|font)/gi
+    // 10. AGGRESSIVE: Extract font names ONLY from legitimate font contexts
+    // Much stricter: only match in font-family values or known font declarations
+    const strictAggressivePattern = /(?:font-family|typeface|font):\s*["']?([A-Za-z][A-Za-z0-9\s\-]*(?:Pro|Display|Text|Light|Regular|Bold|Medium|Semibold|Italic)?)["']?(?=\s*[,;)])/gi
     let aggressiveCount = 0
-    while ((match = aggressivePattern.exec(html)) !== null) {
+    while ((match = strictAggressivePattern.exec(html)) !== null) {
       const potential = cleanFontName(match[1])
-      // Only add if it looks like a real font name (2-50 chars, has letters and spaces)
-      if (potential && potential.length >= 3 && potential.length < 60 && /[a-zA-Z]/.test(potential)) {
+      // Stricter validation: real fonts are typically 3-50 chars, have letters, and commonly start with uppercase
+      if (potential && potential.length >= 3 && potential.length < 60 && /[a-zA-Z]/.test(potential) && !/^(touch|scroll|click|DOM|span|div|function|pointer|event|load|auto|true|false|none|linear|normal|resize|snap|fade|webp)$/i.test(potential)) {
         allFonts.add(potential)
         aggressiveCount++
       }
@@ -188,9 +189,25 @@ export function extractTypographyEnhanced(html: string): ExtractedTypography {
     
     console.log('[v0] Total fonts before filtering:', allFonts.size)
     
-    // Filter more intelligently - keep custom fonts but remove only system generics
+    // Known garbage matches to exclude (JS keywords, HTML tags, CSS keywords)
+    const garbage = new Set([
+      'touch', 'scroll', 'click', 'domcontentloaded', 'div', 'span', 'function',
+      'pointer', 'event', 'load', 'auto', 'true', 'false', 'none', 'linear', 'normal',
+      'resize', 'snap', 'fade', 'webp', 'header', 'footer', 'main', 'section',
+      'article', 'nav', 'aside', 'form', 'button', 'label', 'input', 'select',
+      'textarea', 'option', 'fieldset', 'legend', 'table', 'thead', 'tbody',
+      'tfoot', 'tr', 'td', 'th', 'caption', 'colgroup', 'col', 'ul', 'ol', 'li',
+      'dl', 'dt', 'dd', 'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'blockquote',
+      'pre', 'code', 'kbd', 'samp', 'var', 'abbr', 'dfn', 'cite', 'mark', 'strong',
+      'em', 'small', 'del', 'ins', 'sub', 'sup', 'alternate', 'yoyo', 'forward',
+      'inverted', 'random', 'randomruns', 'autoplay', 'top', 'bottom', 'center',
+      'left', 'right', 'transparent', 'pointer', 'pointermove', 'pointerenter',
+      'pointerleave'
+    ])
+    
+    // Filter more intelligently - keep custom fonts but remove only system generics and garbage
     const filteredFonts = Array.from(allFonts)
-      .filter(f => f && f.length > 0 && !['serif', 'sans-serif', 'monospace', 'cursive', 'fantasy', 'system-ui', 'ui-serif', 'ui-sans-serif', 'ui-monospace'].includes(f.toLowerCase()))
+      .filter(f => f && f.length > 0 && !['serif', 'sans-serif', 'monospace', 'cursive', 'fantasy', 'system-ui', 'ui-serif', 'ui-sans-serif', 'ui-monospace'].includes(f.toLowerCase()) && !garbage.has(f.toLowerCase()))
       .slice(0, 50) // Allow up to 50 fonts
     
     console.log('[v0] Final fonts after filtering:', filteredFonts.length)
