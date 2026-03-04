@@ -474,13 +474,14 @@ export default function DesignLibrary() {
                 <button
                   key={design.id}
                   onClick={() => setSelectedDesign(design)}
-                  className="group relative flex flex-col border border-border/40 rounded-lg overflow-hidden grid-transition hover:border-border/70 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:ring-offset-2 focus:ring-offset-background text-left"
+                  className="group flex flex-col border border-border/40 rounded-lg overflow-hidden grid-transition hover:border-border/70 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:ring-offset-2 focus:ring-offset-background text-left relative"
                 >
-                  {/* Delete button - appears on hover */}
+                  {/* Delete icon overlay - top right corner */}
                   <button
                     onClick={(e) => handleDelete(design.id, e)}
-                    className="absolute top-2 right-2 z-10 p-1.5 rounded-md bg-background/90 backdrop-blur-sm border border-border/40 text-muted-foreground hover:text-red-500 hover:border-red-500/40 hover:bg-red-500/10 opacity-0 group-hover:opacity-100 transition-all duration-150 focus:outline-none focus:ring-1 focus:ring-primary/40"
+                    className="absolute top-2 right-2 z-10 p-1.5 rounded-md bg-background/80 border border-border/40 text-muted-foreground hover:text-red-500 hover:border-red-500/40 hover:bg-red-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-150"
                     title="Delete"
+                    aria-label="Delete design"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
