@@ -137,12 +137,14 @@ export async function GET(req: NextRequest) {
         }
       }
 
+      const generatedUrl = row.thumbnail_url || `https://screenshot.rocks/?url=${encodeURIComponent(row.source_url)}&width=1366&height=768`
+      console.log('[v0] Generated thumbnail URL for', row.source_name, ':', generatedUrl.substring(0, 100))
       return {
         id: row.id,
         url: row.source_url,
         title: row.source_name,
         industry: row.industry,
-        thumbnail_url: row.thumbnail_url || `https://screenshot.rocks/?url=${encodeURIComponent(row.source_url)}&width=1366&height=768`,
+        thumbnail_url: generatedUrl,
         colors,
         colorHarmony: row.color_harmony,
         colorMood: row.mood,
