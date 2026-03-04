@@ -421,11 +421,10 @@ export default function DesignLibrary() {
                 >
                   {/* Thumbnail Area - 2:1 Ratio */}
                   <div className="relative w-full bg-muted aspect-video overflow-hidden group/thumb">
-                    {/* Use screenshot.rocks directly from design.url */}
                     <img
-                      src={`https://screenshot.rocks/?url=${encodeURIComponent(design.url)}&width=1366&height=768`}
+                      src={`https://image.thum.io/get/width/600/crop/338/noanimate/${design.url}`}
                       alt={design.title}
-                      className="w-full h-full object-cover group-hover/thumb:scale-105 transition-transform duration-300"
+                      className="w-full h-full object-cover object-top group-hover/thumb:scale-105 transition-transform duration-300"
                       loading="lazy"
                     />
                   </div>
