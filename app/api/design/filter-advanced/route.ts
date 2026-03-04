@@ -172,6 +172,12 @@ export async function GET(req: NextRequest) {
         offset,
         hasMore: offset + limit < total
       }
+    }, {
+      headers: {
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      }
     })
   } catch (error) {
     console.error('[v0] Advanced filter error:', error)
