@@ -6,7 +6,7 @@ import { useState, useEffect, useRef } from 'react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import { Upload, X, Copy, Check, Sun, Moon, Menu, Trash2 } from 'lucide-react'
+import { Upload, X, Copy, Check, Sun, Moon, Menu } from 'lucide-react'
 import { BackupUtility } from '@/components/backup-utility'
 import { TypographyDisplay } from '@/components/typography-display'
 import { SiteThumbnail } from '@/components/site-thumbnail'
@@ -71,32 +71,12 @@ export default function DesignLibrary() {
   const [showMobileMenu, setShowMobileMenu] = useState(false)
   const [copyFeedbacks, setCopyFeedbacks] = useState<CopyFeedback[]>([])
   const [categories, setCategories] = useState<{ name: string; count: number }[]>([])
-  const [deleteTarget, setDeleteTarget] = useState<Design | null>(null)
-  const [isDeleting, setIsDeleting] = useState(false)
 
   useEffect(() => {
     fetch('/api/design/categories')
       .then(r => r.json())
       .then(d => setCategories(d.categories || []))
   }, [])
-
-  const handleDelete = async () => {
-    if (!deleteTarget) return
-    setIsDeleting(true)
-    try {
-      await fetch('/api/design/delete', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: deleteTarget.id })
-      })
-      setDesigns(prev => prev.filter(d => d.id !== deleteTarget.id))
-      if (selectedDesign?.id === deleteTarget.id) setSelectedDesign(null)
-      setCategories(cats => cats.map(c => c.name === deleteTarget.industry ? { ...c, count: c.count - 1 } : c).filter(c => c.count > 0))
-    } finally {
-      setIsDeleting(false)
-      setDeleteTarget(null)
-    }
-  }
   const filteredDesigns = designs
 
   // Seamless theme switching without any flash or delay
@@ -467,24 +447,11 @@ export default function DesignLibrary() {
             {/* Gallery Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-5 md:gap-6">
               {filteredDesigns.map((design) => (
-                <div
+                <button
                   key={design.id}
-                  className="group relative flex flex-col border border-border/40 rounded-lg overflow-hidden grid-transition hover:border-border/70"
+                  onClick={() => setSelectedDesign(design)}
+                  className="group flex flex-col border border-border/40 rounded-lg overflow-hidden grid-transition hover:border-border/70 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:ring-offset-2 focus:ring-offset-background text-left"
                 >
-                  {/* Delete button - appears on hover */}
-                  <button
-                    onClick={(e) => { e.stopPropagation(); setDeleteTarget(design) }}
-                    className="absolute top-2 right-2 z-10 p-1.5 rounded-md bg-background/80 backdrop-blur-sm border border-border/40 text-muted-foreground hover:text-red-500 hover:border-red-500/40 hover:bg-red-500/10 opacity-0 group-hover:opacity-100 transition-all duration-150"
-                    aria-label="Delete design"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-
-                  {/* Clickable card body */}
-                  <button
-                    onClick={() => setSelectedDesign(design)}
-                    className="flex flex-col flex-1 text-left focus:outline-none focus:ring-2 focus:ring-primary/40 focus:ring-inset"
-                  >
                   {/* Website Hero Screenshot */}
                   <SiteThumbnail
                     url={design.url}
@@ -519,8 +486,7 @@ export default function DesignLibrary() {
                       <span className="text-xs text-muted-foreground font-mono">{design.colors.length} colors</span>
                     </div>
                   </div>
-                  </button>
-                </div>
+                </button>
               ))}
             </div>
           </div>
@@ -619,46 +585,6 @@ export default function DesignLibrary() {
             </dialog>
           </>
         )}
-      {/* Delete Confirmation Modal */}
-      {deleteTarget && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="delete-modal-title">
-          {/* Backdrop */}
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => !isDeleting && setDeleteTarget(null)} />
-
-          {/* Modal */}
-          <div className="relative bg-background border border-border/60 rounded-xl shadow-2xl w-full max-w-sm p-6 space-y-5">
-            {/* Icon */}
-            <div className="flex items-center justify-center w-10 h-10 rounded-full bg-red-500/10 border border-red-500/20 mx-auto">
-              <Trash2 className="w-5 h-5 text-red-500" />
-            </div>
-
-            {/* Text */}
-            <div className="text-center space-y-1.5">
-              <h2 id="delete-modal-title" className="text-sm font-semibold font-mono text-foreground">Remove this site?</h2>
-              <p className="text-xs text-muted-foreground font-mono leading-relaxed line-clamp-2">{deleteTarget.title}</p>
-              <p className="text-xs text-muted-foreground/60 font-mono">{deleteTarget.url}</p>
-            </div>
-
-            {/* Actions */}
-            <div className="flex gap-3">
-              <button
-                onClick={() => setDeleteTarget(null)}
-                disabled={isDeleting}
-                className="flex-1 h-9 rounded-md border border-border/60 text-xs font-mono text-muted-foreground hover:text-foreground hover:border-border hover:bg-muted/40 transition-colors disabled:opacity-50"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleDelete}
-                disabled={isDeleting}
-                className="flex-1 h-9 rounded-md bg-red-500 hover:bg-red-600 text-white text-xs font-mono font-medium transition-colors disabled:opacity-50"
-              >
-                {isDeleting ? 'Removing...' : 'Remove'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
       </div>
     </div>
   )
