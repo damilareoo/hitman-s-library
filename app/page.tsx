@@ -276,26 +276,19 @@ export default function DesignLibrary() {
       {/* Mobile Navigation Drawer */}
         {showMobileMenu && (
           <>
-            <div className="fixed inset-0 bg-black/40 z-30 md:hidden" onClick={() => setShowMobileMenu(false)} role="presentation" aria-hidden="true" />
-            <nav className="fixed left-0 top-16 bottom-0 w-64 bg-background border-r border-border/20 z-40 overflow-y-auto md:hidden" aria-label="Mobile navigation">
-              <div className="p-4 space-y-4">
+            <div className="fixed inset-0 bg-black/60 z-30 md:hidden" onClick={() => setShowMobileMenu(false)} role="presentation" aria-hidden="true" />
+            <nav className="fixed left-0 top-16 bottom-0 w-72 bg-background border-r border-border/20 z-40 overflow-y-auto md:hidden" aria-label="Mobile navigation">
+              <div className="p-5 space-y-6">
                 {/* Add Design */}
                 <div className="space-y-2">
-                  <h3 className="text-xs uppercase font-mono font-semibold tracking-wider text-foreground">Quick Add</h3>
-                  <Input placeholder="https://..." value={linkInput} onChange={(e) => setLinkInput(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && handleAddLink()} disabled={isLoading} className="font-mono text-xs h-9 grid-transition" aria-label="Website URL for quick add" />
+                  <p className="text-xs uppercase font-mono font-semibold tracking-widest text-muted-foreground">Add Site</p>
+                  <Input placeholder="https://example.com" value={linkInput} onChange={(e) => setLinkInput(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && handleAddLink()} disabled={isLoading} className="font-mono text-xs h-9" aria-label="Website URL" />
                   <Button onClick={handleAddLink} disabled={isLoading || !linkInput.trim()} className="w-full h-9 font-mono text-xs">{isLoading ? 'Extracting...' : 'Add'}</Button>
                 </div>
                 <div className="h-px bg-border/20" />
-                {/* Batch Import */}
-                <div className="space-y-2">
-                  <h3 className="text-xs uppercase font-mono font-semibold tracking-wider text-foreground">Import</h3>
-                  <Button onClick={() => fileInputRef?.click()} disabled={isLoading} className="w-full gap-2 h-9 font-mono text-xs bg-primary/5 border border-primary/30 hover:bg-primary/10">{isLoading ? 'Uploading...' : '📄 Upload CSV/Excel'}</Button>
-                  <p className="text-xs text-muted-foreground font-mono">Auto-detects categories</p>
-                </div>
-                <div className="h-px bg-border/20" />
                 {/* Category Filters */}
-                <div className="space-y-1">
-                  <h3 className="text-xs uppercase font-mono font-semibold tracking-wider text-muted-foreground mb-3">Categories</h3>
+                <div className="space-y-0.5">
+                  <p className="text-xs uppercase font-mono font-semibold tracking-widest text-muted-foreground mb-3">Filter</p>
                   {['All', 'SaaS', 'FinTech', 'E-commerce', 'HealthTech', 'Media', 'Design', 'Agency', 'Education', 'Travel', 'Food', 'Fashion', 'Real Estate', 'Crypto', 'B2B', 'B2C', 'Marketing', 'Other'].map((cat) => {
                     const isActive = cat === 'All' ? activeFilters.industries.length === 0 : activeFilters.industries.includes(cat)
                     return (
@@ -314,10 +307,11 @@ export default function DesignLibrary() {
                         }}
                         className={`w-full text-left px-3 py-2 rounded-md text-sm font-mono transition-colors ${
                           isActive
-                            ? 'bg-foreground text-background font-semibold'
-                            : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                            ? 'text-foreground font-medium'
+                            : 'text-muted-foreground hover:text-foreground'
                         }`}
                       >
+                        {isActive && <span className="inline-block w-1.5 h-1.5 rounded-full bg-foreground mr-2 mb-0.5" />}
                         {cat}
                       </button>
                     )
@@ -347,72 +341,83 @@ export default function DesignLibrary() {
       <div className="grid grid-cols-1 md:grid-cols-12 gap-0 min-h-[calc(100vh-64px)]">
         {/* Sidebar - Desktop Only, Sticky */}
         <aside className="hidden md:flex md:col-span-3 flex-col sticky top-16 h-[calc(100vh-64px)] border-r border-border/20 bg-background/50 overflow-y-auto">
-          <div className="p-6 space-y-6">
-            {/* Add Design Section */}
-            <div className="space-y-3">
-              <h3 className="text-xs uppercase font-mono font-semibold tracking-wider text-foreground">Quick Add</h3>
-              <div className="space-y-2.5">
-                <div>
-                  <label className="text-xs font-mono text-muted-foreground/80 block mb-1.5">Website URL</label>
-                  <Input placeholder="https://example.com" value={linkInput} onChange={(e) => setLinkInput(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && handleAddLink()} disabled={isLoading} className="font-mono text-xs h-9 grid-transition focus:ring-2 focus:ring-primary/40 focus:ring-offset-1 focus:ring-offset-background border-border/60 hover:border-border/80" />
-                  <p className="text-xs text-muted-foreground/60 font-mono mt-1">Category auto-detected</p>
-                </div>
-                <Button onClick={handleAddLink} disabled={isLoading || !linkInput.trim()} className="w-full h-9 font-mono text-xs">
-                  {isLoading ? <>Analyzing & Extracting...</> : 'Add Design'}
-                </Button>
-              </div>
-            </div>
-
-            <div className="h-px bg-border/20" />
-
-            {/* Import Section - Prominent */}
-            <div className="space-y-3">
-              <h3 className="text-xs uppercase font-mono font-semibold tracking-wider text-foreground">Batch Import</h3>
-              <div className="space-y-2">
-                <Button variant="outline" onClick={() => fileInputRef?.click()} disabled={isLoading} className="w-full gap-2 h-10 font-mono text-xs bg-primary/5 border-primary/30 hover:bg-primary/10 hover:border-primary/50">
-                  <Upload className="w-4 h-4" /> Upload Excel/CSV
-                </Button>
-                <p className="text-xs text-muted-foreground font-mono">Auto-categorizes designs • Format: URL, Title, Notes</p>
-              </div>
+          <div className="flex flex-col h-full">
+            {/* Add Design */}
+            <div className="p-5 space-y-2.5 border-b border-border/20">
+              <p className="text-xs uppercase font-mono font-semibold tracking-widest text-muted-foreground">Add Site</p>
+              <Input placeholder="https://example.com" value={linkInput} onChange={(e) => setLinkInput(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && handleAddLink()} disabled={isLoading} className="font-mono text-xs h-9 border-border/50" />
+              <Button onClick={handleAddLink} disabled={isLoading || !linkInput.trim()} className="w-full h-9 font-mono text-xs">
+                {isLoading ? 'Extracting...' : 'Add Design'}
+              </Button>
               <input ref={(ref) => setFileInputRef(ref)} type="file" accept=".xlsx,.csv" onChange={handleFileUpload} className="hidden" />
             </div>
 
-            <div className="h-px bg-border/20" />
-
-            {/* Category Filters */}
-            <div className="space-y-1">
-              <h3 className="text-xs uppercase font-mono font-semibold tracking-wider text-muted-foreground mb-3">Categories</h3>
-              {['All', 'SaaS', 'FinTech', 'E-commerce', 'HealthTech', 'Media', 'Design', 'Agency', 'Education', 'Travel', 'Food', 'Fashion', 'Real Estate', 'Crypto', 'B2B', 'B2C', 'Marketing', 'Other'].map((cat) => {
-                const isActive = cat === 'All' ? activeFilters.industries.length === 0 : activeFilters.industries.includes(cat)
-                return (
-                  <button
-                    key={cat}
-                    onClick={() => {
-                      if (cat === 'All') {
-                        setActiveFilters(prev => ({ ...prev, industries: [] }))
-                      } else {
-                        setActiveFilters(prev => ({
-                          ...prev,
-                          industries: isActive ? prev.industries.filter(i => i !== cat) : [cat]
-                        }))
-                      }
-                    }}
-                    className={`w-full text-left px-3 py-2 rounded-md text-sm font-mono transition-colors ${
-                      isActive
-                        ? 'bg-foreground text-background font-semibold'
-                        : 'text-muted-foreground hover:text-foreground hover:bg-muted'
-                    }`}
-                  >
-                    {cat}
-                  </button>
-                )
-              })}
-            </div>
+            {/* Category Nav */}
+            <nav className="flex-1 overflow-y-auto p-5" aria-label="Category filters">
+              <p className="text-xs uppercase font-mono font-semibold tracking-widest text-muted-foreground mb-3">Filter</p>
+              <ul className="space-y-0.5">
+                {['All', 'SaaS', 'FinTech', 'E-commerce', 'HealthTech', 'Media', 'Design', 'Agency', 'Education', 'Travel', 'Food', 'Fashion', 'Real Estate', 'Crypto', 'B2B', 'B2C', 'Marketing', 'Other'].map((cat) => {
+                  const isActive = cat === 'All' ? activeFilters.industries.length === 0 : activeFilters.industries.includes(cat)
+                  return (
+                    <li key={cat}>
+                      <button
+                        onClick={() => {
+                          if (cat === 'All') {
+                            setActiveFilters(prev => ({ ...prev, industries: [] }))
+                          } else {
+                            setActiveFilters(prev => ({
+                              ...prev,
+                              industries: isActive ? prev.industries.filter(i => i !== cat) : [cat]
+                            }))
+                          }
+                        }}
+                        className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-sm font-mono transition-colors ${
+                          isActive
+                            ? 'text-foreground bg-muted font-medium'
+                            : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                        }`}
+                      >
+                        <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 transition-colors ${isActive ? 'bg-foreground' : 'bg-transparent'}`} />
+                        {cat}
+                      </button>
+                    </li>
+                  )
+                })}
+              </ul>
+            </nav>
           </div>
         </aside>
 
         {/* Gallery - Takes remaining space */}
         <div className="col-span-1 md:col-span-6 overflow-y-auto">
+          {/* Mobile category pill bar */}
+          <div className="md:hidden flex gap-2 overflow-x-auto px-4 pt-4 pb-2 no-scrollbar">
+            {['All', 'SaaS', 'FinTech', 'E-commerce', 'HealthTech', 'Media', 'Design', 'Agency', 'Education', 'Travel', 'Food', 'Fashion', 'Crypto', 'B2B', 'Marketing'].map((cat) => {
+              const isActive = cat === 'All' ? activeFilters.industries.length === 0 : activeFilters.industries.includes(cat)
+              return (
+                <button
+                  key={cat}
+                  onClick={() => {
+                    if (cat === 'All') {
+                      setActiveFilters(prev => ({ ...prev, industries: [] }))
+                    } else {
+                      setActiveFilters(prev => ({
+                        ...prev,
+                        industries: isActive ? prev.industries.filter(i => i !== cat) : [cat]
+                      }))
+                    }
+                  }}
+                  className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-mono transition-colors whitespace-nowrap ${
+                    isActive
+                      ? 'bg-foreground text-background font-medium'
+                      : 'bg-muted text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  {cat}
+                </button>
+              )
+            })}
+          </div>
           <div className="p-4 sm:p-6 md:p-8">
             {/* Gallery Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-5 md:gap-6">
