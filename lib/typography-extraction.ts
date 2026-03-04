@@ -209,8 +209,16 @@ export function extractTypographyEnhanced(html: string): ExtractedTypography {
     console.log('[v0] Final fonts after filtering:', filteredFonts.length)
     console.log('[v0] Final font list:', filteredFonts)
     
-    // Categorize fonts by type
-    if (filteredFonts.length > 0) {
+    // If we only found garbage fonts, return empty
+    if (filteredFonts.length === 0 || (filteredFonts.every(f => f.length < 5) && allFonts.size > 30)) {
+      console.log('[v0] All extracted fonts appear to be garbage, returning empty')
+      return {
+        headingFonts: [],
+        bodyFonts: [],
+        monoFonts: [],
+        allFonts: []
+      }
+    }
       filteredFonts.forEach(font => {
         const lower = font.toLowerCase()
         if (lower.includes('mono') || lower.includes('courier') || lower.includes('code')) {
