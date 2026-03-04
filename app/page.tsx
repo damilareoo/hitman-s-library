@@ -7,7 +7,6 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Upload, X, Copy, Check, Sun, Moon, Menu } from 'lucide-react'
-import AdvancedFilters from '@/components/AdvancedFilters'
 import { BackupUtility } from '@/components/backup-utility'
 import { TypographyDisplay } from '@/components/typography-display'
 import { SiteThumbnail } from '@/components/site-thumbnail'
@@ -334,8 +333,36 @@ export default function DesignLibrary() {
                   <p className="text-xs text-muted-foreground font-mono">Auto-detects categories</p>
                 </div>
                 <div className="h-px bg-border/20" />
-                {/* Filters */}
-                <AdvancedFilters onFiltersChange={setActiveFilters} onClearAll={() => setActiveFilters({ industries: [], styles: [], layouts: [], colors: [], useCases: [], animations: [], accessibility: [], search: '', sortBy: 'recent' })} />
+                {/* Category Filters */}
+                <div className="space-y-1">
+                  <h3 className="text-xs uppercase font-mono font-semibold tracking-wider text-muted-foreground mb-3">Categories</h3>
+                  {['All', 'SaaS', 'FinTech', 'E-commerce', 'HealthTech', 'Media', 'Design', 'Agency', 'Education', 'Travel', 'Food', 'Fashion', 'Real Estate', 'Crypto', 'B2B', 'B2C', 'Marketing', 'Other'].map((cat) => {
+                    const isActive = cat === 'All' ? activeFilters.industries.length === 0 : activeFilters.industries.includes(cat)
+                    return (
+                      <button
+                        key={cat}
+                        onClick={() => {
+                          if (cat === 'All') {
+                            setActiveFilters(prev => ({ ...prev, industries: [] }))
+                          } else {
+                            setActiveFilters(prev => ({
+                              ...prev,
+                              industries: isActive ? prev.industries.filter(i => i !== cat) : [cat]
+                            }))
+                          }
+                          setShowMobileMenu(false)
+                        }}
+                        className={`w-full text-left px-3 py-2 rounded-md text-sm font-mono transition-colors ${
+                          isActive
+                            ? 'bg-foreground text-background font-semibold'
+                            : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                        }`}
+                      >
+                        {cat}
+                      </button>
+                    )
+                  })}
+                </div>
               </div>
             </nav>
           </>
@@ -403,8 +430,35 @@ export default function DesignLibrary() {
 
             <div className="h-px bg-border/20" />
 
-            {/* Filters */}
-            <AdvancedFilters onFiltersChange={setActiveFilters} onClearAll={() => setActiveFilters({ industries: [], styles: [], layouts: [], colors: [], useCases: [], animations: [], accessibility: [], search: '', sortBy: 'recent' })} />
+            {/* Category Filters */}
+            <div className="space-y-1">
+              <h3 className="text-xs uppercase font-mono font-semibold tracking-wider text-muted-foreground mb-3">Categories</h3>
+              {['All', 'SaaS', 'FinTech', 'E-commerce', 'HealthTech', 'Media', 'Design', 'Agency', 'Education', 'Travel', 'Food', 'Fashion', 'Real Estate', 'Crypto', 'B2B', 'B2C', 'Marketing', 'Other'].map((cat) => {
+                const isActive = cat === 'All' ? activeFilters.industries.length === 0 : activeFilters.industries.includes(cat)
+                return (
+                  <button
+                    key={cat}
+                    onClick={() => {
+                      if (cat === 'All') {
+                        setActiveFilters(prev => ({ ...prev, industries: [] }))
+                      } else {
+                        setActiveFilters(prev => ({
+                          ...prev,
+                          industries: isActive ? prev.industries.filter(i => i !== cat) : [cat]
+                        }))
+                      }
+                    }}
+                    className={`w-full text-left px-3 py-2 rounded-md text-sm font-mono transition-colors ${
+                      isActive
+                        ? 'bg-foreground text-background font-semibold'
+                        : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                    }`}
+                  >
+                    {cat}
+                  </button>
+                )
+              })}
+            </div>
           </div>
         </aside>
 
