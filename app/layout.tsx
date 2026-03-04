@@ -36,6 +36,17 @@ export const metadata: Metadata = {
     telephone: false,
   },
   metadataBase: new URL("https://v0-design-library.vercel.app"),
+  icons: {
+    icon: [
+      { url: "/icon.jpg", type: "image/jpeg" },
+      { url: "/icon.jpg", sizes: "32x32", type: "image/jpeg" },
+      { url: "/icon.jpg", sizes: "16x16", type: "image/jpeg" },
+    ],
+    apple: [
+      { url: "/icon.jpg", sizes: "180x180", type: "image/jpeg" },
+    ],
+    shortcut: "/icon.jpg",
+  },
   openGraph: {
     type: "website",
     locale: "en_US",
@@ -46,11 +57,11 @@ export const metadata: Metadata = {
     siteName: "Hitman's Library",
     images: [
       {
-        url: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/OG%20IMAGE%20DESIGN%20LIBRARY-UZQLETmZ75mByj3LCSPaVwycjQESLq.png",
+        url: "/og-image.jpg",
         width: 1200,
         height: 630,
         alt: "Hitman's Library - Design Extraction & Reference",
-        type: "image/png",
+        type: "image/jpeg",
       },
     ],
   },
@@ -59,10 +70,7 @@ export const metadata: Metadata = {
     title: "Hitman's Library",
     description:
       "Extract, organize, and reference design systems from any website.",
-    creator: "@vercel",
-    images: [
-      "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/OG%20IMAGE%20DESIGN%20LIBRARY-UZQLETmZ75mByj3LCSPaVwycjQESLq.png",
-    ],
+    images: ["/og-image.jpg"],
   },
   robots: {
     index: true,
