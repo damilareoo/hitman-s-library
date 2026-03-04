@@ -419,12 +419,14 @@ export default function DesignLibrary() {
                   onClick={() => setSelectedDesign(design)}
                   className="group flex flex-col border border-border/40 rounded-lg overflow-hidden grid-transition hover:border-border/70 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:ring-offset-2 focus:ring-offset-background text-left"
                 >
-                  {/* Thumbnail Area - 2:1 Ratio */}
-                  <div className="relative w-full bg-muted aspect-video overflow-hidden group/thumb">
+                  {/* Thumbnail Area - Website Hero Screenshot */}
+                  <div className="relative w-full bg-muted/50 aspect-video overflow-hidden">
                     <img
-                      src={`https://image.thum.io/get/width/600/crop/338/noanimate/${design.url}`}
+                      src={`https://api.microlink.io/?url=${encodeURIComponent(design.url)}&screenshot=true&meta=false&embed=screenshot.url`}
                       alt={design.title}
-                      className="w-full h-full object-cover object-top group-hover/thumb:scale-105 transition-transform duration-300"
+                      referrerPolicy="no-referrer"
+                      crossOrigin="anonymous"
+                      className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-300"
                       loading="lazy"
                     />
                   </div>
