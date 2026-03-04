@@ -142,7 +142,7 @@ export async function GET(req: NextRequest) {
         url: row.source_url,
         title: row.source_name,
         industry: row.industry,
-        thumbnail_url: row.thumbnail_url,
+        thumbnail_url: row.thumbnail_url || `https://screenshot.rocks/?url=${encodeURIComponent(row.source_url)}&width=1366&height=768`,
         colors,
         colorHarmony: row.color_harmony,
         colorMood: row.mood,
