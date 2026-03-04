@@ -421,27 +421,13 @@ export default function DesignLibrary() {
                 >
                   {/* Thumbnail Area - 2:1 Ratio */}
                   <div className="relative w-full bg-muted aspect-video overflow-hidden group/thumb">
-                    {/* Generate screenshot URL directly from website URL */}
+                    {/* Use screenshot.rocks directly from design.url */}
                     <img
-                      src={`https://api.screen.studio/screenshot?url=${encodeURIComponent(design.url)}&viewport=1366x768`}
+                      src={`https://screenshot.rocks/?url=${encodeURIComponent(design.url)}&width=1366&height=768`}
                       alt={design.title}
                       className="w-full h-full object-cover group-hover/thumb:scale-105 transition-transform duration-300"
                       loading="lazy"
-                      onError={(e) => {
-                        // If screenshot fails, show color blocks instead
-                        const target = e.currentTarget
-                        target.style.display = 'none'
-                        target.nextElementSibling?.classList.remove('hidden')
-                      }}
                     />
-                    {/* Fallback to color blocks if screenshot fails */}
-                    <div className="absolute inset-0 grid grid-cols-3 gap-0 hidden">
-                      {design.colors.slice(0, 9).map((color, i) => (
-                        <div key={i} className="relative group/color" style={{ backgroundColor: color }}>
-                          <div className="absolute inset-0 opacity-0 group-hover/color:opacity-100 grid-transition bg-black/10" />
-                        </div>
-                      ))}
-                    </div>
                   </div>
 
                   {/* Content Area */}
