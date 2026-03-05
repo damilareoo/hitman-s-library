@@ -214,8 +214,8 @@ export default function DesignLibrary() {
     }
   }
 
-  const handleDelete = async (designId: string, e: React.MouseEvent) => {
-    e.stopPropagation()
+  const handleDelete = async (designId: string, e?: React.MouseEvent) => {
+    if (e?.stopPropagation) e.stopPropagation()
     if (!confirm('Remove this design from your collection?')) return
     
     try {
@@ -532,7 +532,7 @@ export default function DesignLibrary() {
                 </a>
 
                 <button
-                  onClick={() => handleDelete(selectedDesign.id, {} as React.MouseEvent)}
+                  onClick={() => handleDelete(selectedDesign.id)}
                   className="w-full px-3 py-2.5 text-sm bg-red-500/10 border border-red-500/30 rounded-sm font-mono hover:bg-red-500/20 hover:border-red-500/50 text-red-500 hover:text-red-600 flex items-center justify-center gap-2 transition-colors"
                 >
                   <Trash2 className="w-3.5 h-3.5" /> Remove from Collection
@@ -598,7 +598,7 @@ export default function DesignLibrary() {
                 </a>
 
                 <button
-                  onClick={() => handleDelete(selectedDesign.id, {} as React.MouseEvent)}
+                  onClick={() => handleDelete(selectedDesign.id)}
                   className="w-full px-3 py-2.5 text-sm bg-red-500/10 border border-red-500/30 rounded-sm font-mono hover:bg-red-500/20 hover:border-red-500/50 text-red-500 hover:text-red-600 flex items-center justify-center gap-2 transition-colors"
                 >
                   <Trash2 className="w-3.5 h-3.5" /> Remove from Collection
