@@ -474,18 +474,8 @@ export default function DesignLibrary() {
                 <div
                   key={design.id}
                   onClick={() => setSelectedDesign(design)}
-                  className="group relative flex flex-col border border-border/40 rounded-lg overflow-hidden grid-transition hover:border-border/70 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:ring-offset-2 focus:ring-offset-background text-left cursor-pointer"
+                  className="group relative flex flex-col border border-border/40 rounded-lg overflow-hidden grid-transition hover:border-border/70 text-left cursor-pointer"
                 >
-                  {/* Delete button - appears on hover */}
-                  <button
-                    onClick={(e) => handleDelete(design.id, e)}
-                    className="absolute top-2 right-2 z-10 p-1.5 rounded-md bg-background/80 border border-border/40 text-muted-foreground hover:text-red-500 hover:border-red-500/40 hover:bg-red-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-150"
-                    title="Delete"
-                    aria-label="Delete design"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-                  
                   {/* Website Hero Screenshot */}
                   <SiteThumbnail
                     url={design.url}
@@ -540,7 +530,13 @@ export default function DesignLibrary() {
                   <span>Visit Site</span>
                   <span className="opacity-0 group-hover:opacity-100">↗</span>
                 </a>
-              </div>
+
+                <button
+                  onClick={() => handleDelete(selectedDesign.id, {} as React.MouseEvent)}
+                  className="w-full px-3 py-2.5 text-sm bg-red-500/10 border border-red-500/30 rounded-sm font-mono hover:bg-red-500/20 hover:border-red-500/50 text-red-500 hover:text-red-600 flex items-center justify-center gap-2 transition-colors"
+                >
+                  <Trash2 className="w-3.5 h-3.5" /> Remove from Collection
+                </button>
 
               <div className="h-px bg-border/20" />
 
@@ -599,6 +595,13 @@ export default function DesignLibrary() {
                 <a href={selectedDesign.url} target="_blank" rel="noopener noreferrer" className="w-full px-3 py-2.5 text-sm bg-primary/10 border border-primary/30 rounded-sm font-mono hover:bg-primary/20 flex items-center justify-center gap-2">
                   Visit Site ↗
                 </a>
+
+                <button
+                  onClick={() => handleDelete(selectedDesign.id, {} as React.MouseEvent)}
+                  className="w-full px-3 py-2.5 text-sm bg-red-500/10 border border-red-500/30 rounded-sm font-mono hover:bg-red-500/20 hover:border-red-500/50 text-red-500 hover:text-red-600 flex items-center justify-center gap-2 transition-colors"
+                >
+                  <Trash2 className="w-3.5 h-3.5" /> Remove from Collection
+                </button>
 
                 <div className="space-y-2">
                   <h3 className="text-xs uppercase font-mono font-semibold tracking-wider">Colors ({selectedDesign.colors.length})</h3>
