@@ -528,7 +528,7 @@ export default function DesignLibrary() {
                 <h2 className="text-sm font-bold text-foreground line-clamp-2 hover:text-foreground/90 grid-transition">{selectedDesign.title}</h2>
                 <a href={selectedDesign.url} target="_blank" rel="noopener noreferrer" className="w-full px-3 py-2 text-xs bg-primary/5 border border-primary/20 rounded-sm font-mono hover:bg-primary/10 hover:border-primary/40 grid-transition flex items-center justify-between group">
                   <span>Visit Site</span>
-                  <span className="opacity-0 group-hover:opacity-100">↗</span>
+                  <span className="opacity-0 group-hover:opacity-100">���</span>
                 </a>
 
                 <button
@@ -550,9 +550,6 @@ export default function DesignLibrary() {
                       <code className="text-xs font-mono">{color}</code>
                       {copied ? <Check className="w-4 h-4 ml-auto" /> : <Copy className="w-4 h-4 ml-auto opacity-0 group-hover:opacity-100" />}
                     </div>
-                  ))}
-                </div>
-              </div>
                   ))}
                 </div>
               </div>
