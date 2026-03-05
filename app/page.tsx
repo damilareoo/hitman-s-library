@@ -537,6 +537,7 @@ export default function DesignLibrary() {
                 >
                   <Trash2 className="w-3.5 h-3.5" /> Remove from Collection
                 </button>
+              </div>
 
               <div className="h-px bg-border/20" />
 
@@ -549,6 +550,9 @@ export default function DesignLibrary() {
                       <code className="text-xs font-mono">{color}</code>
                       {copied ? <Check className="w-4 h-4 ml-auto" /> : <Copy className="w-4 h-4 ml-auto opacity-0 group-hover:opacity-100" />}
                     </div>
+                  ))}
+                </div>
+              </div>
                   ))}
                 </div>
               </div>
