@@ -192,6 +192,19 @@ export async function POST(req: NextRequest) {
     // Calculate quality score
     const quality = Math.min(10, Math.max(1, Math.round((colors.length + typography.length) / 2)))
 
+    // Check if URL already exists
+    const existing = await sql`
+      SELECT id FROM design_sources WHERE source_url = ${url} LIMIT 1
+    `
+    if (existing.length > 0) {
+      return NextResponse.json({
+        success: false,
+        error: 'This website has already been added to your collection',
+        isDuplicate: true,
+        url
+      }, { status: 200 })
+    }
+
     // Save to database
     try {
       const result = await sql`

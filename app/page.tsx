@@ -6,7 +6,7 @@ import { useState, useEffect, useRef } from 'react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import { Upload, X, Copy, Check, Sun, Moon, Menu } from 'lucide-react'
+import { Upload, X, Copy, Check, Sun, Moon, Menu, Trash2 } from 'lucide-react'
 import { BackupUtility } from '@/components/backup-utility'
 import { TypographyDisplay } from '@/components/typography-display'
 import { SiteThumbnail } from '@/components/site-thumbnail'
@@ -192,7 +192,9 @@ export default function DesignLibrary() {
       const data = await response.json()
       console.log('[v0] Extract response:', data)
 
-      if (data.success || data.id) {
+      if (data.isDuplicate) {
+        alert('⚠ Already Added\n\nThis website is already in your collection')
+      } else if (data.success || data.id) {
         console.log('[v0] Design extracted successfully with auto-detected industry:', data.industry)
         alert(`✓ "${data.title}" added as ${data.industry}\n\nDesign categorized automatically`)
         setLinkInput('')
@@ -209,6 +211,28 @@ export default function DesignLibrary() {
       alert('Connection error. Please check your internet and try again.')
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  const handleDelete = async (designId: string, e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (!confirm('Remove this design from your collection?')) return
+    
+    try {
+      const response = await fetch('/api/design/delete', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: designId })
+      })
+      if (response.ok) {
+        setDesigns(prev => prev.filter(d => d.id !== designId))
+        if (selectedDesign?.id === designId) setSelectedDesign(null)
+      } else {
+        alert('Failed to delete. Please try again.')
+      }
+    } catch (error) {
+      console.error('[v0] Delete error:', error)
+      alert('Error deleting design')
     }
   }
 
@@ -447,11 +471,21 @@ export default function DesignLibrary() {
             {/* Gallery Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-5 md:gap-6">
               {filteredDesigns.map((design) => (
-                <button
+                <div
                   key={design.id}
                   onClick={() => setSelectedDesign(design)}
-                  className="group flex flex-col border border-border/40 rounded-lg overflow-hidden grid-transition hover:border-border/70 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:ring-offset-2 focus:ring-offset-background text-left"
+                  className="group relative flex flex-col border border-border/40 rounded-lg overflow-hidden grid-transition hover:border-border/70 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:ring-offset-2 focus:ring-offset-background text-left cursor-pointer"
                 >
+                  {/* Delete button - appears on hover */}
+                  <button
+                    onClick={(e) => handleDelete(design.id, e)}
+                    className="absolute top-2 right-2 z-10 p-1.5 rounded-md bg-background/80 border border-border/40 text-muted-foreground hover:text-red-500 hover:border-red-500/40 hover:bg-red-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-150"
+                    title="Delete"
+                    aria-label="Delete design"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                  
                   {/* Website Hero Screenshot */}
                   <SiteThumbnail
                     url={design.url}
@@ -486,7 +520,7 @@ export default function DesignLibrary() {
                       <span className="text-xs text-muted-foreground font-mono">{design.colors.length} colors</span>
                     </div>
                   </div>
-                </button>
+                </div>
               ))}
             </div>
           </div>
