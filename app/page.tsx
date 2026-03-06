@@ -1,5 +1,5 @@
 'use client'
-// Recompile trigger
+
 import React from "react"
 
 import { useState, useEffect, useRef } from 'react'
@@ -436,10 +436,10 @@ export default function DesignLibrary() {
           </div>
         </aside>
 
-        {/* Gallery Container */}
+        {/* Gallery - Takes remaining space */}
         <div className="col-span-1 md:col-span-6 flex flex-col h-full">
-          {/* Mobile category pill bar - NOT sticky, just normal scroll */}
-          <div className="md:hidden flex gap-2 overflow-x-auto px-4 pt-4 pb-2 no-scrollbar bg-background border-b border-border/30 flex-shrink-0">
+          {/* Mobile category pill bar - sticky at top */}
+          <div className="md:hidden sticky top-0 z-20 flex gap-2 overflow-x-auto px-4 pt-4 pb-2 no-scrollbar bg-background border-b border-border/30 flex-shrink-0">
             {[{ name: 'All', count: designs.length }, ...categories].map(({ name, count }) => {
               const isActive = name === 'All' ? activeFilters.industries.length === 0 : activeFilters.industries.includes(name)
               return (
@@ -452,25 +452,6 @@ export default function DesignLibrary() {
                       setActiveFilters(prev => ({
                         ...prev,
                         industries: isActive ? prev.industries.filter(i => i !== name) : [name]
-                      }))
-                    }
-                  }}
-                  className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-mono transition-colors whitespace-nowrap ${
-                    isActive
-                      ? 'bg-foreground text-background font-medium'
-                      : 'bg-muted text-muted-foreground hover:text-foreground'
-                  }`}
-                >
-                  {name}
-                  <span className={`text-[10px] tabular-nums ${isActive ? 'opacity-70' : 'opacity-50'}`}>{count}</span>
-                </button>
-              )
-            })}
-          </div>
-
-          {/* Scrollable gallery */}
-          <div className="flex-1 overflow-y-auto">
-            <div className="p-4 sm:p-6 md:p-8">
                       }))
                     }
                   }}
@@ -528,10 +509,7 @@ export default function DesignLibrary() {
                           />
                         ))}
                         {design.colors.length > 4 && <div className="text-xs text-muted-foreground font-mono ml-1">+{design.colors.length - 4}</div>}
-        </div>
-
-        {/* Details Panel - Desktop Only */}
-        <div className="hidden md:flex md:col-span-3 flex-col sticky top-16 h-[calc(100vh-64px)] border-l border-border/20 bg-background/50">
+                      </div>
                       <span className="text-xs text-muted-foreground font-mono">{design.colors.length} colors</span>
                     </div>
                   </div>
@@ -541,6 +519,9 @@ export default function DesignLibrary() {
             </div>
           </div>
         </div>
+
+        {/* Details Panel - Desktop Only */}
+        <div className="hidden md:flex md:col-span-3 flex-col sticky top-16 h-[calc(100vh-64px)] border-l border-border/20 bg-background/50">
           {selectedDesign && (
             <div className="p-6 space-y-4 overflow-y-auto h-full">
               <button onClick={() => setSelectedDesign(null)} className="text-muted-foreground hover:text-foreground grid-transition p-1 hover:bg-muted/40 rounded-sm self-end">
