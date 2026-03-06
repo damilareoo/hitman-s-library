@@ -439,7 +439,7 @@ export default function DesignLibrary() {
         {/* Gallery - Takes remaining space */}
         <div className="col-span-1 md:col-span-6 overflow-y-auto">
           {/* Mobile category pill bar */}
-          <div className="md:hidden flex gap-2 overflow-x-auto px-4 pt-4 pb-2 no-scrollbar">
+          <div className="md:hidden sticky top-0 z-10 flex gap-2 overflow-x-auto px-4 pt-4 pb-2 no-scrollbar bg-background/95 backdrop-blur-sm border-b border-border/20">
             {[{ name: 'All', count: designs.length }, ...categories].map(({ name, count }) => {
               const isActive = name === 'All' ? activeFilters.industries.length === 0 : activeFilters.industries.includes(name)
               return (
