@@ -633,4 +633,3 @@ export default function DesignLibrary() {
     </div>
   )
 }
-}
