@@ -629,6 +629,7 @@ export default function DesignLibrary() {
             </dialog>
           </>
         )}
+      </div>
     </div>
   )
 }
