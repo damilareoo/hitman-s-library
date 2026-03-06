@@ -519,6 +519,8 @@ export default function DesignLibrary() {
             </div>
           </div>
         </div>
+
+        {/* Details Panel - Desktop Only */}
         <div className="hidden md:flex md:col-span-3 flex-col sticky top-16 h-[calc(100vh-64px)] border-l border-border/20 bg-background/50">
           {selectedDesign && (
             <div className="p-6 space-y-4 overflow-y-auto h-full">
