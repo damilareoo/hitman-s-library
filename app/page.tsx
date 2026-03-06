@@ -437,8 +437,8 @@ export default function DesignLibrary() {
         </aside>
 
         {/* Gallery - Takes remaining space */}
-        <div className="col-span-1 md:col-span-6 overflow-y-auto">
-          {/* Mobile category pill bar */}
+        <div className="col-span-1 md:col-span-6 flex flex-col md:overflow-y-auto">
+          {/* Mobile category pill bar - sticky outside overflow container */}
           <div className="md:hidden sticky top-0 z-10 flex gap-2 overflow-x-auto px-4 pt-4 pb-2 no-scrollbar bg-background/95 backdrop-blur-sm border-b border-border/20">
             {[{ name: 'All', count: designs.length }, ...categories].map(({ name, count }) => {
               const isActive = name === 'All' ? activeFilters.industries.length === 0 : activeFilters.industries.includes(name)
@@ -467,7 +467,10 @@ export default function DesignLibrary() {
               )
             })}
           </div>
-          <div className="p-4 sm:p-6 md:p-8">
+
+          {/* Scrollable content area */}
+          <div className="flex-1 overflow-y-auto">
+            <div className="p-4 sm:p-6 md:p-8">
             {/* Gallery Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-5 md:gap-6">
               {filteredDesigns.map((design) => (
@@ -515,8 +518,6 @@ export default function DesignLibrary() {
             </div>
           </div>
         </div>
-
-        {/* Details Panel - Desktop Only */}
         <div className="hidden md:flex md:col-span-3 flex-col sticky top-16 h-[calc(100vh-64px)] border-l border-border/20 bg-background/50">
           {selectedDesign && (
             <div className="p-6 space-y-4 overflow-y-auto h-full">
