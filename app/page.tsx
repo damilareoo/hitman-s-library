@@ -516,6 +516,7 @@ export default function DesignLibrary() {
                 </div>
               ))}
             </div>
+            </div>
           </div>
         </div>
         <div className="hidden md:flex md:col-span-3 flex-col sticky top-16 h-[calc(100vh-64px)] border-l border-border/20 bg-background/50">
