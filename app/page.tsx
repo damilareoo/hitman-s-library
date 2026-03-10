@@ -252,14 +252,6 @@ export default function DesignLibrary() {
     setPendingAction({ type: 'delete', designId })
     setShowPINDialog(true)
   }
-      } else {
-        alert('Failed to delete. Please try again.')
-      }
-    } catch (error) {
-      console.error('[v0] Delete error:', error)
-      alert('Error deleting design')
-    }
-  }
 
   const generatePrompt = async (design: Design) => {
     try {
