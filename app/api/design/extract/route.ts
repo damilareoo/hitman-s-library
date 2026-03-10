@@ -7,13 +7,13 @@ import { extractTypographyFromRenderedPage, extractAllDesignDataFromRenderedPage
 const sql = neon(process.env.DATABASE_URL!)
 
 export async function POST(req: NextRequest) {
-  // Admin authentication check
-  const authHeader = req.headers.get('x-admin-password')
-  const adminPassword = process.env.ADMIN_PASSWORD
+  // Admin PIN protection
+  const authHeader = req.headers.get('x-admin-pin')
+  const adminPin = process.env.ADMIN_PIN
   
-  if (!adminPassword || !authHeader || authHeader !== adminPassword) {
+  if (!adminPin || !authHeader || authHeader !== adminPin) {
     return NextResponse.json({
-      error: 'Unauthorized: Admin access required',
+      error: 'Unauthorized: Invalid PIN',
       success: false
     }, { status: 401 })
   }
