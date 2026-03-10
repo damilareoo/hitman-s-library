@@ -49,6 +49,7 @@ interface ActiveFilters {
 }
 
 export default function DesignLibrary() {
+  // Hitman's Library - Admin-protected design gallery
   const [designs, setDesigns] = useState<Design[]>([])
   const [selectedDesign, setSelectedDesign] = useState<Design | null>(null)
   const [linkInput, setLinkInput] = useState('')
