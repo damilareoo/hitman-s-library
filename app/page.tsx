@@ -1,15 +1,5 @@
 'use client'
 
-/**
- * Hitman's Library - Design System Gallery with PIN-Protected Admin Controls
- * Last Updated: 2026-03-10 @ 14:30:00 UTC
- * 
- * FIXED ISSUES:
- * - Removed orphaned/duplicate code that was causing parse errors
- * - Cleaned up PIN dialog implementation
- * - Ensured all JSX is properly balanced and closed
- */
-
 import React from "react"
 
 import { useState, useEffect, useRef } from 'react'
@@ -59,13 +49,10 @@ interface ActiveFilters {
 }
 
 export default function DesignLibrary() {
-  // Hitman's Library - Admin-protected design gallery
   const [designs, setDesigns] = useState<Design[]>([])
   const [selectedDesign, setSelectedDesign] = useState<Design | null>(null)
   const [linkInput, setLinkInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
-  const [showPINDialog, setShowPINDialog] = useState(false)
-  const [pendingAction, setPendingAction] = useState<{ type: 'add' | 'delete'; designId?: string } | null>(null)
 
   const [fileInputRef, setFileInputRef] = useState<HTMLInputElement | null>(null)
   const [theme, setTheme] = useState<'light' | 'dark'>('light')
@@ -188,80 +175,65 @@ export default function DesignLibrary() {
       alert('Please enter a website URL')
       return
     }
-    // Show PIN dialog first
-    setPendingAction({ type: 'add' })
-    setShowPINDialog(true)
-  }
-
-  const handlePINSubmit = async (pin: string) => {
-    if (!pendingAction) return
 
     setIsLoading(true)
     try {
-      if (pendingAction.type === 'add') {
-        const response = await fetch('/api/design/extract', {
-          method: 'POST',
-          headers: { 
-            'Content-Type': 'application/json',
-            'x-admin-pin': pin
-          },
-          body: JSON.stringify({
-            url: linkInput,
-            notes: ''
-          })
+      console.log('[v0] Extracting design from:', linkInput)
+      const response = await fetch('/api/design/extract', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          url: linkInput,
+          notes: ''
+          // No industry parameter - auto-detection will happen in the API
         })
+      })
 
-        const data = await response.json()
+      const data = await response.json()
+      console.log('[v0] Extract response:', data)
 
-        if (response.status === 401) {
-          alert('❌ Incorrect PIN')
-        } else if (data.isDuplicate) {
-          alert('⚠ Already Added\n\nThis website is already in your collection')
-          setLinkInput('')
-        } else if (data.success || data.id) {
-          alert(`✓ "${data.title}" added as ${data.industry}`)
-          setLinkInput('')
-          loadDesigns()
-        } else {
-          alert(`⚠ ${data.error || 'Failed to add design'}`)
-        }
-      } else if (pendingAction.type === 'delete' && pendingAction.designId) {
-        const response = await fetch('/api/design/delete', {
-          method: 'DELETE',
-          headers: { 
-            'Content-Type': 'application/json',
-            'x-admin-pin': pin
-          },
-          body: JSON.stringify({ id: pendingAction.designId })
-        })
-
-        if (response.status === 401) {
-          alert('❌ Incorrect PIN')
-        } else if (response.ok) {
-          setDesigns(prev => prev.filter(d => d.id !== pendingAction.designId))
-          if (selectedDesign?.id === pendingAction.designId) setSelectedDesign(null)
-          alert('Design removed')
-        } else {
-          alert('Failed to delete')
-        }
+      if (data.isDuplicate) {
+        alert('⚠ Already Added\n\nThis website is already in your collection')
+      } else if (data.success || data.id) {
+        console.log('[v0] Design extracted successfully with auto-detected industry:', data.industry)
+        alert(`✓ "${data.title}" added as ${data.industry}\n\nDesign categorized automatically`)
+        setLinkInput('')
+        loadDesigns()
+      } else if (data.error) {
+        console.warn('[v0] Extraction error:', data.error)
+        alert(`⚠ ${data.error}\n\n${data.warning || 'Try another website'}`)
+      } else {
+        console.error('[v0] Unexpected response:', data)
+        alert('Failed to add design. Please try another website.')
       }
     } catch (error) {
-      console.error('[v0] Error:', error)
-      alert('Connection error')
+      console.error('[v0] Error adding design:', error)
+      alert('Connection error. Please check your internet and try again.')
     } finally {
       setIsLoading(false)
-      setShowPINDialog(false)
-      setPendingAction(null)
     }
   }
 
   const handleDelete = async (designId: string, e?: React.MouseEvent) => {
     if (e?.stopPropagation) e.stopPropagation()
-    if (!confirm('Remove this design?')) return
+    if (!confirm('Remove this design from your collection?')) return
     
-    // Show PIN dialog first
-    setPendingAction({ type: 'delete', designId })
-    setShowPINDialog(true)
+    try {
+      const response = await fetch('/api/design/delete', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: designId })
+      })
+      if (response.ok) {
+        setDesigns(prev => prev.filter(d => d.id !== designId))
+        if (selectedDesign?.id === designId) setSelectedDesign(null)
+      } else {
+        alert('Failed to delete. Please try again.')
+      }
+    } catch (error) {
+      console.error('[v0] Delete error:', error)
+      alert('Error deleting design')
+    }
   }
 
   const generatePrompt = async (design: Design) => {
@@ -387,7 +359,7 @@ export default function DesignLibrary() {
       {/* Header */}
       <header className="sticky top-0 z-50 border-b border-border/20 bg-background">
         <div className="h-16 px-4 md:px-6 lg:px-8 flex items-center justify-between">
-          <h1 className="text-lg md:text-xl font-bold font-mono">Hitman's Library</h1>
+          <h1 className="text-lg md:text-xl font-bold font-mono">Design Library</h1>
           <div className="flex items-center gap-3">
             <button onClick={() => setShowMobileMenu(!showMobileMenu)} className="md:hidden p-2 hover:bg-muted rounded-sm border border-border/40 grid-transition" aria-label="Toggle navigation menu" aria-expanded={showMobileMenu} aria-controls="mobile-menu">
               {showMobileMenu ? <X className="w-5 h-5" aria-hidden="true" /> : <Menu className="w-5 h-5" aria-hidden="true" />}
@@ -657,64 +629,7 @@ export default function DesignLibrary() {
             </dialog>
           </>
         )}
-
-      {/* PIN Dialog */}
-      {showPINDialog && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-background border border-border/50 rounded-lg p-6 max-w-sm w-full space-y-4">
-            <h2 className="text-lg font-bold">Enter Admin PIN</h2>
-            <p className="text-sm text-muted-foreground">This action requires your admin PIN</p>
-            <PINInput onSubmit={handlePINSubmit} onCancel={() => setShowPINDialog(false)} isLoading={isLoading} />
-          </div>
-        </div>
-      )}
-    </div>
-  )
-}
-
-// PIN Input Component
-// Cache bust: force recompilation
-function PINInput({ onSubmit, onCancel, isLoading }: { onSubmit: (pin: string) => void; onCancel: () => void; isLoading: boolean }) {
-  const [pin, setPin] = useState('')
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (pin.length === 4) {
-      onSubmit(pin)
-      setPin('')
-    }
-  }
-
-  return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <input
-        type="password"
-        inputMode="numeric"
-        maxLength={4}
-        placeholder="0000"
-        value={pin}
-        onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))}
-        className="w-full border border-border/50 rounded-sm px-3 py-2 text-center font-mono text-2xl tracking-widest focus:outline-none focus:ring-2 focus:ring-primary/40"
-        autoFocus
-        disabled={isLoading}
-      />
-      <div className="flex gap-2">
-        <button
-          type="button"
-          onClick={onCancel}
-          disabled={isLoading}
-          className="flex-1 px-3 py-2 border border-border/50 rounded-sm font-mono text-sm hover:bg-muted/50 disabled:opacity-50"
-        >
-          Cancel
-        </button>
-        <button
-          type="submit"
-          disabled={pin.length !== 4 || isLoading}
-          className="flex-1 px-3 py-2 bg-primary text-primary-foreground rounded-sm font-mono text-sm hover:bg-primary/90 disabled:opacity-50"
-        >
-          {isLoading ? 'Verifying...' : 'Submit'}
-        </button>
       </div>
-    </form>
+    </div>
   )
 }

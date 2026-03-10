@@ -7,17 +7,6 @@ import { extractTypographyFromRenderedPage, extractAllDesignDataFromRenderedPage
 const sql = neon(process.env.DATABASE_URL!)
 
 export async function POST(req: NextRequest) {
-  // Admin PIN protection
-  const authHeader = req.headers.get('x-admin-pin')
-  const adminPin = process.env.ADMIN_PIN
-  
-  if (!adminPin || !authHeader || authHeader !== adminPin) {
-    return NextResponse.json({
-      error: 'Unauthorized: Invalid PIN',
-      success: false
-    }, { status: 401 })
-  }
-
   try {
     let { url, industry, notes } = await req.json()
 

@@ -4,17 +4,6 @@ import { neon } from '@neondatabase/serverless'
 const sql = neon(process.env.DATABASE_URL!)
 
 export async function DELETE(req: NextRequest) {
-  // Admin PIN protection
-  const authHeader = req.headers.get('x-admin-pin')
-  const adminPin = process.env.ADMIN_PIN
-  
-  if (!adminPin || !authHeader || authHeader !== adminPin) {
-    return NextResponse.json({
-      error: 'Unauthorized: Invalid PIN',
-      success: false
-    }, { status: 401 })
-  }
-
   try {
     const { id } = await req.json()
 
