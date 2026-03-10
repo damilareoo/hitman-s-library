@@ -670,6 +670,7 @@ export default function DesignLibrary() {
 }
 
 // PIN Input Component
+// Cache bust: force recompilation
 function PINInput({ onSubmit, onCancel, isLoading }: { onSubmit: (pin: string) => void; onCancel: () => void; isLoading: boolean }) {
   const [pin, setPin] = useState('')
 
