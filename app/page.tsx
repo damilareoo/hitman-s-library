@@ -53,6 +53,9 @@ export default function DesignLibrary() {
   const [selectedDesign, setSelectedDesign] = useState<Design | null>(null)
   const [linkInput, setLinkInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [isAdmin, setIsAdmin] = useState(false)
+  const [adminPassword, setAdminPassword] = useState('')
+  const [showAdminLogin, setShowAdminLogin] = useState(false)
 
   const [fileInputRef, setFileInputRef] = useState<HTMLInputElement | null>(null)
   const [theme, setTheme] = useState<'light' | 'dark'>('light')
@@ -171,6 +174,12 @@ export default function DesignLibrary() {
   }
 
   const handleAddLink = async () => {
+    if (!isAdmin) {
+      alert('Admin access required. Please log in.')
+      setShowAdminLogin(true)
+      return
+    }
+
     if (!linkInput.trim()) {
       alert('Please enter a website URL')
       return
@@ -181,18 +190,24 @@ export default function DesignLibrary() {
       console.log('[v0] Extracting design from:', linkInput)
       const response = await fetch('/api/design/extract', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'x-admin-password': adminPassword
+        },
         body: JSON.stringify({
           url: linkInput,
           notes: ''
-          // No industry parameter - auto-detection will happen in the API
         })
       })
 
       const data = await response.json()
       console.log('[v0] Extract response:', data)
 
-      if (data.isDuplicate) {
+      if (response.status === 401) {
+        alert('Unauthorized. Admin password required.')
+        setIsAdmin(false)
+        setShowAdminLogin(true)
+      } else if (data.isDuplicate) {
         alert('⚠ Already Added\n\nThis website is already in your collection')
       } else if (data.success || data.id) {
         console.log('[v0] Design extracted successfully with auto-detected industry:', data.industry)
@@ -214,17 +229,48 @@ export default function DesignLibrary() {
     }
   }
 
+  const handleAdminLogin = (password: string) => {
+    if (password) {
+      setAdminPassword(password)
+      setIsAdmin(true)
+      setShowAdminLogin(false)
+      setAdminPassword(password) // Store for API calls
+    }
+  }
+
+  const handleLogout = () => {
+    setIsAdmin(false)
+    setAdminPassword('')
+    setShowAdminLogin(false)
+  }
+
   const handleDelete = async (designId: string, e?: React.MouseEvent) => {
+    if (!isAdmin) {
+      alert('Admin access required. Please log in.')
+      setShowAdminLogin(true)
+      return
+    }
+
     if (e?.stopPropagation) e.stopPropagation()
     if (!confirm('Remove this design from your collection?')) return
     
     try {
       const response = await fetch('/api/design/delete', {
         method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'x-admin-password': adminPassword
+        },
         body: JSON.stringify({ id: designId })
       })
-      if (response.ok) {
+
+      const data = await response.json()
+
+      if (response.status === 401) {
+        alert('Unauthorized. Admin password required.')
+        setIsAdmin(false)
+        setShowAdminLogin(true)
+      } else if (response.ok) {
         setDesigns(prev => prev.filter(d => d.id !== designId))
         if (selectedDesign?.id === designId) setSelectedDesign(null)
       } else {
