@@ -529,10 +529,10 @@ export default function DesignLibrary() {
                 <h3 className="text-xs uppercase font-mono font-semibold tracking-wider">Colors</h3>
                 <div className="space-y-2">
                   {selectedDesign.colors.map((color, i) => (
-                    <div key={i} className="group flex items-center gap-2 cursor-pointer hover:bg-muted/50 p-2 rounded-sm grid-transition border border-border/40 hover:border-border/60" onClick={() => handleCopy(color, 'color')}>
-                      <div className="w-5 h-5 border border-border rounded-sm grid-transition group-hover:ring-1 group-hover:ring-offset-1 group-hover:ring-offset-background group-hover:ring-primary/40" style={{ backgroundColor: color }} />
+                    <div key={i} className="group flex items-center gap-2 cursor-pointer hover:bg-muted/50 p-2 rounded-sm grid-transition border border-border/40 hover:border-border/60 hover:shadow-sm hover:scale-[1.02]" onClick={() => handleCopy(color, 'color')}>
+                      <div className="w-5 h-5 border border-border rounded-sm grid-transition group-hover:ring-2 group-hover:ring-offset-1 group-hover:ring-offset-background group-hover:ring-primary/40 group-hover:scale-110" style={{ backgroundColor: color }} />
                       <code className="text-xs font-mono">{color}</code>
-                      {copied ? <Check className="w-4 h-4 ml-auto" /> : <Copy className="w-4 h-4 ml-auto opacity-0 group-hover:opacity-100" />}
+                      {copied ? <Check className="w-4 h-4 ml-auto text-green-600 animate-bounce" /> : <Copy className="w-4 h-4 ml-auto opacity-0 group-hover:opacity-100 transition-opacity group-hover:scale-110" />}
                     </div>
                   ))}
                 </div>
@@ -593,10 +593,10 @@ export default function DesignLibrary() {
                 <div className="space-y-2">
                   <h3 className="text-xs uppercase font-mono font-semibold tracking-wider">Colors ({selectedDesign.colors.length})</h3>
                   {selectedDesign.colors.map((color, i) => (
-                    <div key={i} className="flex items-center gap-3 p-3 border border-border/40 rounded-sm cursor-pointer hover:bg-muted/30" onClick={() => handleCopy(color, 'color')} role="button" tabIndex={0} onKeyDown={(e) => e.key === 'Enter' && handleCopy(color, 'color')} aria-label={`Copy color ${color}`}>
-                      <div className="w-6 h-6 border border-border rounded-sm" style={{ backgroundColor: color }} aria-hidden="true" />
+                    <div key={i} className="flex items-center gap-3 p-3 border border-border/40 rounded-sm cursor-pointer hover:bg-muted/30 hover:shadow-sm hover:scale-[1.02] transition-all duration-200 group" onClick={() => handleCopy(color, 'color')} role="button" tabIndex={0} onKeyDown={(e) => e.key === 'Enter' && handleCopy(color, 'color')} aria-label={`Copy color ${color}`}>
+                      <div className="w-6 h-6 border border-border rounded-sm group-hover:ring-2 group-hover:ring-offset-1 group-hover:ring-primary/40 group-hover:scale-110 transition-all duration-200" style={{ backgroundColor: color }} aria-hidden="true" />
                       <code className="text-xs font-mono flex-1">{color}</code>
-                      {copied ? <Check className="w-4 h-4" aria-hidden="true" /> : <Copy className="w-4 h-4" aria-hidden="true" />}
+                      {copied ? <Check className="w-4 h-4 text-green-600 animate-bounce" aria-hidden="true" /> : <Copy className="w-4 h-4 group-hover:scale-110 transition-transform" aria-hidden="true" />}
                     </div>
                   ))}
                 </div>
@@ -616,6 +616,18 @@ export default function DesignLibrary() {
             </dialog>
           </>
         )}
+
+        {/* Copy Feedback Toasts */}
+        <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2 pointer-events-none">
+          {copyFeedbacks.map(feedback => (
+            <div 
+              key={feedback.id}
+              className="bg-foreground text-background px-4 py-2 rounded-sm text-sm font-mono animate-in fade-in slide-in-from-bottom-2 duration-300 pointer-events-auto shadow-lg"
+            >
+              {feedback.text}
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   )
