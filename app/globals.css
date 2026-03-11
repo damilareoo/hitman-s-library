@@ -156,7 +156,7 @@
 /* Foundation: Spring physics, fast transitions, hardware acceleration only */
 
 html {
-  scroll-behavior: smooth;
+  /* Smooth scroll behavior applied via data-scroll-behavior attribute in layout */
   /* Use color-scheme for native element theming */
   color-scheme: light;
   transition: color-scheme 0.3s ease-out !important;
@@ -652,10 +652,6 @@ button, a, [role="button"] {
 
 * {
   @apply box-border;
-}
-
-html {
-  @apply scroll-smooth;
 }
 
 body {
