@@ -359,7 +359,7 @@ export default function DesignLibrary() {
       {/* Header */}
       <header className="sticky top-0 z-50 border-b border-border/20 bg-background">
         <div className="h-16 px-4 md:px-6 lg:px-8 flex items-center justify-between">
-          <h1 className="text-lg md:text-xl font-bold font-mono">Design Library</h1>
+          <h1 className="text-lg md:text-xl font-bold font-mono">Hitman's Library</h1>
           <div className="flex items-center gap-3">
             <button onClick={() => setShowMobileMenu(!showMobileMenu)} className="md:hidden p-2 hover:bg-muted rounded-sm border border-border/40 grid-transition" aria-label="Toggle navigation menu" aria-expanded={showMobileMenu} aria-controls="mobile-menu">
               {showMobileMenu ? <X className="w-5 h-5" aria-hidden="true" /> : <Menu className="w-5 h-5" aria-hidden="true" />}
