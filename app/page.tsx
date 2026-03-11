@@ -428,8 +428,8 @@ export default function DesignLibrary() {
 
         {/* Gallery - Takes remaining space */}
         <div className="col-span-1 md:col-span-6 flex flex-col h-full">
-          {/* Mobile category pill bar - sticky at top */}
-          <div className="md:hidden sticky top-0 z-20 flex gap-2 overflow-x-auto px-4 pt-4 pb-2 no-scrollbar bg-background border-b border-border/30 flex-shrink-0">
+          {/* Mobile category pill bar - sticky below header */}
+          <div className="md:hidden sticky top-16 z-20 flex gap-2 overflow-x-auto px-4 pt-4 pb-2 no-scrollbar bg-background border-b border-border/30 flex-shrink-0">
             {[{ name: 'All', count: designs.length }, ...categories].map(({ name, count }) => {
               const isActive = name === 'All' ? activeFilters.industries.length === 0 : activeFilters.industries.includes(name)
               return (
