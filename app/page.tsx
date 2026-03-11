@@ -361,6 +361,9 @@ export default function DesignLibrary() {
         <div className="h-16 px-4 md:px-6 lg:px-8 flex items-center justify-between">
           <h1 className="text-lg md:text-xl font-bold font-mono">Design Library</h1>
           <div className="flex items-center gap-3">
+            <a href="/admin" className="text-xs font-mono px-3 py-2 rounded-sm border border-border/40 hover:bg-muted transition-colors">
+              Admin
+            </a>
             <button onClick={() => setShowMobileMenu(!showMobileMenu)} className="md:hidden p-2 hover:bg-muted rounded-sm border border-border/40 grid-transition" aria-label="Toggle navigation menu" aria-expanded={showMobileMenu} aria-controls="mobile-menu">
               {showMobileMenu ? <X className="w-5 h-5" aria-hidden="true" /> : <Menu className="w-5 h-5" aria-hidden="true" />}
             </button>
@@ -376,16 +379,6 @@ export default function DesignLibrary() {
         {/* Sidebar - Desktop Only, Sticky */}
         <aside className="hidden md:flex md:col-span-3 flex-col sticky top-16 h-[calc(100vh-64px)] border-r border-border/20 bg-background/50 overflow-y-auto">
           <div className="flex flex-col h-full">
-            {/* Add Design */}
-            <div className="p-5 space-y-2.5 border-b border-border/20">
-              <p className="text-xs uppercase font-mono font-semibold tracking-widest text-muted-foreground">Add Site</p>
-              <Input placeholder="https://example.com" value={linkInput} onChange={(e) => setLinkInput(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && handleAddLink()} disabled={isLoading} className="font-mono text-xs h-9 border-border/50" />
-              <Button onClick={handleAddLink} disabled={isLoading || !linkInput.trim()} className="w-full h-9 font-mono text-xs">
-                {isLoading ? 'Extracting...' : 'Add Design'}
-              </Button>
-              <input ref={(ref) => setFileInputRef(ref)} type="file" accept=".xlsx,.csv" onChange={handleFileUpload} className="hidden" />
-            </div>
-
             {/* Category Nav */}
             <nav className="flex-1 overflow-y-auto p-5" aria-label="Category filters">
               <p className="text-xs uppercase font-mono font-semibold tracking-widest text-muted-foreground mb-3">Filter</p>
