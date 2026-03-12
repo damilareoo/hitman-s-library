@@ -66,7 +66,6 @@ export async function GET(req: NextRequest) {
         dt.heading_font,
         dt.body_font,
         dt.mono_font,
-        dt.all_fonts,
         dt.mood as typography_mood,
         dp.layout_structure,
         dp.quality_score,
@@ -138,23 +137,9 @@ export async function GET(req: NextRequest) {
         }
       }
 
-      // Parse typography - prefer all_fonts if available, fallback to categorized fonts
+      // Parse typography from categorized fonts
       let typography: string[] = []
-      if (row.all_fonts) {
-        if (typeof row.all_fonts === 'string') {
-          try {
-            typography = JSON.parse(row.all_fonts)
-          } catch {
-            typography = row.all_fonts.split(',').map((f: string) => f.trim()).filter(Boolean)
-          }
-        } else if (Array.isArray(row.all_fonts)) {
-          typography = row.all_fonts
-        }
-      }
-      // Fallback to categorized fonts if all_fonts is empty
-      if (typography.length === 0) {
-        typography = [row.heading_font, row.body_font, row.mono_font].filter(Boolean)
-      }
+      typography = [row.heading_font, row.body_font, row.mono_font].filter(Boolean)
 
       const generatedUrl = row.thumbnail_url || `https://screenshot.rocks/?url=${encodeURIComponent(row.source_url)}&width=1366&height=768`
       return {
