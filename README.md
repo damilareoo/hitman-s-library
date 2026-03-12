@@ -2,8 +2,7 @@
 
 A professional design system gallery where you can browse, analyze, and manage curated design websites. Extracts colors, typography, OG images, and metadata from websites for design inspiration and reference.
 
-**Live:** https://hitman-s-library.vercel.app  
-**Admin Panel:** https://hitman-s-library.vercel.app/admin
+**Live:**[ https://hitman-s-library.vercel.app  ](https://mars-hitman-library.vercel.app/)
 
 ---
 
@@ -12,8 +11,7 @@ A professional design system gallery where you can browse, analyze, and manage c
 Hitman's Library has two interfaces:
 
 - **Public Gallery** (`/`) - Browse and filter design websites by industry, colors, and typography. View design metadata with copyable color codes and typography details.
-- **Admin CMS** (`/admin`) - Manage your design site collection. Add single sites or bulk import via CSV/Excel. Delete sites with instant updates.
-
+- Admin gallery- private
 ---
 
 ## Quick Start
