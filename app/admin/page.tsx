@@ -12,6 +12,7 @@ interface Site {
   source_url: string
   industry: string
   created_at: string
+  thumbnail_url?: string
 }
 
 const ITEMS_PER_PAGE = 10
@@ -60,7 +61,8 @@ export default function AdminPage() {
         source_name: s.title || s.source_name,
         source_url: s.url || s.source_url,
         industry: s.industry || 'Uncategorized',
-        created_at: s.addedDate || s.created_at
+        created_at: s.addedDate || s.created_at,
+        thumbnail_url: s.thumbnail_url
       }))
       console.log('[v0] Loaded sites:', transformedSites.length)
       setAllSites(transformedSites)
@@ -276,10 +278,29 @@ export default function AdminPage() {
               {paginatedSites.map((site) => (
                 <div
                   key={site.id}
-                  className="flex items-center justify-between gap-4 p-4 border border-border/40 rounded-sm hover:bg-muted/30 transition-colors group"
+                  className="flex items-center justify-between gap-4 p-3 sm:p-4 border border-border/40 rounded-sm hover:bg-muted/30 transition-colors group"
                 >
+                  {/* Thumbnail Image */}
+                  <div className="w-16 h-16 sm:w-20 sm:h-20 flex-shrink-0 rounded-sm border border-border/30 bg-muted overflow-hidden">
+                    {site.thumbnail_url ? (
+                      <img
+                        src={site.thumbnail_url}
+                        alt={site.source_name}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none'
+                        }}
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-muted/50">
+                        <span className="text-xs text-muted-foreground font-mono">No image</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Site Info */}
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
+                    <div className="flex items-center gap-2 mb-1 flex-wrap">
                       <h3 className="text-sm font-mono font-semibold truncate">{site.source_name}</h3>
                       <span className="text-xs px-2 py-0.5 rounded-full bg-muted border border-border/40 font-mono text-muted-foreground flex-shrink-0">
                         {site.industry}
