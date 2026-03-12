@@ -598,13 +598,6 @@ export default function DesignLibrary() {
                   <h3 className="text-xs uppercase font-mono font-semibold tracking-wider">Typography ({selectedDesign.typography.length})</h3>
                   <TypographyDisplay fonts={selectedDesign.typography} onCopy={() => null} />
                 </div>
-
-                <button
-                  onClick={() => handleDelete(selectedDesign.id)}
-                  className="w-full px-3 py-2.5 text-sm bg-red-500/10 border border-red-500/30 rounded-sm font-mono hover:bg-red-500/20 hover:border-red-500/50 text-red-500 hover:text-red-600 flex items-center justify-center gap-2 transition-colors"
-                >
-                  <Trash2 className="w-3.5 h-3.5" /> Remove from Collection
-                </button>
               </div>
             </dialog>
           </>
