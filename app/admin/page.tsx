@@ -51,17 +51,18 @@ export default function AdminPage() {
   const loadSites = async () => {
     setIsLoadingSites(true)
     try {
-      const response = await fetch('/api/design/list?limit=500&offset=0')
+      const response = await fetch('/api/design/list')
       const data = await response.json()
-      const sites = data.designs || []
+      const sites = Array.isArray(data) ? data : data.designs || []
       // Transform field names to match interface
       const transformedSites = sites.map((s: any) => ({
         id: s.id,
         source_name: s.title || s.source_name,
         source_url: s.url || s.source_url,
         industry: s.industry || 'Uncategorized',
-        created_at: s.created_at
+        created_at: s.addedDate || s.created_at
       }))
+      console.log('[v0] Loaded sites:', transformedSites.length)
       setAllSites(transformedSites)
     } catch (error) {
       console.error('[v0] Error loading sites:', error)
