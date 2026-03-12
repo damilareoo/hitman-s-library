@@ -1,27 +1,47 @@
 'use client'
 
-import React, { useState, useRef, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
-import { ArrowLeft, Trash2, Plus, Loader } from 'lucide-react'
+import { ArrowLeft, Trash2, Plus, Upload, Loader, ChevronLeft, ChevronRight, Search } from 'lucide-react'
 
 interface Site {
   id: string
-  title: string
-  url: string
+  source_name: string
+  source_url: string
   industry: string
   created_at: string
 }
 
+const ITEMS_PER_PAGE = 10
+
 export default function AdminPage() {
   const [linkInput, setLinkInput] = useState('')
+  const [searchInput, setSearchInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [isLoadingSites, setIsLoadingSites] = useState(true)
-  const [sites, setSites] = useState<Site[]>([])
+  const [allSites, setAllSites] = useState<Site[]>([])
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [fileInputRef, setFileInputRef] = useState<HTMLInputElement | null>(null)
   const [successMessage, setSuccessMessage] = useState('')
+  const [currentPage, setCurrentPage] = useState(1)
+
+  // Filter sites based on search
+  const filteredSites = allSites.filter(site =>
+    site.source_name.toLowerCase().includes(searchInput.toLowerCase()) ||
+    site.source_url.toLowerCase().includes(searchInput.toLowerCase()) ||
+    site.industry.toLowerCase().includes(searchInput.toLowerCase())
+  )
+
+  const totalPages = Math.ceil(filteredSites.length / ITEMS_PER_PAGE)
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE
+  const paginatedSites = filteredSites.slice(startIndex, startIndex + ITEMS_PER_PAGE)
+
+  // Reset to first page when search changes
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [searchInput])
 
   // Load all sites on mount
   useEffect(() => {
@@ -31,9 +51,18 @@ export default function AdminPage() {
   const loadSites = async () => {
     setIsLoadingSites(true)
     try {
-      const response = await fetch('/api/design/list?limit=100&offset=0')
+      const response = await fetch('/api/design/list?limit=500&offset=0')
       const data = await response.json()
-      setSites(data.designs || [])
+      const sites = data.designs || []
+      // Transform field names to match interface
+      const transformedSites = sites.map((s: any) => ({
+        id: s.id,
+        source_name: s.title || s.source_name,
+        source_url: s.url || s.source_url,
+        industry: s.industry || 'Uncategorized',
+        created_at: s.created_at
+      }))
+      setAllSites(transformedSites)
     } catch (error) {
       console.error('[v0] Error loading sites:', error)
     } finally {
@@ -61,28 +90,27 @@ export default function AdminPage() {
       const data = await response.json()
 
       if (data.isDuplicate) {
-        alert('⚠ Already Added\n\nThis website is already in your collection')
+        setSuccessMessage('Already added')
+        setTimeout(() => setSuccessMessage(''), 2000)
       } else if (data.success || data.id) {
-        setSuccessMessage(`✓ "${data.title}" added`)
-        setTimeout(() => setSuccessMessage(''), 3000)
+        setSuccessMessage(`Added "${data.title || 'Site'}"`)
+        setTimeout(() => setSuccessMessage(''), 2000)
         setLinkInput('')
-        loadSites() // Refresh sites seamlessly
+        loadSites()
       } else if (data.error) {
-        alert(`⚠ ${data.error}\n\n${data.warning || 'Try another website'}`)
+        alert(`Error: ${data.error}`)
       } else {
-        alert('Failed to add design. Please try another website.')
+        alert('Failed to add site')
       }
     } catch (error) {
-      console.error('[v0] Error adding design:', error)
-      alert('Connection error. Please check your internet and try again.')
+      console.error('[v0] Error adding site:', error)
+      alert('Connection error')
     } finally {
       setIsLoading(false)
     }
   }
 
   const handleDelete = async (siteId: string) => {
-    if (!confirm('Remove this site from the collection?')) return
-
     setDeletingId(siteId)
     try {
       const response = await fetch('/api/design/delete', {
@@ -92,11 +120,11 @@ export default function AdminPage() {
       })
 
       if (response.ok) {
-        setSuccessMessage('✓ Site removed')
-        setTimeout(() => setSuccessMessage(''), 2000)
-        setSites(sites.filter(s => s.id !== siteId)) // Update seamlessly
+        setSuccessMessage('Removed')
+        setTimeout(() => setSuccessMessage(''), 1500)
+        setAllSites(allSites.filter(s => s.id !== siteId))
       } else {
-        alert('Failed to delete site')
+        alert('Failed to delete')
       }
     } catch (error) {
       console.error('[v0] Error deleting site:', error)
@@ -122,11 +150,11 @@ export default function AdminPage() {
 
       const data = await response.json()
       if (data.success) {
-        setSuccessMessage(`✓ ${data.count} designs imported`)
-        setTimeout(() => setSuccessMessage(''), 3000)
-        loadSites() // Refresh sites seamlessly
+        setSuccessMessage(`Imported ${data.count} sites`)
+        setTimeout(() => setSuccessMessage(''), 2000)
+        loadSites()
       } else {
-        alert(`⚠ ${data.error || 'Upload failed'}`)
+        alert(`Error: ${data.error || 'Upload failed'}`)
       }
     } catch (error) {
       console.error('[v0] Upload error:', error)
@@ -139,149 +167,166 @@ export default function AdminPage() {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="sticky top-0 z-50 border-b border-border/20 bg-background">
-        <div className="h-16 px-4 md:px-6 lg:px-8 flex items-center justify-between">
-          <div>
-            <h1 className="text-lg md:text-xl font-bold font-mono">Admin CMS</h1>
-            <p className="text-xs text-muted-foreground font-mono">{sites.length} sites</p>
+      <header className="sticky top-0 z-40 border-b border-border/20 bg-background/95 backdrop-blur-sm">
+        <div className="h-16 px-6 flex items-center justify-between">
+          <div className="flex-1">
+            <h1 className="text-xl font-bold font-mono tracking-tight">Hitman's Library</h1>
+            <p className="text-xs text-muted-foreground font-mono mt-1">{allSites.length} total sites</p>
           </div>
           <Link href="/" className="flex items-center gap-2 text-xs font-mono px-3 py-2 rounded-sm border border-border/40 hover:bg-muted transition-colors">
-            <ArrowLeft className="w-4 h-4" />
-            Back to Gallery
+            <ArrowLeft className="w-3.5 h-3.5" />
+            Gallery
           </Link>
         </div>
       </header>
 
-      {/* Success Toast */}
-      {successMessage && (
-        <div className="fixed top-20 left-4 right-4 z-40 bg-foreground text-background px-4 py-3 rounded-sm font-mono text-sm animate-in fade-in slide-in-from-top-2 duration-300">
-          {successMessage}
-        </div>
-      )}
-
-      {/* Main Content */}
-      <main className="p-4 md:p-8">
-        <div className="max-w-7xl mx-auto space-y-6">
-          {/* Add New Site Section */}
-          <div className="border border-border/40 rounded-lg p-6 space-y-4 bg-muted/20">
-            <h2 className="text-lg font-bold font-mono flex items-center gap-2">
-              <Plus className="w-5 h-5" />
-              Add New Site
-            </h2>
-            
-            <div className="flex gap-3 flex-col sm:flex-row">
-              <Input 
-                placeholder="https://example.com" 
-                value={linkInput} 
-                onChange={(e) => setLinkInput(e.target.value)} 
-                onKeyPress={(e) => e.key === 'Enter' && handleAddLink()} 
-                disabled={isLoading} 
-                className="font-mono text-sm h-10 border-border/50 flex-1" 
+      <div className="max-w-6xl mx-auto px-6 py-8">
+        {/* Add Section */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          {/* Add URL */}
+          <div className="space-y-3">
+            <div>
+              <label className="text-xs uppercase font-mono font-semibold tracking-widest text-muted-foreground block mb-2">Add Site</label>
+              <Input
+                placeholder="https://example.com"
+                value={linkInput}
+                onChange={(e) => setLinkInput(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && handleAddLink()}
+                disabled={isLoading}
+                className="font-mono text-xs h-9"
               />
-              <Button 
-                onClick={handleAddLink} 
-                disabled={isLoading || !linkInput.trim()} 
-                className="h-10 font-mono"
-              >
-                {isLoading ? 'Adding...' : 'Add'}
-              </Button>
             </div>
+            <Button
+              onClick={handleAddLink}
+              disabled={isLoading || !linkInput.trim()}
+              className="w-full h-9 font-mono text-xs"
+            >
+              {isLoading ? <Loader className="w-3 h-3 animate-spin mr-2" /> : <Plus className="w-3 h-3 mr-2" />}
+              {isLoading ? 'Adding...' : 'Add Site'}
+            </Button>
+          </div>
 
-            <div className="flex gap-2 pt-2">
-              <input 
-                ref={(ref) => setFileInputRef(ref)} 
-                type="file" 
-                accept=".xlsx,.csv" 
-                onChange={handleFileUpload} 
-                className="hidden" 
+          {/* Import CSV */}
+          <div className="space-y-3">
+            <div>
+              <label className="text-xs uppercase font-mono font-semibold tracking-widest text-muted-foreground block mb-2">Import CSV/Excel</label>
+              <input
+                ref={(ref) => setFileInputRef(ref)}
+                type="file"
+                accept=".xlsx,.csv"
+                onChange={handleFileUpload}
+                disabled={isLoading}
+                className="hidden"
               />
-              <Button 
-                onClick={() => fileInputRef?.click()} 
-                disabled={isLoading} 
+              <Button
+                onClick={() => fileInputRef?.click()}
                 variant="outline"
-                className="h-9 text-xs font-mono"
+                disabled={isLoading}
+                className="w-full h-9 font-mono text-xs"
               >
-                {isLoading ? 'Uploading...' : 'Bulk Import CSV'}
+                <Upload className="w-3 h-3 mr-2" />
+                {isLoading ? 'Uploading...' : 'Upload'}
               </Button>
-              <span className="text-xs text-muted-foreground font-mono self-center">or paste a CSV file</span>
             </div>
           </div>
 
-          {/* Sites Table */}
-          <div className="border border-border/40 rounded-lg overflow-hidden">
-            <div className="bg-muted/50 border-b border-border/40 p-4">
-              <h2 className="font-bold font-mono text-sm">Sites ({sites.length}/100)</h2>
+          {/* Success Message */}
+          {successMessage && (
+            <div className="flex items-center gap-2 px-3 py-2 bg-green-500/10 border border-green-500/30 rounded-sm">
+              <div className="w-2 h-2 rounded-full bg-green-600" />
+              <span className="text-xs font-mono text-green-700 flex-1">{successMessage}</span>
+            </div>
+          )}
+        </div>
+
+        {/* Search and Info */}
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6 pb-6 border-b border-border/20">
+          <div className="relative flex-1 md:max-w-xs">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              placeholder="Search sites..."
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              className="pl-9 font-mono text-xs h-9"
+            />
+          </div>
+          <div className="text-xs text-muted-foreground font-mono">
+            {isLoadingSites ? 'Loading...' : `Showing ${paginatedSites.length} of ${filteredSites.length}`}
+          </div>
+        </div>
+
+        {/* Sites Table */}
+        {isLoadingSites ? (
+          <div className="flex items-center justify-center py-12">
+            <Loader className="w-5 h-5 animate-spin text-muted-foreground" />
+          </div>
+        ) : paginatedSites.length === 0 ? (
+          <div className="text-center py-12">
+            <p className="text-sm text-muted-foreground font-mono">No sites found</p>
+          </div>
+        ) : (
+          <>
+            <div className="space-y-2">
+              {paginatedSites.map((site) => (
+                <div
+                  key={site.id}
+                  className="flex items-center justify-between gap-4 p-4 border border-border/40 rounded-sm hover:bg-muted/30 transition-colors group"
+                >
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <h3 className="text-sm font-mono font-semibold truncate">{site.source_name}</h3>
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-muted border border-border/40 font-mono text-muted-foreground flex-shrink-0">
+                        {site.industry}
+                      </span>
+                    </div>
+                    <p className="text-xs text-muted-foreground font-mono truncate">{site.source_url}</p>
+                    <p className="text-xs text-muted-foreground font-mono mt-1">
+                      {new Date(site.created_at).toLocaleDateString()}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => handleDelete(site.id)}
+                    disabled={deletingId === site.id}
+                    className="p-2 hover:bg-red-500/10 rounded-sm border border-red-500/30 hover:border-red-500/60 transition-colors flex-shrink-0 group-hover:opacity-100 opacity-0"
+                    aria-label="Delete site"
+                  >
+                    {deletingId === site.id ? (
+                      <Loader className="w-4 h-4 animate-spin text-red-600" />
+                    ) : (
+                      <Trash2 className="w-4 h-4 text-red-600 hover:text-red-700" />
+                    )}
+                  </button>
+                </div>
+              ))}
             </div>
 
-            {isLoadingSites ? (
-              <div className="flex items-center justify-center p-12">
-                <Loader className="w-5 h-5 animate-spin text-muted-foreground" />
-              </div>
-            ) : sites.length === 0 ? (
-              <div className="text-center py-12 text-muted-foreground font-mono text-sm">
-                No sites added yet. Add your first site above.
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm font-mono">
-                  <thead>
-                    <tr className="border-b border-border/20 bg-muted/30">
-                      <th className="text-left p-4 font-bold">Title</th>
-                      <th className="text-left p-4 font-bold">Industry</th>
-                      <th className="text-left p-4 font-bold">URL</th>
-                      <th className="text-left p-4 font-bold">Added</th>
-                      <th className="text-right p-4 font-bold">Action</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {sites.map((site) => (
-                      <tr key={site.id} className="border-b border-border/20 hover:bg-muted/40 transition-colors">
-                        <td className="p-4 max-w-xs truncate">{site.title}</td>
-                        <td className="p-4 text-xs">{site.industry}</td>
-                        <td className="p-4 max-w-xs truncate text-muted-foreground">
-                          <a href={site.url} target="_blank" rel="noopener noreferrer" className="hover:text-foreground hover:underline">
-                            {site.url.replace(/^https?:\/\//, '').split('/')[0]}
-                          </a>
-                        </td>
-                        <td className="p-4 text-xs text-muted-foreground">
-                          {new Date(site.created_at).toLocaleDateString()}
-                        </td>
-                        <td className="p-4 text-right">
-                          <button
-                            onClick={() => handleDelete(site.id)}
-                            disabled={deletingId === site.id}
-                            className="p-2 hover:bg-red-500/10 hover:text-red-500 rounded transition-colors disabled:opacity-50"
-                            title="Delete"
-                          >
-                            {deletingId === site.id ? (
-                              <Loader className="w-4 h-4 animate-spin" />
-                            ) : (
-                              <Trash2 className="w-4 h-4" />
-                            )}
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-center gap-2 mt-6 pt-6 border-t border-border/20">
+                <button
+                  onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                  disabled={currentPage === 1}
+                  className="p-2 hover:bg-muted rounded-sm border border-border/40 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+
+                <div className="text-xs font-mono text-muted-foreground">
+                  {currentPage} / {totalPages}
+                </div>
+
+                <button
+                  onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                  disabled={currentPage === totalPages}
+                  className="p-2 hover:bg-muted rounded-sm border border-border/40 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
               </div>
             )}
-          </div>
-
-          {/* Info Section */}
-          <div className="border border-border/40 rounded-lg p-6 space-y-3 bg-muted/20">
-            <h3 className="text-sm font-bold font-mono">Admin Features</h3>
-            <ul className="text-xs space-y-2 text-muted-foreground font-mono">
-              <li>• Add websites one at a time or bulk import via CSV/Excel</li>
-              <li>• View all {sites.length}/100 sites in a seamless table</li>
-              <li>• Delete sites with instant updates (no page refresh needed)</li>
-              <li>• Design data auto-extracted (colors, typography, layout)</li>
-              <li>• Duplicates automatically detected and rejected</li>
-              <li>• Sites categorized by industry</li>
-            </ul>
-          </div>
-        </div>
-      </main>
+          </>
+        )}
+      </div>
     </div>
   )
 }
