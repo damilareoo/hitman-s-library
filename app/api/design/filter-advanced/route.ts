@@ -137,6 +137,10 @@ export async function GET(req: NextRequest) {
         }
       }
 
+      // Parse typography from categorized fonts
+      let typography: string[] = []
+      typography = [row.heading_font, row.body_font, row.mono_font].filter(Boolean)
+
       const generatedUrl = row.thumbnail_url || `https://screenshot.rocks/?url=${encodeURIComponent(row.source_url)}&width=1366&height=768`
       return {
         id: row.id,
@@ -147,7 +151,7 @@ export async function GET(req: NextRequest) {
         colors,
         colorHarmony: row.color_harmony,
         colorMood: row.mood,
-        typography: [row.heading_font, row.body_font, row.mono_font].filter(Boolean),
+        typography,
         typographyMood: row.typography_mood,
         layout: metadata.layout || 'Standard',
         layoutType: metadata.layoutType,
