@@ -205,6 +205,24 @@ export async function POST(req: NextRequest) {
       }, { status: 200 })
     }
 
+    // Extract OG image from HTML
+    let thumbnailUrl = ''
+    try {
+      const ogImageMatch = html.match(/<meta\s+property=["']og:image["']\s+content=["']([^"']+)["']/i) ||
+                          html.match(/<meta\s+name=["']og:image["']\s+content=["']([^"']+)["']/i)
+      if (ogImageMatch && ogImageMatch[1]) {
+        thumbnailUrl = ogImageMatch[1]
+        // Resolve relative URLs
+        if (thumbnailUrl.startsWith('/')) {
+          thumbnailUrl = `${validUrl.protocol}//${validUrl.hostname}${thumbnailUrl}`
+        } else if (!thumbnailUrl.startsWith('http')) {
+          thumbnailUrl = `${validUrl.protocol}//${validUrl.hostname}/${thumbnailUrl}`
+        }
+      }
+    } catch (err) {
+      console.warn('[v0] Failed to extract OG image:', err)
+    }
+
     // Save to database
     try {
       const result = await sql`
@@ -215,6 +233,7 @@ export async function POST(req: NextRequest) {
           industry,
           metadata,
           tags,
+          thumbnail_url,
           created_at,
           analyzed_at
         ) VALUES (
@@ -224,6 +243,7 @@ export async function POST(req: NextRequest) {
           ${industry || 'Uncategorized'},
           ${JSON.stringify({ description, quality, layout, architecture })},
           ${tags},
+          ${thumbnailUrl},
           NOW(),
           NOW()
         )
