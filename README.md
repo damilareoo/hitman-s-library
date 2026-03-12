@@ -2,7 +2,7 @@
 
 A professional design system gallery where you can browse, analyze, and manage curated design websites. Extracts colors, typography, OG images, and metadata from websites for design inspiration and reference.
 
-**Live:**[ https://hitman-s-library.vercel.app  ](https://mars-hitman-library.vercel.app/)
+**Live:**(https://mars-hitman-library.vercel.app/)
 
 ---
 
