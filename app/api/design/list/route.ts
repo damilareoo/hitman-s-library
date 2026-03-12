@@ -35,7 +35,6 @@ export async function GET(req: NextRequest) {
         WHERE ds.industry = ${industry}
         AND (ds.source_name ILIKE ${`%${search}%`} OR ds.tags::text ILIKE ${`%${search}%`})
         ORDER BY ds.created_at DESC
-        LIMIT 100
       `
     } else if (industry && industry !== 'all') {
       // Only industry filter
@@ -59,7 +58,6 @@ export async function GET(req: NextRequest) {
         LEFT JOIN design_typography dt ON ds.id = dt.source_id
         WHERE ds.industry = ${industry}
         ORDER BY ds.created_at DESC
-        LIMIT 100
       `
     } else if (search) {
       // Only search filter (across title, industry, and tags)
@@ -85,7 +83,6 @@ export async function GET(req: NextRequest) {
         OR ds.industry ILIKE ${`%${search}%`}
         OR ds.tags::text ILIKE ${`%${search}%`}
         ORDER BY ds.created_at DESC
-        LIMIT 100
       `
     } else {
       // No filters - show all
@@ -108,7 +105,6 @@ export async function GET(req: NextRequest) {
         LEFT JOIN design_colors dc ON ds.id = dc.source_id
         LEFT JOIN design_typography dt ON ds.id = dt.source_id
         ORDER BY ds.created_at DESC
-        LIMIT 100
       `
     }
 
