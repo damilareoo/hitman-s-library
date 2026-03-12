@@ -71,6 +71,11 @@ export default function AdminPage() {
     }
   }
 
+  // Load sites on component mount
+  React.useEffect(() => {
+    loadSites()
+  }, [])
+
   const handleAddLink = async () => {
     if (!linkInput.trim()) {
       alert('Please enter a website URL')
