@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
+import { SiteThumbnail } from '@/components/site-thumbnail'
 import Link from 'next/link'
 import { ArrowLeft, Trash2, Plus, Upload, Loader, ChevronLeft, ChevronRight, Search } from 'lucide-react'
 
@@ -281,21 +282,12 @@ export default function AdminPage() {
                   className="flex items-center justify-between gap-4 p-3 sm:p-4 border border-border/40 rounded-sm hover:bg-muted/30 transition-colors group"
                 >
                   {/* Thumbnail Image */}
-                  <div className="w-16 h-16 sm:w-20 sm:h-20 flex-shrink-0 rounded-sm border border-border/30 bg-muted overflow-hidden">
-                    {site.thumbnail_url ? (
-                      <img
-                        src={site.thumbnail_url}
-                        alt={site.source_name}
-                        className="w-full h-full object-cover"
-                        onError={(e) => {
-                          e.currentTarget.style.display = 'none'
-                        }}
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center bg-muted/50">
-                        <span className="text-xs text-muted-foreground font-mono">No image</span>
-                      </div>
-                    )}
+                  <div className="w-16 h-16 sm:w-20 sm:h-20 flex-shrink-0 rounded-sm border border-border/30 overflow-hidden">
+                    <SiteThumbnail
+                      url={site.source_url}
+                      alt={site.source_name}
+                      className="rounded-none"
+                    />
                   </div>
 
                   {/* Site Info */}
