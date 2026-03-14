@@ -3,6 +3,11 @@ __v0_runtime_loader.js
 __v0_devtools.tsx
 __v0_jsx-dev-runtime.ts
 
+# v0 internal directories (NEVER commit - contains sensitive info)
+user_read_only_context/
+v0_plans/
+.v0/
+
 # Dependencies and build
 node_modules/
 .next/
@@ -10,12 +15,13 @@ dist/
 build/
 *.tsbuildinfo
 
-# Environment and secrets
+# Environment and secrets (CRITICAL - NEVER commit)
 .env
 .env.local
 .env.*.local
 .env.production
 .env.development
+.env.*.sh
 
 # IDE and OS
 .DS_Store
@@ -27,7 +33,6 @@ build/
 # Deployment and CI
 .vercel
 .netlify
-.env.*.sh
 
 # Logs
 npm-debug.log*
@@ -42,3 +47,4 @@ coverage/
 *.tmp
 *.bak
 .cache/
+
