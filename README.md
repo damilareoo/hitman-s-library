@@ -4,6 +4,7 @@ A professional design system gallery where you can browse, analyze, and manage c
 
 **Live:** https://hitman-s-library.vercel.app  
 **Admin Panel (Manage Sites):** https://hitman-s-library.vercel.app/admin
+**Live:**(https://mars-hitman-library.vercel.app/)
 
 ---
 
@@ -20,6 +21,8 @@ When you discover a website with great colors or typography, you usually bookmar
 - **OG Image** - Visual thumbnail for instant recognition
 - **Metadata** - Quality rating, layout style, architecture type, industry category
 
+- **Public Gallery** (`/`) - Browse and filter design websites by industry, colors, and typography. View design metadata with copyable color codes and typography details.
+- Admin gallery- private
 ---
 
 ## Two Interfaces
