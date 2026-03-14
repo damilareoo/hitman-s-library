@@ -1,435 +1,495 @@
 # Hitman's Library
 
-A professional design system gallery where you can browse, analyze, and manage curated design websites. Extracts colors, typography, OG images, and metadata from websites for design inspiration and reference.
+A professional design system gallery where you can browse, analyze, and manage curated design websites. Think of it as a personal Pinterest for web design inspiration—extract colors, typography, and visual assets from any website for easy reference.
 
 **Live:** https://hitman-s-library.vercel.app  
-**Admin Panel:** https://hitman-s-library.vercel.app/admin
+**Admin Panel (Manage Sites):** https://hitman-s-library.vercel.app/admin
 
 ---
 
-## Overview
+## What is This?
 
-Hitman's Library has two interfaces:
+Hitman's Library solves a common problem: **keeping track of inspiring websites and their design systems**.
 
-- **Public Gallery** (`/`) - Browse and filter design websites by industry, colors, and typography. View design metadata with copyable color codes and typography details.
-- **Admin CMS** (`/admin`) - Manage your design site collection. Add single sites or bulk import via CSV/Excel. Delete sites with instant updates.
+When you discover a website with great colors or typography, you usually bookmark it. But after 50+ bookmarks, finding that specific site again is impossible. Hitman's Library **automatically extracts and organizes design data** so you never lose track.
+
+### What Gets Extracted?
+
+- **Colors** - Primary, secondary, accent colors in HEX format (copy-paste ready)
+- **Typography** - Heading font, body font, and monospace font used
+- **OG Image** - Visual thumbnail for instant recognition
+- **Metadata** - Quality rating, layout style, architecture type, industry category
 
 ---
 
-## Quick Start
+## Two Interfaces
+
+### 1. Public Gallery (`/`) - Browse & Discover
+
+This is where you **view** all the design websites you've saved.
+
+**What you can do:**
+- Browse all sites or filter by industry (SaaS, E-commerce, Portfolio, etc.)
+- Search for specific websites by name or URL
+- Click any site to see its colors (copy hex codes with one click), typography, and metadata
+- View high-resolution OG images to visually identify sites instantly
+- Works on desktop, tablet, and mobile with sticky filters for easy navigation
+
+**Real example workflow:**
+1. You're looking for SaaS design inspiration
+2. Click the "SaaS" industry filter
+3. Browse through all SaaS websites in your collection
+4. Click a site you like → see its exact colors and fonts
+5. Copy the colors directly to your design tool
+
+### 2. Admin CMS (`/admin`) - Manage & Add
+
+This is where you **manage** your collection (add/delete sites).
+
+**What you can do:**
+- **Add single site** - Paste a URL, it auto-extracts everything (title, colors, fonts, thumbnail)
+- **Bulk import** - Upload a CSV/Excel file with 100+ sites at once
+- **View all sites** - See your entire collection with thumbnails and metadata
+- **Delete sites** - One-click removal with instant updates (no page refresh)
+- **Search & filter** - Find any site instantly
+- **Live feedback** - Toast notifications show success/error for all operations
+
+**Real example workflow:**
+1. You find 50 great SaaS websites
+2. Put them all in an Excel file (URL in one column, industry in another)
+3. Click "Import Excel" and upload
+4. All 50 sites are extracted and added instantly
+5. Later, click delete on sites you no longer want
+
+---
+
+## Quick Start (5 minutes)
 
 ### Prerequisites
-- Node.js 18+
-- Neon PostgreSQL database
-- Environment variables configured
+- Node.js 18 or higher ([download here](https://nodejs.org))
+- A Neon PostgreSQL database ([free account](https://neon.tech))
 
-### Installation
+### Step 1: Clone & Install
 
 ```bash
-# Clone the repository
 git clone https://github.com/damilareoo/hitman-s-library.git
 cd hitman-s-library
+pnpm install  # or npm install / yarn install
+```
 
-# Install dependencies
-pnpm install
+### Step 2: Set Up Database
 
-# Configure environment
+1. Create free account at [neon.tech](https://neon.tech)
+2. Create a new database
+3. Copy your connection URL (looks like: `postgresql://user:pass@host/dbname`)
+
+### Step 3: Configure Environment
+
+```bash
+# Create .env.local file
 cp .env.example .env.local
-# Add DATABASE_URL from Neon
 
-# Run development server
+# Add your database URL
+echo "DATABASE_URL=your_neon_connection_url" >> .env.local
+```
+
+### Step 4: Run It
+
+```bash
 pnpm dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) to see the gallery.
+Open [http://localhost:3000](http://localhost:3000) in your browser. The gallery will be empty—go to `/admin` to add your first site!
 
 ---
 
-## Architecture
+## How It Works (Behind the Scenes)
 
-### Tech Stack
+Don't need technical details? Skip to [Using the App](#using-the-app).
 
-| Layer | Technology |
-|-------|-----------|
-| Framework | Next.js 16 (App Router) |
-| Database | Neon (PostgreSQL Serverless) |
-| Frontend | React 19 + Tailwind CSS 4 |
-| UI Components | shadcn/ui + Radix UI |
-| Browser Control | Puppeteer (headless extraction) |
-| API Client | Native fetch + Neon SDK |
-
-### Project Structure
+### Architecture Overview
 
 ```
-hitman-s-library/
-├── app/
-│   ├── page.tsx                    # Public gallery interface
-│   ├── admin/
-│   │   └── page.tsx               # Admin CMS panel
-│   ├── layout.tsx                 # Root layout with theme
-│   ├── globals.css                # Design tokens & Tailwind setup
-│   └── api/
-│       ├── design/
-│       │   ├── extract/           # Website extraction & analysis
-│       │   ├── list/              # Fetch all sites
-│       │   ├── filter-advanced/   # Advanced filtering & search
-│       │   ├── delete/            # Remove sites
-│       │   ├── import-excel/      # Bulk import CSV/Excel
-│       │   ├── categories/        # List industries
-│       │   └── ...
-│       └── og-image/              # Fetch OG image metadata
-├── lib/
-│   ├── browser-extraction.ts      # Puppeteer-based webpage analysis
-│   ├── typography-extraction.ts   # Font detection & parsing
-│   ├── design-library.ts          # Database operations
-│   ├── types.ts                   # TypeScript interfaces
-│   └── ...
-├── components/
-│   ├── site-thumbnail.tsx         # Image display component
-│   ├── typography-display.tsx     # Typography rendering
-│   └── ui/                        # shadcn/ui components
-└── public/                        # Static assets
-
+Your Browser
+    ↓
+Next.js Server
+    ├→ Puppeteer (opens websites & extracts content)
+    ├→ Tailwind CSS (beautiful UI)
+    └→ Neon Database (stores everything)
 ```
 
-### Database Schema
+### What Happens When You Add a Site
 
-#### `design_sources`
-Stores website metadata and extraction results.
+1. You paste a URL in the admin panel
+2. **Puppeteer** (automated browser) opens that website
+3. It extracts:
+   - Website title
+   - All colors used in CSS
+   - All fonts loaded (heading, body, code)
+   - OG image from `<meta og:image>` tag
+   - Page layout and architecture style
+4. All data is saved to the database
+5. Site instantly appears in your gallery with thumbnail
 
-```sql
-CREATE TABLE design_sources (
-  id SERIAL PRIMARY KEY,
-  source_url TEXT UNIQUE NOT NULL,
-  source_name TEXT NOT NULL,
-  source_type TEXT ('website', 'file', 'image'),
-  industry TEXT,
-  thumbnail_url TEXT,                -- OG image from <meta og:image>
-  metadata JSONB,                    -- { description, quality, layout, architecture }
-  tags TEXT ARRAY,
-  created_at TIMESTAMP DEFAULT NOW(),
-  analyzed_at TIMESTAMP
-);
-```
+### Tech Stack (What Powers It)
 
-#### `design_colors`
-Extracted color palettes from websites.
-
-```sql
-CREATE TABLE design_colors (
-  id SERIAL PRIMARY KEY,
-  source_id INTEGER REFERENCES design_sources(id),
-  primary_color VARCHAR(7),          -- HEX format
-  secondary_color VARCHAR(7),
-  accent_color VARCHAR(7),
-  all_colors TEXT ARRAY,             -- All unique colors extracted
-  color_harmony TEXT,                -- harmony type detected
-  mood TEXT,                         -- color mood (e.g., 'warm', 'cool', 'vibrant')
-  created_at TIMESTAMP DEFAULT NOW()
-);
-```
-
-#### `design_typography`
-Extracted typography and font information.
-
-```sql
-CREATE TABLE design_typography (
-  id SERIAL PRIMARY KEY,
-  source_id INTEGER REFERENCES design_sources(id),
-  heading_font TEXT,                 -- Primary heading font
-  body_font TEXT,                    -- Body text font
-  mono_font TEXT,                    -- Monospace/code font
-  mood TEXT,                         -- typography mood
-  created_at TIMESTAMP DEFAULT NOW()
-);
-```
+| Component | Technology | Why? |
+|-----------|-----------|------|
+| Frontend | React 19 + Tailwind CSS | Fast, responsive UI |
+| Backend | Next.js 16 | Full-stack in one framework |
+| Database | Neon PostgreSQL | Reliable, powerful queries |
+| Browser Control | Puppeteer | Automates website analysis |
+| UI Components | shadcn/ui | Beautiful, accessible components |
 
 ---
 
-## Features
+## Using the App
 
-### Public Gallery (`/`)
+### Gallery (`/`)
 
-#### Browse & Filter
-- **Industry filter** - Filter by design category (SaaS, E-commerce, Portfolio, etc.)
-- **Search** - Search by website name, URL, or tags
-- **Mobile-friendly** - Sticky category filters on mobile for easy navigation
+#### Basic Browsing
+1. Open [https://hitman-s-library.vercel.app](https://hitman-s-library.vercel.app)
+2. On desktop/tablet: See sidebar with industry filters
+3. On mobile: Tap sticky filter bar at top
+4. Click any site card to see details
 
-#### Site Details
-- **OG Image** - Visual thumbnail of website
-- **Color Palette** - Copy hex codes with one click (toast feedback)
-- **Typography** - See heading, body, and monospace fonts used
-- **Metadata** - View quality score, layout type, and architecture style
+#### Viewing Site Details
 
-#### Responsive Design
-- Desktop: Sidebar filters + main grid (3-column)
-- Tablet: Responsive grid with adjusted spacing
-- Mobile: Full-width with sticky top filters, bottom sheet details
+When you click a site, a panel opens showing:
+
+**Colors Section**
+- Shows all extracted colors in HEX format
+- Hover over any color → copy button appears
+- Click to copy → toast notification confirms
+
+**Typography Section**
+- Shows heading font (e.g., "Inter")
+- Shows body font (e.g., "Roboto")
+- Shows monospace font (e.g., "JetBrains Mono")
+- Click any font → copies to clipboard
+
+**Metadata Section**
+- Quality rating (1-10)
+- Layout style (e.g., "Minimal", "Dense")
+- Industry category (e.g., "SaaS", "E-commerce")
+
+#### Filtering
+
+**By Industry**
+- Click industry tag (e.g., "SaaS", "Portfolio")
+- Only sites in that category show
+
+**By Search**
+- Use search bar (desktop) or sticky search (mobile)
+- Type website name, URL, or tags
+- Results filter in real-time
 
 ### Admin CMS (`/admin`)
 
-#### Site Management
-- **View all sites** - Paginated list showing all websites (10 per page)
-- **Visual thumbnails** - OG images for quick identification
-- **Delete instantly** - One-click deletion with no page refresh
-- **Industry badges** - Quick identification of site category
-- **Timestamps** - See when each site was added
+#### Viewing Your Collection
 
-#### Add Websites
-- **Single entry** - Input URL and auto-extract title, colors, typography
-- **Bulk import** - Upload CSV/Excel file with URLs and categories
-- **Auto-categorization** - Industry detected automatically based on website content
-- **OG image capture** - Thumbnail extracted from `<meta og:image>` tag
-- **Success feedback** - Toast notifications for all operations
+1. Go to [https://hitman-s-library.vercel.app/admin](https://hitman-s-library.vercel.app/admin)
+2. See all your sites with:
+   - Visual thumbnail (OG image)
+   - Site name and URL
+   - Industry category
+   - Date added
+3. Scroll to see all sites (10 per page, paginated)
 
-#### Search & Filter
-- **Real-time search** - Filter sites by name, URL, or industry
-- **Instant display** - No page refresh, seamless filtering
+#### Adding a Single Site
+
+1. Scroll to top → find "Add Single Site" section
+2. Paste website URL (e.g., https://stripe.com)
+3. Click "Add Design"
+4. Wait 5-10 seconds for extraction
+5. Toast notification appears: "✓ 'Stripe' added as SaaS"
+6. Site instantly appears in your collection
+
+**Note:** The app automatically detects industry. If wrong, edit manually later (future version).
+
+#### Bulk Importing Sites
+
+1. Create CSV or Excel file with this format:
+
+   ```
+   url,industry,tags
+   https://stripe.com,SaaS,payments
+   https://apple.com,Tech,luxury
+   https://airbnb.com,Travel,marketplace
+   ```
+
+2. Click "Import CSV/Excel"
+3. Select your file
+4. Click upload
+5. All sites import at once
+6. Success message shows how many added
+
+#### Deleting Sites
+
+1. Find site in list
+2. Hover over it → delete button appears
+3. Click delete
+4. Confirm in popup
+5. Site removed instantly (no page refresh needed)
+
+#### Searching
+
+1. Use search bar at top
+2. Type site name, URL, or industry
+3. Results filter instantly
+4. Click "Clear" to reset
 
 ---
 
-## API Reference
+## Database Schema (What Gets Stored)
 
-### Core Endpoints
+Don't worry about this unless you're modifying the code.
 
-#### `POST /api/design/extract`
-Extract website data and add to library.
+### design_sources Table
+Stores main website information.
 
-```bash
-curl -X POST http://localhost:3000/api/design/extract \
-  -H "Content-Type: application/json" \
-  -d '{
-    "url": "https://example.com",
-    "notes": "Optional description"
-  }'
+```
+id (auto)          | Integer - unique ID
+source_url         | Text - website URL (e.g., https://stripe.com)
+source_name        | Text - website name (e.g., Stripe)
+source_type        | Text - type (always "website" for now)
+industry           | Text - category (SaaS, Portfolio, E-commerce, etc.)
+thumbnail_url      | Text - OG image URL for visual display
+metadata           | JSON - description, quality score, layout, architecture
+tags               | Array - optional tags (e.g., [payments, fintech])
+created_at         | Timestamp - when site was added
+analyzed_at        | Timestamp - when content was extracted
 ```
 
-**Response:**
-```json
+### design_colors Table
+Stores color palettes.
+
+```
+id (auto)          | Integer - unique ID
+source_id          | Integer - links to design_sources
+primary_color      | Text - main color in HEX (e.g., #FF5733)
+secondary_color    | Text - secondary color
+accent_color       | Text - accent color
+all_colors         | Array - all unique colors found
+color_harmony      | Text - harmony type (complementary, analogous, etc.)
+mood               | Text - color mood (warm, cool, vibrant, etc.)
+created_at         | Timestamp - when extracted
+```
+
+### design_typography Table
+Stores font information.
+
+```
+id (auto)          | Integer - unique ID
+source_id          | Integer - links to design_sources
+heading_font       | Text - font used for headings (e.g., Inter)
+body_font          | Text - font used for body text (e.g., Roboto)
+mono_font          | Text - font used for code (e.g., JetBrains Mono)
+mood               | Text - typography mood (professional, playful, etc.)
+created_at         | Timestamp - when extracted
+```
+
+---
+
+## API Endpoints (For Developers)
+
+These are the "roads" the app travels to get/send data. You don't need to know these to use the app.
+
+### Adding a Site
+```bash
+POST /api/design/extract
+
+Body:
+{
+  "url": "https://example.com",
+  "notes": "Optional description"
+}
+
+Response:
 {
   "id": 1,
   "success": true,
-  "title": "Example Website",
+  "title": "Example",
   "industry": "SaaS",
   "colors": ["#FF5733", "#33FF57"],
-  "typography": ["Inter", "JetBrains Mono"]
+  "typography": ["Inter", "Roboto"]
 }
 ```
 
-#### `GET /api/design/list`
-Fetch all sites or filter by search/industry.
-
+### Getting All Sites
 ```bash
-# Get all sites
-curl http://localhost:3000/api/design/list
+GET /api/design/list
 
-# Search by name
-curl http://localhost:3000/api/design/list?search=stripe
-
-# Filter by industry
-curl http://localhost:3000/api/design/list?industry=SaaS
+Optional params:
+?search=stripe          # Search by name
+?industry=SaaS          # Filter by industry
 ```
 
-#### `DELETE /api/design/delete`
-Remove a site from the library.
-
+### Deleting a Site
 ```bash
-curl -X DELETE http://localhost:3000/api/design/delete \
-  -H "Content-Type: application/json" \
-  -d '{ "id": 1 }'
+DELETE /api/design/delete
+
+Body:
+{
+  "id": 1
+}
 ```
 
-#### `GET /api/design/filter-advanced`
-Advanced filtering with pagination.
-
+### Advanced Search
 ```bash
-curl http://localhost:3000/api/design/filter-advanced \
-  ?industry=SaaS&color=%23FF5733&page=1&limit=20
+GET /api/design/filter-advanced
+
+Params:
+?industry=SaaS&page=1&limit=20
 ```
 
-#### `POST /api/design/import-excel`
-Bulk import sites from CSV/Excel file.
-
+### Bulk Import
 ```bash
-# CSV/Excel file with columns: url, industry, tags
-curl -X POST http://localhost:3000/api/design/import-excel \
-  -F "file=@sites.csv"
+POST /api/design/import-excel
+
+Body: FormData with CSV/Excel file
 ```
-
-#### `GET /api/og-image`
-Fetch OG image metadata from a URL.
-
-```bash
-curl http://localhost:3000/api/og-image?url=https://example.com
-```
-
----
-
-## Development
-
-### Environment Variables
-
-```bash
-# .env.local
-DATABASE_URL=postgresql://user:password@host/database
-NEXT_PUBLIC_SITE_URL=http://localhost:3000
-```
-
-### Running Tests
-
-```bash
-pnpm type-check    # TypeScript validation
-pnpm lint          # ESLint
-pnpm build         # Production build
-```
-
-### Key Libraries & Usage
-
-#### Browser Extraction (`lib/browser-extraction.ts`)
-Uses Puppeteer to extract website content.
-
-```typescript
-import { extractWebsiteData } from '@/lib/browser-extraction'
-
-const data = await extractWebsiteData('https://example.com')
-// Returns: { title, description, colors, fonts, layout, architecture }
-```
-
-#### Typography Detection (`lib/typography-extraction.ts`)
-Analyzes font usage from CSS.
-
-```typescript
-import { extractTypography } from '@/lib/typography-extraction'
-
-const fonts = await extractTypography(htmlContent)
-// Returns: { headingFonts: [], bodyFonts: [], monoFonts: [] }
-```
-
-#### Database Operations (`lib/design-library.ts`)
-Handles all data persistence.
-
-```typescript
-import { saveDesignSource, getDesignSources } from '@/lib/design-library'
-
-// Save new site
-await saveDesignSource({ url, source_name, industry, ... })
-
-// Fetch sites
-const sites = await getDesignSources({ industry, search })
-```
-
----
-
-## Performance Optimizations
-
-- **Image caching** - OG images cached via `/api/og-image` with fallback to thum.io
-- **Database queries** - Indexed on `industry`, `source_name`, and `created_at`
-- **Lazy loading** - Grid items load on demand with intersection observer
-- **CSS optimization** - Tailwind v4 with tree-shaking (7.2KB gzipped core)
-- **API pagination** - List API supports limit/offset for large datasets
-
----
-
-## Future Enhancements
-
-### Planned Features
-- [ ] **Color palette editor** - Modify and save custom palettes
-- [ ] **Design pattern library** - Tag and organize layout patterns
-- [ ] **Collaborative notes** - Add design insights and annotations
-- [ ] **Export templates** - Generate Figma/CSS exports from sites
-- [ ] **AI-powered insights** - Summarize design trends from library
-- [ ] **Version history** - Track changes to sites over time
-- [ ] **Integration APIs** - Webhook support for external tools
-- [ ] **Advanced analytics** - Dashboard with design metrics
-
-### Extension Points
-
-#### Adding New Extraction Features
-1. Add field to `design_sources` schema
-2. Implement extraction in `lib/browser-extraction.ts`
-3. Save to database in `POST /api/design/extract`
-4. Display in `components/site-detail.tsx`
-
-#### Adding New Filters
-1. Update `GET /api/design/filter-advanced` query
-2. Add UI toggle in `app/admin/page.tsx`
-3. Update filter state management
-
-#### Adding New API Endpoints
-1. Create route in `app/api/design/[feature]/route.ts`
-2. Add database query in `lib/design-library.ts`
-3. Update admin CMS or gallery to consume
 
 ---
 
 ## Troubleshooting
 
-### Sites Not Showing in Admin
-- Ensure database has sites (check `design_sources` table count)
-- Verify `loadSites()` is called in `useEffect` on admin page mount
-- Check browser console for API errors
+### "Sites not showing" or "Empty gallery"
+1. Make sure you're in the admin panel (`/admin`)
+2. Add at least one site first
+3. Go back to gallery (`/`) to see it
 
-### Images Not Displaying
-- OG images fetch via `/api/og-image` - verify endpoint works
-- Fallback to `thum.io` if OG image fails - check domain availability
-- Inspect network tab for CORS or image errors
+### "Images not loading"
+1. Check your internet connection
+2. The app tries to get OG images from websites - some sites don't have them
+3. If all images fail, there may be a server issue (check console for errors)
 
-### Colors Not Extracted
-- Website must have inline styles or `<style>` tags
-- Check `lib/browser-extraction.ts` for CSS parsing logic
-- Verify Puppeteer can render page (JavaScript-heavy sites may fail)
+### "Can't add sites" or getting errors
+1. Check that your database URL is correct in `.env.local`
+2. Make sure Neon database is running
+3. Open browser console (F12) to see error messages
 
-### Slow Admin Load
-- Admin loads all sites by default - consider pagination
-- Check database query performance (add indexes on `industry`, `created_at`)
-- Monitor Puppeteer process memory for extraction operations
+### "Adding sites is slow"
+1. This is normal - the app opens each website in a browser to extract content
+2. Extraction takes 5-15 seconds per site depending on website complexity
+3. Bulk import is faster if adding many sites
 
----
-
-## Contributing
-
-1. Create feature branch: `git checkout -b feature/your-feature`
-2. Make changes and commit: `git commit -m "feat: description"`
-3. Push to branch: `git push origin feature/your-feature`
-4. Submit pull request
+### "Performance is slow"
+1. If you have 1000+ sites, consider archiving old ones
+2. Database queries can be optimized (check `lib/design-library.ts`)
+3. Clear browser cache (sometimes helps with image loading)
 
 ---
 
-## Deployment
+## Development Tips
 
-### Vercel (Recommended)
+### Project File Structure
 
-```bash
-# Connect GitHub repo to Vercel
-# Add DATABASE_URL secret in Vercel dashboard
-# Deploy
-git push origin main
+```
+app/                      # Pages and server code
+├── page.tsx             # Gallery homepage
+├── admin/
+│   └── page.tsx         # Admin control panel
+├── api/
+│   └── design/          # API routes for all operations
+├── layout.tsx           # Global layout (header, theme)
+└── globals.css          # Tailwind setup & design tokens
+
+lib/                      # Utility functions
+├── types.ts             # TypeScript interfaces (what data looks like)
+├── design-library.ts    # Database queries
+├── browser-extraction.ts # Puppeteer website analysis
+└── typography-extraction.ts # Font detection
+
+components/              # Reusable UI pieces
+├── site-thumbnail.tsx   # Shows website images
+├── typography-display.tsx # Shows fonts
+└── ui/                  # Pre-made components (button, input, etc.)
+
+public/                   # Images, icons, assets
 ```
 
-### Manual Deployment
+### Making Changes
 
-```bash
-# Build
-pnpm build
+**Adding a new filter:**
+1. Edit `app/api/design/filter-advanced/route.ts`
+2. Update the SQL query
+3. Update `app/admin/page.tsx` to show new filter option
 
-# Start server
-pnpm start
-```
+**Storing new data:**
+1. Add column to database table (contact your database provider)
+2. Extract new data in `lib/browser-extraction.ts`
+3. Save in `app/api/design/extract/route.ts`
+4. Display in components
+
+**Creating new page:**
+1. Create `app/your-page/page.tsx`
+2. Next.js automatically makes it a route at `/your-page`
+3. Import components as needed
+
+---
+
+## Future Features (Planned)
+
+- Color palette editor (customize and save palettes)
+- Design pattern tagging (organize layout patterns)
+- AI-powered insights (summarize trends from your library)
+- Figma/CSS export (generate design code directly)
+- Collaborative notes (add annotations to sites)
+- Advanced analytics (see what styles are trending)
+- Webhook integrations (connect to external tools)
+
+---
+
+## Deployment to Production
+
+### Using Vercel (Easiest)
+
+1. Push your code to GitHub
+2. Go to [vercel.com](https://vercel.com)
+3. Click "New Project" → select your repo
+4. Add environment variables:
+   - `DATABASE_URL` - your Neon connection URL
+5. Click "Deploy"
+6. Your site is live at `your-project.vercel.app`
+
+### Using Your Own Server
+
+1. Build: `pnpm build`
+2. Start: `pnpm start`
+3. Keep running in background (use PM2, screen, etc.)
+
+---
+
+## Getting Help
+
+- **Issues?** Open a GitHub issue on the [repository](https://github.com/damilareoo/hitman-s-library)
+- **Questions?** Check this README first, then open a discussion
+- **Want to contribute?** Fork the repo, make changes, submit a pull request
 
 ---
 
 ## License
 
-MIT - See LICENSE file for details
+MIT - Use this code however you want, just give credit.
 
 ---
 
-## Support
+## Version Info
 
-For issues, questions, or feature requests, open an issue on GitHub or contact the maintainer.
-
----
-
+**Current Version:** 1.0.0  
 **Last Updated:** March 2026  
 **Maintainer:** Damilare  
 **Repository:** https://github.com/damilareoo/hitman-s-library
+
+**Key Features in This Version:**
+- ✅ Browse and search design sites
+- ✅ Extract colors and typography automatically
+- ✅ Admin panel for site management
+- ✅ Bulk import via CSV/Excel
+- ✅ Responsive design (mobile/tablet/desktop)
+- ✅ Copy colors with one click
+- ✅ Visual thumbnails for all sites
+- ✅ Industry categorization
+- ✅ Pagination for large collections
+
