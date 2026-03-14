@@ -2,8 +2,7 @@
 
 A professional design system gallery where you can browse, analyze, and manage curated design websites. Think of it as a personal Pinterest for web design inspiration—extract colors, typography, and visual assets from any website for easy reference.
 
-**Live:** https://mars-hitman-library.vercel.app  
-**Admin Panel (Manage Sites):** https://mars-hitman-library.vercel.app/admin
+**Live:** https://mars-hitman-library.vercel.app
 
 ---
 
@@ -21,14 +20,11 @@ When you discover a website with great colors or typography, you usually bookmar
 - **Metadata** - Quality rating, layout style, architecture type, industry category
 
 - **Public Gallery** (`/`) - Browse and filter design websites by industry, colors, and typography. View design metadata with copyable color codes and typography details.
-- Admin gallery- private
 ---
 
 ## Two Interfaces
 
 ### 1. Public Gallery (`/`) - Browse & Discover
-
-This is where you **view** all the design websites you've saved.
 
 **What you can do:**
 - Browse all sites or filter by industry (SaaS, E-commerce, Portfolio, etc.)
@@ -44,24 +40,6 @@ This is where you **view** all the design websites you've saved.
 4. Click a site you like → see its exact colors and fonts
 5. Copy the colors directly to your design tool
 
-### 2. Admin CMS (`/admin`) - Manage & Add
-
-This is where you **manage** your collection (add/delete sites).
-
-**What you can do:**
-- **Add single site** - Paste a URL, it auto-extracts everything (title, colors, fonts, thumbnail)
-- **Bulk import** - Upload a CSV/Excel file with 100+ sites at once
-- **View all sites** - See your entire collection with thumbnails and metadata
-- **Delete sites** - One-click removal with instant updates (no page refresh)
-- **Search & filter** - Find any site instantly
-- **Live feedback** - Toast notifications show success/error for all operations
-
-**Real example workflow:**
-1. You find 50 great SaaS websites
-2. Put them all in an Excel file (URL in one column, industry in another)
-3. Click "Import Excel" and upload
-4. All 50 sites are extracted and added instantly
-5. Later, click delete on sites you no longer want
 
 ---
 
@@ -101,7 +79,7 @@ echo "DATABASE_URL=your_neon_connection_url" >> .env.local
 pnpm dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) in your browser. The gallery will be empty—go to `/admin` to add your first site!
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ---
 
@@ -122,7 +100,7 @@ Next.js Server
 
 ### What Happens When You Add a Site
 
-1. You paste a URL in the admin panel
+1. **Site submission** goes through automated extraction
 2. **Puppeteer** (automated browser) opens that website
 3. It extracts:
    - Website title
@@ -185,61 +163,6 @@ When you click a site, a panel opens showing:
 - Use search bar (desktop) or sticky search (mobile)
 - Type website name, URL, or tags
 - Results filter in real-time
-
-### Admin CMS (`/admin`)
-
-#### Viewing Your Collection
-
-1. Go to [https://mars-hitman-library.vercel.app/admin](https://mars-hitman-library.vercel.app/admin)
-2. See all your sites with:
-   - Visual thumbnail (OG image)
-   - Site name and URL
-   - Industry category
-   - Date added
-3. Scroll to see all sites (10 per page, paginated)
-
-#### Adding a Single Site
-
-1. Scroll to top → find "Add Single Site" section
-2. Paste website URL (e.g., https://stripe.com)
-3. Click "Add Design"
-4. Wait 5-10 seconds for extraction
-5. Toast notification appears: "✓ 'Stripe' added as SaaS"
-6. Site instantly appears in your collection
-
-**Note:** The app automatically detects industry. If wrong, edit manually later (future version).
-
-#### Bulk Importing Sites
-
-1. Create CSV or Excel file with this format:
-
-   ```
-   url,industry,tags
-   https://stripe.com,SaaS,payments
-   https://apple.com,Tech,luxury
-   https://airbnb.com,Travel,marketplace
-   ```
-
-2. Click "Import CSV/Excel"
-3. Select your file
-4. Click upload
-5. All sites import at once
-6. Success message shows how many added
-
-#### Deleting Sites
-
-1. Find site in list
-2. Hover over it → delete button appears
-3. Click delete
-4. Confirm in popup
-5. Site removed instantly (no page refresh needed)
-
-#### Searching
-
-1. Use search bar at top
-2. Type site name, URL, or industry
-3. Results filter instantly
-4. Click "Clear" to reset
 
 ---
 
