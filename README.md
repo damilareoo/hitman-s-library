@@ -2,9 +2,8 @@
 
 A professional design system gallery where you can browse, analyze, and manage curated design websites. Think of it as a personal Pinterest for web design inspiration—extract colors, typography, and visual assets from any website for easy reference.
 
-**Live:** https://hitman-s-library.vercel.app  
-**Admin Panel (Manage Sites):** https://hitman-s-library.vercel.app/admin
-**Live:**(https://mars-hitman-library.vercel.app/)
+**Live:** https://mars-hitman-library.vercel.app  
+**Admin Panel (Manage Sites):** https://mars-hitman-library.vercel.app/admin
 
 ---
 
@@ -151,7 +150,7 @@ Next.js Server
 ### Gallery (`/`)
 
 #### Basic Browsing
-1. Open [https://hitman-s-library.vercel.app](https://hitman-s-library.vercel.app)
+1. Open [https://mars-hitman-library.vercel.app](https://mars-hitman-library.vercel.app)
 2. On desktop/tablet: See sidebar with industry filters
 3. On mobile: Tap sticky filter bar at top
 4. Click any site card to see details
@@ -191,7 +190,7 @@ When you click a site, a panel opens showing:
 
 #### Viewing Your Collection
 
-1. Go to [https://hitman-s-library.vercel.app/admin](https://hitman-s-library.vercel.app/admin)
+1. Go to [https://mars-hitman-library.vercel.app/admin](https://mars-hitman-library.vercel.app/admin)
 2. See all your sites with:
    - Visual thumbnail (OG image)
    - Site name and URL
