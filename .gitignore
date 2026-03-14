@@ -3,9 +3,48 @@ __v0_runtime_loader.js
 __v0_devtools.tsx
 __v0_jsx-dev-runtime.ts
 
-# Common ignores
+# v0 internal directories (NEVER commit - contains sensitive info)
+user_read_only_context/
+v0_plans/
+.v0/
+
+# Dependencies and build
 node_modules/
 .next/
-.env*.local
+dist/
+build/
+*.tsbuildinfo
+
+# Environment and secrets (CRITICAL - NEVER commit)
+.env
+.env.local
+.env.*.local
+.env.production
+.env.development
+.env.*.sh
+
+# IDE and OS
 .DS_Store
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Deployment and CI
 .vercel
+.netlify
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# Testing
+coverage/
+.nyc_output/
+
+# Temporary files
+*.tmp
+*.bak
+.cache/
+
