@@ -10,6 +10,7 @@ const nextConfig = {
   workflow: {
     preset: "nextjs",
   },
+  serverExternalPackages: ['puppeteer', '@sparticuz/chromium'],
 }
 
 export default nextConfig

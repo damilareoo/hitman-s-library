@@ -1,5 +1,7 @@
 import * as chromium from '@sparticuz/chromium'
 import type { Page } from 'puppeteer'
+import { put } from '@vercel/blob'
+import { extractAssets } from './asset-extraction'
 
 // For serverless environments, use the lightweight Chromium from Sparticuz
 let browser: any = null
@@ -382,4 +384,119 @@ export async function extractBrandColors(page: Page): Promise<string[]> {
 
     return rawColors
   })
+}
+
+export async function captureFullPageScreenshot(
+  page: Page,
+  siteUrl: string
+): Promise<string | null> {
+  try {
+    const buffer = await page.screenshot({
+      fullPage: true,
+      type: 'webp',
+      quality: 85,
+    }) as Buffer
+
+    const hostname = new URL(siteUrl).hostname.replace(/\./g, '-')
+    const filename = `screenshots/${hostname}-${Date.now()}.webp`
+
+    const blob = await put(filename, buffer, {
+      access: 'public',
+      contentType: 'image/webp',
+    })
+
+    return blob.url
+  } catch (err) {
+    console.error('[screenshot] capture/upload failed:', err)
+    return null
+  }
+}
+
+export async function extractTypographyWithRoles(page: Page): Promise<Array<{
+  fontFamily: string
+  role: 'heading' | 'body' | 'mono'
+  googleFontsUrl: string | null
+  primaryWeight: number
+}>> {
+  const raw = await page.evaluate(() => {
+    function fontFrom(el: Element | null): { family: string; weight: number } | null {
+      if (!el) return null
+      const style = getComputedStyle(el)
+      const family = style.fontFamily.split(',')[0].trim().replace(/['"]/g, '')
+      const weight = parseInt(style.fontWeight, 10) || 400
+      if (!family || family === 'serif' || family === 'sans-serif' || family === 'monospace') return null
+      return { family, weight }
+    }
+
+    const gfLinks = Array.from(document.querySelectorAll('link[href*="fonts.googleapis.com"]'))
+      .map(l => (l as HTMLLinkElement).href)
+
+    return {
+      heading: fontFrom(document.querySelector('h1')),
+      body: fontFrom(document.querySelector('p') ?? document.body),
+      mono: fontFrom(document.querySelector('code, pre')),
+      gfLinks,
+    }
+  })
+
+  const results: Array<{
+    fontFamily: string
+    role: 'heading' | 'body' | 'mono'
+    googleFontsUrl: string | null
+    primaryWeight: number
+  }> = []
+
+  for (const [role, data] of [
+    ['heading', raw.heading],
+    ['body', raw.body],
+    ['mono', raw.mono],
+  ] as const) {
+    if (!data) continue
+    const googleFontsUrl = raw.gfLinks.find(url =>
+      url.toLowerCase().includes(data.family.toLowerCase().replace(/\s+/g, '+'))
+    ) ?? null
+
+    results.push({
+      fontFamily: data.family,
+      role,
+      googleFontsUrl,
+      primaryWeight: data.weight,
+    })
+  }
+
+  return results
+}
+
+export interface FullExtractionResult {
+  colors: string[]
+  screenshotUrl: string | null
+  assets: import('./asset-extraction').ExtractedAsset[]
+  typography: Array<{
+    fontFamily: string
+    role: 'heading' | 'body' | 'mono'
+    googleFontsUrl: string | null
+    primaryWeight: number
+  }>
+}
+
+export async function extractFullDesignData(url: string): Promise<FullExtractionResult> {
+  const browser = await getBrowser()
+  const page = await browser.newPage()
+
+  try {
+    await page.setViewport({ width: 1440, height: 900 })
+    await page.goto(url, { waitUntil: 'networkidle2', timeout: 15000 })
+    await new Promise(r => setTimeout(r, 3000))
+
+    const [colors, screenshotUrl, assets, typography] = await Promise.all([
+      extractBrandColors(page),
+      captureFullPageScreenshot(page, url),
+      extractAssets(page, url),
+      extractTypographyWithRoles(page),
+    ])
+
+    return { colors, screenshotUrl, assets, typography }
+  } finally {
+    await page.close()
+  }
 }

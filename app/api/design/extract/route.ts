@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { neon } from '@neondatabase/serverless'
 import { detectIndustry } from './detectIndustry'
 import { extractTypographyEnhanced } from '@/lib/typography-extraction'
-import { extractTypographyFromRenderedPage, extractAllDesignDataFromRenderedPage, extractBrandColors, getBrowser } from '@/lib/browser-extraction'
+import { extractTypographyFromRenderedPage, extractAllDesignDataFromRenderedPage, extractBrandColors, getBrowser, extractFullDesignData } from '@/lib/browser-extraction'
 import { toColorFormats, deduplicateColors } from '@/lib/color-utils'
 
 const sql = neon(process.env.DATABASE_URL!)
@@ -164,29 +164,19 @@ export async function POST(req: NextRequest) {
     const descMatch = html.match(/<meta name="description" content="([^"]+)/)
     const description = descMatch?.[1] || ''
 
-    // Extract design details — brand-signal color extraction via rendered page
+    // Extract design details — full extraction via rendered page (colors, screenshot, assets, typography)
     let colorFormats: { hex: string; oklch: string }[] = []
     let colors: string[] = []
+    let extractionResult: Awaited<ReturnType<typeof extractFullDesignData>> | null = null
     try {
-      const browser = await getBrowser()
-      if (browser) {
-        const page = await browser.newPage()
-        try {
-          await page.setViewport({ width: 1440, height: 900 })
-          await page.goto(url, { waitUntil: 'networkidle2', timeout: 15000 }).catch(() => null)
-          await page.waitForTimeout(2000)
-          const rawCssColors = await extractBrandColors(page)
-          colorFormats = deduplicateColors(rawCssColors)
-            .map(c => toColorFormats(c))
-            .filter((c): c is { hex: string; oklch: string } => c !== null)
-            .slice(0, 16)
-          colors = colorFormats.map(c => c.hex)
-        } finally {
-          await page.close()
-        }
-      }
+      extractionResult = await extractFullDesignData(url)
+      colorFormats = deduplicateColors(extractionResult.colors)
+        .map(c => toColorFormats(c))
+        .filter((c): c is { hex: string; oklch: string } => c !== null)
+        .slice(0, 16)
+      colors = colorFormats.map(c => c.hex)
     } catch (colorErr) {
-      console.warn('[v0] Brand color extraction failed, falling back to regex:', colorErr)
+      console.warn('[v0] Full design extraction failed, falling back to regex:', colorErr)
       colors = extractColors(html)
     }
     const typographyData = extractTypographyEnhanced(html)
@@ -275,6 +265,11 @@ export async function POST(req: NextRequest) {
       `
 
       const sourceId = result[0]?.id
+
+      // Save screenshot URL if captured
+      if (sourceId && extractionResult?.screenshotUrl) {
+        await sql`UPDATE design_sources SET screenshot_url = ${extractionResult.screenshotUrl} WHERE id = ${sourceId}`
+      }
 
       // Save colors if extracted
       if (sourceId) {
