@@ -10,6 +10,13 @@
 
 Extend the existing design intelligence pipeline to extract and display typography specimens, categorized visual assets (logos, icons, illustrations, images), and a full-page screenshot preview — all within a new 4-tab detail panel. The gallery card on the main grid is unchanged. Design language (borders-not-shadows, dot grid, spring easing, dual dark/light mode) is fully preserved.
 
+**Typeface update:** Replace JetBrains Mono / IBM Plex Mono with **Geist Mono** for all monospace UI text (hex values, OKLCH values, font names, code snippets). Geist Mono is Vercel's own monospace, designed for interfaces rather than editors — tighter, more refined, and available via `next/font/local` with zero extra setup on Vercel. Inter remains unchanged for all UI / heading / body text.
+
+| Role | Font | Applied to |
+|---|---|---|
+| Headings / body / UI | Inter | All existing UI text — unchanged |
+| Code values | **Geist Mono** | HEX values, OKLCH values, font family names, any monospace specimen text |
+
 ---
 
 ## 1. Panel Architecture
@@ -25,11 +32,82 @@ Preview  |  Colors  |  Type  |  Assets
 - Tab content areas are independently scrollable
 - Default tab on open: **Preview**
 - Tab state is local React state (`useState`) — no URL params, no deep-linking
-- The existing Colors tab content is the current panel implementation, unchanged
+- The Colors tab receives updated extraction and display (see Section 2a)
 
 **Panel footer** (shared across all 4 tabs, always visible, outside scroll area):
 - "↗ Visit site" link rendered as a small button, styled with existing `border: 1px solid var(--border)` pattern
 - Position: pinned to the bottom of the panel container, below the tab content scroll area, above the panel close affordance on mobile
+
+---
+
+## 2a. Colors Tab
+
+### Goal
+Extract only the site's own brand/design-language colors — not colors from portfolio content, client work, embedded images, or third-party widgets. Brand colors are always the most intentional and most visible: they define CTAs, navigation, key UI states, and base backgrounds/foregrounds.
+
+### Extraction Strategy (replaces current color extraction)
+
+Two-pass approach, priority ordered:
+
+**Pass 1 — CSS custom properties (highest signal)**
+Resolve all CSS custom properties defined on `:root` or `html` whose values are color values (hex, rgb, hsl, oklch, named colors). These are explicit design tokens — the most reliable signal for brand colors on any modern site.
+
+```js
+// In-browser execution via Puppeteer
+const styles = getComputedStyle(document.documentElement)
+// Collect all --* properties whose resolved value parses as a color
+```
+
+**Pass 2 — UI structural layer sampling (fallback + supplement)**
+If Pass 1 yields fewer than 3 colors, or to supplement it, sample computed `color`, `backgroundColor`, and `borderColor` from structural UI elements only:
+- `header`, `nav`, `footer`
+- `button`, `[role="button"]`, `a` (links)
+- `h1`, `h2` (heading text color)
+- The `:root` / `body` background
+
+**Explicitly excluded from sampling:**
+- `<img>`, `<video>`, `<canvas>` (raster content)
+- `<article>`, `<main> p`, `.content`, portfolio grid children (content wells — identified by being more than 3 DOM levels below `<main>` or `<article>`)
+- Colors with opacity < 0.2 (near-invisible)
+- `transparent`, `rgba(0,0,0,0)`, `inherit`, `currentColor` unresolved values
+- Near-duplicate colors: if two colors differ by less than **5 delta-E** (perceptual distance), keep only the one with higher usage frequency
+
+**Deduplication:** After both passes, deduplicate by perceptual similarity (delta-E < 5 threshold). Cap at **16 colors**.
+
+### Color Format
+
+Every extracted color is stored and displayed in **both** formats:
+
+- **HEX** — `#635bff` — for copying into CSS/design tools
+- **OKLCH** — `oklch(58.3% 0.243 279.4)` — perceptually uniform, useful for theming and generating tints/shades
+
+Conversion at extraction time (server-side, no runtime cost):
+- HEX → linear RGB → XYZ D65 → Oklab → OKLCH
+- Use the `culori` npm package (already used in many Next.js design tools) for accurate conversion
+
+### Display (Colors Tab)
+
+Each color shown as a swatch row:
+
+```
+┌─────────────────────────────────────────┐
+│  ████  #635bff                    [copy] │
+│        oklch(58.3% 0.243 279.4)   [copy] │
+└─────────────────────────────────────────┘
+```
+
+- Swatch: 40×40px, `border-radius: var(--radius)`, 1px border
+- HEX value: monospace, click copies HEX
+- OKLCH value: monospace, slightly dimmer (`var(--muted-foreground)`), click copies OKLCH
+- Two copy buttons — one per format — using existing toast system
+- Colors sorted by luminance (darkest to lightest) within the list
+- Existing color swatch grid (if any) is replaced by this row layout
+
+### Schema change
+Add `oklch TEXT` column to `design_colors` table (or wherever colors are currently stored):
+```sql
+ALTER TABLE design_colors ADD COLUMN oklch TEXT;
+```
 
 ---
 
@@ -77,7 +155,7 @@ Each extracted font role (heading, body, monospace) renders as a **specimen card
 └────────────────────────────────────┘
 ```
 
-- "Aa" rendered at 48px in the actual extracted font — font loaded at runtime via `google_fonts_url` if available. If `google_fonts_url` is null, use the raw `font_family` value from the DB in a `font-family` CSS property with the following generic fallback appended: `-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif` for heading/body roles; `ui-monospace, "JetBrains Mono", monospace` for mono role
+- "Aa" rendered at 48px in the actual extracted font — font loaded at runtime via `google_fonts_url` if available. If `google_fonts_url` is null, use the raw `font_family` value from the DB in a `font-family` CSS property with the following generic fallback appended: `-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif` for heading/body roles; `ui-monospace, "Geist Mono", monospace` for mono role
 - Sample sentence at 16px
 - Alphabet strip (`A B C D E F G H I J K L M`) at 11px, color: `var(--muted-foreground)`
 - Weight chips: small bordered badges listing each detected weight. The `primary_weight` chip has a highlighted border (`border-color: var(--foreground)`)
