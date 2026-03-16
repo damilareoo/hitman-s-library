@@ -35,7 +35,7 @@ export const metadata: Metadata = {
     address: false,
     telephone: false,
   },
-  metadataBase: new URL("https://v0-design-library.vercel.app"),
+  metadataBase: new URL("https://mars-hitman-library.vercel.app"),
   icons: {
     icon: [
       { url: "/icon.jpg", type: "image/jpeg" },
