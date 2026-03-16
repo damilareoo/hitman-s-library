@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { neon } from '@neondatabase/serverless'
+import { neon, Client } from '@neondatabase/serverless'
 import { detectIndustry } from './detectIndustry'
 import { extractTypographyEnhanced } from '@/lib/typography-extraction'
 import { extractTypographyFromRenderedPage, extractAllDesignDataFromRenderedPage, extractBrandColors, getBrowser, extractFullDesignData } from '@/lib/browser-extraction'
@@ -321,6 +321,60 @@ export async function POST(req: NextRequest) {
             NOW()
           )
         `.catch(() => null)
+      }
+
+      // Save assets transactionally
+      const { assets } = extractionResult ?? {}
+      if (assets && assets.length > 0 && sourceId) {
+        const client = new Client(process.env.DATABASE_URL!)
+        await client.connect()
+        try {
+          await client.query('BEGIN')
+          await client.query('DELETE FROM design_assets WHERE source_id = $1', [sourceId])
+          for (const asset of assets) {
+            await client.query(
+              'INSERT INTO design_assets (source_id, type, content, width, height) VALUES ($1, $2, $3, $4, $5)',
+              [sourceId, asset.type, asset.content, asset.width, asset.height]
+            )
+          }
+          await client.query('COMMIT')
+        } catch (err) {
+          await client.query('ROLLBACK')
+          console.error('[assets] Transaction rolled back:', err)
+        } finally {
+          await client.end()
+        }
+      }
+
+      // Save typography roles transactionally (after getting sourceId)
+      const { typography: typographyRoles } = extractionResult ?? {}
+      if (typographyRoles && typographyRoles.length > 0 && sourceId) {
+        const typClient = new Client(process.env.DATABASE_URL!)
+        await typClient.connect()
+        try {
+          await typClient.query('BEGIN')
+          await typClient.query(
+            "DELETE FROM design_typography WHERE source_id = $1 AND role != 'legacy'",
+            [sourceId]
+          )
+          for (const t of typographyRoles) {
+            await typClient.query(
+              `INSERT INTO design_typography (source_id, font_family, role, google_fonts_url, primary_weight)
+               VALUES ($1, $2, $3, $4, $5)
+               ON CONFLICT (source_id, role) DO UPDATE SET
+                 font_family = EXCLUDED.font_family,
+                 google_fonts_url = EXCLUDED.google_fonts_url,
+                 primary_weight = EXCLUDED.primary_weight`,
+              [sourceId, t.fontFamily, t.role, t.googleFontsUrl, t.primaryWeight]
+            )
+          }
+          await typClient.query('COMMIT')
+        } catch (err) {
+          await typClient.query('ROLLBACK')
+          console.error('[typography] Transaction rolled back:', err)
+        } finally {
+          await typClient.end()
+        }
       }
 
       // Auto-categorize based on extracted design data
