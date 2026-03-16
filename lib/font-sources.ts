@@ -87,7 +87,6 @@ export const FONT_SOURCES: FontMapping = {
   // More Google Fonts
   'Quicksand': { name: 'Quicksand', url: 'https://fonts.google.com/specimen/Quicksand', type: 'free', category: 'sans-serif' },
   'Nunito': { name: 'Nunito', url: 'https://fonts.google.com/specimen/Nunito', type: 'free', category: 'sans-serif' },
-  'Poppins': { name: 'Poppins', url: 'https://fonts.google.com/specimen/Poppins', type: 'free', category: 'sans-serif' },
   'Merriweather': { name: 'Merriweather', url: 'https://fonts.google.com/specimen/Merriweather', type: 'free', category: 'serif' },
   'Libre Baskerville': { name: 'Libre Baskerville', url: 'https://fonts.google.com/specimen/Libre+Baskerville', type: 'free', category: 'serif' },
   'Crimson Text': { name: 'Crimson Text', url: 'https://fonts.google.com/specimen/Crimson+Text', type: 'free', category: 'serif' },
@@ -98,7 +97,6 @@ export const FONT_SOURCES: FontMapping = {
   'Righteous': { name: 'Righteous', url: 'https://fonts.google.com/specimen/Righteous', type: 'free', category: 'display' },
   'Pacifico': { name: 'Pacifico', url: 'https://fonts.google.com/specimen/Pacifico', type: 'free', category: 'display' },
   'Great Vibes': { name: 'Great Vibes', url: 'https://fonts.google.com/specimen/Great+Vibes', type: 'free', category: 'display' },
-  'Playfair Display': { name: 'Playfair Display', url: 'https://fonts.google.com/specimen/Playfair+Display', type: 'free', category: 'serif' },
   'Ubuntu': { name: 'Ubuntu', url: 'https://fonts.google.com/specimen/Ubuntu', type: 'free', category: 'sans-serif' },
   'Oxygen': { name: 'Oxygen', url: 'https://fonts.google.com/specimen/Oxygen', type: 'free', category: 'sans-serif' },
   'Asap': { name: 'Asap', url: 'https://fonts.google.com/specimen/Asap', type: 'free', category: 'sans-serif' },
@@ -108,7 +106,6 @@ export const FONT_SOURCES: FontMapping = {
   'Barlow': { name: 'Barlow', url: 'https://fonts.google.com/specimen/Barlow', type: 'free', category: 'sans-serif' },
   'Karla': { name: 'Karla', url: 'https://fonts.google.com/specimen/Karla', type: 'free', category: 'sans-serif' },
   'Rubik': { name: 'Rubik', url: 'https://fonts.google.com/specimen/Rubik', type: 'free', category: 'sans-serif' },
-  'Poppins': { name: 'Poppins', url: 'https://fonts.google.com/specimen/Poppins', type: 'free', category: 'sans-serif' },
   'Exo': { name: 'Exo', url: 'https://fonts.google.com/specimen/Exo', type: 'free', category: 'sans-serif' },
   'League Spartan': { name: 'League Spartan', url: 'https://fonts.google.com/specimen/League+Spartan', type: 'free', category: 'sans-serif' },
   'Spline Sans': { name: 'Spline Sans', url: 'https://fonts.google.com/specimen/Spline+Sans', type: 'free', category: 'sans-serif' },
@@ -118,7 +115,6 @@ export const FONT_SOURCES: FontMapping = {
   
   // Premium/Foundry Fonts
   'Proxima Nova': { name: 'Proxima Nova', url: 'https://www.myfonts.com/collections/proxima-nova-font-mark-simonson', type: 'premium', category: 'sans-serif' },
-  'Montserrat': { name: 'Montserrat', url: 'https://fonts.google.com/specimen/Montserrat', type: 'free', category: 'sans-serif' },
   'Fira Sans': { name: 'Fira Sans', url: 'https://fonts.google.com/specimen/Fira+Sans', type: 'free', category: 'sans-serif' },
   'Varela Round': { name: 'Varela Round', url: 'https://fonts.google.com/specimen/Varela+Round', type: 'free', category: 'sans-serif' },
   'Fredoka One': { name: 'Fredoka One', url: 'https://fonts.google.com/specimen/Fredoka+One', type: 'free', category: 'sans-serif' },
