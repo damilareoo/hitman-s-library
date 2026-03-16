@@ -57,7 +57,7 @@ export const metadata: Metadata = {
     siteName: "Hitman's Library",
     images: [
       {
-        url: "/og-image.png",
+        url: "/og-image-v2.png",
         width: 1200,
         height: 630,
         alt: "Hitman's Library - Design Extraction & Reference",
@@ -70,7 +70,7 @@ export const metadata: Metadata = {
     title: "Hitman's Library",
     description:
       "Extract, organize, and reference design systems from any website.",
-    images: ["/og-image.png"],
+    images: ["/og-image-v2.png"],
   },
   robots: {
     index: true,
