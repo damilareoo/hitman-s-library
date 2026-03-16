@@ -1,9 +1,10 @@
 import * as chromium from '@sparticuz/chromium'
+import type { Page } from 'puppeteer'
 
 // For serverless environments, use the lightweight Chromium from Sparticuz
 let browser: any = null
 
-async function getBrowser() {
+export async function getBrowser() {
   if (browser) return browser
 
   try {
@@ -325,4 +326,60 @@ export async function extractAllDesignDataFromRenderedPage(url: string): Promise
     console.error('[v0] Error extracting all design data:', error)
     return { fonts: [], colors: [], computedStyles: {} }
   }
+}
+
+/**
+ * Extract brand/design-language colors only — CSS variables + structural UI elements.
+ * Excludes content areas, near-transparent colors, and unresolved values.
+ */
+export async function extractBrandColors(page: Page): Promise<string[]> {
+  return page.evaluate(() => {
+    const rawColors: string[] = []
+
+    // --- Pass 1: CSS custom properties on :root ---
+    try {
+      const rootStyles = getComputedStyle(document.documentElement)
+      for (const sheet of Array.from(document.styleSheets)) {
+        try {
+          for (const rule of Array.from(sheet.cssRules)) {
+            if (!(rule instanceof CSSStyleRule)) continue
+            if (rule.selectorText !== ':root' && rule.selectorText !== 'html') continue
+            for (const prop of Array.from(rule.style)) {
+              if (!prop.startsWith('--')) continue
+              const val = rootStyles.getPropertyValue(prop).trim()
+              if (val && !val.includes('var(') && val !== 'transparent' && val !== '') {
+                rawColors.push(val)
+              }
+            }
+          }
+        } catch { /* cross-origin stylesheet — skip */ }
+      }
+    } catch { /* getComputedStyle failed */ }
+
+    // --- Pass 2: Structural UI element colors ---
+    const uiSelectors = ['header', 'nav', 'footer', 'button', '[role="button"]', 'a', 'h1', 'h2', 'body']
+    const cssProps = ['color', 'backgroundColor', 'borderColor'] as const
+
+    for (const selector of uiSelectors) {
+      const els = Array.from(document.querySelectorAll(selector)).slice(0, 8)
+      for (const el of els) {
+        const style = getComputedStyle(el)
+        for (const prop of cssProps) {
+          const val = style[prop as keyof CSSStyleDeclaration] as string
+          if (
+            val &&
+            val !== 'transparent' &&
+            val !== 'rgba(0, 0, 0, 0)' &&
+            !val.includes('inherit') &&
+            !val.includes('currentColor') &&
+            !val.includes('initial')
+          ) {
+            rawColors.push(val)
+          }
+        }
+      }
+    }
+
+    return rawColors
+  })
 }

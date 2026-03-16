@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { neon } from '@neondatabase/serverless'
 import { detectIndustry } from './detectIndustry'
 import { extractTypographyEnhanced } from '@/lib/typography-extraction'
-import { extractTypographyFromRenderedPage, extractAllDesignDataFromRenderedPage } from '@/lib/browser-extraction'
+import { extractTypographyFromRenderedPage, extractAllDesignDataFromRenderedPage, extractBrandColors, getBrowser } from '@/lib/browser-extraction'
+import { toColorFormats, deduplicateColors } from '@/lib/color-utils'
 
 const sql = neon(process.env.DATABASE_URL!)
 
@@ -163,8 +164,31 @@ export async function POST(req: NextRequest) {
     const descMatch = html.match(/<meta name="description" content="([^"]+)/)
     const description = descMatch?.[1] || ''
 
-    // Extract design details
-    const colors = extractColors(html)
+    // Extract design details — brand-signal color extraction via rendered page
+    let colorFormats: { hex: string; oklch: string }[] = []
+    let colors: string[] = []
+    try {
+      const browser = await getBrowser()
+      if (browser) {
+        const page = await browser.newPage()
+        try {
+          await page.setViewport({ width: 1440, height: 900 })
+          await page.goto(url, { waitUntil: 'networkidle2', timeout: 15000 }).catch(() => null)
+          await page.waitForTimeout(2000)
+          const rawCssColors = await extractBrandColors(page)
+          colorFormats = deduplicateColors(rawCssColors)
+            .map(c => toColorFormats(c))
+            .filter((c): c is { hex: string; oklch: string } => c !== null)
+            .slice(0, 16)
+          colors = colorFormats.map(c => c.hex)
+        } finally {
+          await page.close()
+        }
+      }
+    } catch (colorErr) {
+      console.warn('[v0] Brand color extraction failed, falling back to regex:', colorErr)
+      colors = extractColors(html)
+    }
     const typographyData = extractTypographyEnhanced(html)
     let typography = typographyData.allFonts
     
@@ -253,22 +277,34 @@ export async function POST(req: NextRequest) {
       const sourceId = result[0]?.id
 
       // Save colors if extracted
-      if (colors.length > 0 && sourceId) {
-        await sql`
-          INSERT INTO design_colors (
-            source_id,
-            primary_color,
-            secondary_color,
-            all_colors,
-            created_at
-          ) VALUES (
-            ${sourceId},
-            ${colors[0] || ''},
-            ${colors[1] || ''},
-            ${JSON.stringify(colors)},
-            NOW()
-          )
-        `.catch(() => null)
+      if (sourceId) {
+        if (colorFormats.length > 0) {
+          // New brand-signal extraction: save each color with hex_value and oklch
+          for (const color of colorFormats) {
+            await sql`
+              INSERT INTO design_colors (source_id, hex_value, oklch)
+              VALUES (${sourceId}, ${color.hex}, ${color.oklch})
+              ON CONFLICT DO NOTHING
+            `.catch(() => null)
+          }
+        } else if (colors.length > 0) {
+          // Fallback: legacy insert with primary_color/secondary_color/all_colors
+          await sql`
+            INSERT INTO design_colors (
+              source_id,
+              primary_color,
+              secondary_color,
+              all_colors,
+              created_at
+            ) VALUES (
+              ${sourceId},
+              ${colors[0] || ''},
+              ${colors[1] || ''},
+              ${JSON.stringify(colors)},
+              NOW()
+            )
+          `.catch(() => null)
+        }
       }
 
       // Save typography if extracted
