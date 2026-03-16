@@ -189,8 +189,6 @@ ALTER TABLE design_typography ADD COLUMN IF NOT EXISTS role TEXT;
 ALTER TABLE design_typography ADD COLUMN IF NOT EXISTS google_fonts_url TEXT;
 ALTER TABLE design_typography ADD COLUMN IF NOT EXISTS primary_weight INTEGER;
 
--- design_sources: add quality_score if missing (used by detail endpoint)
-ALTER TABLE design_sources ADD COLUMN IF NOT EXISTS quality_score NUMERIC DEFAULT 0;
 
 -- Backfill role=NULL rows so constraint doesn't collide with new inserts.
 -- Existing rows get role='legacy' to avoid NULL uniqueness issues.
@@ -1025,8 +1023,6 @@ export async function GET(
       SELECT id, source_url, screenshot_url, created_at
       FROM design_sources WHERE id = ${id}
     `
-    // Note: quality_score was added to design_sources in migration 006.
-    // If migration has not run yet, this column will be null — that is safe.
     if (!sources.length) {
       return NextResponse.json({ error: 'Not found' }, { status: 404 })
     }
