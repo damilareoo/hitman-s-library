@@ -53,14 +53,14 @@ export const metadata: Metadata = {
     url: "/",
     title: "Hitman's Library",
     description:
-      "Extract and organize design systems. Automatically extract colors, typography, and architecture from any website.",
+      "A personal infrastructure for everything worth saving on the web. No folders. No bookmarks. Just the library.",
     siteName: "Hitman's Library",
     images: [
       {
-        url: "/og-image-v2.png",
+        url: "https://mars-hitman-library.vercel.app/og-image-v2.png",
         width: 1200,
         height: 630,
-        alt: "Hitman's Library - Design Extraction & Reference",
+        alt: "Hitman's Library - A personal infrastructure for everything worth saving on the web",
         type: "image/png",
       },
     ],
@@ -69,8 +69,9 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Hitman's Library",
     description:
-      "Extract, organize, and reference design systems from any website.",
-    images: ["/og-image-v2.png"],
+      "A personal infrastructure for everything worth saving on the web. No folders. No bookmarks. Just the library.",
+    images: ["https://mars-hitman-library.vercel.app/og-image-v2.png"],
+    creator: "@damilareoo",
   },
   robots: {
     index: true,
