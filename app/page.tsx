@@ -501,10 +501,10 @@ export default function DesignLibrary() {
                   {/* Content Area */}
                   <div className="flex-1 flex flex-col p-4 sm:p-5">
                     <div className="flex-1 space-y-2.5 mb-3">
-                      <h3 className="font-bold text-sm sm:text-base font-mono line-clamp-2 text-foreground group-hover:text-foreground/90 grid-transition leading-snug">
+                      <h3 className="font-bold text-sm sm:text-base font-mono line-clamp-2 text-foreground group-hover:text-foreground/90 transition-colors leading-snug">
                         {design.title}
                       </h3>
-                      <p className="text-xs font-mono text-muted-foreground group-hover:text-muted-foreground/80 grid-transition">
+                      <p className="text-xs font-mono text-muted-foreground group-hover:text-muted-foreground/80 transition-colors">
                         {design.industry}
                       </p>
                     </div>
@@ -515,7 +515,7 @@ export default function DesignLibrary() {
                         {design.colors.slice(0, 4).map((color, i) => (
                           <div
                             key={i}
-                            className="w-3 h-3 border border-border/50 rounded-xs grid-transition group-hover:ring-1 group-hover:ring-offset-1 group-hover:ring-offset-background group-hover:ring-primary/40"
+                            className="w-3 h-3 border border-border/50 rounded-xs transition-all group-hover:ring-1 group-hover:ring-offset-1 group-hover:ring-offset-background group-hover:ring-primary/40"
                             style={{ backgroundColor: color }}
                             title={color}
                           />
