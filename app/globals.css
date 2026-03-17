@@ -1246,6 +1246,12 @@ a,
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+
+  [style*="fade-in-up"],
+  [style*="scale-in"] {
+    animation-duration: 0.15s !important;
+    animation-timing-function: ease !important;
+  }
 }
 
 /* Button Press Animation */
