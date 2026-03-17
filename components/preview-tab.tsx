@@ -3,6 +3,10 @@
 
 import { useRef, useEffect, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
+import { ShieldAlert, Lock, Clock, FileQuestion, AlertTriangle } from 'lucide-react'
+import { classifyExtractionError } from '@/lib/classify-extraction-error'
+
+const ICONS = { ShieldAlert, Lock, Clock, FileQuestion, AlertTriangle }
 
 interface PreviewTabProps {
   screenshotUrl: string | null
@@ -28,6 +32,30 @@ export function PreviewTab({ screenshotUrl, siteUrl, extractionError }: PreviewT
   }
 
   if (!screenshotUrl) {
+    if (extractionError) {
+      const info = classifyExtractionError(extractionError)
+      const Icon = ICONS[info.icon]
+      return (
+        <div className="flex flex-col items-center justify-center flex-1 gap-3 p-8">
+          <div className="w-full rounded-md border border-border p-6 text-center space-y-3">
+            <p className="font-mono text-sm text-muted-foreground">
+              {(() => { try { return new URL(siteUrl).hostname } catch { return siteUrl } })()}
+            </p>
+            <div className="flex items-center justify-center gap-2 text-muted-foreground/60">
+              <Icon className="w-3.5 h-3.5" />
+              <span className="text-[10px] uppercase tracking-widest font-mono">{info.label}</span>
+            </div>
+            <p className="text-xs text-muted-foreground leading-relaxed">{info.explanation}</p>
+            <details className="text-left">
+              <summary className="text-[10px] font-mono text-muted-foreground/40 cursor-pointer hover:text-muted-foreground/60">
+                Show technical details
+              </summary>
+              <p className="font-mono text-[9px] text-muted-foreground/40 mt-1 break-all">{extractionError}</p>
+            </details>
+          </div>
+        </div>
+      )
+    }
     return (
       <div className="flex flex-col items-center justify-center flex-1 gap-3 p-8">
         <div className="w-full rounded-md border border-border p-6 text-center">
@@ -35,9 +63,6 @@ export function PreviewTab({ screenshotUrl, siteUrl, extractionError }: PreviewT
             {(() => { try { return new URL(siteUrl).hostname } catch { return siteUrl } })()}
           </p>
           <p className="text-xs text-muted-foreground/60 mt-1">Screenshot unavailable</p>
-          {extractionError && (
-            <p className="font-mono text-[10px] text-destructive/70 mt-3 break-words">{extractionError}</p>
-          )}
         </div>
       </div>
     )
