@@ -2,6 +2,9 @@ import chromium from '@sparticuz/chromium'
 import puppeteer from 'puppeteer'
 import type { Page } from 'puppeteer'
 import { put } from '@vercel/blob'
+import { existsSync } from 'fs'
+import { join, dirname } from 'path'
+import { createRequire } from 'module'
 import { extractAssets } from './asset-extraction'
 
 // For serverless environments, use the lightweight Chromium from Sparticuz
@@ -11,12 +14,28 @@ export async function getBrowser() {
   if (browser) return browser
 
   try {
-    // Vercel does not set AWS_EXECUTION_ENV, so @sparticuz/chromium skips
-    // extracting the Amazon Linux shared-library bundle (al2.tar.br) that
-    // provides libnss3.so. Faking the env var before calling executablePath()
-    // triggers that extraction and makes Chromium launch successfully on Vercel.
-    if (process.env.VERCEL && !process.env.AWS_EXECUTION_ENV) {
-      process.env.AWS_EXECUTION_ENV = 'AWS_Lambda_nodejs18.x'
+    // On Vercel, AWS_EXECUTION_ENV is not set, so @sparticuz/chromium's
+    // executablePath() skips extracting al2.tar.br — the bundle that provides
+    // libnss3.so and other shared libs the Chromium binary needs at runtime.
+    //
+    // We use lambdafs from the chromium package to inflate al2.tar.br directly
+    // (idempotent: returns immediately if /tmp/al2 already exists), then add
+    // /tmp/al2 to LD_LIBRARY_PATH so the launched subprocess finds the libs.
+    if (process.env.VERCEL) {
+      const _require = createRequire(import.meta.url)
+      const chromiumBuild = dirname(_require.resolve('@sparticuz/chromium'))
+      const lambdafs = _require(join(chromiumBuild, 'lambdafs')).default
+      const al2File = join(chromiumBuild, '..', 'bin', 'al2.tar.br')
+      if (existsSync(al2File)) {
+        await lambdafs.inflate(al2File)
+        const libPath = process.env.LD_LIBRARY_PATH ?? ''
+        if (!libPath.includes('/tmp/al2')) {
+          process.env.LD_LIBRARY_PATH = `/tmp/al2:${libPath}`
+        }
+      }
+      if (!process.env.AWS_EXECUTION_ENV) {
+        process.env.AWS_EXECUTION_ENV = 'AWS_Lambda_nodejs18.x'
+      }
     }
 
     browser = await puppeteer.launch({
