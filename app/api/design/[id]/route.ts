@@ -16,7 +16,8 @@ export async function GET(
 
   try {
     const sources = await sql`
-      SELECT id, source_url, screenshot_url, created_at
+      SELECT id, source_url, screenshot_url, created_at,
+             metadata->>'extraction_error' as extraction_error
       FROM design_sources WHERE id = ${id}
     `
     if (!sources.length) {
@@ -43,6 +44,7 @@ export async function GET(
       url: source.source_url,
       screenshot_url: source.screenshot_url ?? null,
       created_at: source.created_at,
+      extraction_error: source.extraction_error ?? null,
       colors,
       typography,
       assets,

@@ -9,6 +9,18 @@ import { Card } from '@/components/ui/card'
 import { Upload, X, Sun, Moon, Menu, Trash2 } from 'lucide-react'
 import { SiteThumbnail } from '@/components/site-thumbnail'
 import { SiteDetailPanel } from '@/components/site-detail-panel'
+import { motion, AnimatePresence } from 'motion/react'
+import { ThemeTransitionOverlay } from '@/components/theme-transition-overlay'
+import { classifyExtractionError } from '@/lib/classify-extraction-error'
+
+const gridVariants = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.04 } },
+}
+const cardVariants = {
+  hidden: { opacity: 0, y: 16 },
+  show: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 260, damping: 22 } },
+}
 
 interface Design {
   id: string
@@ -52,9 +64,17 @@ export default function DesignLibrary() {
   const [selectedDesign, setSelectedDesign] = useState<Design | null>(null)
   const [linkInput, setLinkInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [submitStage, setSubmitStage] = useState<string | null>(null)
+  const [submitError, setSubmitError] = useState<string | null>(null)
+  const submitTimersRef = useRef<ReturnType<typeof setTimeout>[]>([])
 
   const [fileInputRef, setFileInputRef] = useState<HTMLInputElement | null>(null)
   const [theme, setTheme] = useState<'light' | 'dark'>('light')
+  const [themeOverlay, setThemeOverlay] = useState<{
+    newTheme: 'dark' | 'light'
+    origin: { x: number; y: number }
+  } | null>(null)
+  const themeButtonRef = useRef<HTMLButtonElement>(null)
   const [copied, setCopied] = useState(false)
   const [activeFilters, setActiveFilters] = useState<ActiveFilters>({
     industries: [],
@@ -71,27 +91,56 @@ export default function DesignLibrary() {
   const [copyFeedbacks, setCopyFeedbacks] = useState<CopyFeedback[]>([])
   const [categories, setCategories] = useState<{ name: string; count: number }[]>([])
 
+  function clearSubmitTimers() {
+    submitTimersRef.current.forEach(clearTimeout)
+    submitTimersRef.current = []
+  }
+
+  function startSubmitStages() {
+    const stages = [
+      { label: 'Launching browser...', delay: 0 },
+      { label: 'Rendering page...', delay: 3000 },
+      { label: 'Extracting colors...', delay: 8000 },
+      { label: 'Capturing screenshot...', delay: 15000 },
+      { label: 'Saving...', delay: 25000 },
+    ]
+    stages.forEach(({ label, delay }) => {
+      const t = setTimeout(() => setSubmitStage(label), delay)
+      submitTimersRef.current.push(t)
+    })
+  }
+
   useEffect(() => {
     fetch('/api/design/categories')
       .then(r => r.json())
       .then(d => setCategories(d.categories || []))
   }, [])
+
+  const hasAnimated = useRef(false)
+  useEffect(() => { hasAnimated.current = true }, [])
+
   const filteredDesigns = designs
 
-  // Seamless theme switching without any flash or delay
   const toggleTheme = () => {
+    if (themeOverlay) return
     const newTheme = theme === 'light' ? 'dark' : 'light'
-    
-    // Update state and localStorage immediately (no delay)
+
+    const btn = themeButtonRef.current
+    const rect = btn?.getBoundingClientRect()
+    const origin = rect
+      ? { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 }
+      : { x: window.innerWidth / 2, y: 0 }
+
+    document.documentElement.setAttribute('data-theme-transitioning', 'true')
+    setThemeOverlay({ newTheme, origin })
+  }
+
+  function handleThemeTransitionComplete(newTheme: 'dark' | 'light') {
     setTheme(newTheme)
     localStorage.setItem('theme', newTheme)
-    
-    // Update DOM class immediately for instant CSS transition
-    if (newTheme === 'dark') {
-      document.documentElement.classList.add('dark')
-    } else {
-      document.documentElement.classList.remove('dark')
-    }
+    document.documentElement.classList.toggle('dark', newTheme === 'dark')
+    document.documentElement.removeAttribute('data-theme-transitioning')
+    setThemeOverlay(null)
   }
 
   // Initialize theme state from localStorage/system preference (layout.tsx handles the DOM)
@@ -106,6 +155,12 @@ export default function DesignLibrary() {
     loadDesigns()
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [JSON.stringify(activeFilters)])
+
+  // Cleanup submit timers on unmount to prevent state updates on unmounted component
+  useEffect(() => {
+    return () => clearSubmitTimers()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // Intuitive copy feedback with auto-dismiss
   const handleCopy = (text: string, type: 'color' | 'text') => {
@@ -170,44 +225,38 @@ export default function DesignLibrary() {
   }
 
   const handleAddLink = async () => {
-    if (!linkInput.trim()) {
-      alert('Please enter a website URL')
-      return
-    }
-
+    if (!linkInput.trim()) return
     setIsLoading(true)
+    setSubmitError(null)
+    setSubmitStage(null)
+    startSubmitStages()
+
     try {
-      console.log('[v0] Extracting design from:', linkInput)
       const response = await fetch('/api/design/extract', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          url: linkInput,
-          notes: ''
-          // No industry parameter - auto-detection will happen in the API
-        })
+        body: JSON.stringify({ url: linkInput, notes: '' }),
       })
-
       const data = await response.json()
-      console.log('[v0] Extract response:', data)
+
+      clearSubmitTimers()
+      setSubmitStage(null)
 
       if (data.isDuplicate) {
-        alert('⚠ Already Added\n\nThis website is already in your collection')
+        setSubmitError('This website is already in your collection.')
       } else if (data.success || data.id) {
-        console.log('[v0] Design extracted successfully with auto-detected industry:', data.industry)
-        alert(`✓ "${data.title}" added as ${data.industry}\n\nDesign categorized automatically`)
         setLinkInput('')
         loadDesigns()
       } else if (data.error) {
-        console.warn('[v0] Extraction error:', data.error)
-        alert(`⚠ ${data.error}\n\n${data.warning || 'Try another website'}`)
+        const info = classifyExtractionError(data.error)
+        setSubmitError(info.explanation)
       } else {
-        console.error('[v0] Unexpected response:', data)
-        alert('Failed to add design. Please try another website.')
+        setSubmitError('Failed to add design. Please try another website.')
       }
-    } catch (error) {
-      console.error('[v0] Error adding design:', error)
-      alert('Connection error. Please check your internet and try again.')
+    } catch {
+      clearSubmitTimers()
+      setSubmitStage(null)
+      setSubmitError('Connection error. Please check your internet and try again.')
     } finally {
       setIsLoading(false)
     }
@@ -312,8 +361,50 @@ export default function DesignLibrary() {
                 {/* Add Design */}
                 <div className="space-y-2">
                   <p className="text-xs uppercase font-mono font-semibold tracking-widest text-muted-foreground">Add Site</p>
-                  <Input placeholder="https://example.com" value={linkInput} onChange={(e) => setLinkInput(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && handleAddLink()} disabled={isLoading} className="font-mono text-xs h-9" aria-label="Website URL" />
-                  <Button onClick={handleAddLink} disabled={isLoading || !linkInput.trim()} className="w-full h-9 font-mono text-xs">{isLoading ? 'Extracting...' : 'Add'}</Button>
+                  <Input
+                    placeholder="https://example.com"
+                    value={linkInput}
+                    onChange={(e) => { setLinkInput(e.target.value); setSubmitError(null) }}
+                    onKeyDown={(e) => e.key === 'Enter' && !isLoading && handleAddLink()}
+                    disabled={isLoading}
+                    className="font-mono text-xs h-9"
+                    aria-label="Website URL"
+                  />
+                  <Button
+                    onClick={handleAddLink}
+                    disabled={isLoading || !linkInput.trim()}
+                    className="w-full h-9 font-mono text-xs"
+                  >
+                    {isLoading ? (
+                      <span className="flex items-center gap-2">
+                        <span className="w-3 h-3 border border-current border-t-transparent rounded-full animate-spin" />
+                        <AnimatePresence mode="wait">
+                          <motion.span
+                            key={submitStage ?? 'idle'}
+                            initial={{ opacity: 0, y: 4 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -4 }}
+                            transition={{ duration: 0.2 }}
+                            className="text-xs font-mono"
+                          >
+                            {submitStage ?? 'Extracting...'}
+                          </motion.span>
+                        </AnimatePresence>
+                      </span>
+                    ) : 'Add'}
+                  </Button>
+                  <AnimatePresence>
+                    {submitError && (
+                      <motion.p
+                        initial={{ opacity: 0, y: -4 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0 }}
+                        className="text-[11px] text-destructive/80 font-mono leading-relaxed"
+                      >
+                        {submitError}
+                      </motion.p>
+                    )}
+                  </AnimatePresence>
                 </div>
                 <div className="h-px bg-border/20" />
                 {/* Category Filters */}
@@ -360,8 +451,16 @@ export default function DesignLibrary() {
         <div className="h-16 px-4 md:px-6 lg:px-8 flex items-center justify-between">
           <h1 className="text-lg md:text-xl font-bold font-mono">Hitman's Library</h1>
           <div className="flex items-center gap-3">
-            <button onClick={toggleTheme} className="p-2 hover:bg-muted rounded-sm border border-border/40 grid-transition" aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}>
-              {theme === 'light' ? <Moon className="w-5 h-5" aria-hidden="true" /> : <Sun className="w-5 h-5" aria-hidden="true" />}
+            <button
+              ref={themeButtonRef}
+              onClick={toggleTheme}
+              disabled={!!themeOverlay}
+              className="p-2 hover:bg-muted rounded-sm border border-border/40 transition-colors disabled:opacity-50"
+              aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
+            >
+              <motion.span key={theme} initial={{ rotate: -30, scale: 0.7 }} animate={{ rotate: 0, scale: 1 }} style={{ display: 'flex' }}>
+                {theme === 'light' ? <Moon className="w-5 h-5" aria-hidden="true" /> : <Sun className="w-5 h-5" aria-hidden="true" />}
+              </motion.span>
             </button>
           </div>
         </div>
@@ -458,27 +557,39 @@ export default function DesignLibrary() {
           <div className="flex-1 overflow-y-auto">
             <div className="p-4 sm:p-6 md:p-8">
             {/* Gallery Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-5 md:gap-6">
+            <motion.div
+              className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-5 md:gap-6"
+              variants={gridVariants}
+              initial={hasAnimated.current ? false : 'hidden'}
+              animate="show"
+            >
+              <AnimatePresence mode="popLayout">
               {filteredDesigns.map((design) => (
-                <div
+                <motion.div
                   key={design.id}
+                  layout
+                  variants={cardVariants}
+                  initial={hasAnimated.current ? false : 'hidden'}
+                  animate="show"
+                  exit={{ scale: 0.9, opacity: 0, transition: { duration: 0.15, ease: 'easeIn' } }}
+                  whileHover={{ scale: 1.015 }}
+                  whileTap={{ scale: 0.98 }}
                   onClick={() => setSelectedDesign(design)}
-                  className="group relative flex flex-col border border-border/40 rounded-lg overflow-hidden grid-transition hover:border-border/70 text-left cursor-pointer"
+                  className="group relative flex flex-col border border-border/40 rounded-lg overflow-hidden hover:border-border/70 text-left cursor-pointer"
                 >
                   {/* Website Hero Screenshot */}
                   <SiteThumbnail
                     url={design.url}
                     alt={design.title}
-                    className="group-hover:scale-[1.02] transition-transform duration-300"
                   />
 
                   {/* Content Area */}
                   <div className="flex-1 flex flex-col p-4 sm:p-5">
                     <div className="flex-1 space-y-2.5 mb-3">
-                      <h3 className="font-bold text-sm sm:text-base font-mono line-clamp-2 text-foreground group-hover:text-foreground/90 grid-transition leading-snug">
+                      <h3 className="font-bold text-sm sm:text-base font-mono line-clamp-2 text-foreground group-hover:text-foreground/90 transition-colors leading-snug">
                         {design.title}
                       </h3>
-                      <p className="text-xs font-mono text-muted-foreground group-hover:text-muted-foreground/80 grid-transition">
+                      <p className="text-xs font-mono text-muted-foreground group-hover:text-muted-foreground/80 transition-colors">
                         {design.industry}
                       </p>
                     </div>
@@ -489,7 +600,7 @@ export default function DesignLibrary() {
                         {design.colors.slice(0, 4).map((color, i) => (
                           <div
                             key={i}
-                            className="w-3 h-3 border border-border/50 rounded-xs grid-transition group-hover:ring-1 group-hover:ring-offset-1 group-hover:ring-offset-background group-hover:ring-primary/40"
+                            className="w-3 h-3 border border-border/50 rounded-xs transition-all group-hover:ring-1 group-hover:ring-offset-1 group-hover:ring-offset-background group-hover:ring-primary/40"
                             style={{ backgroundColor: color }}
                             title={color}
                           />
@@ -499,9 +610,10 @@ export default function DesignLibrary() {
                       <span className="text-xs text-muted-foreground font-mono">{design.colors.length} colors</span>
                     </div>
                   </div>
-                </div>
+                </motion.div>
               ))}
-            </div>
+              </AnimatePresence>
+            </motion.div>
             </div>
           </div>
         </div>
@@ -532,7 +644,7 @@ export default function DesignLibrary() {
         {/* Copy Feedback Toasts */}
         <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2 pointer-events-none">
           {copyFeedbacks.map(feedback => (
-            <div 
+            <div
               key={feedback.id}
               className="bg-foreground text-background px-4 py-2 rounded-sm text-sm font-mono animate-in fade-in slide-in-from-bottom-2 duration-300 pointer-events-auto shadow-lg"
             >
@@ -541,6 +653,14 @@ export default function DesignLibrary() {
           ))}
         </div>
       </div>
+      {/* Theme transition overlay */}
+      {themeOverlay && (
+        <ThemeTransitionOverlay
+          newTheme={themeOverlay.newTheme}
+          origin={themeOverlay.origin}
+          onComplete={handleThemeTransitionComplete}
+        />
+      )}
     </div>
   )
 }

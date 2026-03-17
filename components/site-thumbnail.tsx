@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { cn } from '@/lib/utils'
+import { motion } from 'motion/react'
 
 interface SiteThumbnailProps {
   url: string
@@ -41,7 +42,11 @@ export function SiteThumbnail({ url, alt, className }: SiteThumbnailProps) {
   }, [url])
 
   return (
-    <div className={cn('relative w-full aspect-video bg-muted overflow-hidden', className)}>
+    <motion.div
+      className={cn('relative w-full aspect-video bg-muted overflow-hidden', className)}
+      whileHover={{ scale: 1.04 }}
+      transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+    >
       {/* Loading shimmer */}
       {status === 'loading' && (
         <div className="absolute inset-0 bg-muted animate-pulse" />
@@ -78,6 +83,6 @@ export function SiteThumbnail({ url, alt, className }: SiteThumbnailProps) {
           <div className="w-8 h-8 rounded-full bg-muted-foreground/10" />
         </div>
       )}
-    </div>
+    </motion.div>
   )
 }

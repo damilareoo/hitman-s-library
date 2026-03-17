@@ -17,30 +17,46 @@ export async function getBrowser() {
     )
 
     if (isServerless) {
-      // On Vercel/Lambda, @sparticuz/chromium provides a Linux Chromium binary.
-      // AWS_EXECUTION_ENV must be set so executablePath() includes al2.tar.br,
-      // which provides libnss3.so and other shared libs the binary needs.
-      // If /tmp/chromium exists but /tmp/al2 doesn't (stale warm-start cache),
-      // delete it to force a full re-extraction on the next call.
-      if (existsSync('/tmp/chromium') && !existsSync('/tmp/al2')) {
+      // @sparticuz/chromium sets LD_LIBRARY_PATH at MODULE LOAD TIME only when
+      // isRunningInAwsLambda() is true. On Vercel, AWS_EXECUTION_ENV is not set
+      // by default, so that top-level setup was skipped. We must:
+      //   1. Set AWS_EXECUTION_ENV before calling executablePath() so it extracts al2.tar.br
+      //   2. Manually set LD_LIBRARY_PATH to the correct al2 lib path
+      //   3. Explicitly pass env to puppeteer.launch() so Chrome subprocess inherits it
+
+      // @sparticuz/chromium only knows about nodejs18.x (AL2 libs) and nodejs20.x (AL2023 libs).
+      // Vercel sets AWS_EXECUTION_ENV internally (e.g. 'nodejs24.x') but the package doesn't
+      // handle that — always override it to the closest supported value so the right shared
+      // libs get extracted. AL2023 is required for Node 20+ (newer glibc on modern Linux).
+      const nodeMajor = parseInt(process.version.slice(1), 10)
+      process.env.AWS_EXECUTION_ENV = nodeMajor >= 20
+        ? 'AWS_Lambda_nodejs20.x'
+        : 'AWS_Lambda_nodejs18.x'
+
+      // If /tmp/chromium is cached from a prior cold start that used the wrong libs,
+      // delete it so executablePath() does a fresh extraction this time.
+      const al2Dir = nodeMajor >= 20 ? '/tmp/al2023' : '/tmp/al2'
+      const al2LibDir = `${al2Dir}/lib`
+      if (existsSync('/tmp/chromium') && !existsSync(al2Dir)) {
         try { unlinkSync('/tmp/chromium') } catch {}
-      }
-      if (!process.env.AWS_EXECUTION_ENV) {
-        process.env.AWS_EXECUTION_ENV = 'AWS_Lambda_nodejs18.x'
       }
 
       const executablePath = await chromium.executablePath()
 
-      const libPath = process.env.LD_LIBRARY_PATH ?? ''
-      if (!libPath.includes('/tmp/al2')) {
-        process.env.LD_LIBRARY_PATH = `/tmp/al2:${libPath}`
-      }
+      // Always prepend the correct lib dir. The module-level setup may have used the wrong
+      // path (e.g. /tmp/al2/lib when we need /tmp/al2023/lib for Node 20+).
+      const existingLibPath = process.env.LD_LIBRARY_PATH ?? ''
+      process.env.LD_LIBRARY_PATH = existingLibPath.includes(al2LibDir)
+        ? existingLibPath
+        : `${al2LibDir}:${existingLibPath}`
 
       browser = await puppeteer.launch({
         args: chromium.args,
         defaultViewport: chromium.defaultViewport,
         executablePath,
         headless: chromium.headless,
+        // Pass env explicitly so Chrome subprocess inherits LD_LIBRARY_PATH.
+        env: { ...process.env },
       })
     } else {
       // Local dev (macOS/Windows): use puppeteer's own bundled Chrome.

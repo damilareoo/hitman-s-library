@@ -324,8 +324,9 @@ export async function POST(req: NextRequest) {
       }
 
       // Save assets transactionally
-      const { assets } = extractionResult ?? {}
-      if (assets && assets.length > 0 && sourceId) {
+      const validAssets = (extractionResult?.assets ?? []).filter(a => a != null && a.type)
+      if (validAssets.length > 0 && sourceId) {
+        const assets = validAssets
         const client = new Client(process.env.DATABASE_URL!)
         await client.connect()
         try {

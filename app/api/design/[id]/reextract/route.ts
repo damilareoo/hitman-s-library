@@ -34,6 +34,13 @@ export async function POST(
       .filter((c): c is { hex: string; oklch: string } => c !== null)
       .slice(0, 16)
 
+    // Clear any previous extraction error now that we succeeded
+    await sql`
+      UPDATE design_sources
+      SET metadata = COALESCE(metadata, '{}') - 'extraction_error'
+      WHERE id = ${id}
+    `.catch(() => null)
+
     // Update screenshot URL
     if (extractionResult.screenshotUrl) {
       await sql`UPDATE design_sources SET screenshot_url = ${extractionResult.screenshotUrl} WHERE id = ${id}`
@@ -52,13 +59,14 @@ export async function POST(
     }
 
     // Replace assets transactionally
-    if (extractionResult.assets && extractionResult.assets.length > 0) {
+    const validAssets = (extractionResult.assets ?? []).filter(a => a != null && a.type)
+    if (validAssets.length > 0) {
       const assetClient = new Client(process.env.DATABASE_URL!)
       await assetClient.connect()
       try {
         await assetClient.query('BEGIN')
         await assetClient.query('DELETE FROM design_assets WHERE source_id = $1', [id])
-        for (const asset of extractionResult.assets) {
+        for (const asset of validAssets) {
           await assetClient.query(
             'INSERT INTO design_assets (source_id, type, content, width, height) VALUES ($1, $2, $3, $4, $5)',
             [id, asset.type, asset.content, asset.width, asset.height]
@@ -114,6 +122,12 @@ export async function POST(
     })
   } catch (err: any) {
     console.error(`[reextract] Failed for id=${id} url=${url}:`, err)
+    // Store the error reason so the UI can explain why data is unavailable
+    await sql`
+      UPDATE design_sources
+      SET metadata = COALESCE(metadata, '{}') || jsonb_build_object('extraction_error', ${err.message ?? 'Unknown error'})
+      WHERE id = ${id}
+    `.catch(() => null)
     return NextResponse.json({ success: false, error: err.message }, { status: 500 })
   }
 }
