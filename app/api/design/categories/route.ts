@@ -6,24 +6,29 @@ export const runtime = 'edge'
 // Normalize raw DB industry values into clean display names
 function normalize(raw: string): string {
   const s = raw.trim()
-  if (/^saas$/i.test(s)) return 'SaaS'
-  if (/^fintech$/i.test(s)) return 'Fintech'
-  if (/^e-commerce$/i.test(s)) return 'E-commerce'
-  if (/^health(care|tech)?$/i.test(s)) return 'Healthcare'
-  if (/^entertainment$/i.test(s)) return 'Entertainment'
-  if (/^productivity$/i.test(s)) return 'Productivity'
+  // Old category → new category mappings
+  if (/^saas$/i.test(s)) return 'SaaS / App'
+  if (/^fintech$/i.test(s)) return 'Finance'
+  if (/^productivity$/i.test(s)) return 'SaaS / App'
+  if (/^social\s*media$/i.test(s)) return 'Entertainment'
+  if (/^health(care|tech)?$/i.test(s)) return 'Other'
+  if (/^travel$/i.test(s)) return 'Other'
+  if (/^education$/i.test(s)) return 'Other'
   if (/^marketing$/i.test(s)) return 'Marketing'
-  if (/^social\s*media$/i.test(s)) return 'Social Media'
+  if (/^e-commerce$/i.test(s)) return 'E-commerce'
+  if (/^entertainment$/i.test(s)) return 'Entertainment'
   if (/^portfolio$/i.test(s)) return 'Portfolio'
-  if (/^general$/i.test(s)) return 'General'
-  if (/^uncategorized$/i.test(s)) return 'Uncategorized'
+  if (/^agency$/i.test(s)) return 'Agency'
+  // Retire "General" and "Uncategorized" → "Other"
+  if (/^(general|uncategorized)$/i.test(s)) return 'Other'
+  // Junk
   if (/^code[\s/]+bugs$/i.test(s)) return 'Other'
-  if (/^[a-z]$/.test(s)) return 'Other' // single letter junk
+  if (/^[a-z]$/.test(s)) return 'Other'
   // Capitalize first letter as fallback
   return s.charAt(0).toUpperCase() + s.slice(1)
 }
 
-const DEPRIORITIZED = ['Uncategorized', 'General', 'Other']
+const DEPRIORITIZED = ['Other']
 
 export async function GET() {
   try {
