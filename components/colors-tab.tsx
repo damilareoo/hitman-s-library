@@ -58,13 +58,13 @@ function FailureEmptyState({ message, extractionError }: { message: string; extr
   )
 }
 
-function parseOklch(s: string): { l: number; c: string; h: number } | null {
-  const m = s.match(/oklch\(\s*([\d.]+)\s+([\d.]+)\s+([\d.]+)/)
+function parseOklch(s: string): { l: number; c: number; h: number } | null {
+  const m = s.match(/oklch\(\s*([\d.]+)\s+([\d.e+\-]+)\s+([\d.]+|none)/)
   if (!m) return null
   return {
     l: Math.round(parseFloat(m[1]) * 100),
-    c: parseFloat(m[2]).toFixed(2),
-    h: Math.round(parseFloat(m[3])),
+    c: parseFloat(m[2]),
+    h: m[3] === 'none' ? 0 : Math.round(parseFloat(m[3])),
   }
 }
 
@@ -123,7 +123,7 @@ export function ColorsTab({ colors, extractionError }: { colors: ColorRow[]; ext
               <div className="flex items-center justify-between">
                 {showOklch ? (
                   <span className="font-mono text-[11px] text-foreground">
-                    oklch({parsed!.l}% {parsed!.c} {parsed!.h}°)
+                    oklch({parsed!.l}% {parsed!.c.toFixed(2)} {parsed!.h}°)
                   </span>
                 ) : (
                   <span className="font-mono text-[11px] text-foreground">{color.hex_value}</span>
