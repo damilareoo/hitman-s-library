@@ -3,6 +3,7 @@
 import React from "react"
 
 import { useState, useEffect, useRef } from 'react'
+import { useTheme } from 'next-themes'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -10,7 +11,6 @@ import { Upload, X, Sun, Moon, Menu, Trash2 } from 'lucide-react'
 import { SiteThumbnail } from '@/components/site-thumbnail'
 import { SiteDetailPanel } from '@/components/site-detail-panel'
 import { motion, AnimatePresence } from 'motion/react'
-import { ThemeTransitionOverlay } from '@/components/theme-transition-overlay'
 import { classifyExtractionError } from '@/lib/classify-extraction-error'
 
 const gridVariants = {
@@ -69,12 +69,7 @@ export default function DesignLibrary() {
   const submitTimersRef = useRef<ReturnType<typeof setTimeout>[]>([])
 
   const [fileInputRef, setFileInputRef] = useState<HTMLInputElement | null>(null)
-  const [theme, setTheme] = useState<'light' | 'dark'>('light')
-  const [themeOverlay, setThemeOverlay] = useState<{
-    newTheme: 'dark' | 'light'
-    origin: { x: number; y: number }
-  } | null>(null)
-  const themeButtonRef = useRef<HTMLButtonElement>(null)
+  const { resolvedTheme, setTheme } = useTheme()
   const [copied, setCopied] = useState(false)
   const [activeFilters, setActiveFilters] = useState<ActiveFilters>({
     industries: [],
@@ -120,35 +115,6 @@ export default function DesignLibrary() {
   useEffect(() => { hasAnimated.current = true }, [])
 
   const filteredDesigns = designs
-
-  const toggleTheme = () => {
-    if (themeOverlay) return
-    const newTheme = theme === 'light' ? 'dark' : 'light'
-
-    const btn = themeButtonRef.current
-    const rect = btn?.getBoundingClientRect()
-    const origin = rect
-      ? { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 }
-      : { x: window.innerWidth / 2, y: 0 }
-
-    document.documentElement.setAttribute('data-theme-transitioning', 'true')
-    setThemeOverlay({ newTheme, origin })
-  }
-
-  function handleThemeTransitionComplete(newTheme: 'dark' | 'light') {
-    setTheme(newTheme)
-    localStorage.setItem('theme', newTheme)
-    document.documentElement.classList.toggle('dark', newTheme === 'dark')
-    document.documentElement.removeAttribute('data-theme-transitioning')
-    setThemeOverlay(null)
-  }
-
-  // Initialize theme state from localStorage/system preference (layout.tsx handles the DOM)
-  useEffect(() => {
-    // Just sync state with what layout.tsx already set in the DOM
-    const isDark = document.documentElement.classList.contains('dark')
-    setTheme(isDark ? 'dark' : 'light')
-  }, [])
 
   // Load designs on mount and when filters change
   useEffect(() => {
@@ -452,14 +418,12 @@ export default function DesignLibrary() {
           <h1 className="text-lg md:text-xl font-bold font-mono">Hitman's Library</h1>
           <div className="flex items-center gap-3">
             <button
-              ref={themeButtonRef}
-              onClick={toggleTheme}
-              disabled={!!themeOverlay}
-              className="p-2 hover:bg-muted rounded-sm border border-border/40 transition-colors disabled:opacity-50"
-              aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
+              onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
+              className="p-2 hover:bg-muted rounded-sm border border-border/40 transition-colors"
+              aria-label={`Switch to ${resolvedTheme === 'dark' ? 'light' : 'dark'} mode`}
             >
-              <motion.span key={theme} initial={{ rotate: -30, scale: 0.7 }} animate={{ rotate: 0, scale: 1 }} style={{ display: 'flex' }}>
-                {theme === 'light' ? <Moon className="w-5 h-5" aria-hidden="true" /> : <Sun className="w-5 h-5" aria-hidden="true" />}
+              <motion.span key={resolvedTheme} initial={{ rotate: -30, scale: 0.7 }} animate={{ rotate: 0, scale: 1 }} style={{ display: 'flex' }}>
+                {resolvedTheme === 'dark' ? <Sun className="w-5 h-5" aria-hidden="true" /> : <Moon className="w-5 h-5" aria-hidden="true" />}
               </motion.span>
             </button>
           </div>
@@ -653,14 +617,6 @@ export default function DesignLibrary() {
           ))}
         </div>
       </div>
-      {/* Theme transition overlay */}
-      {themeOverlay && (
-        <ThemeTransitionOverlay
-          newTheme={themeOverlay.newTheme}
-          origin={themeOverlay.origin}
-          onComplete={handleThemeTransitionComplete}
-        />
-      )}
     </div>
   )
 }

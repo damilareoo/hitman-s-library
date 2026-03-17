@@ -4,6 +4,7 @@ import { Inter } from "next/font/google"
 import { GeistMono } from "geist/font/mono"
 import { Analytics } from "@vercel/analytics/next"
 import { MotionProvider } from "@/components/motion-provider"
+import { ThemeProvider } from '@/components/theme-provider'
 import "./globals.css"
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans", weight: ["400", "500", "600", "700"] })
@@ -111,17 +112,8 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{
             __html: `
               (function() {
-                const stored = localStorage.getItem('theme');
-                const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-                
-                if (stored === 'dark' || (stored === 'system' && prefersDark) || (!stored && prefersDark)) {
-                  document.documentElement.classList.add('dark');
-                } else {
-                  document.documentElement.classList.remove('dark');
-                }
-
                 const resizeObserverErr = /ResizeObserver loop/;
-                
+
                 window.addEventListener('error', function(e) {
                   if (e.message && resizeObserverErr.test(e.message)) {
                     e.stopImmediatePropagation();
@@ -153,9 +145,11 @@ export default function RootLayout({
         />
       </head>
       <body className="font-sans antialiased">
-        <MotionProvider>
-          {children}
-        </MotionProvider>
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem storageKey="theme">
+          <MotionProvider>
+            {children}
+          </MotionProvider>
+        </ThemeProvider>
         <Analytics />
       </body>
     </html>

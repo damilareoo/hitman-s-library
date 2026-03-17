@@ -1500,7 +1500,3 @@ a,
   );
   background-size: 1000px 100%;
 }
-
-[data-theme-transitioning] * {
-  transition: none !important;
-}
