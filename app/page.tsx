@@ -10,6 +10,7 @@ import { Upload, X, Sun, Moon, Menu, Trash2 } from 'lucide-react'
 import { SiteThumbnail } from '@/components/site-thumbnail'
 import { SiteDetailPanel } from '@/components/site-detail-panel'
 import { motion, AnimatePresence } from 'motion/react'
+import { ThemeTransitionOverlay } from '@/components/theme-transition-overlay'
 
 const gridVariants = {
   hidden: {},
@@ -65,6 +66,11 @@ export default function DesignLibrary() {
 
   const [fileInputRef, setFileInputRef] = useState<HTMLInputElement | null>(null)
   const [theme, setTheme] = useState<'light' | 'dark'>('light')
+  const [themeOverlay, setThemeOverlay] = useState<{
+    newTheme: 'dark' | 'light'
+    origin: { x: number; y: number }
+  } | null>(null)
+  const themeButtonRef = useRef<HTMLButtonElement>(null)
   const [copied, setCopied] = useState(false)
   const [activeFilters, setActiveFilters] = useState<ActiveFilters>({
     industries: [],
@@ -92,20 +98,27 @@ export default function DesignLibrary() {
 
   const filteredDesigns = designs
 
-  // Seamless theme switching without any flash or delay
   const toggleTheme = () => {
+    if (themeOverlay) return
     const newTheme = theme === 'light' ? 'dark' : 'light'
-    
-    // Update state and localStorage immediately (no delay)
+
+    const btn = themeButtonRef.current
+    const rect = btn?.getBoundingClientRect()
+    const origin = rect
+      ? { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 }
+      : { x: window.innerWidth / 2, y: 0 }
+
+    document.documentElement.setAttribute('data-theme-transitioning', 'true')
+    setThemeOverlay({ newTheme, origin })
+  }
+
+  function handleThemeTransitionComplete() {
+    const newTheme = themeOverlay!.newTheme
     setTheme(newTheme)
     localStorage.setItem('theme', newTheme)
-    
-    // Update DOM class immediately for instant CSS transition
-    if (newTheme === 'dark') {
-      document.documentElement.classList.add('dark')
-    } else {
-      document.documentElement.classList.remove('dark')
-    }
+    document.documentElement.classList.toggle('dark', newTheme === 'dark')
+    document.documentElement.removeAttribute('data-theme-transitioning')
+    setThemeOverlay(null)
   }
 
   // Initialize theme state from localStorage/system preference (layout.tsx handles the DOM)
@@ -374,8 +387,16 @@ export default function DesignLibrary() {
         <div className="h-16 px-4 md:px-6 lg:px-8 flex items-center justify-between">
           <h1 className="text-lg md:text-xl font-bold font-mono">Hitman's Library</h1>
           <div className="flex items-center gap-3">
-            <button onClick={toggleTheme} className="p-2 hover:bg-muted rounded-sm border border-border/40 grid-transition" aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}>
-              {theme === 'light' ? <Moon className="w-5 h-5" aria-hidden="true" /> : <Sun className="w-5 h-5" aria-hidden="true" />}
+            <button
+              ref={themeButtonRef}
+              onClick={toggleTheme}
+              disabled={!!themeOverlay}
+              className="p-2 hover:bg-muted rounded-sm border border-border/40 transition-colors disabled:opacity-50"
+              aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
+            >
+              <motion.span key={theme} initial={{ rotate: -30, scale: 0.7 }} animate={{ rotate: 0, scale: 1 }} style={{ display: 'flex' }}>
+                {theme === 'light' ? <Moon className="w-5 h-5" aria-hidden="true" /> : <Sun className="w-5 h-5" aria-hidden="true" />}
+              </motion.span>
             </button>
           </div>
         </div>
@@ -559,7 +580,7 @@ export default function DesignLibrary() {
         {/* Copy Feedback Toasts */}
         <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2 pointer-events-none">
           {copyFeedbacks.map(feedback => (
-            <div 
+            <div
               key={feedback.id}
               className="bg-foreground text-background px-4 py-2 rounded-sm text-sm font-mono animate-in fade-in slide-in-from-bottom-2 duration-300 pointer-events-auto shadow-lg"
             >
@@ -568,6 +589,14 @@ export default function DesignLibrary() {
           ))}
         </div>
       </div>
+      {/* Theme transition overlay */}
+      {themeOverlay && (
+        <ThemeTransitionOverlay
+          newTheme={themeOverlay.newTheme}
+          origin={themeOverlay.origin}
+          onComplete={handleThemeTransitionComplete}
+        />
+      )}
     </div>
   )
 }
