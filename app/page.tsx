@@ -131,11 +131,11 @@ export default function DesignLibrary() {
   // Lock body scroll when mobile detail sheet is open
   useEffect(() => {
     const isMobile = window.matchMedia('(max-width: 767px)').matches
-    if (selectedDesign && isMobile) {
-      document.body.style.overflow = 'hidden'
-    }
+    if (!selectedDesign || !isMobile) return
+    const previous = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
     return () => {
-      document.body.style.overflow = ''
+      document.body.style.overflow = previous
     }
   }, [selectedDesign])
 
