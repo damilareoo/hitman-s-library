@@ -11,6 +11,7 @@ import { SiteThumbnail } from '@/components/site-thumbnail'
 import { SiteDetailPanel } from '@/components/site-detail-panel'
 import { motion, AnimatePresence } from 'motion/react'
 import { ThemeTransitionOverlay } from '@/components/theme-transition-overlay'
+import { classifyExtractionError } from '@/lib/classify-extraction-error'
 
 const gridVariants = {
   hidden: {},
@@ -63,6 +64,9 @@ export default function DesignLibrary() {
   const [selectedDesign, setSelectedDesign] = useState<Design | null>(null)
   const [linkInput, setLinkInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [submitStage, setSubmitStage] = useState<string | null>(null)
+  const [submitError, setSubmitError] = useState<string | null>(null)
+  const submitTimersRef = useRef<ReturnType<typeof setTimeout>[]>([])
 
   const [fileInputRef, setFileInputRef] = useState<HTMLInputElement | null>(null)
   const [theme, setTheme] = useState<'light' | 'dark'>('light')
@@ -86,6 +90,25 @@ export default function DesignLibrary() {
   const [showMobileMenu, setShowMobileMenu] = useState(false)
   const [copyFeedbacks, setCopyFeedbacks] = useState<CopyFeedback[]>([])
   const [categories, setCategories] = useState<{ name: string; count: number }[]>([])
+
+  function clearSubmitTimers() {
+    submitTimersRef.current.forEach(clearTimeout)
+    submitTimersRef.current = []
+  }
+
+  function startSubmitStages() {
+    const stages = [
+      { label: 'Launching browser...', delay: 0 },
+      { label: 'Rendering page...', delay: 3000 },
+      { label: 'Extracting colors...', delay: 8000 },
+      { label: 'Capturing screenshot...', delay: 15000 },
+      { label: 'Saving...', delay: 25000 },
+    ]
+    stages.forEach(({ label, delay }) => {
+      const t = setTimeout(() => setSubmitStage(label), delay)
+      submitTimersRef.current.push(t)
+    })
+  }
 
   useEffect(() => {
     fetch('/api/design/categories')
@@ -196,44 +219,38 @@ export default function DesignLibrary() {
   }
 
   const handleAddLink = async () => {
-    if (!linkInput.trim()) {
-      alert('Please enter a website URL')
-      return
-    }
-
+    if (!linkInput.trim()) return
     setIsLoading(true)
+    setSubmitError(null)
+    setSubmitStage(null)
+    startSubmitStages()
+
     try {
-      console.log('[v0] Extracting design from:', linkInput)
       const response = await fetch('/api/design/extract', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          url: linkInput,
-          notes: ''
-          // No industry parameter - auto-detection will happen in the API
-        })
+        body: JSON.stringify({ url: linkInput, notes: '' }),
       })
-
       const data = await response.json()
-      console.log('[v0] Extract response:', data)
+
+      clearSubmitTimers()
+      setSubmitStage(null)
 
       if (data.isDuplicate) {
-        alert('⚠ Already Added\n\nThis website is already in your collection')
+        setSubmitError('This website is already in your collection.')
       } else if (data.success || data.id) {
-        console.log('[v0] Design extracted successfully with auto-detected industry:', data.industry)
-        alert(`✓ "${data.title}" added as ${data.industry}\n\nDesign categorized automatically`)
         setLinkInput('')
         loadDesigns()
       } else if (data.error) {
-        console.warn('[v0] Extraction error:', data.error)
-        alert(`⚠ ${data.error}\n\n${data.warning || 'Try another website'}`)
+        const info = classifyExtractionError(data.error)
+        setSubmitError(info.explanation)
       } else {
-        console.error('[v0] Unexpected response:', data)
-        alert('Failed to add design. Please try another website.')
+        setSubmitError('Failed to add design. Please try another website.')
       }
-    } catch (error) {
-      console.error('[v0] Error adding design:', error)
-      alert('Connection error. Please check your internet and try again.')
+    } catch {
+      clearSubmitTimers()
+      setSubmitStage(null)
+      setSubmitError('Connection error. Please check your internet and try again.')
     } finally {
       setIsLoading(false)
     }
@@ -338,8 +355,50 @@ export default function DesignLibrary() {
                 {/* Add Design */}
                 <div className="space-y-2">
                   <p className="text-xs uppercase font-mono font-semibold tracking-widest text-muted-foreground">Add Site</p>
-                  <Input placeholder="https://example.com" value={linkInput} onChange={(e) => setLinkInput(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && handleAddLink()} disabled={isLoading} className="font-mono text-xs h-9" aria-label="Website URL" />
-                  <Button onClick={handleAddLink} disabled={isLoading || !linkInput.trim()} className="w-full h-9 font-mono text-xs">{isLoading ? 'Extracting...' : 'Add'}</Button>
+                  <Input
+                    placeholder="https://example.com"
+                    value={linkInput}
+                    onChange={(e) => { setLinkInput(e.target.value); setSubmitError(null) }}
+                    onKeyDown={(e) => e.key === 'Enter' && !isLoading && handleAddLink()}
+                    disabled={isLoading}
+                    className="font-mono text-xs h-9"
+                    aria-label="Website URL"
+                  />
+                  <Button
+                    onClick={handleAddLink}
+                    disabled={isLoading || !linkInput.trim()}
+                    className="w-full h-9 font-mono text-xs"
+                  >
+                    {isLoading ? (
+                      <span className="flex items-center gap-2">
+                        <span className="w-3 h-3 border border-current border-t-transparent rounded-full animate-spin" />
+                        <AnimatePresence mode="wait">
+                          <motion.span
+                            key={submitStage ?? 'idle'}
+                            initial={{ opacity: 0, y: 4 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -4 }}
+                            transition={{ duration: 0.2 }}
+                            className="text-xs font-mono"
+                          >
+                            {submitStage ?? 'Extracting...'}
+                          </motion.span>
+                        </AnimatePresence>
+                      </span>
+                    ) : 'Add'}
+                  </Button>
+                  <AnimatePresence>
+                    {submitError && (
+                      <motion.p
+                        initial={{ opacity: 0, y: -4 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0 }}
+                        className="text-[11px] text-destructive/80 font-mono leading-relaxed"
+                      >
+                        {submitError}
+                      </motion.p>
+                    )}
+                  </AnimatePresence>
                 </div>
                 <div className="h-px bg-border/20" />
                 {/* Category Filters */}
