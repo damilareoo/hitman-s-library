@@ -156,6 +156,12 @@ export default function DesignLibrary() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [JSON.stringify(activeFilters)])
 
+  // Cleanup submit timers on unmount to prevent state updates on unmounted component
+  useEffect(() => {
+    return () => clearSubmitTimers()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   // Intuitive copy feedback with auto-dismiss
   const handleCopy = (text: string, type: 'color' | 'text') => {
     navigator.clipboard.writeText(text)
