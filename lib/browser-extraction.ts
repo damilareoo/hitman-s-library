@@ -1,4 +1,5 @@
-import * as chromium from '@sparticuz/chromium'
+import chromium from '@sparticuz/chromium'
+import puppeteer from 'puppeteer'
 import type { Page } from 'puppeteer'
 import { put } from '@vercel/blob'
 import { extractAssets } from './asset-extraction'
@@ -10,7 +11,7 @@ export async function getBrowser() {
   if (browser) return browser
 
   try {
-    browser = await chromium.puppeteer.launch({
+    browser = await puppeteer.launch({
       args: chromium.args,
       defaultViewport: chromium.defaultViewport,
       executablePath: await chromium.executablePath(),
@@ -481,6 +482,10 @@ export interface FullExtractionResult {
 
 export async function extractFullDesignData(url: string): Promise<FullExtractionResult> {
   const browser = await getBrowser()
+  if (!browser) {
+    console.error('[extractFullDesignData] Browser unavailable for:', url)
+    return { colors: [], screenshotUrl: null, assets: [], typography: [] }
+  }
   const page = await browser.newPage()
 
   try {
