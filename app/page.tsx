@@ -141,13 +141,17 @@ export default function DesignLibrary() {
   useEffect(() => {
     if (isFirstFilterRun.current) {
       isFirstFilterRun.current = false
+      setIsFiltering(false)
       return
     }
     setIsFiltering(true)
     const t = setTimeout(() => {
       loadDesignsRef.current().finally(() => setIsFiltering(false))
     }, 200)
-    return () => clearTimeout(t)
+    return () => {
+      clearTimeout(t)
+      setIsFiltering(false)
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [JSON.stringify(activeFilters)])
 
@@ -630,7 +634,7 @@ export default function DesignLibrary() {
         {selectedDesign && (
           <>
             <div className="md:hidden fixed inset-0 bg-black/40 z-30 top-16" onClick={() => setSelectedDesign(null)} role="presentation" aria-hidden="true" />
-            <dialog className="md:hidden fixed bottom-0 left-0 right-0 bg-background border-t border-border/20 rounded-t-xl z-40 h-[70vh] w-full flex flex-col" open aria-label="Design details">
+            <dialog className="md:hidden fixed bottom-0 left-0 right-0 bg-background border-t border-border/20 rounded-t-xl z-40 h-[70dvh] w-full flex flex-col" open aria-label="Design details">
               <SiteDetailPanel
                 sourceId={Number(selectedDesign.id)}
                 onClose={() => setSelectedDesign(null)}
