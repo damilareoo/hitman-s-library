@@ -59,6 +59,18 @@ interface ActiveFilters {
   sortBy: 'recent' | 'oldest' | 'name' | 'quality'
 }
 
+function SkeletonCard() {
+  return (
+    <div className="flex flex-col border border-border/40 rounded-lg overflow-hidden animate-pulse">
+      <div className="aspect-video bg-muted" />
+      <div className="p-4 space-y-2">
+        <div className="h-3 bg-muted rounded w-3/4" />
+        <div className="h-3 bg-muted rounded w-1/2" />
+      </div>
+    </div>
+  )
+}
+
 export default function DesignLibrary() {
   const [designs, setDesigns] = useState<Design[]>([])
   const [selectedDesign, setSelectedDesign] = useState<Design | null>(null)
@@ -85,6 +97,8 @@ export default function DesignLibrary() {
   const [showMobileMenu, setShowMobileMenu] = useState(false)
   const [copyFeedbacks, setCopyFeedbacks] = useState<CopyFeedback[]>([])
   const [categories, setCategories] = useState<{ name: string; count: number }[]>([])
+  const [isPageLoading, setIsPageLoading] = useState(true)
+  const [isFiltering, setIsFiltering] = useState(false)
 
   function clearSubmitTimers() {
     submitTimersRef.current.forEach(clearTimeout)
@@ -112,13 +126,32 @@ export default function DesignLibrary() {
   }, [])
 
   const hasAnimated = useRef(false)
+  const isFirstFilterRun = useRef(true)
   useEffect(() => { hasAnimated.current = true }, [])
 
   const filteredDesigns = designs
 
-  // Load designs on mount and when filters change
+  // Initial page load
   useEffect(() => {
-    loadDesigns()
+    loadDesignsRef.current().finally(() => setIsPageLoading(false))
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // Filter changes — debounced, skips initial mount
+  useEffect(() => {
+    if (isFirstFilterRun.current) {
+      isFirstFilterRun.current = false
+      setIsFiltering(false)
+      return
+    }
+    setIsFiltering(true)
+    const t = setTimeout(() => {
+      loadDesignsRef.current().finally(() => setIsFiltering(false))
+    }, 200)
+    return () => {
+      clearTimeout(t)
+      setIsFiltering(false)
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [JSON.stringify(activeFilters)])
 
@@ -128,16 +161,6 @@ export default function DesignLibrary() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // Lock body scroll when mobile detail sheet is open
-  useEffect(() => {
-    const isMobile = window.matchMedia('(max-width: 767px)').matches
-    if (!selectedDesign || !isMobile) return
-    const previous = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-    return () => {
-      document.body.style.overflow = previous
-    }
-  }, [selectedDesign])
 
   // Intuitive copy feedback with auto-dismiss
   const handleCopy = (text: string, type: 'color' | 'text') => {
@@ -200,6 +223,8 @@ export default function DesignLibrary() {
       setDesigns([])
     }
   }
+  const loadDesignsRef = useRef(loadDesigns)
+  loadDesignsRef.current = loadDesigns
 
   const handleAddLink = async () => {
     if (!linkInput.trim()) return
@@ -328,7 +353,7 @@ export default function DesignLibrary() {
   // Designs are already filtered through the API response
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="h-dvh bg-background">
       {/* Mobile Navigation Drawer */}
         {showMobileMenu && (
           <>
@@ -442,9 +467,9 @@ export default function DesignLibrary() {
       </header>
 
       {/* Main Content Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-12 gap-0 min-h-[calc(100vh-64px)]">
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-0 h-[calc(100dvh-64px)] overflow-hidden">
         {/* Sidebar - Desktop Only, Sticky */}
-        <aside className="hidden md:flex md:col-span-3 flex-col sticky top-16 h-[calc(100vh-64px)] border-r border-border/20 bg-background/50 overflow-y-auto">
+        <aside className="hidden md:flex md:col-span-3 flex-col sticky top-16 h-[calc(100dvh-64px)] border-r border-border/20 bg-background/50 overflow-y-auto">
           <div className="flex flex-col h-full">
             {/* Category Nav */}
             <nav className="flex-1 overflow-y-auto p-5" aria-label="Category filters">
@@ -539,7 +564,9 @@ export default function DesignLibrary() {
               animate="show"
             >
               <AnimatePresence mode="popLayout">
-              {filteredDesigns.map((design) => (
+              {(isPageLoading || isFiltering)
+                ? Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)
+                : filteredDesigns.map((design) => (
                 <motion.div
                   key={design.id}
                   layout
@@ -594,7 +621,7 @@ export default function DesignLibrary() {
         </div>
 
         {/* Details Panel - Desktop Only */}
-        <div className="hidden md:flex md:col-span-3 flex-col sticky top-16 h-[calc(100vh-64px)] border-l border-border/20 bg-background/50">
+        <div className="hidden md:flex md:col-span-3 flex-col sticky top-16 h-[calc(100dvh-64px)] border-l border-border/20 bg-background/50">
           {selectedDesign && (
             <SiteDetailPanel
               sourceId={Number(selectedDesign.id)}
@@ -607,7 +634,7 @@ export default function DesignLibrary() {
         {selectedDesign && (
           <>
             <div className="md:hidden fixed inset-0 bg-black/40 z-30 top-16" onClick={() => setSelectedDesign(null)} role="presentation" aria-hidden="true" />
-            <dialog className="md:hidden fixed bottom-0 left-0 right-0 bg-background border-t border-border/20 rounded-t-xl z-40 h-[70vh] w-full flex flex-col" open aria-label="Design details">
+            <dialog className="md:hidden fixed bottom-0 left-0 right-0 bg-background border-t border-border/20 rounded-t-xl z-40 h-[70dvh] w-full flex flex-col" open aria-label="Design details">
               <SiteDetailPanel
                 sourceId={Number(selectedDesign.id)}
                 onClose={() => setSelectedDesign(null)}
