@@ -128,16 +128,6 @@ export default function DesignLibrary() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // Lock body scroll when mobile detail sheet is open
-  useEffect(() => {
-    const isMobile = window.matchMedia('(max-width: 767px)').matches
-    if (!selectedDesign || !isMobile) return
-    const previous = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-    return () => {
-      document.body.style.overflow = previous
-    }
-  }, [selectedDesign])
 
   // Intuitive copy feedback with auto-dismiss
   const handleCopy = (text: string, type: 'color' | 'text') => {
@@ -442,7 +432,7 @@ export default function DesignLibrary() {
       </header>
 
       {/* Main Content Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-12 gap-0 min-h-[calc(100vh-64px)]">
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-0 h-[calc(100dvh-64px)] overflow-hidden">
         {/* Sidebar - Desktop Only, Sticky */}
         <aside className="hidden md:flex md:col-span-3 flex-col sticky top-16 h-[calc(100vh-64px)] border-r border-border/20 bg-background/50 overflow-y-auto">
           <div className="flex flex-col h-full">
