@@ -75,6 +75,7 @@ export function PreviewTab({ screenshotUrl, siteUrl, extractionError }: PreviewT
       <AnimatePresence>
         {showBackTop && (
           <motion.button
+            type="button"
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 8 }}
