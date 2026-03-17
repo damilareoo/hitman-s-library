@@ -12,40 +12,44 @@ export async function getBrowser() {
   if (browser) return browser
 
   try {
-    // On Vercel, AWS_EXECUTION_ENV is not set, so @sparticuz/chromium's
-    // executablePath() skips extracting al2.tar.br — the shared-lib bundle
-    // that provides libnss3.so (required by the Chromium binary).
-    //
-    // Strategy:
-    // 1. If /tmp/chromium is cached from a prior invocation that ran without al2,
-    //    delete it so the next executablePath() call does a full re-extraction.
-    // 2. Set AWS_EXECUTION_ENV to make executablePath() include al2.tar.br.
-    // 3. After extraction, add /tmp/al2 to LD_LIBRARY_PATH so the subprocess
-    //    can resolve libnss3.so at launch.
-    if (process.env.VERCEL) {
+    const isServerless = process.platform === 'linux' && (
+      process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME || process.env.AWS_EXECUTION_ENV
+    )
+
+    if (isServerless) {
+      // On Vercel/Lambda, @sparticuz/chromium provides a Linux Chromium binary.
+      // AWS_EXECUTION_ENV must be set so executablePath() includes al2.tar.br,
+      // which provides libnss3.so and other shared libs the binary needs.
+      // If /tmp/chromium exists but /tmp/al2 doesn't (stale warm-start cache),
+      // delete it to force a full re-extraction on the next call.
       if (existsSync('/tmp/chromium') && !existsSync('/tmp/al2')) {
         try { unlinkSync('/tmp/chromium') } catch {}
       }
       if (!process.env.AWS_EXECUTION_ENV) {
         process.env.AWS_EXECUTION_ENV = 'AWS_Lambda_nodejs18.x'
       }
-    }
 
-    const executablePath = await chromium.executablePath()
+      const executablePath = await chromium.executablePath()
 
-    if (process.env.VERCEL) {
       const libPath = process.env.LD_LIBRARY_PATH ?? ''
       if (!libPath.includes('/tmp/al2')) {
         process.env.LD_LIBRARY_PATH = `/tmp/al2:${libPath}`
       }
+
+      browser = await puppeteer.launch({
+        args: chromium.args,
+        defaultViewport: chromium.defaultViewport,
+        executablePath,
+        headless: chromium.headless,
+      })
+    } else {
+      // Local dev (macOS/Windows): use puppeteer's own bundled Chrome.
+      browser = await puppeteer.launch({
+        headless: true,
+        args: ['--no-sandbox', '--disable-dev-shm-usage'],
+      })
     }
 
-    browser = await puppeteer.launch({
-      args: chromium.args,
-      defaultViewport: chromium.defaultViewport,
-      executablePath,
-      headless: chromium.headless,
-    })
     console.log('[v0] Browser instance created successfully')
     return browser
   } catch (error) {
