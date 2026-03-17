@@ -56,8 +56,8 @@ export function SiteDetailPanel({ sourceId, onClose }: SiteDetailPanelProps) {
     })
 
     try {
-      const res = await fetch(`/api/design/${sourceId}/reextract`, { method: 'POST' })
-      if (!res.ok) throw new Error(`Reextract failed: ${res.status}`)
+      await fetch(`/api/design/${sourceId}/reextract`, { method: 'POST' })
+      // Always re-fetch so the latest data (including any extraction_error) shows in tabs
       setLoading(true)
       setData(null)
       const updated = await fetch(`/api/design/${sourceId}`).then(r => r.json())
