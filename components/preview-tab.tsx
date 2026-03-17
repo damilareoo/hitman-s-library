@@ -73,7 +73,7 @@ export function PreviewTab({ screenshotUrl, siteUrl, extractionError }: PreviewT
       <div
         ref={scrollRef}
         onScroll={handleScroll}
-        className="h-full overflow-y-auto overflow-x-hidden"
+        className="h-full overflow-y-auto overflow-x-hidden overscroll-contain"
         style={{ scrollbarWidth: 'thin' }}
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}

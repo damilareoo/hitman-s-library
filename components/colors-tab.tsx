@@ -58,7 +58,19 @@ function FailureEmptyState({ message, extractionError }: { message: string; extr
   )
 }
 
+function parseOklch(s: string): { l: number; c: number; h: number } | null {
+  const m = s.match(/oklch\(\s*([\d.]+)\s+([\d.e+\-]+)\s+([\d.]+|none)/)
+  if (!m) return null
+  return {
+    l: Math.round(parseFloat(m[1]) * 100),
+    c: parseFloat(m[2]),
+    h: m[3] === 'none' ? 0 : Math.round(parseFloat(m[3])),
+  }
+}
+
 export function ColorsTab({ colors, extractionError }: { colors: ColorRow[]; extractionError?: string | null }) {
+  const [format, setFormat] = useState<'hex' | 'oklch'>('hex')
+
   if (!colors.length) {
     return <FailureEmptyState message="No colors extracted" extractionError={extractionError} />
   }
@@ -73,34 +85,55 @@ export function ColorsTab({ colors, extractionError }: { colors: ColorRow[]; ext
     <div className="flex flex-col gap-2 p-4 overflow-y-auto">
       <div className="flex items-center justify-between mb-1">
         <span className="text-[9px] uppercase tracking-widest text-muted-foreground/60">Brand colors</span>
-        <span className="text-[9px] text-muted-foreground/40 bg-secondary border border-border rounded-full px-2 py-0.5">
-          {colors.length}
-        </span>
+        <div className="flex items-center gap-2">
+          <div className="flex bg-secondary border border-border rounded overflow-hidden">
+            <button
+              onClick={() => setFormat('hex')}
+              className={`text-[9px] font-mono px-2 py-0.5 transition-colors ${format === 'hex' ? 'bg-foreground text-background' : 'text-muted-foreground hover:text-foreground'}`}
+            >
+              HEX
+            </button>
+            <button
+              onClick={() => setFormat('oklch')}
+              className={`text-[9px] font-mono px-2 py-0.5 transition-colors ${format === 'oklch' ? 'bg-foreground text-background' : 'text-muted-foreground hover:text-foreground'}`}
+            >
+              OKLCH
+            </button>
+          </div>
+          <span className="text-[9px] text-muted-foreground/40 bg-secondary border border-border rounded-full px-2 py-0.5">
+            {colors.length}
+          </span>
+        </div>
       </div>
 
-      {sorted.map((color, i) => (
-        <div
-          key={i}
-          className="group flex items-center gap-3 bg-secondary/50 border border-border rounded-md px-3 py-2 hover:border-border/80 transition-colors"
-        >
+      {sorted.map((color, i) => {
+        const parsed = color.oklch ? parseOklch(color.oklch) : null
+        const showOklch = format === 'oklch' && parsed !== null
+
+        return (
           <div
-            className="w-9 h-9 rounded-md flex-shrink-0 border border-white/[0.08]"
-            style={{ background: color.hex_value }}
-          />
-          <div className="flex flex-col gap-0.5 flex-1 min-w-0">
-            <div className="flex items-center justify-between">
-              <span className="font-mono text-[11px] text-foreground">{color.hex_value}</span>
-              <CopyBtn value={color.hex_value} />
-            </div>
-            {color.oklch && (
+            key={i}
+            className="group flex items-center gap-3 bg-secondary/50 border border-border rounded-md px-3 py-2 hover:border-border/80 transition-colors"
+          >
+            <div
+              className="w-9 h-9 rounded-md flex-shrink-0 border border-white/[0.08]"
+              style={{ background: color.hex_value }}
+            />
+            <div className="flex flex-col gap-0.5 flex-1 min-w-0">
               <div className="flex items-center justify-between">
-                <span className="font-mono text-[9px] text-muted-foreground truncate pr-1">{color.oklch}</span>
-                <CopyBtn value={color.oklch} />
+                {showOklch ? (
+                  <span className="font-mono text-[11px] text-foreground">
+                    oklch({parsed!.l}% {parsed!.c.toFixed(2)} {parsed!.h}°)
+                  </span>
+                ) : (
+                  <span className="font-mono text-[11px] text-foreground">{color.hex_value}</span>
+                )}
+                <CopyBtn value={showOklch ? color.oklch! : color.hex_value} />
               </div>
-            )}
+            </div>
           </div>
-        </div>
-      ))}
+        )
+      })}
     </div>
   )
 }
