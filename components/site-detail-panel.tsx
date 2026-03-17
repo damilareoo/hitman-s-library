@@ -2,6 +2,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { motion, AnimatePresence, useAnimate } from 'motion/react'
+import { RefreshCw } from 'lucide-react'
 import { PanelTabs, type PanelTab } from './panel-tabs'
 import { PreviewTab } from './preview-tab'
 import { ColorsTab } from './colors-tab'
@@ -31,6 +33,8 @@ export function SiteDetailPanel({ sourceId, onClose }: SiteDetailPanelProps) {
   const [activeTab, setActiveTab] = useState<PanelTab>('preview')
   const [data, setData] = useState<DetailData | null>(null)
   const [loading, setLoading] = useState(true)
+  const [isReextracting, setIsReextracting] = useState(false)
+  const [scope, animate] = useAnimate()
 
   useEffect(() => {
     setLoading(true)
@@ -42,6 +46,30 @@ export function SiteDetailPanel({ sourceId, onClose }: SiteDetailPanelProps) {
       .catch(console.error)
       .finally(() => setLoading(false))
   }, [sourceId])
+
+  async function handleReextract() {
+    if (isReextracting) return
+    setIsReextracting(true)
+
+    animate(scope.current, { rotate: 360 }, {
+      duration: 0.7, ease: 'linear', repeat: Infinity, repeatType: 'loop'
+    })
+
+    try {
+      const res = await fetch(`/api/design/${sourceId}/reextract`, { method: 'POST' })
+      if (!res.ok) throw new Error(`Reextract failed: ${res.status}`)
+      setLoading(true)
+      setData(null)
+      const updated = await fetch(`/api/design/${sourceId}`).then(r => r.json())
+      setData(updated)
+    } catch (err) {
+      console.error('[reextract]', err)
+    } finally {
+      setIsReextracting(false)
+      setLoading(false)
+      animate(scope.current, { rotate: 0 }, { duration: 0 })
+    }
+  }
 
   const hostname = (() => {
     try { return data?.url ? new URL(data.url).hostname : '…' } catch { return data?.url ?? '…' }
@@ -68,33 +96,89 @@ export function SiteDetailPanel({ sourceId, onClose }: SiteDetailPanelProps) {
       </div>
 
       {/* Content */}
-      {loading ? (
-        <div className="flex items-center justify-center flex-1">
-          <div className="w-4 h-4 border border-border border-t-foreground rounded-full animate-spin" />
-        </div>
-      ) : data ? (
-        <div className="flex flex-col flex-1 min-h-0">
-          {activeTab === 'preview' && <PreviewTab screenshotUrl={data.screenshot_url} siteUrl={data.url} extractionError={data.extraction_error} />}
-          {activeTab === 'colors' && <ColorsTab colors={data.colors} extractionError={data.extraction_error} />}
-          {activeTab === 'type' && <TypeTab typography={data.typography} extractionError={data.extraction_error} />}
-          {activeTab === 'assets' && <AssetsTab assets={data.assets} extractionError={data.extraction_error} />}
-        </div>
-      ) : (
-        <div className="flex items-center justify-center flex-1 p-8">
-          <p className="text-xs text-muted-foreground">Failed to load</p>
-        </div>
-      )}
+      <AnimatePresence mode="wait">
+        {loading ? (
+          <motion.div
+            key="loading"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="flex items-center justify-center flex-1"
+          >
+            <div className="w-4 h-4 border border-border border-t-foreground rounded-full animate-spin" />
+          </motion.div>
+        ) : data ? (
+          <motion.div
+            key={`data-${sourceId}`}
+            initial={{ opacity: 0, scale: 0.98 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0 }}
+            className="flex flex-col flex-1 min-h-0"
+          >
+            <AnimatePresence mode="wait">
+              {activeTab === 'preview' && (
+                <motion.div key="preview" className="flex flex-col flex-1 min-h-0"
+                  initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -4, transition: { duration: 0.12 } }}>
+                  <PreviewTab screenshotUrl={data.screenshot_url} siteUrl={data.url} extractionError={data.extraction_error} />
+                </motion.div>
+              )}
+              {activeTab === 'colors' && (
+                <motion.div key="colors" className="flex flex-col flex-1 min-h-0"
+                  initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -4, transition: { duration: 0.12 } }}>
+                  <ColorsTab colors={data.colors} extractionError={data.extraction_error} />
+                </motion.div>
+              )}
+              {activeTab === 'type' && (
+                <motion.div key="type" className="flex flex-col flex-1 min-h-0"
+                  initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -4, transition: { duration: 0.12 } }}>
+                  <TypeTab typography={data.typography} extractionError={data.extraction_error} />
+                </motion.div>
+              )}
+              {activeTab === 'assets' && (
+                <motion.div key="assets" className="flex flex-col flex-1 min-h-0"
+                  initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -4, transition: { duration: 0.12 } }}>
+                  <AssetsTab assets={data.assets} extractionError={data.extraction_error} />
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </motion.div>
+        ) : (
+          <motion.div
+            key="error"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="flex items-center justify-center flex-1 p-8"
+          >
+            <p className="text-xs text-muted-foreground">Failed to load</p>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-      {/* Footer — always visible, shared across all tabs */}
-      <div className="flex-shrink-0 border-t border-border px-4 py-3">
+      {/* Footer — always visible */}
+      <div className="flex-shrink-0 border-t border-border px-4 py-3 flex gap-2">
         <a
           href={data?.url ?? '#'}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center justify-center gap-1.5 w-full text-xs border border-border rounded-md py-2 text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-colors font-mono"
+          className="flex items-center justify-center gap-1.5 flex-1 text-xs border border-border rounded-md py-2 text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-colors font-mono"
         >
           ↗ Visit site
         </a>
+        <button
+          type="button"
+          onClick={handleReextract}
+          disabled={isReextracting}
+          title="Re-extract design data"
+          className="flex items-center justify-center w-9 border border-border rounded-md text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-colors disabled:opacity-40"
+        >
+          <motion.span ref={scope} style={{ display: 'flex' }}>
+            <RefreshCw className="w-3 h-3" />
+          </motion.span>
+        </button>
       </div>
     </div>
   )
