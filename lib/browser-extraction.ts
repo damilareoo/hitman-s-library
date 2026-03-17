@@ -11,6 +11,14 @@ export async function getBrowser() {
   if (browser) return browser
 
   try {
+    // Vercel does not set AWS_EXECUTION_ENV, so @sparticuz/chromium skips
+    // extracting the Amazon Linux shared-library bundle (al2.tar.br) that
+    // provides libnss3.so. Faking the env var before calling executablePath()
+    // triggers that extraction and makes Chromium launch successfully on Vercel.
+    if (process.env.VERCEL && !process.env.AWS_EXECUTION_ENV) {
+      process.env.AWS_EXECUTION_ENV = 'AWS_Lambda_nodejs18.x'
+    }
+
     browser = await puppeteer.launch({
       args: chromium.args,
       defaultViewport: chromium.defaultViewport,
