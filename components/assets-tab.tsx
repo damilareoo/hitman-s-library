@@ -147,13 +147,16 @@ function AssetSection({
   )
 }
 
-export function AssetsTab({ assets }: { assets: Asset[] }) {
+export function AssetsTab({ assets, extractionError }: { assets: Asset[]; extractionError?: string | null }) {
   const logos = assets.filter(a => a.type === 'logo')
 
   if (!assets.length) {
     return (
-      <div className="flex items-center justify-center flex-1 p-8">
+      <div className="flex flex-col items-center justify-center flex-1 gap-2 p-8 text-center">
         <p className="text-xs text-muted-foreground">No assets extracted</p>
+        {extractionError && (
+          <p className="font-mono text-[10px] text-destructive/70 max-w-[220px] break-words">{extractionError}</p>
+        )}
       </div>
     )
   }

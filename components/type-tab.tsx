@@ -10,11 +10,14 @@ interface TypographyRow {
   primary_weight: number | null
 }
 
-export function TypeTab({ typography }: { typography: TypographyRow[] }) {
+export function TypeTab({ typography, extractionError }: { typography: TypographyRow[]; extractionError?: string | null }) {
   if (!typography.length) {
     return (
-      <div className="flex items-center justify-center flex-1 p-8">
+      <div className="flex flex-col items-center justify-center flex-1 gap-2 p-8 text-center">
         <p className="text-xs text-muted-foreground">No typography extracted</p>
+        {extractionError && (
+          <p className="font-mono text-[10px] text-destructive/70 max-w-[220px] break-words">{extractionError}</p>
+        )}
       </div>
     )
   }

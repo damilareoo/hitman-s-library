@@ -48,8 +48,9 @@ export async function GET(req: NextRequest) {
     const allParams = [...filterParams, limit, offset]
 
     // Build and execute main query
+    // Use aggregate subqueries so sites with multiple color/typography rows don't produce duplicates
     const mainQueryStr = `
-      SELECT 
+      SELECT
         ds.id,
         ds.source_url,
         ds.source_name,
@@ -58,11 +59,10 @@ export async function GET(req: NextRequest) {
         ds.tags,
         ds.created_at,
         ds.thumbnail_url,
-        dc.primary_color,
-        dc.secondary_color,
-        dc.all_colors,
         dc.color_harmony,
         dc.mood,
+        dc.hex_colors,
+        dc.all_colors,
         dt.heading_font,
         dt.body_font,
         dt.mono_font,
@@ -71,9 +71,32 @@ export async function GET(req: NextRequest) {
         dp.quality_score,
         dp.pattern_type
       FROM design_sources ds
-      LEFT JOIN design_colors dc ON ds.id = dc.source_id
-      LEFT JOIN design_typography dt ON ds.id = dt.source_id
-      LEFT JOIN design_patterns dp ON ds.id = dp.source_id
+      LEFT JOIN (
+        SELECT
+          source_id,
+          MAX(color_harmony) as color_harmony,
+          MAX(mood) as mood,
+          array_agg(hex_value ORDER BY id) FILTER (WHERE hex_value IS NOT NULL) as hex_colors,
+          (array_agg(all_colors) FILTER (WHERE all_colors IS NOT NULL))[1] as all_colors
+        FROM design_colors
+        GROUP BY source_id
+      ) dc ON ds.id = dc.source_id
+      LEFT JOIN (
+        SELECT
+          source_id,
+          COALESCE(MAX(CASE WHEN role = 'heading' THEN font_family END), MAX(heading_font)) as heading_font,
+          COALESCE(MAX(CASE WHEN role = 'body' THEN font_family END), MAX(body_font)) as body_font,
+          COALESCE(MAX(CASE WHEN role = 'mono' THEN font_family END), MAX(mono_font)) as mono_font,
+          MAX(mood) as mood
+        FROM design_typography
+        GROUP BY source_id
+      ) dt ON ds.id = dt.source_id
+      LEFT JOIN (
+        SELECT DISTINCT ON (source_id)
+          source_id, layout_structure, quality_score, pattern_type
+        FROM design_patterns
+        ORDER BY source_id, quality_score DESC NULLS LAST
+      ) dp ON ds.id = dp.source_id
       ${whereClause}
       ORDER BY ${sortClause}
       LIMIT $${limitParamIndex} OFFSET $${offsetParamIndex}
@@ -83,13 +106,10 @@ export async function GET(req: NextRequest) {
 
     const results = await sql.query(mainQueryStr, allParams)
 
-    // Build and execute count query (use only filter params, not pagination)
+    // Count query — no joins needed, just count distinct sources
     const countQueryStr = `
       SELECT COUNT(*) as total
       FROM design_sources ds
-      LEFT JOIN design_colors dc ON ds.id = dc.source_id
-      LEFT JOIN design_typography dt ON ds.id = dt.source_id
-      LEFT JOIN design_patterns dp ON ds.id = dp.source_id
       ${whereClause}
     `
     
@@ -99,7 +119,11 @@ export async function GET(req: NextRequest) {
     // Transform results
     const designs = results.map((row: any) => {
       let colors: string[] = []
-      if (row.all_colors) {
+      // Prefer new hex_colors (array of individual hex values from backfill)
+      if (Array.isArray(row.hex_colors) && row.hex_colors.length > 0) {
+        colors = row.hex_colors.filter(Boolean)
+      } else if (row.all_colors) {
+        // Legacy schema: all_colors is a JSONB array of hex strings
         if (typeof row.all_colors === 'string') {
           try {
             colors = JSON.parse(row.all_colors)

@@ -16,6 +16,7 @@ interface DetailData {
   id: number
   url: string
   screenshot_url: string | null
+  extraction_error: string | null
   colors: ColorRow[]
   typography: TypographyRow[]
   assets: Asset[]
@@ -73,10 +74,10 @@ export function SiteDetailPanel({ sourceId, onClose }: SiteDetailPanelProps) {
         </div>
       ) : data ? (
         <div className="flex flex-col flex-1 min-h-0">
-          {activeTab === 'preview' && <PreviewTab screenshotUrl={data.screenshot_url} siteUrl={data.url} />}
-          {activeTab === 'colors' && <ColorsTab colors={data.colors} />}
-          {activeTab === 'type' && <TypeTab typography={data.typography} />}
-          {activeTab === 'assets' && <AssetsTab assets={data.assets} />}
+          {activeTab === 'preview' && <PreviewTab screenshotUrl={data.screenshot_url} siteUrl={data.url} extractionError={data.extraction_error} />}
+          {activeTab === 'colors' && <ColorsTab colors={data.colors} extractionError={data.extraction_error} />}
+          {activeTab === 'type' && <TypeTab typography={data.typography} extractionError={data.extraction_error} />}
+          {activeTab === 'assets' && <AssetsTab assets={data.assets} extractionError={data.extraction_error} />}
         </div>
       ) : (
         <div className="flex items-center justify-center flex-1 p-8">

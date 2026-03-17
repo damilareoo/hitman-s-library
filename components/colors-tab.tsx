@@ -28,11 +28,14 @@ function CopyBtn({ value }: { value: string }) {
   )
 }
 
-export function ColorsTab({ colors }: { colors: ColorRow[] }) {
+export function ColorsTab({ colors, extractionError }: { colors: ColorRow[]; extractionError?: string | null }) {
   if (!colors.length) {
     return (
-      <div className="flex items-center justify-center flex-1 p-8">
+      <div className="flex flex-col items-center justify-center flex-1 gap-2 p-8 text-center">
         <p className="text-xs text-muted-foreground">No colors extracted</p>
+        {extractionError && (
+          <p className="font-mono text-[10px] text-destructive/70 max-w-[220px] break-words">{extractionError}</p>
+        )}
       </div>
     )
   }

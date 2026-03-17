@@ -1,0 +1,10 @@
+{
+  "functions": {
+    "app/api/design/extract/route.ts": {
+      "maxDuration": 60
+    },
+    "app/api/design/[id]/reextract/route.ts": {
+      "maxDuration": 60
+    }
+  }
+}

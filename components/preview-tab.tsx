@@ -6,9 +6,10 @@ import { useRef, useEffect, useState } from 'react'
 interface PreviewTabProps {
   screenshotUrl: string | null
   siteUrl: string
+  extractionError?: string | null
 }
 
-export function PreviewTab({ screenshotUrl, siteUrl }: PreviewTabProps) {
+export function PreviewTab({ screenshotUrl, siteUrl, extractionError }: PreviewTabProps) {
   const scrollRef = useRef<HTMLDivElement>(null)
   const [showHint, setShowHint] = useState(true)
 
@@ -26,11 +27,14 @@ export function PreviewTab({ screenshotUrl, siteUrl }: PreviewTabProps) {
   if (!screenshotUrl) {
     return (
       <div className="flex flex-col items-center justify-center flex-1 gap-3 p-8">
-        <div className="w-full rounded-md border border-border p-8 text-center">
+        <div className="w-full rounded-md border border-border p-6 text-center">
           <p className="font-mono text-sm text-muted-foreground">
             {(() => { try { return new URL(siteUrl).hostname } catch { return siteUrl } })()}
           </p>
           <p className="text-xs text-muted-foreground/60 mt-1">Screenshot unavailable</p>
+          {extractionError && (
+            <p className="font-mono text-[10px] text-destructive/70 mt-3 break-words">{extractionError}</p>
+          )}
         </div>
       </div>
     )
