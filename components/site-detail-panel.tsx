@@ -159,12 +159,12 @@ export function SiteDetailPanel({ sourceId, onClose }: SiteDetailPanelProps) {
       </AnimatePresence>
 
       {/* Footer — always visible */}
-      <div className="flex-shrink-0 border-t border-border px-4 py-3 flex gap-2">
+      <div className="flex-shrink-0 border-t border-border px-4 pt-3 pb-[max(12px,var(--safe-bottom))] flex gap-2">
         <a
           href={data?.url ?? '#'}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center justify-center gap-1.5 flex-1 text-xs border border-border rounded-md py-2 text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-colors font-mono"
+          className="flex items-center justify-center gap-1.5 flex-1 text-xs border border-border rounded-md py-2 min-h-[44px] text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-colors font-mono"
         >
           ↗ Visit site
         </a>
