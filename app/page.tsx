@@ -11,6 +11,15 @@ import { SiteThumbnail } from '@/components/site-thumbnail'
 import { SiteDetailPanel } from '@/components/site-detail-panel'
 import { motion, AnimatePresence } from 'motion/react'
 
+const gridVariants = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.04 } },
+}
+const cardVariants = {
+  hidden: { opacity: 0, y: 16 },
+  show: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 260, damping: 22 } },
+}
+
 interface Design {
   id: string
   url: string
@@ -80,15 +89,6 @@ export default function DesignLibrary() {
 
   const hasAnimated = useRef(false)
   useEffect(() => { hasAnimated.current = true }, [])
-
-  const gridVariants = {
-    hidden: {},
-    show: { transition: { staggerChildren: 0.04 } },
-  }
-  const cardVariants = {
-    hidden: { opacity: 0, y: 16 },
-    show: { opacity: 1, y: 0 },
-  }
 
   const filteredDesigns = designs
 
