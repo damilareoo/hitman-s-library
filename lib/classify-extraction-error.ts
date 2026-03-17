@@ -47,8 +47,8 @@ export function classifyExtractionError(message: string | null): FailureInfo {
   const m = message.toLowerCase()
   let category: FailureCategory = 'unknown'
   if (m.includes('403') || m.includes('cloudflare') || m.includes('bot') || m.includes('blocked')) category = 'bot_protection'
-  else if (m.includes('401') || m.includes('login') || m.includes('auth') || m.includes('sign in')) category = 'login_required'
-  else if (m.includes('timeout') || m.includes('timed out') || m.includes('navigation')) category = 'timeout'
+  else if (m.includes('401') || m.includes('login') || m.includes('unauthorized') || m.includes('sign in')) category = 'login_required'
+  else if (m.includes('timeout') || m.includes('timed out') || m.includes('navigation timeout')) category = 'timeout'
   else if (m.includes('404') || m.includes('not found')) category = 'not_found'
   return { category, ...FAILURE_MAP[category] }
 }
