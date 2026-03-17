@@ -6,10 +6,9 @@ import { useState, useEffect, useRef } from 'react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import { Upload, X, Copy, Check, Sun, Moon, Menu, Trash2 } from 'lucide-react'
-import { BackupUtility } from '@/components/backup-utility'
-import { TypographyDisplay } from '@/components/typography-display'
+import { Upload, X, Sun, Moon, Menu, Trash2 } from 'lucide-react'
 import { SiteThumbnail } from '@/components/site-thumbnail'
+import { SiteDetailPanel } from '@/components/site-detail-panel'
 
 interface Design {
   id: string
@@ -510,59 +509,10 @@ export default function DesignLibrary() {
         {/* Details Panel - Desktop Only */}
         <div className="hidden md:flex md:col-span-3 flex-col sticky top-16 h-[calc(100vh-64px)] border-l border-border/20 bg-background/50">
           {selectedDesign && (
-            <div className="p-6 space-y-4 overflow-y-auto h-full">
-              <button onClick={() => setSelectedDesign(null)} className="text-muted-foreground hover:text-foreground grid-transition p-1 hover:bg-muted/40 rounded-sm self-end">
-                <X className="w-5 h-5" />
-              </button>
-
-              <div className="space-y-3">
-                <h2 className="text-sm font-bold text-foreground line-clamp-2 hover:text-foreground/90 grid-transition">{selectedDesign.title}</h2>
-                <a href={selectedDesign.url} target="_blank" rel="noopener noreferrer" className="w-full px-3 py-2 text-xs bg-primary/5 border border-primary/20 rounded-sm font-mono hover:bg-primary/10 hover:border-primary/40 grid-transition flex items-center justify-between group">
-                  <span>Visit Site</span>
-                  <span className="opacity-0 group-hover:opacity-100">↗</span>
-                </a>
-              </div>
-
-              <div className="h-px bg-border/20" />
-
-              <div className="space-y-3">
-                <h3 className="text-xs uppercase font-mono font-semibold tracking-wider">Colors</h3>
-                <div className="space-y-2">
-                  {selectedDesign.colors.map((color, i) => (
-                    <div key={i} className="group flex items-center gap-2 cursor-pointer hover:bg-muted/50 p-2 rounded-sm grid-transition border border-border/40 hover:border-border/60 hover:shadow-sm hover:scale-[1.02]" onClick={() => handleCopy(color, 'color')}>
-                      <div className="w-5 h-5 border border-border rounded-sm grid-transition group-hover:ring-2 group-hover:ring-offset-1 group-hover:ring-offset-background group-hover:ring-primary/40 group-hover:scale-110" style={{ backgroundColor: color }} />
-                      <code className="text-xs font-mono">{color}</code>
-                      {copied ? <Check className="w-4 h-4 ml-auto text-green-600 animate-bounce" /> : <Copy className="w-4 h-4 ml-auto opacity-0 group-hover:opacity-100 transition-opacity group-hover:scale-110" />}
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="h-px bg-border/20" />
-
-              <div className="space-y-3">
-                <h3 className="text-xs uppercase font-mono font-semibold tracking-wider">Typography</h3>
-                <TypographyDisplay fonts={selectedDesign.typography} onCopy={() => null} />
-              </div>
-
-              {selectedDesign.tags.length > 0 && (
-                <>
-                  <div className="h-px bg-border/20" />
-                  <div className="space-y-3">
-                    <h3 className="text-xs uppercase font-mono font-semibold tracking-wider">Tags</h3>
-                    <div className="flex flex-wrap gap-2">
-                      {selectedDesign.tags.map((tag, i) => (
-                        <span key={i} className="text-xs px-2 py-1 bg-muted/40 border border-border/40 rounded-sm font-mono grid-transition hover:bg-muted/60 hover:border-border/60 text-muted-foreground hover:text-foreground/80">
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                </>
-              )}
-
-              <div className="h-px bg-border/20" />
-            </div>
+            <SiteDetailPanel
+              sourceId={Number(selectedDesign.id)}
+              onClose={() => setSelectedDesign(null)}
+            />
           )}
         </div>
 
@@ -570,35 +520,11 @@ export default function DesignLibrary() {
         {selectedDesign && (
           <>
             <div className="md:hidden fixed inset-0 bg-black/40 z-30 top-16" onClick={() => setSelectedDesign(null)} role="presentation" aria-hidden="true" />
-            <dialog className="md:hidden fixed bottom-0 left-0 right-0 bg-background border-t border-border/20 rounded-t-xl z-40 max-h-[70vh] overflow-y-auto w-full" open aria-label="Design details">
-              <div className="p-4 space-y-4">
-                <div className="flex items-center justify-between">
-                  <h2 className="font-bold text-foreground">{selectedDesign.title}</h2>
-                  <button onClick={() => setSelectedDesign(null)} className="p-1 hover:bg-muted rounded-sm" aria-label="Close design details">
-                    <X className="w-5 h-5" aria-hidden="true" />
-                  </button>
-                </div>
-
-                <a href={selectedDesign.url} target="_blank" rel="noopener noreferrer" className="w-full px-3 py-2.5 text-sm bg-primary/10 border border-primary/30 rounded-sm font-mono hover:bg-primary/20 flex items-center justify-center gap-2">
-                  Visit Site ↗
-                </a>
-
-                <div className="space-y-2">
-                  <h3 className="text-xs uppercase font-mono font-semibold tracking-wider">Colors ({selectedDesign.colors.length})</h3>
-                  {selectedDesign.colors.map((color, i) => (
-                    <div key={i} className="flex items-center gap-3 p-3 border border-border/40 rounded-sm cursor-pointer hover:bg-muted/30 hover:shadow-sm hover:scale-[1.02] transition-all duration-200 group" onClick={() => handleCopy(color, 'color')} role="button" tabIndex={0} onKeyDown={(e) => e.key === 'Enter' && handleCopy(color, 'color')} aria-label={`Copy color ${color}`}>
-                      <div className="w-6 h-6 border border-border rounded-sm group-hover:ring-2 group-hover:ring-offset-1 group-hover:ring-primary/40 group-hover:scale-110 transition-all duration-200" style={{ backgroundColor: color }} aria-hidden="true" />
-                      <code className="text-xs font-mono flex-1">{color}</code>
-                      {copied ? <Check className="w-4 h-4 text-green-600 animate-bounce" aria-hidden="true" /> : <Copy className="w-4 h-4 group-hover:scale-110 transition-transform" aria-hidden="true" />}
-                    </div>
-                  ))}
-                </div>
-
-                <div className="space-y-2">
-                  <h3 className="text-xs uppercase font-mono font-semibold tracking-wider">Typography ({selectedDesign.typography.length})</h3>
-                  <TypographyDisplay fonts={selectedDesign.typography} onCopy={() => null} />
-                </div>
-              </div>
+            <dialog className="md:hidden fixed bottom-0 left-0 right-0 bg-background border-t border-border/20 rounded-t-xl z-40 max-h-[70vh] w-full flex flex-col" open aria-label="Design details">
+              <SiteDetailPanel
+                sourceId={Number(selectedDesign.id)}
+                onClose={() => setSelectedDesign(null)}
+              />
             </dialog>
           </>
         )}
