@@ -68,18 +68,17 @@ async function getSitesToBackfill() {
   }
 }
 
-async function extractSite(id, url) {
-  const res = await fetch(`${BASE_URL}/api/design/extract`, {
+async function reextractSite(id) {
+  const res = await fetch(`${BASE_URL}/api/design/${id}/reextract`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ url }),
     signal: AbortSignal.timeout(120_000), // 2 min timeout per site
   })
-  if (!res.ok) {
-    const text = await res.text().catch(() => '')
-    throw new Error(`HTTP ${res.status}: ${text.slice(0, 200)}`)
+  const data = await res.json().catch(() => ({}))
+  if (!res.ok || !data.success) {
+    throw new Error(data.error ?? `HTTP ${res.status}`)
   }
-  return res.json()
+  return data
 }
 
 async function processBatch(batch, done, total) {
@@ -87,8 +86,8 @@ async function processBatch(batch, done, total) {
     batch.map(async ({ id, source_url }) => {
       try {
         process.stdout.write(`  [${done}/${total}] ${source_url} ... `)
-        await extractSite(id, source_url)
-        console.log('✓')
+        const result = await reextractSite(id)
+        console.log(`✓  (colors:${result.colors} type:${result.typography} assets:${result.assets})`)
       } catch (err) {
         console.log(`✗ ${err.message}`)
       }
