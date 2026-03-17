@@ -2,9 +2,7 @@ import chromium from '@sparticuz/chromium'
 import puppeteer from 'puppeteer'
 import type { Page } from 'puppeteer'
 import { put } from '@vercel/blob'
-import { existsSync } from 'fs'
-import { join, dirname } from 'path'
-import { createRequire } from 'module'
+import { existsSync, unlinkSync } from 'fs'
 import { extractAssets } from './asset-extraction'
 
 // For serverless environments, use the lightweight Chromium from Sparticuz
@@ -15,33 +13,37 @@ export async function getBrowser() {
 
   try {
     // On Vercel, AWS_EXECUTION_ENV is not set, so @sparticuz/chromium's
-    // executablePath() skips extracting al2.tar.br — the bundle that provides
-    // libnss3.so and other shared libs the Chromium binary needs at runtime.
+    // executablePath() skips extracting al2.tar.br — the shared-lib bundle
+    // that provides libnss3.so (required by the Chromium binary).
     //
-    // We use lambdafs from the chromium package to inflate al2.tar.br directly
-    // (idempotent: returns immediately if /tmp/al2 already exists), then add
-    // /tmp/al2 to LD_LIBRARY_PATH so the launched subprocess finds the libs.
+    // Strategy:
+    // 1. If /tmp/chromium is cached from a prior invocation that ran without al2,
+    //    delete it so the next executablePath() call does a full re-extraction.
+    // 2. Set AWS_EXECUTION_ENV to make executablePath() include al2.tar.br.
+    // 3. After extraction, add /tmp/al2 to LD_LIBRARY_PATH so the subprocess
+    //    can resolve libnss3.so at launch.
     if (process.env.VERCEL) {
-      const _require = createRequire(import.meta.url)
-      const chromiumBuild = dirname(_require.resolve('@sparticuz/chromium'))
-      const lambdafs = _require(join(chromiumBuild, 'lambdafs')).default
-      const al2File = join(chromiumBuild, '..', 'bin', 'al2.tar.br')
-      if (existsSync(al2File)) {
-        await lambdafs.inflate(al2File)
-        const libPath = process.env.LD_LIBRARY_PATH ?? ''
-        if (!libPath.includes('/tmp/al2')) {
-          process.env.LD_LIBRARY_PATH = `/tmp/al2:${libPath}`
-        }
+      if (existsSync('/tmp/chromium') && !existsSync('/tmp/al2')) {
+        try { unlinkSync('/tmp/chromium') } catch {}
       }
       if (!process.env.AWS_EXECUTION_ENV) {
         process.env.AWS_EXECUTION_ENV = 'AWS_Lambda_nodejs18.x'
       }
     }
 
+    const executablePath = await chromium.executablePath()
+
+    if (process.env.VERCEL) {
+      const libPath = process.env.LD_LIBRARY_PATH ?? ''
+      if (!libPath.includes('/tmp/al2')) {
+        process.env.LD_LIBRARY_PATH = `/tmp/al2:${libPath}`
+      }
+    }
+
     browser = await puppeteer.launch({
       args: chromium.args,
       defaultViewport: chromium.defaultViewport,
-      executablePath: await chromium.executablePath(),
+      executablePath,
       headless: chromium.headless,
     })
     console.log('[v0] Browser instance created successfully')
