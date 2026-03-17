@@ -9,6 +9,7 @@ import { Card } from '@/components/ui/card'
 import { Upload, X, Sun, Moon, Menu, Trash2 } from 'lucide-react'
 import { SiteThumbnail } from '@/components/site-thumbnail'
 import { SiteDetailPanel } from '@/components/site-detail-panel'
+import { motion, AnimatePresence } from 'motion/react'
 
 interface Design {
   id: string
@@ -76,6 +77,19 @@ export default function DesignLibrary() {
       .then(r => r.json())
       .then(d => setCategories(d.categories || []))
   }, [])
+
+  const hasAnimated = useRef(false)
+  useEffect(() => { hasAnimated.current = true }, [])
+
+  const gridVariants = {
+    hidden: {},
+    show: { transition: { staggerChildren: 0.04 } },
+  }
+  const cardVariants = {
+    hidden: { opacity: 0, y: 16 },
+    show: { opacity: 1, y: 0 },
+  }
+
   const filteredDesigns = designs
 
   // Seamless theme switching without any flash or delay
@@ -458,18 +472,30 @@ export default function DesignLibrary() {
           <div className="flex-1 overflow-y-auto">
             <div className="p-4 sm:p-6 md:p-8">
             {/* Gallery Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-5 md:gap-6">
+            <motion.div
+              className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-5 md:gap-6"
+              variants={gridVariants}
+              initial={hasAnimated.current ? false : 'hidden'}
+              animate="show"
+            >
+              <AnimatePresence mode="popLayout">
               {filteredDesigns.map((design) => (
-                <div
+                <motion.div
                   key={design.id}
+                  layout
+                  variants={cardVariants}
+                  initial={hasAnimated.current ? false : 'hidden'}
+                  animate="show"
+                  exit={{ scale: 0.9, opacity: 0, transition: { duration: 0.15, ease: 'easeIn' } }}
+                  whileHover={{ scale: 1.015 }}
+                  whileTap={{ scale: 0.98 }}
                   onClick={() => setSelectedDesign(design)}
-                  className="group relative flex flex-col border border-border/40 rounded-lg overflow-hidden grid-transition hover:border-border/70 text-left cursor-pointer"
+                  className="group relative flex flex-col border border-border/40 rounded-lg overflow-hidden hover:border-border/70 text-left cursor-pointer"
                 >
                   {/* Website Hero Screenshot */}
                   <SiteThumbnail
                     url={design.url}
                     alt={design.title}
-                    className="group-hover:scale-[1.02] transition-transform duration-300"
                   />
 
                   {/* Content Area */}
@@ -499,9 +525,10 @@ export default function DesignLibrary() {
                       <span className="text-xs text-muted-foreground font-mono">{design.colors.length} colors</span>
                     </div>
                   </div>
-                </div>
+                </motion.div>
               ))}
-            </div>
+              </AnimatePresence>
+            </motion.div>
             </div>
           </div>
         </div>
