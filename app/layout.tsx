@@ -1,12 +1,11 @@
 import type React from "react"
 import type { Metadata, Viewport } from "next"
-import { Inter, JetBrains_Mono } from "next/font/google"
+import { Inter } from "next/font/google"
+import { GeistMono } from "geist/font/mono"
 import { Analytics } from "@vercel/analytics/next"
 import "./globals.css"
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans", weight: ["400", "500", "600", "700"] })
-const jetbrainsMono = JetBrains_Mono({ subsets: ["latin"], variable: "--font-mono", weight: ["400", "500", "600"] })
-const ibmPlexMono = { variable: "--font-mono" } // Placeholder for ibmPlexMono
 
 export const metadata: Metadata = {
   title: {
@@ -105,7 +104,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning data-scroll-behavior="smooth">
+    <html lang="en" className={`${inter.variable} ${GeistMono.variable}`} suppressHydrationWarning data-scroll-behavior="smooth">
       <head>
         <script
           dangerouslySetInnerHTML={{
@@ -152,7 +151,7 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className={`font-sans ${inter.variable} ${jetbrainsMono.variable} antialiased`}>
+      <body className="font-sans antialiased">
         {children}
         <Analytics />
       </body>

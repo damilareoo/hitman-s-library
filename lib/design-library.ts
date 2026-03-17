@@ -15,23 +15,22 @@ export async function saveDesignSource(data: {
   quality_score: number
   tags: string
 }) {
-  const query = `
+  const result = await sql`
     INSERT INTO design_sources (
-      url, file_name, source_type, industry_id, 
+      url, file_name, source_type, industry_id,
       analyzed_content, quality_score, tags, analyzed_at
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
+    ) VALUES (
+      ${data.url || null},
+      ${data.file_name || null},
+      ${data.source_type},
+      ${data.industry_id},
+      ${JSON.stringify(data.analyzed_content)},
+      ${data.quality_score},
+      ${data.tags},
+      NOW()
+    )
     RETURNING *
   `
-
-  const result = await sql(query, [
-    data.url || null,
-    data.file_name || null,
-    data.source_type,
-    data.industry_id,
-    JSON.stringify(data.analyzed_content),
-    data.quality_score,
-    data.tags,
-  ])
 
   return result[0]
 }
@@ -49,23 +48,21 @@ export async function saveDesignPattern(data: {
   visual_elements?: Record<string, unknown>
   usage_context: string
 }) {
-  const query = `
+  const result = await sql`
     INSERT INTO design_patterns (
       source_id, pattern_type, pattern_name, description,
       code_snippet, visual_elements, usage_context
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7)
+    ) VALUES (
+      ${data.source_id},
+      ${data.pattern_type},
+      ${data.pattern_name},
+      ${data.description},
+      ${data.code_snippet || null},
+      ${data.visual_elements ? JSON.stringify(data.visual_elements) : null},
+      ${data.usage_context}
+    )
     RETURNING *
   `
-
-  const result = await sql(query, [
-    data.source_id,
-    data.pattern_type,
-    data.pattern_name,
-    data.description,
-    data.code_snippet || null,
-    data.visual_elements ? JSON.stringify(data.visual_elements) : null,
-    data.usage_context,
-  ])
 
   return result[0]
 }
@@ -84,24 +81,22 @@ export async function saveColorPalette(data: {
   contrast_score: number
   accessibility_compliant: boolean
 }) {
-  const query = `
+  const result = await sql`
     INSERT INTO design_colors (
       source_id, primary_color, secondary_color, accent_color,
       neutral_colors, palette_name, contrast_score, accessibility_compliant
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+    ) VALUES (
+      ${data.source_id},
+      ${data.primary_color},
+      ${data.secondary_color || null},
+      ${data.accent_color || null},
+      ${data.neutral_colors ? JSON.stringify(data.neutral_colors) : null},
+      ${data.palette_name},
+      ${data.contrast_score},
+      ${data.accessibility_compliant}
+    )
     RETURNING *
   `
-
-  const result = await sql(query, [
-    data.source_id,
-    data.primary_color,
-    data.secondary_color || null,
-    data.accent_color || null,
-    data.neutral_colors ? JSON.stringify(data.neutral_colors) : null,
-    data.palette_name,
-    data.contrast_score,
-    data.accessibility_compliant,
-  ])
 
   return result[0]
 }
@@ -120,24 +115,22 @@ export async function saveTypography(data: {
   weight_scale?: string
   usage_context: string
 }) {
-  const query = `
+  const result = await sql`
     INSERT INTO design_typography (
       source_id, font_family, heading_size, body_size,
       line_height, letter_spacing, weight_scale, usage_context
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+    ) VALUES (
+      ${data.source_id},
+      ${data.font_family},
+      ${data.heading_size || null},
+      ${data.body_size || null},
+      ${data.line_height},
+      ${data.letter_spacing},
+      ${data.weight_scale || null},
+      ${data.usage_context}
+    )
     RETURNING *
   `
-
-  const result = await sql(query, [
-    data.source_id,
-    data.font_family,
-    data.heading_size || null,
-    data.body_size || null,
-    data.line_height,
-    data.letter_spacing,
-    data.weight_scale || null,
-    data.usage_context,
-  ])
 
   return result[0]
 }
@@ -154,22 +147,20 @@ export async function saveDesignSystem(data: {
   accessibility_features: string[]
   documentation_url?: string
 }) {
-  const query = `
+  const result = await sql`
     INSERT INTO design_styles (
       source_id, style_name, components, design_tokens,
       accessibility_features, documentation_url
-    ) VALUES ($1, $2, $3, $4, $5, $6)
+    ) VALUES (
+      ${data.source_id},
+      ${data.system_name},
+      ${JSON.stringify(data.components)},
+      ${JSON.stringify(data.design_tokens)},
+      ${JSON.stringify(data.accessibility_features)},
+      ${data.documentation_url || null}
+    )
     RETURNING *
   `
-
-  const result = await sql(query, [
-    data.source_id,
-    data.system_name,
-    JSON.stringify(data.components),
-    JSON.stringify(data.design_tokens),
-    JSON.stringify(data.accessibility_features),
-    data.documentation_url || null,
-  ])
 
   return result[0]
 }
@@ -183,8 +174,8 @@ export async function searchDesignsByEmbedding(
   limit: number = 5,
   minSimilarity: number = 0.7
 ) {
-  const query = `
-    SELECT 
+  return sql`
+    SELECT
       de.id,
       de.source_id,
       de.embedding_type,
@@ -192,16 +183,14 @@ export async function searchDesignsByEmbedding(
       ds.url,
       ds.source_type,
       di.industry_name,
-      1 - (de.embedding <=> $1::vector) as similarity
+      1 - (de.embedding <=> ${JSON.stringify(embedding)}::vector) as similarity
     FROM design_embeddings de
     JOIN design_sources ds ON de.source_id = ds.id
     JOIN design_industries di ON ds.industry_id = di.id
-    WHERE 1 - (de.embedding <=> $1::vector) > $2
+    WHERE 1 - (de.embedding <=> ${JSON.stringify(embedding)}::vector) > ${minSimilarity}
     ORDER BY similarity DESC
-    LIMIT $3
+    LIMIT ${limit}
   `
-
-  return sql(query, [JSON.stringify(embedding), minSimilarity, limit])
 }
 
 // ============================================
@@ -209,8 +198,8 @@ export async function searchDesignsByEmbedding(
 // ============================================
 
 export async function getDesignsByIndustry(industryName: string, limit: number = 10) {
-  const query = `
-    SELECT 
+  return sql`
+    SELECT
       ds.*,
       di.industry_name,
       COUNT(DISTINCT dp.id) as pattern_count,
@@ -221,13 +210,11 @@ export async function getDesignsByIndustry(industryName: string, limit: number =
     LEFT JOIN design_patterns dp ON ds.id = dp.source_id
     LEFT JOIN design_colors dc ON ds.id = dc.source_id
     LEFT JOIN design_typography dt ON ds.id = dt.source_id
-    WHERE di.industry_name ILIKE $1
+    WHERE di.industry_name ILIKE ${industryName}
     GROUP BY ds.id, di.id
-    ORDER BY ds.quality_score DESC, ds.analyzed_at DESC
-    LIMIT $2
+    ORDER BY ds.analyzed_at DESC
+    LIMIT ${limit}
   `
-
-  return sql(query, [industryName, limit])
 }
 
 // ============================================
@@ -242,22 +229,20 @@ export async function saveExcelImport(data: {
   failed_rows: number
   error_log?: Record<string, unknown>
 }) {
-  const query = `
+  const result = await sql`
     INSERT INTO excel_imports (
-      file_name, import_date, total_rows, 
+      file_name, import_date, total_rows,
       successful_imports, failed_rows, error_log
-    ) VALUES ($1, $2, $3, $4, $5, $6)
+    ) VALUES (
+      ${data.file_name},
+      ${data.import_date},
+      ${data.total_rows},
+      ${data.successful_imports},
+      ${data.failed_rows},
+      ${data.error_log ? JSON.stringify(data.error_log) : null}
+    )
     RETURNING *
   `
-
-  const result = await sql(query, [
-    data.file_name,
-    data.import_date,
-    data.total_rows,
-    data.successful_imports,
-    data.failed_rows,
-    data.error_log ? JSON.stringify(data.error_log) : null,
-  ])
 
   return result[0]
 }
@@ -267,8 +252,8 @@ export async function saveExcelImport(data: {
 // ============================================
 
 export async function getDesignContextForGeneration(industryId: number, styleCategory?: string) {
-  const query = `
-    SELECT 
+  const result = await sql`
+    SELECT
       json_build_object(
         'colors', (
           SELECT json_agg(
@@ -281,7 +266,7 @@ export async function getDesignContextForGeneration(industryId: number, styleCat
             )
           )
           FROM design_colors WHERE source_id IN (
-            SELECT id FROM design_sources WHERE industry_id = $1
+            SELECT id FROM design_sources WHERE industry_id = ${industryId}
           )
           LIMIT 5
         ),
@@ -295,7 +280,7 @@ export async function getDesignContextForGeneration(industryId: number, styleCat
             )
           )
           FROM design_typography WHERE source_id IN (
-            SELECT id FROM design_sources WHERE industry_id = $1
+            SELECT id FROM design_sources WHERE industry_id = ${industryId}
           )
           LIMIT 5
         ),
@@ -309,7 +294,7 @@ export async function getDesignContextForGeneration(industryId: number, styleCat
             )
           )
           FROM design_patterns WHERE source_id IN (
-            SELECT id FROM design_sources WHERE industry_id = $1
+            SELECT id FROM design_sources WHERE industry_id = ${industryId}
           )
           LIMIT 10
         ),
@@ -322,18 +307,15 @@ export async function getDesignContextForGeneration(industryId: number, styleCat
             )
           )
           FROM design_styles WHERE source_id IN (
-            SELECT id FROM design_sources WHERE industry_id = $1
+            SELECT id FROM design_sources WHERE industry_id = ${industryId}
           )
           LIMIT 3
         )
       ) as design_context
   `
-
-  const result = await sql(query, [industryId])
   return result[0]?.design_context || null
 }
 
 export async function getIndustries() {
-  const query = `SELECT * FROM design_industries ORDER BY industry_name`
-  return sql(query)
+  return sql`SELECT * FROM design_industries ORDER BY industry_name`
 }

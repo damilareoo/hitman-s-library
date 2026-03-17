@@ -109,7 +109,7 @@
 
 @theme inline {
   --font-sans: "Inter", system-ui, -apple-system, sans-serif;
-  --font-mono: "JetBrains Mono", "IBM Plex Mono", monospace;
+  --font-mono: var(--geist-mono), ui-monospace, monospace;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -1245,6 +1245,12 @@ a,
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+  }
+
+  [style*="fade-in-up"],
+  [style*="scale-in"] {
+    animation-duration: 0.15s !important;
+    animation-timing-function: ease !important;
   }
 }
 

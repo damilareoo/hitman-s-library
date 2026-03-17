@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { neon } from '@neondatabase/serverless'
+import { neon, Client } from '@neondatabase/serverless'
 import { detectIndustry } from './detectIndustry'
 import { extractTypographyEnhanced } from '@/lib/typography-extraction'
-import { extractTypographyFromRenderedPage, extractAllDesignDataFromRenderedPage } from '@/lib/browser-extraction'
+import { extractTypographyFromRenderedPage, extractAllDesignDataFromRenderedPage, extractBrandColors, getBrowser, extractFullDesignData } from '@/lib/browser-extraction'
+import { toColorFormats, deduplicateColors } from '@/lib/color-utils'
 
 const sql = neon(process.env.DATABASE_URL!)
 
@@ -163,8 +164,21 @@ export async function POST(req: NextRequest) {
     const descMatch = html.match(/<meta name="description" content="([^"]+)/)
     const description = descMatch?.[1] || ''
 
-    // Extract design details
-    const colors = extractColors(html)
+    // Extract design details — full extraction via rendered page (colors, screenshot, assets, typography)
+    let colorFormats: { hex: string; oklch: string }[] = []
+    let colors: string[] = []
+    let extractionResult: Awaited<ReturnType<typeof extractFullDesignData>> | null = null
+    try {
+      extractionResult = await extractFullDesignData(url)
+      colorFormats = deduplicateColors(extractionResult.colors)
+        .map(c => toColorFormats(c))
+        .filter((c): c is { hex: string; oklch: string } => c !== null)
+        .slice(0, 16)
+      colors = colorFormats.map(c => c.hex)
+    } catch (colorErr) {
+      console.warn('[v0] Full design extraction failed, falling back to regex:', colorErr)
+      colors = extractColors(html)
+    }
     const typographyData = extractTypographyEnhanced(html)
     let typography = typographyData.allFonts
     
@@ -252,23 +266,40 @@ export async function POST(req: NextRequest) {
 
       const sourceId = result[0]?.id
 
+      // Save screenshot URL if captured
+      if (sourceId && extractionResult?.screenshotUrl) {
+        await sql`UPDATE design_sources SET screenshot_url = ${extractionResult.screenshotUrl} WHERE id = ${sourceId}`
+      }
+
       // Save colors if extracted
-      if (colors.length > 0 && sourceId) {
-        await sql`
-          INSERT INTO design_colors (
-            source_id,
-            primary_color,
-            secondary_color,
-            all_colors,
-            created_at
-          ) VALUES (
-            ${sourceId},
-            ${colors[0] || ''},
-            ${colors[1] || ''},
-            ${JSON.stringify(colors)},
-            NOW()
-          )
-        `.catch(() => null)
+      if (sourceId) {
+        if (colorFormats.length > 0) {
+          // New brand-signal extraction: save each color with hex_value and oklch
+          for (const color of colorFormats) {
+            await sql`
+              INSERT INTO design_colors (source_id, hex_value, oklch)
+              VALUES (${sourceId}, ${color.hex}, ${color.oklch})
+              ON CONFLICT DO NOTHING
+            `.catch(() => null)
+          }
+        } else if (colors.length > 0) {
+          // Fallback: legacy insert with primary_color/secondary_color/all_colors
+          await sql`
+            INSERT INTO design_colors (
+              source_id,
+              primary_color,
+              secondary_color,
+              all_colors,
+              created_at
+            ) VALUES (
+              ${sourceId},
+              ${colors[0] || ''},
+              ${colors[1] || ''},
+              ${JSON.stringify(colors)},
+              NOW()
+            )
+          `.catch(() => null)
+        }
       }
 
       // Save typography if extracted
@@ -290,6 +321,60 @@ export async function POST(req: NextRequest) {
             NOW()
           )
         `.catch(() => null)
+      }
+
+      // Save assets transactionally
+      const { assets } = extractionResult ?? {}
+      if (assets && assets.length > 0 && sourceId) {
+        const client = new Client(process.env.DATABASE_URL!)
+        await client.connect()
+        try {
+          await client.query('BEGIN')
+          await client.query('DELETE FROM design_assets WHERE source_id = $1', [sourceId])
+          for (const asset of assets) {
+            await client.query(
+              'INSERT INTO design_assets (source_id, type, content, width, height) VALUES ($1, $2, $3, $4, $5)',
+              [sourceId, asset.type, asset.content, asset.width, asset.height]
+            )
+          }
+          await client.query('COMMIT')
+        } catch (err) {
+          await client.query('ROLLBACK')
+          console.error('[assets] Transaction rolled back:', err)
+        } finally {
+          await client.end()
+        }
+      }
+
+      // Save typography roles transactionally (after getting sourceId)
+      const { typography: typographyRoles } = extractionResult ?? {}
+      if (typographyRoles && typographyRoles.length > 0 && sourceId) {
+        const typClient = new Client(process.env.DATABASE_URL!)
+        await typClient.connect()
+        try {
+          await typClient.query('BEGIN')
+          await typClient.query(
+            "DELETE FROM design_typography WHERE source_id = $1 AND role != 'legacy'",
+            [sourceId]
+          )
+          for (const t of typographyRoles) {
+            await typClient.query(
+              `INSERT INTO design_typography (source_id, font_family, role, google_fonts_url, primary_weight)
+               VALUES ($1, $2, $3, $4, $5)
+               ON CONFLICT (source_id, role) DO UPDATE SET
+                 font_family = EXCLUDED.font_family,
+                 google_fonts_url = EXCLUDED.google_fonts_url,
+                 primary_weight = EXCLUDED.primary_weight`,
+              [sourceId, t.fontFamily, t.role, t.googleFontsUrl, t.primaryWeight]
+            )
+          }
+          await typClient.query('COMMIT')
+        } catch (err) {
+          await typClient.query('ROLLBACK')
+          console.error('[typography] Transaction rolled back:', err)
+        } finally {
+          await typClient.end()
+        }
       }
 
       // Auto-categorize based on extracted design data
