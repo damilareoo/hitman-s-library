@@ -128,6 +128,17 @@ export default function DesignLibrary() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  // Lock body scroll when mobile detail sheet is open
+  useEffect(() => {
+    const isMobile = window.matchMedia('(max-width: 767px)').matches
+    if (selectedDesign && isMobile) {
+      document.body.style.overflow = 'hidden'
+    }
+    return () => {
+      document.body.style.overflow = ''
+    }
+  }, [selectedDesign])
+
   // Intuitive copy feedback with auto-dismiss
   const handleCopy = (text: string, type: 'color' | 'text') => {
     navigator.clipboard.writeText(text)
@@ -596,7 +607,7 @@ export default function DesignLibrary() {
         {selectedDesign && (
           <>
             <div className="md:hidden fixed inset-0 bg-black/40 z-30 top-16" onClick={() => setSelectedDesign(null)} role="presentation" aria-hidden="true" />
-            <dialog className="md:hidden fixed bottom-0 left-0 right-0 bg-background border-t border-border/20 rounded-t-xl z-40 max-h-[70vh] w-full flex flex-col" open aria-label="Design details">
+            <dialog className="md:hidden fixed bottom-0 left-0 right-0 bg-background border-t border-border/20 rounded-t-xl z-40 h-[70vh] w-full flex flex-col" open aria-label="Design details">
               <SiteDetailPanel
                 sourceId={Number(selectedDesign.id)}
                 onClose={() => setSelectedDesign(null)}
