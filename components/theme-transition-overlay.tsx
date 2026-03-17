@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from 'react'
 interface ThemeTransitionOverlayProps {
   newTheme: 'dark' | 'light'
   origin: { x: number; y: number }
-  onComplete: () => void
+  onComplete: (newTheme: 'dark' | 'light') => void
 }
 
 export function ThemeTransitionOverlay({ newTheme, origin, onComplete }: ThemeTransitionOverlayProps) {
@@ -16,10 +16,15 @@ export function ThemeTransitionOverlay({ newTheme, origin, onComplete }: ThemeTr
   function complete() {
     if (doneRef.current) return
     doneRef.current = true
-    onComplete()
+    onComplete(newTheme)
   }
 
   useEffect(() => {
+    // Skip animation for users who prefer reduced motion
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      complete()
+      return
+    }
     const t = setTimeout(() => setAnimating(true), 0)
     const safety = setTimeout(complete, 650)
     return () => {
@@ -31,6 +36,8 @@ export function ThemeTransitionOverlay({ newTheme, origin, onComplete }: ThemeTr
 
   return (
     <div
+      aria-hidden="true"
+      role="presentation"
       className={newTheme === 'dark' ? 'dark' : ''}
       style={{
         position: 'fixed',

@@ -112,8 +112,7 @@ export default function DesignLibrary() {
     setThemeOverlay({ newTheme, origin })
   }
 
-  function handleThemeTransitionComplete() {
-    const newTheme = themeOverlay!.newTheme
+  function handleThemeTransitionComplete(newTheme: 'dark' | 'light') {
     setTheme(newTheme)
     localStorage.setItem('theme', newTheme)
     document.documentElement.classList.toggle('dark', newTheme === 'dark')
