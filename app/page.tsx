@@ -318,7 +318,7 @@ export default function DesignLibrary() {
   // Designs are already filtered through the API response
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="h-dvh bg-background">
       {/* Mobile Navigation Drawer */}
         {showMobileMenu && (
           <>
@@ -434,7 +434,7 @@ export default function DesignLibrary() {
       {/* Main Content Grid */}
       <div className="grid grid-cols-1 md:grid-cols-12 gap-0 h-[calc(100dvh-64px)] overflow-hidden">
         {/* Sidebar - Desktop Only, Sticky */}
-        <aside className="hidden md:flex md:col-span-3 flex-col sticky top-16 h-[calc(100vh-64px)] border-r border-border/20 bg-background/50 overflow-y-auto">
+        <aside className="hidden md:flex md:col-span-3 flex-col sticky top-16 h-[calc(100dvh-64px)] border-r border-border/20 bg-background/50 overflow-y-auto">
           <div className="flex flex-col h-full">
             {/* Category Nav */}
             <nav className="flex-1 overflow-y-auto p-5" aria-label="Category filters">
@@ -584,7 +584,7 @@ export default function DesignLibrary() {
         </div>
 
         {/* Details Panel - Desktop Only */}
-        <div className="hidden md:flex md:col-span-3 flex-col sticky top-16 h-[calc(100vh-64px)] border-l border-border/20 bg-background/50">
+        <div className="hidden md:flex md:col-span-3 flex-col sticky top-16 h-[calc(100dvh-64px)] border-l border-border/20 bg-background/50">
           {selectedDesign && (
             <SiteDetailPanel
               sourceId={Number(selectedDesign.id)}
