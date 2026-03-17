@@ -143,8 +143,8 @@ export default function DesignLibrary() {
       isFirstFilterRun.current = false
       return
     }
+    setIsFiltering(true)
     const t = setTimeout(() => {
-      setIsFiltering(true)
       loadDesignsRef.current().finally(() => setIsFiltering(false))
     }, 200)
     return () => clearTimeout(t)
@@ -219,7 +219,6 @@ export default function DesignLibrary() {
       setDesigns([])
     }
   }
-
   const loadDesignsRef = useRef(loadDesigns)
   loadDesignsRef.current = loadDesigns
 
