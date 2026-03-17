@@ -59,6 +59,18 @@ interface ActiveFilters {
   sortBy: 'recent' | 'oldest' | 'name' | 'quality'
 }
 
+function SkeletonCard() {
+  return (
+    <div className="flex flex-col border border-border/40 rounded-lg overflow-hidden animate-pulse">
+      <div className="aspect-video bg-muted" />
+      <div className="p-4 space-y-2">
+        <div className="h-3 bg-muted rounded w-3/4" />
+        <div className="h-3 bg-muted rounded w-1/2" />
+      </div>
+    </div>
+  )
+}
+
 export default function DesignLibrary() {
   const [designs, setDesigns] = useState<Design[]>([])
   const [selectedDesign, setSelectedDesign] = useState<Design | null>(null)
@@ -85,6 +97,8 @@ export default function DesignLibrary() {
   const [showMobileMenu, setShowMobileMenu] = useState(false)
   const [copyFeedbacks, setCopyFeedbacks] = useState<CopyFeedback[]>([])
   const [categories, setCategories] = useState<{ name: string; count: number }[]>([])
+  const [isPageLoading, setIsPageLoading] = useState(true)
+  const [isFiltering, setIsFiltering] = useState(false)
 
   function clearSubmitTimers() {
     submitTimersRef.current.forEach(clearTimeout)
@@ -112,13 +126,28 @@ export default function DesignLibrary() {
   }, [])
 
   const hasAnimated = useRef(false)
+  const isFirstFilterRun = useRef(true)
   useEffect(() => { hasAnimated.current = true }, [])
 
   const filteredDesigns = designs
 
-  // Load designs on mount and when filters change
+  // Initial page load
   useEffect(() => {
-    loadDesigns()
+    loadDesignsRef.current().finally(() => setIsPageLoading(false))
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // Filter changes — debounced, skips initial mount
+  useEffect(() => {
+    if (isFirstFilterRun.current) {
+      isFirstFilterRun.current = false
+      return
+    }
+    const t = setTimeout(() => {
+      setIsFiltering(true)
+      loadDesignsRef.current().finally(() => setIsFiltering(false))
+    }, 200)
+    return () => clearTimeout(t)
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [JSON.stringify(activeFilters)])
 
@@ -190,6 +219,9 @@ export default function DesignLibrary() {
       setDesigns([])
     }
   }
+
+  const loadDesignsRef = useRef(loadDesigns)
+  loadDesignsRef.current = loadDesigns
 
   const handleAddLink = async () => {
     if (!linkInput.trim()) return
@@ -529,7 +561,9 @@ export default function DesignLibrary() {
               animate="show"
             >
               <AnimatePresence mode="popLayout">
-              {filteredDesigns.map((design) => (
+              {(isPageLoading || isFiltering)
+                ? Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)
+                : filteredDesigns.map((design) => (
                 <motion.div
                   key={design.id}
                   layout
