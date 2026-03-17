@@ -2,6 +2,7 @@
 'use client'
 
 import { useRef, useEffect, useState } from 'react'
+import { AnimatePresence, motion } from 'motion/react'
 
 interface PreviewTabProps {
   screenshotUrl: string | null
@@ -12,16 +13,18 @@ interface PreviewTabProps {
 export function PreviewTab({ screenshotUrl, siteUrl, extractionError }: PreviewTabProps) {
   const scrollRef = useRef<HTMLDivElement>(null)
   const [showHint, setShowHint] = useState(true)
+  const [showBackTop, setShowBackTop] = useState(false)
 
   useEffect(() => {
     setShowHint(true)
+    setShowBackTop(false)
     if (scrollRef.current) scrollRef.current.scrollTop = 0
   }, [screenshotUrl])
 
   function handleScroll() {
-    if (scrollRef.current?.scrollTop && scrollRef.current.scrollTop > 50) {
-      setShowHint(false)
-    }
+    const top = scrollRef.current?.scrollTop ?? 0
+    if (top > 50) setShowHint(false)
+    setShowBackTop(top > 200)
   }
 
   if (!screenshotUrl) {
@@ -41,7 +44,7 @@ export function PreviewTab({ screenshotUrl, siteUrl, extractionError }: PreviewT
   }
 
   return (
-    <div className="relative flex-1 overflow-hidden">
+    <div className="relative flex-1 overflow-hidden min-h-0">
       <div
         ref={scrollRef}
         onScroll={handleScroll}
@@ -57,6 +60,7 @@ export function PreviewTab({ screenshotUrl, siteUrl, extractionError }: PreviewT
         />
       </div>
 
+      {/* Scroll hint */}
       <div
         className="pointer-events-none absolute bottom-0 left-0 right-0 h-12 flex items-end justify-center pb-2 transition-opacity duration-300"
         style={{
@@ -64,10 +68,23 @@ export function PreviewTab({ screenshotUrl, siteUrl, extractionError }: PreviewT
           opacity: showHint ? 1 : 0,
         }}
       >
-        <span className="font-mono text-[10px] text-muted-foreground/40">
-          scroll to explore ↓
-        </span>
+        <span className="font-mono text-[10px] text-muted-foreground/40">scroll to explore ↓</span>
       </div>
+
+      {/* Back to top */}
+      <AnimatePresence>
+        {showBackTop && (
+          <motion.button
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 8 }}
+            onClick={() => scrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' })}
+            className="absolute bottom-3 right-3 font-mono text-[10px] text-muted-foreground/50 hover:text-muted-foreground border border-border/40 hover:border-border rounded px-2 py-1 bg-background/80 backdrop-blur-sm transition-colors"
+          >
+            ↑
+          </motion.button>
+        )}
+      </AnimatePresence>
     </div>
   )
 }
