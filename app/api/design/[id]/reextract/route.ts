@@ -1,6 +1,5 @@
 // app/api/design/[id]/reextract/route.ts
 // Re-runs full design extraction for an existing source, bypassing the duplicate guard.
-export const maxDuration = 60
 import { NextResponse } from 'next/server'
 import { neon, Client } from '@neondatabase/serverless'
 import { extractFullDesignData } from '@/lib/browser-extraction'
