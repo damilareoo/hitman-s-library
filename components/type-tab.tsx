@@ -1,7 +1,7 @@
 // components/type-tab.tsx
 'use client'
 
-import { ShieldAlert, Lock, Clock, FileQuestion, AlertTriangle } from 'lucide-react'
+import { ShieldWarning, LockSimple, Clock, FileDashed, Warning } from '@phosphor-icons/react'
 import { classifyExtractionError } from '@/lib/classify-extraction-error'
 import { TypeSpecimenCard } from './type-specimen-card'
 
@@ -12,7 +12,7 @@ interface TypographyRow {
   primary_weight: number | null
 }
 
-const ICONS = { ShieldAlert, Lock, Clock, FileQuestion, AlertTriangle }
+const ICONS = { ShieldWarning, LockSimple, Clock, FileDashed, Warning }
 
 function FailureEmptyState({ message, extractionError }: { message: string; extractionError?: string | null }) {
   if (!extractionError) {

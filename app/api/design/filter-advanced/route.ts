@@ -3,6 +3,16 @@ import { neon } from '@neondatabase/serverless'
 
 const sql = neon(process.env.DATABASE_URL!)
 
+// Maps normalized display names (from categories API) back to raw DB industry values
+function denormalize(name: string): string[] {
+  const lower = name.toLowerCase()
+  if (lower === 'saas / app') return ['saas', 'productivity', 'saas / app']
+  if (lower === 'finance') return ['fintech', 'finance']
+  if (lower === 'entertainment') return ['entertainment', 'social media']
+  if (lower === 'other') return ['general', 'uncategorized', 'healthcare', 'health', 'travel', 'education', 'code/bugs', 'other', 'c']
+  return [lower]
+}
+
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url)
@@ -21,14 +31,16 @@ export async function GET(req: NextRequest) {
     else if (sortBy === 'quality') sortClause = 'CAST(ds.metadata->>\'quality\' AS INTEGER) DESC NULLS LAST'
 
     // Build WHERE clause and collect parameters in order
-    const whereConditions: string[] = []
+    // Always exclude sites with no screenshot (can't be previewed)
+    const whereConditions: string[] = ['ds.screenshot_url IS NOT NULL']
     const filterParams: any[] = []
 
     // Add industry filters (case-insensitive to handle DB inconsistencies)
     if (industries.length > 0 && !industries.includes('all')) {
-      const placeholders = industries.map((_, i) => `$${i + 1}`).join(',')
+      const denormalizedIndustries = industries.flatMap(i => denormalize(i))
+      const placeholders = denormalizedIndustries.map((_, i) => `$${i + 1}`).join(',')
       whereConditions.push(`LOWER(ds.industry) IN (${placeholders})`)
-      filterParams.push(...industries.map(i => i.toLowerCase()))
+      filterParams.push(...denormalizedIndustries)
     }
 
     // Add search filter
@@ -59,6 +71,7 @@ export async function GET(req: NextRequest) {
         ds.tags,
         ds.created_at,
         ds.thumbnail_url,
+        ds.screenshot_url,
         dc.color_harmony,
         dc.mood,
         dc.hex_colors,
@@ -165,7 +178,7 @@ export async function GET(req: NextRequest) {
       let typography: string[] = []
       typography = [row.heading_font, row.body_font, row.mono_font].filter(Boolean)
 
-      const generatedUrl = row.thumbnail_url || `https://screenshot.rocks/?url=${encodeURIComponent(row.source_url)}&width=1366&height=768`
+      const generatedUrl = row.thumbnail_url || row.screenshot_url || `https://screenshot.rocks/?url=${encodeURIComponent(row.source_url)}&width=1366&height=768`
       return {
         id: row.id,
         url: row.source_url,

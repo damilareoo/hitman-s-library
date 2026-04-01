@@ -2,8 +2,9 @@
 'use client'
 
 import { useState } from 'react'
-import { Copy, Check, ShieldAlert, Lock, Clock, FileQuestion, AlertTriangle } from 'lucide-react'
+import { Copy, Check, ShieldWarning, LockSimple, Clock, FileDashed, Warning } from '@phosphor-icons/react'
 import { classifyExtractionError } from '@/lib/classify-extraction-error'
+import { useSoundsContext } from '@/contexts/sounds-context'
 
 interface ColorRow {
   hex_value: string
@@ -12,8 +13,10 @@ interface ColorRow {
 
 function CopyBtn({ value }: { value: string }) {
   const [copied, setCopied] = useState(false)
+  const { playCopy } = useSoundsContext()
   async function copy() {
     await navigator.clipboard.writeText(value)
+    playCopy()
     setCopied(true)
     setTimeout(() => setCopied(false), 1500)
   }
@@ -23,13 +26,13 @@ function CopyBtn({ value }: { value: string }) {
       className="opacity-0 group-hover:opacity-100 p-1 rounded transition-opacity text-muted-foreground hover:text-foreground hover:bg-secondary"
     >
       {copied
-        ? <Check className="w-3 h-3 text-foreground" />
-        : <Copy className="w-3 h-3" />}
+        ? <Check className="w-3 h-3 text-foreground" weight="bold" />
+        : <Copy className="w-3 h-3" weight="regular" />}
     </button>
   )
 }
 
-const ICONS = { ShieldAlert, Lock, Clock, FileQuestion, AlertTriangle }
+const ICONS = { ShieldWarning, LockSimple, Clock, FileDashed, Warning }
 
 function FailureEmptyState({ message, extractionError }: { message: string; extractionError?: string | null }) {
   if (!extractionError) {

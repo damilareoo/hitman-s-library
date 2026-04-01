@@ -26,9 +26,11 @@ When you add a URL, the app:
 - **Typography** — Font family, role, weight, and Google Fonts link
 - **Assets** — SVG logos, icons, and images
 - **Re-extract** — Re-run extraction for any site from the detail panel footer
-- **Theme switch** — Circular clip-path reveal animation from the toggle button
+- **Theme switch** — Light/dark toggle with animated icon transition
+- **Sound effects** — Subtle UI sounds, toggleable via header
 - **Failure messaging** — Categorised error states (bot protection, login required, timeout, 404) with plain-language explanations
 - **Extraction progress** — Animated stage labels while a URL is being processed
+- **Admin CMS** — Passcode-protected admin at `/admin` to add, search, and delete sites; bulk duplicate removal
 
 ---
 
@@ -50,6 +52,7 @@ When you add a URL, the app:
 |---|---|
 | `DATABASE_URL` | Neon PostgreSQL connection string |
 | `BLOB_READ_WRITE_TOKEN` | Vercel Blob storage token |
+| `ADMIN_PASSWORD` | Passcode for `/admin` access |
 
 ---
 

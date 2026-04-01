@@ -1,6 +1,8 @@
 // components/panel-tabs.tsx
 'use client'
 
+import { useSoundsContext } from '@/contexts/sounds-context'
+
 export type PanelTab = 'preview' | 'colors' | 'type' | 'assets'
 
 interface PanelTabsProps {
@@ -16,6 +18,7 @@ const TABS: { key: PanelTab; label: string }[] = [
 ]
 
 export function PanelTabs({ active, onChange }: PanelTabsProps) {
+  const { playTabChange } = useSoundsContext()
   return (
     <div
       className="flex border-b border-border"
@@ -24,7 +27,7 @@ export function PanelTabs({ active, onChange }: PanelTabsProps) {
       {TABS.map(({ key, label }) => (
         <button
           key={key}
-          onClick={() => onChange(key)}
+          onClick={() => { playTabChange(); onChange(key) }}
           className={[
             'flex-shrink-0 px-4 py-2.5 text-xs tracking-wide transition-colors -mb-px border-b-2',
             active === key

@@ -1,6 +1,6 @@
 'use client'
 
-import { Copy, Check, ExternalLink } from 'lucide-react'
+import { Copy, Check, ArrowSquareOut } from '@phosphor-icons/react'
 import { useState } from 'react'
 import { cn } from '@/lib/utils'
 import { getFontSource, getFontTypeLabel, getFontTypeBadgeColor } from '@/lib/font-sources'
@@ -126,7 +126,7 @@ export function TypographyDisplay({
                 aria-label={`Get ${fontObj.name} font`}
                 title={`Get ${fontObj.name} from ${fontSource.name}`}
               >
-                <ExternalLink className="w-4 h-4 transition-transform group-hover:scale-110" aria-hidden="true" />
+                <ArrowSquareOut className="w-4 h-4 transition-transform group-hover:scale-110" weight="regular" aria-hidden="true" />
               </a>
             )}
             <button
@@ -140,9 +140,9 @@ export function TypographyDisplay({
               title={`Copy ${fontObj.name}`}
             >
               {copiedFont === fontObj.name ? (
-                <Check className="w-4 h-4 text-green-600 animate-checkmark" aria-hidden="true" />
+                <Check className="w-4 h-4 text-green-600 animate-checkmark" weight="bold" aria-hidden="true" />
               ) : (
-                <Copy className="w-4 h-4 group-hover:scale-110 transition-transform" aria-hidden="true" />
+                <Copy className="w-4 h-4 group-hover:scale-110 transition-transform" weight="regular" aria-hidden="true" />
               )}
             </button>
           </div>

@@ -1,6 +1,39 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
+/* ============================================================================
+   SUISSE INT'L — Self-hosted. Drop woff2 files into /public/fonts/
+   Falls back to Helvetica Neue / system-ui when files are absent.
+   ============================================================================ */
+@font-face {
+  font-family: 'SuisseIntl';
+  src: url('/fonts/SuisseIntl-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'SuisseIntl';
+  src: url('/fonts/SuisseIntl-Medium.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'SuisseIntl';
+  src: url('/fonts/SuisseIntl-SemiBold.woff2') format('woff2');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'SuisseIntl';
+  src: url('/fonts/SuisseIntl-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
 @custom-variant dark (&:is(.dark *));
 
 /* ============================================================================
@@ -59,26 +92,26 @@
 }
 
 .dark {
-  /* User-defined dark mode colors - PRESERVED */
-  --background: #0a0a0a;
-  --foreground: #fafafa;
-  --card: #121212;
-  --card-foreground: #fafafa;
-  --popover: #121212;
-  --popover-foreground: #fafafa;
-  --primary: #ffffff;
-  --primary-foreground: #000000;
+  /* Editorial dark palette — warm off-white on deep charcoal */
+  --background: #0b0b0b;
+  --foreground: #ede9e3;
+  --card: #111111;
+  --card-foreground: #ede9e3;
+  --popover: #141414;
+  --popover-foreground: #ede9e3;
+  --primary: #ede9e3;
+  --primary-foreground: #0b0b0b;
   --secondary: #1a1a1a;
-  --secondary-foreground: #fafafa;
-  --muted: #1a1a1a;
-  --muted-foreground: #999999;
-  --accent: #ffffff;
-  --accent-foreground: #000000;
+  --secondary-foreground: #ede9e3;
+  --muted: #181818;
+  --muted-foreground: #6b6b6b;
+  --accent: #ede9e3;
+  --accent-foreground: #0b0b0b;
   --destructive: #f87171;
   --destructive-foreground: #000000;
-  --border: #2a2a2a;
-  --input: #1a1a1a;
-  --ring: #ffffff;
+  --border: #232323;
+  --input: #181818;
+  --ring: #ede9e3;
   --chart-1: #60a5fa;
   --chart-2: #a78bfa;
   --chart-3: #f472b6;
@@ -90,12 +123,12 @@
   --grid-hover: #2a2a2a;
 
   /* RGB values for dark mode */
-  --background-rgb: 10, 10, 10;
-  --card-rgb: 18, 18, 18;
-  --border-rgb: 42, 42, 42;
-  --primary-rgb: 255, 255, 255;
+  --background-rgb: 11, 11, 11;
+  --card-rgb: 17, 17, 17;
+  --border-rgb: 35, 35, 35;
+  --primary-rgb: 237, 233, 227;
   --secondary-rgb: 26, 26, 26;
-  --foreground-rgb: 250, 250, 250;
+  --foreground-rgb: 237, 233, 227;
 
   /* Sidebar colors (from user's existing oklch values) */
   --sidebar: oklch(0.205 0 0);
@@ -109,7 +142,7 @@
 }
 
 @theme inline {
-  --font-sans: "Inter", system-ui, -apple-system, sans-serif;
+  --font-sans: 'SuisseIntl', 'Helvetica Neue', Helvetica, Arial, system-ui, sans-serif;
   --font-mono: var(--geist-mono), ui-monospace, monospace;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -172,14 +205,9 @@ html.dark {
 body {
   background-color: var(--background);
   color: var(--foreground);
-  font-family: var(--font-sans); /* Kept user's font-sans */
-  background-image:
-    linear-gradient(var(--grid-line) 1px, transparent 1px),
-    linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
-  background-size: 40px 40px;
-  background-attachment: fixed;
-  /* Emil's principle: Fast animations (under 300ms) improve perceived performance */
-  /* ease-out starts fast, slows at end = impression of quick response */
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   transition: background-color 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94),
               color 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94) !important;
   will-change: background-color, color;
@@ -187,17 +215,6 @@ body {
   overflow: hidden;
 }
 
-@media (max-width: 1024px) {
-  body {
-    background-size: 32px 32px;
-  }
-}
-
-@media (max-width: 640px) {
-  body {
-    background-size: 24px 24px;
-  }
-}
 
 /* Interruptible animations - transitions can be interrupted smoothly */
 * {

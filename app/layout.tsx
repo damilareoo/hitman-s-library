@@ -1,13 +1,12 @@
 import type React from "react"
 import type { Metadata, Viewport } from "next"
-import { Inter } from "next/font/google"
 import { GeistMono } from "geist/font/mono"
 import { Analytics } from "@vercel/analytics/next"
 import { MotionProvider } from "@/components/motion-provider"
 import { ThemeProvider } from '@/components/theme-provider'
+import { SoundsProvider } from '@/contexts/sounds-context'
 import "./globals.css"
 
-const inter = Inter({ subsets: ["latin"], variable: "--font-sans", weight: ["400", "500", "600", "700"] })
 
 export const metadata: Metadata = {
   title: {
@@ -106,7 +105,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className={`${inter.variable} ${GeistMono.variable}`} suppressHydrationWarning data-scroll-behavior="smooth">
+    <html lang="en" className={`${GeistMono.variable}`} suppressHydrationWarning data-scroll-behavior="smooth">
       <head>
         <script
           dangerouslySetInnerHTML={{
@@ -147,7 +146,9 @@ export default function RootLayout({
       <body className="font-sans antialiased">
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem storageKey="theme">
           <MotionProvider>
-            {children}
+            <SoundsProvider>
+              {children}
+            </SoundsProvider>
           </MotionProvider>
         </ThemeProvider>
         <Analytics />

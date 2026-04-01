@@ -50,3 +50,4 @@ coverage/
 
 .worktrees/
 .superpowers/
+.env*.local

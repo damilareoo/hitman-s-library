@@ -1,25 +1,19 @@
 'use client'
 
-import React from "react"
-
-import { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { useTheme } from 'next-themes'
-import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
-import { Upload, X, Sun, Moon, Menu, Trash2 } from 'lucide-react'
-import { SiteThumbnail } from '@/components/site-thumbnail'
+import { Sun, Moon, SpeakerHigh, SpeakerSlash } from '@phosphor-icons/react'
 import { SiteDetailPanel } from '@/components/site-detail-panel'
 import { motion, AnimatePresence } from 'motion/react'
-import { classifyExtractionError } from '@/lib/classify-extraction-error'
+import { useSoundsContext } from '@/contexts/sounds-context'
 
 const gridVariants = {
   hidden: {},
-  show: { transition: { staggerChildren: 0.04 } },
+  show: { transition: { staggerChildren: 0.05 } },
 }
 const cardVariants = {
-  hidden: { opacity: 0, y: 16 },
-  show: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 260, damping: 22 } },
+  hidden: { opacity: 0, y: 20 },
+  show: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 280, damping: 24 } },
 }
 
 interface Design {
@@ -40,30 +34,21 @@ interface Design {
   useCase?: string
 }
 
-interface CopyFeedback {
-  id: string
-  text: string
-  type: 'color' | 'text'
-}
-
 interface ActiveFilters {
   industries: string[]
-  styles: string[]
-  layouts: string[]
-  colors: string[]
-  complexity?: string
-  useCases: string[]
-  animations: string[]
-  accessibility: string[]
   search: string
   sortBy: 'recent' | 'oldest' | 'name' | 'quality'
 }
 
+function getDomain(url: string) {
+  try { return new URL(url).hostname.replace('www.', '') } catch { return url }
+}
+
 function SkeletonCard() {
   return (
-    <div className="flex flex-col border border-border/40 rounded-lg overflow-hidden animate-pulse">
-      <div className="aspect-video bg-muted" />
-      <div className="p-4 space-y-2">
+    <div className="flex flex-col border border-border/40 rounded-[4px] overflow-hidden animate-pulse">
+      <div className="aspect-[16/10] bg-muted" />
+      <div className="px-3.5 py-3 space-y-2">
         <div className="h-3 bg-muted rounded w-3/4" />
         <div className="h-3 bg-muted rounded w-1/2" />
       </div>
@@ -74,50 +59,19 @@ function SkeletonCard() {
 export default function DesignLibrary() {
   const [designs, setDesigns] = useState<Design[]>([])
   const [selectedDesign, setSelectedDesign] = useState<Design | null>(null)
-  const [linkInput, setLinkInput] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
-  const [submitStage, setSubmitStage] = useState<string | null>(null)
-  const [submitError, setSubmitError] = useState<string | null>(null)
-  const submitTimersRef = useRef<ReturnType<typeof setTimeout>[]>([])
 
-  const [fileInputRef, setFileInputRef] = useState<HTMLInputElement | null>(null)
   const { resolvedTheme, setTheme } = useTheme()
-  const [copied, setCopied] = useState(false)
   const [activeFilters, setActiveFilters] = useState<ActiveFilters>({
     industries: [],
-    styles: [],
-    layouts: [],
-    colors: [],
-    useCases: [],
-    animations: [],
-    accessibility: [],
     search: '',
-    sortBy: 'recent'
+    sortBy: 'recent',
   })
-  const [showMobileMenu, setShowMobileMenu] = useState(false)
-  const [copyFeedbacks, setCopyFeedbacks] = useState<CopyFeedback[]>([])
   const [categories, setCategories] = useState<{ name: string; count: number }[]>([])
   const [isPageLoading, setIsPageLoading] = useState(true)
   const [isFiltering, setIsFiltering] = useState(false)
-
-  function clearSubmitTimers() {
-    submitTimersRef.current.forEach(clearTimeout)
-    submitTimersRef.current = []
-  }
-
-  function startSubmitStages() {
-    const stages = [
-      { label: 'Launching browser...', delay: 0 },
-      { label: 'Rendering page...', delay: 3000 },
-      { label: 'Extracting colors...', delay: 8000 },
-      { label: 'Capturing screenshot...', delay: 15000 },
-      { label: 'Saving...', delay: 25000 },
-    ]
-    stages.forEach(({ label, delay }) => {
-      const t = setTimeout(() => setSubmitStage(label), delay)
-      submitTimersRef.current.push(t)
-    })
-  }
+  const hasAnimated = useRef(false)
+  const isFirstFilterRun = useRef(true)
+  const sounds = useSoundsContext()
 
   useEffect(() => {
     fetch('/api/design/categories')
@@ -125,11 +79,7 @@ export default function DesignLibrary() {
       .then(d => setCategories(d.categories || []))
   }, [])
 
-  const hasAnimated = useRef(false)
-  const isFirstFilterRun = useRef(true)
   useEffect(() => { hasAnimated.current = true }, [])
-
-  const filteredDesigns = designs
 
   // Initial page load
   useEffect(() => {
@@ -141,7 +91,6 @@ export default function DesignLibrary() {
   useEffect(() => {
     if (isFirstFilterRun.current) {
       isFirstFilterRun.current = false
-      setIsFiltering(false)
       return
     }
     setIsFiltering(true)
@@ -155,486 +104,205 @@ export default function DesignLibrary() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [JSON.stringify(activeFilters)])
 
-  // Cleanup submit timers on unmount to prevent state updates on unmounted component
-  useEffect(() => {
-    return () => clearSubmitTimers()
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-
-
-  // Intuitive copy feedback with auto-dismiss
-  const handleCopy = (text: string, type: 'color' | 'text') => {
-    navigator.clipboard.writeText(text)
-    
-    const feedbackId = `${type}-${Date.now()}-${Math.random()}`
-    const feedbackItem: CopyFeedback = {
-      id: feedbackId,
-      text: type === 'color' ? `Copied ${text}` : 'Copied to clipboard',
-      type,
-    }
-    
-    setCopyFeedbacks(prev => [...prev, feedbackItem])
-    
-    // Auto-remove after 2 seconds
-    setTimeout(() => {
-      setCopyFeedbacks(prev => prev.filter(f => f.id !== feedbackId))
-    }, 2000)
-  }
-
-  // Load designs with advanced filtering
   const loadDesigns = async () => {
     try {
       const params = new URLSearchParams()
-      
-      // Add all filter parameters
       if (activeFilters.industries.length > 0) {
         activeFilters.industries.forEach(ind => params.append('industry', ind))
       }
-      if (activeFilters.styles.length > 0) {
-        activeFilters.styles.forEach(style => params.append('style', style))
-      }
-      if (activeFilters.layouts.length > 0) {
-        activeFilters.layouts.forEach(layout => params.append('layout', layout))
-      }
-      if (activeFilters.colors.length > 0) {
-        activeFilters.colors.forEach(color => params.append('color', color))
-      }
-      if (activeFilters.useCases.length > 0) {
-        activeFilters.useCases.forEach(useCase => params.append('useCase', useCase))
-      }
-      if (activeFilters.animations.length > 0) {
-        activeFilters.animations.forEach(anim => params.append('animation', anim))
-      }
-      if (activeFilters.accessibility.length > 0) {
-        activeFilters.accessibility.forEach(access => params.append('accessibility', access))
-      }
-      if (activeFilters.search) {
-        params.append('search', activeFilters.search)
-      }
-      if (activeFilters.sortBy) {
-        params.append('sortBy', activeFilters.sortBy)
-      }
-
-      const response = await fetch(`/api/design/filter-advanced?${params}`)
+      if (activeFilters.search) params.append('search', activeFilters.search)
+      if (activeFilters.sortBy) params.append('sortBy', activeFilters.sortBy)
+      const response = await fetch('/api/design/filter-advanced?' + params)
       const data = await response.json()
       setDesigns(data.designs || [])
-    } catch (error) {
-      console.error('Load designs error:', error)
+    } catch {
       setDesigns([])
     }
   }
   const loadDesignsRef = useRef(loadDesigns)
   loadDesignsRef.current = loadDesigns
 
-  const handleAddLink = async () => {
-    if (!linkInput.trim()) return
-    setIsLoading(true)
-    setSubmitError(null)
-    setSubmitStage(null)
-    startSubmitStages()
+  const handleCardClick = useCallback((design: Design) => {
+    sounds.playSelect()
+    setSelectedDesign(design)
+  }, [sounds])
 
-    try {
-      const response = await fetch('/api/design/extract', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: linkInput, notes: '' }),
-      })
-      const data = await response.json()
-
-      clearSubmitTimers()
-      setSubmitStage(null)
-
-      if (data.isDuplicate) {
-        setSubmitError('This website is already in your collection.')
-      } else if (data.success || data.id) {
-        setLinkInput('')
-        loadDesigns()
-      } else if (data.error) {
-        const info = classifyExtractionError(data.error)
-        setSubmitError(info.explanation)
-      } else {
-        setSubmitError('Failed to add design. Please try another website.')
-      }
-    } catch {
-      clearSubmitTimers()
-      setSubmitStage(null)
-      setSubmitError('Connection error. Please check your internet and try again.')
-    } finally {
-      setIsLoading(false)
+  const handleFilterChange = useCallback((industry: string) => {
+    sounds.playFilterClick()
+    if (industry === 'All') {
+      setActiveFilters(prev => ({ ...prev, industries: [] }))
+    } else {
+      setActiveFilters(prev => ({
+        ...prev,
+        industries: prev.industries.includes(industry)
+          ? prev.industries.filter(i => i !== industry)
+          : [industry],
+      }))
     }
-  }
-
-  const handleDelete = async (designId: string, e?: React.MouseEvent) => {
-    if (e?.stopPropagation) e.stopPropagation()
-    if (!confirm('Remove this design from your collection?')) return
-    
-    try {
-      const response = await fetch('/api/design/delete', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: designId })
-      })
-      if (response.ok) {
-        setDesigns(prev => prev.filter(d => d.id !== designId))
-        if (selectedDesign?.id === designId) setSelectedDesign(null)
-      } else {
-        alert('Failed to delete. Please try again.')
-      }
-    } catch (error) {
-      console.error('[v0] Delete error:', error)
-      alert('Error deleting design')
-    }
-  }
-
-  const generatePrompt = async (design: Design) => {
-    try {
-      console.log('[v0] Generating comprehensive prompt for:', design.title)
-      const response = await fetch('/api/design/generate-prompt', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ design })
-      })
-
-      const result = await response.json()
-      
-      if (result.success && result.prompt) {
-        navigator.clipboard.writeText(result.prompt)
-        setCopied(true)
-        setTimeout(() => setCopied(false), 3000)
-        console.log('[v0] Prompt copied to clipboard')
-        alert('✓ Comprehensive design prompt copied to clipboard')
-      } else {
-        console.error('[v0] Failed to generate prompt:', result.error)
-        alert('Failed to generate prompt')
-      }
-    } catch (error) {
-      console.error('[v0] Prompt generation error:', error)
-      alert('Error generating prompt')
-    }
-  }
-
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (!file) return
-
-    setIsLoading(true)
-    try {
-      console.log('[v0] Uploading file:', file.name)
-      const formData = new FormData()
-      formData.append('file', file)
-
-      const response = await fetch('/api/design/import-excel', {
-        method: 'POST',
-        body: formData
-      })
-
-      const data = await response.json()
-      console.log('[v0] Import response:', data)
-
-      if (data.designs && data.designs.length > 0) {
-        alert(`✓ Successfully imported ${data.designs.length} designs from ${file.name}`)
-        // Reset file input
-        if (fileInputRef) {
-          fileInputRef.value = ''
-        }
-        loadDesigns()
-      } else {
-        alert(`⚠ No valid designs found in ${file.name}. Please check the file format.`)
-      }
-    } catch (error) {
-      console.error('[v0] File upload error:', error)
-      alert('Error uploading file: ' + (error instanceof Error ? error.message : String(error)))
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  // Filtering is now done server-side via advanced API
-  // Designs are already filtered through the API response
+  }, [sounds])
 
   return (
-    <div className="h-dvh bg-background">
-      {/* Mobile Navigation Drawer */}
-        {showMobileMenu && (
-          <>
-            <div className="fixed inset-0 bg-black/60 z-30 md:hidden" onClick={() => setShowMobileMenu(false)} role="presentation" aria-hidden="true" />
-            <nav className="fixed left-0 top-16 bottom-0 w-72 bg-background border-r border-border/20 z-40 overflow-y-auto md:hidden" aria-label="Mobile navigation">
-              <div className="p-5 space-y-6">
-                {/* Add Design */}
-                <div className="space-y-2">
-                  <p className="text-xs uppercase font-mono font-semibold tracking-widest text-muted-foreground">Add Site</p>
-                  <Input
-                    placeholder="https://example.com"
-                    value={linkInput}
-                    onChange={(e) => { setLinkInput(e.target.value); setSubmitError(null) }}
-                    onKeyDown={(e) => e.key === 'Enter' && !isLoading && handleAddLink()}
-                    disabled={isLoading}
-                    className="font-mono text-xs h-9"
-                    aria-label="Website URL"
-                  />
-                  <Button
-                    onClick={handleAddLink}
-                    disabled={isLoading || !linkInput.trim()}
-                    className="w-full h-9 font-mono text-xs"
-                  >
-                    {isLoading ? (
-                      <span className="flex items-center gap-2">
-                        <span className="w-3 h-3 border border-current border-t-transparent rounded-full animate-spin" />
-                        <AnimatePresence mode="wait">
-                          <motion.span
-                            key={submitStage ?? 'idle'}
-                            initial={{ opacity: 0, y: 4 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -4 }}
-                            transition={{ duration: 0.2 }}
-                            className="text-xs font-mono"
-                          >
-                            {submitStage ?? 'Extracting...'}
-                          </motion.span>
-                        </AnimatePresence>
-                      </span>
-                    ) : 'Add'}
-                  </Button>
-                  <AnimatePresence>
-                    {submitError && (
-                      <motion.p
-                        initial={{ opacity: 0, y: -4 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0 }}
-                        className="text-[11px] text-destructive/80 font-mono leading-relaxed"
-                      >
-                        {submitError}
-                      </motion.p>
-                    )}
-                  </AnimatePresence>
-                </div>
-                <div className="h-px bg-border/20" />
-                {/* Category Filters */}
-                <div className="space-y-0.5">
-                  <p className="text-xs uppercase font-mono font-semibold tracking-widest text-muted-foreground mb-3">Filter</p>
-                  {[{ name: 'All', count: designs.length }, ...categories].map(({ name, count }) => {
-                    const isActive = name === 'All' ? activeFilters.industries.length === 0 : activeFilters.industries.includes(name)
-                    return (
-                      <button
-                        key={name}
-                        onClick={() => {
-                          if (name === 'All') {
-                            setActiveFilters(prev => ({ ...prev, industries: [] }))
-                          } else {
-                            setActiveFilters(prev => ({
-                              ...prev,
-                              industries: isActive ? prev.industries.filter(i => i !== name) : [name]
-                            }))
-                          }
-                          setShowMobileMenu(false)
-                        }}
-                        className={`w-full flex items-center justify-between px-3 py-2 rounded-md text-sm font-mono transition-colors ${
-                          isActive
-                            ? 'text-foreground bg-muted font-medium'
-                            : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
-                        }`}
-                      >
-                        <span className="flex items-center gap-2.5">
-                          <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${isActive ? 'bg-foreground' : 'bg-transparent'}`} />
-                          {name}
-                        </span>
-                        <span className="text-xs opacity-50 tabular-nums">{count}</span>
-                      </button>
-                    )
-                  })}
-                </div>
-              </div>
-            </nav>
-          </>
-        )}
+    <div className="min-h-screen bg-background text-foreground">
 
       {/* Header */}
-      <header className="sticky top-0 z-50 border-b border-border/20 bg-background">
-        <div className="h-16 px-4 md:px-6 lg:px-8 flex items-center justify-between">
-          <h1 className="text-lg md:text-xl font-bold font-mono">Hitman's Library</h1>
-          <div className="flex items-center gap-3">
+      <header className="sticky top-0 z-50 border-b border-border/60 bg-background/95 backdrop-blur-sm">
+        <div className="h-14 px-5 md:px-7 flex items-center justify-between gap-4">
+
+          <h1 className="text-[15px] font-medium tracking-[-0.01em] text-foreground select-none">
+            Hitman's Library
+          </h1>
+
+          <div className="flex items-center gap-1.5">
+            <span className="hidden sm:inline text-[11px] font-mono text-muted-foreground tabular-nums mr-1">
+              {designs.length}
+            </span>
+
+            <button
+              onClick={() => sounds.setEnabled(p => !p)}
+              className="w-8 h-8 flex items-center justify-center rounded-sm border border-border/60 text-muted-foreground hover:text-foreground hover:border-foreground/40 transition-colors"
+              aria-label={sounds.enabled ? 'Mute' : 'Enable sounds'}
+            >
+              {sounds.enabled ? <SpeakerHigh className="w-3.5 h-3.5" weight="regular" /> : <SpeakerSlash className="w-3.5 h-3.5" weight="regular" />}
+            </button>
+
             <button
               onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
-              className="p-2 hover:bg-muted rounded-sm border border-border/40 transition-colors"
-              aria-label={`Switch to ${resolvedTheme === 'dark' ? 'light' : 'dark'} mode`}
+              className="w-8 h-8 flex items-center justify-center rounded-sm border border-border/60 text-muted-foreground hover:text-foreground hover:border-foreground/40 transition-colors"
+              aria-label="Toggle theme"
             >
-              <motion.span key={resolvedTheme} initial={{ rotate: -30, scale: 0.7 }} animate={{ rotate: 0, scale: 1 }} style={{ display: 'flex' }}>
-                {resolvedTheme === 'dark' ? <Sun className="w-5 h-5" aria-hidden="true" /> : <Moon className="w-5 h-5" aria-hidden="true" />}
+              <motion.span key={resolvedTheme} initial={{ rotate: -20, scale: 0.8 }} animate={{ rotate: 0, scale: 1 }} style={{ display: 'flex' }}>
+                {resolvedTheme === 'dark' ? <Sun className="w-3.5 h-3.5" weight="regular" /> : <Moon className="w-3.5 h-3.5" weight="regular" />}
               </motion.span>
             </button>
           </div>
         </div>
       </header>
 
-      {/* Main Content Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-12 gap-0 h-[calc(100dvh-64px)] overflow-hidden">
-        {/* Sidebar - Desktop Only, Sticky */}
-        <aside className="hidden md:flex md:col-span-3 flex-col sticky top-16 h-[calc(100dvh-64px)] border-r border-border/20 bg-background/50 overflow-y-auto">
-          <div className="flex flex-col h-full">
-            {/* Category Nav */}
-            <nav className="flex-1 overflow-y-auto p-5" aria-label="Category filters">
-              <p className="text-xs uppercase font-mono font-semibold tracking-widest text-muted-foreground mb-3">Filter</p>
-              <ul className="space-y-0.5">
-                {/* All */}
-                <li>
-                  <button
-                    onClick={() => setActiveFilters(prev => ({ ...prev, industries: [] }))}
-                    className={`w-full flex items-center justify-between px-3 py-2 rounded-md text-sm font-mono transition-colors ${
-                      activeFilters.industries.length === 0
-                        ? 'text-foreground bg-muted font-medium'
-                        : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
-                    }`}
-                  >
-                    <span className="flex items-center gap-2.5">
-                      <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${activeFilters.industries.length === 0 ? 'bg-foreground' : 'bg-transparent'}`} />
-                      All
-                    </span>
-                    <span className="text-xs text-muted-foreground tabular-nums">{designs.length}</span>
-                  </button>
-                </li>
-                {categories.map(({ name, count }) => {
-                  const isActive = activeFilters.industries.includes(name)
-                  return (
-                    <li key={name}>
-                      <button
-                        onClick={() => setActiveFilters(prev => ({
-                          ...prev,
-                          industries: isActive ? prev.industries.filter(i => i !== name) : [name]
-                        }))}
-                        className={`w-full flex items-center justify-between px-3 py-2 rounded-md text-sm font-mono transition-colors ${
-                          isActive
-                            ? 'text-foreground bg-muted font-medium'
-                            : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
-                        }`}
-                      >
-                        <span className="flex items-center gap-2.5">
-                          <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${isActive ? 'bg-foreground' : 'bg-transparent'}`} />
-                          {name}
-                        </span>
-                        <span className="text-xs text-muted-foreground tabular-nums">{count}</span>
-                      </button>
-                    </li>
-                  )
-                })}
-              </ul>
-            </nav>
-          </div>
+      {/* Body */}
+      <div className="grid grid-cols-1 md:grid-cols-12 min-h-[calc(100vh-56px)]">
+
+        {/* Sidebar */}
+        <aside className="hidden md:flex md:col-span-2 flex-col sticky top-14 h-[calc(100vh-56px)] border-r border-border/60 bg-background overflow-y-auto">
+          <nav className="flex-1 p-4 pt-5" aria-label="Category filters">
+            <p className="text-[10px] uppercase tracking-[0.12em] font-medium text-muted-foreground mb-3 px-2">
+              Browse
+            </p>
+            <ul className="space-y-px">
+              <li>
+                <button
+                  onClick={() => handleFilterChange('All')}
+                  className={"w-full flex items-center justify-between px-2 py-1.5 rounded-[3px] text-[13px] transition-colors " + (activeFilters.industries.length === 0 ? 'text-foreground font-medium bg-muted' : 'text-muted-foreground hover:text-foreground hover:bg-muted/40')}
+                >
+                  <span>All</span>
+                  <span className="text-[11px] tabular-nums font-mono opacity-50">{designs.length}</span>
+                </button>
+              </li>
+              {categories.map(({ name, count }) => {
+                const isActive = activeFilters.industries.includes(name)
+                return (
+                  <li key={name}>
+                    <button
+                      onClick={() => handleFilterChange(name)}
+                      className={"w-full flex items-center justify-between px-2 py-1.5 rounded-[3px] text-[13px] transition-colors " + (isActive ? 'text-foreground font-medium bg-muted' : 'text-muted-foreground hover:text-foreground hover:bg-muted/40')}
+                    >
+                      <span>{name}</span>
+                      <span className="text-[11px] tabular-nums font-mono opacity-50">{count}</span>
+                    </button>
+                  </li>
+                )
+              })}
+            </ul>
+          </nav>
         </aside>
 
-        {/* Gallery - Takes remaining space */}
-        <div className="col-span-1 md:col-span-6 flex flex-col h-full">
-          {/* Mobile category pill bar - sticky below header */}
-          <div className="md:hidden sticky top-16 z-20 flex gap-2 overflow-x-auto px-4 pt-4 pb-2 no-scrollbar bg-background border-b border-border/30 flex-shrink-0">
+        {/* Gallery */}
+        <main className="col-span-1 md:col-span-7 flex flex-col">
+          {/* Mobile category pills */}
+          <div className="md:hidden sticky top-14 z-20 flex gap-2 overflow-x-auto px-4 py-3 bg-background border-b border-border/60 no-scrollbar">
             {[{ name: 'All', count: designs.length }, ...categories].map(({ name, count }) => {
               const isActive = name === 'All' ? activeFilters.industries.length === 0 : activeFilters.industries.includes(name)
               return (
                 <button
                   key={name}
-                  onClick={() => {
-                    if (name === 'All') {
-                      setActiveFilters(prev => ({ ...prev, industries: [] }))
-                    } else {
-                      setActiveFilters(prev => ({
-                        ...prev,
-                        industries: isActive ? prev.industries.filter(i => i !== name) : [name]
-                      }))
-                    }
-                  }}
-                  className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-mono transition-colors whitespace-nowrap ${
-                    isActive
-                      ? 'bg-foreground text-background font-medium'
-                      : 'bg-muted text-muted-foreground hover:text-foreground'
-                  }`}
+                  onClick={() => handleFilterChange(name)}
+                  className={"shrink-0 px-3 py-1 rounded-full text-[12px] font-medium transition-colors whitespace-nowrap " + (isActive ? 'bg-foreground text-background' : 'bg-muted text-muted-foreground hover:text-foreground')}
                 >
-                  {name}
-                  <span className={`text-[10px] tabular-nums ${isActive ? 'opacity-70' : 'opacity-50'}`}>{count}</span>
+                  {name} <span className="opacity-50 font-mono text-[10px]">{count}</span>
                 </button>
               )
             })}
           </div>
 
-          {/* Scrollable content area */}
-          <div className="flex-1 overflow-y-auto">
-            <div className="p-4 sm:p-6 md:p-8">
-            {/* Gallery Grid */}
+          <div className="flex-1 p-5 md:p-6">
             <motion.div
-              className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-5 md:gap-6"
+              className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-5"
               variants={gridVariants}
               initial={hasAnimated.current ? false : 'hidden'}
               animate="show"
             >
               <AnimatePresence mode="popLayout">
-              {(isPageLoading || isFiltering)
-                ? Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)
-                : filteredDesigns.map((design) => (
-                <motion.div
-                  key={design.id}
-                  layout
-                  variants={cardVariants}
-                  initial={hasAnimated.current ? false : 'hidden'}
-                  animate="show"
-                  exit={{ scale: 0.9, opacity: 0, transition: { duration: 0.15, ease: 'easeIn' } }}
-                  whileHover={{ scale: 1.015 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => setSelectedDesign(design)}
-                  className="group relative flex flex-col border border-border/40 rounded-lg overflow-hidden hover:border-border/70 text-left cursor-pointer"
-                >
-                  {/* Website Hero Screenshot */}
-                  <SiteThumbnail
-                    url={design.url}
-                    alt={design.title}
-                  />
-
-                  {/* Content Area */}
-                  <div className="flex-1 flex flex-col p-4 sm:p-5">
-                    <div className="flex-1 space-y-2.5 mb-3">
-                      <h3 className="font-bold text-sm sm:text-base font-mono line-clamp-2 text-foreground group-hover:text-foreground/90 transition-colors leading-snug">
-                        {design.title}
-                      </h3>
-                      <p className="text-xs font-mono text-muted-foreground group-hover:text-muted-foreground/80 transition-colors">
-                        {design.industry}
-                      </p>
-                    </div>
-
-                    {/* Footer - Color Count */}
-                    <div className="flex items-center justify-between pt-3 border-t border-border/20">
-                      <div className="flex gap-1">
-                        {design.colors.slice(0, 4).map((color, i) => (
-                          <div
-                            key={i}
-                            className="w-3 h-3 border border-border/50 rounded-xs transition-all group-hover:ring-1 group-hover:ring-offset-1 group-hover:ring-offset-background group-hover:ring-primary/40"
-                            style={{ backgroundColor: color }}
-                            title={color}
-                          />
-                        ))}
-                        {design.colors.length > 4 && <div className="text-xs text-muted-foreground font-mono ml-1">+{design.colors.length - 4}</div>}
-                      </div>
-                      <span className="text-xs text-muted-foreground font-mono">{design.colors.length} colors</span>
-                    </div>
-                  </div>
-                </motion.div>
-              ))}
+                {(isPageLoading || isFiltering)
+                  ? Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)
+                  : designs.map(design => (
+                    <DesignCard
+                      key={design.id}
+                      design={design}
+                      isSelected={selectedDesign?.id === design.id}
+                      onClick={() => handleCardClick(design)}
+                      onHover={() => sounds.playHover()}
+                      hasAnimated={hasAnimated.current}
+                    />
+                  ))
+                }
               </AnimatePresence>
             </motion.div>
-            </div>
           </div>
+        </main>
+
+        {/* Detail panel */}
+        <div className="hidden md:flex md:col-span-3 flex-col sticky top-14 h-[calc(100vh-56px)] border-l border-border/60 bg-background">
+          <AnimatePresence mode="wait">
+            {selectedDesign ? (
+              <motion.div
+                key={selectedDesign.id}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.15 }}
+                className="flex flex-col h-full"
+              >
+                <SiteDetailPanel
+                  sourceId={Number(selectedDesign.id)}
+                  onClose={() => setSelectedDesign(null)}
+                />
+              </motion.div>
+            ) : (
+              <motion.div
+                key="empty"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="flex items-center justify-center h-full"
+              >
+                <p className="text-[12px] font-mono text-muted-foreground/50">Select a site</p>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
 
-        {/* Details Panel - Desktop Only */}
-        <div className="hidden md:flex md:col-span-3 flex-col sticky top-16 h-[calc(100dvh-64px)] border-l border-border/20 bg-background/50">
-          {selectedDesign && (
-            <SiteDetailPanel
-              sourceId={Number(selectedDesign.id)}
-              onClose={() => setSelectedDesign(null)}
-            />
-          )}
-        </div>
-
-        {/* Mobile Details Bottom Sheet */}
+        {/* Mobile bottom sheet */}
         {selectedDesign && (
           <>
-            <div className="md:hidden fixed inset-0 bg-black/40 z-30 top-16" onClick={() => setSelectedDesign(null)} role="presentation" aria-hidden="true" />
-            <dialog className="md:hidden fixed bottom-0 left-0 right-0 bg-background border-t border-border/20 rounded-t-xl z-40 h-[70dvh] w-full flex flex-col" open aria-label="Design details">
+            <div
+              className="md:hidden fixed inset-0 bg-black/50 z-30 top-14"
+              onClick={() => setSelectedDesign(null)}
+              role="presentation"
+              aria-hidden="true"
+            />
+            <dialog
+              className="md:hidden fixed bottom-0 left-0 right-0 bg-background border-t border-border/60 rounded-t-xl z-40 h-[72vh] w-full flex flex-col"
+              open
+              aria-label="Design details"
+            >
               <SiteDetailPanel
                 sourceId={Number(selectedDesign.id)}
                 onClose={() => setSelectedDesign(null)}
@@ -642,19 +310,84 @@ export default function DesignLibrary() {
             </dialog>
           </>
         )}
-
-        {/* Copy Feedback Toasts */}
-        <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2 pointer-events-none">
-          {copyFeedbacks.map(feedback => (
-            <div
-              key={feedback.id}
-              className="bg-foreground text-background px-4 py-2 rounded-sm text-sm font-mono animate-in fade-in slide-in-from-bottom-2 duration-300 pointer-events-auto shadow-lg"
-            >
-              {feedback.text}
-            </div>
-          ))}
-        </div>
       </div>
     </div>
+  )
+}
+
+/* Design card */
+interface DesignCardProps {
+  design: Design
+  isSelected: boolean
+  onClick: () => void
+  onHover: () => void
+  hasAnimated: boolean
+}
+
+function DesignCard({ design, isSelected, onClick, onHover, hasAnimated }: DesignCardProps) {
+  const [imgStatus, setImgStatus] = useState<'loading' | 'loaded' | 'error'>('loading')
+  const domain = getDomain(design.url)
+
+  return (
+    <motion.article
+      layout
+      variants={cardVariants}
+      initial={hasAnimated ? false : 'hidden'}
+      animate="show"
+      exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.12 } }}
+      onClick={onClick}
+      onHoverStart={onHover}
+      className={"group relative flex flex-col cursor-pointer rounded-[4px] overflow-hidden border transition-colors " + (isSelected ? 'border-foreground/50' : 'border-border/60 hover:border-foreground/25')}
+    >
+      {/* Screenshot */}
+      <div className="relative overflow-hidden bg-muted aspect-[16/10]">
+        {imgStatus === 'loading' && (
+          <div className="absolute inset-0 bg-muted animate-pulse" />
+        )}
+        {design.thumbnail_url && (
+          <motion.img
+            src={design.thumbnail_url}
+            alt={design.title}
+            referrerPolicy="no-referrer"
+            loading="lazy"
+            onLoad={() => setImgStatus('loaded')}
+            onError={() => setImgStatus('error')}
+            className={"w-full h-full object-cover object-top transition-opacity duration-500 " + (imgStatus === 'loaded' ? 'opacity-100' : 'opacity-0')}
+            whileHover={{ scale: 1.03 }}
+            transition={{ type: 'spring', stiffness: 260, damping: 22 }}
+          />
+        )}
+        {imgStatus === 'error' && (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <span className="text-[11px] font-mono text-muted-foreground/40">{domain}</span>
+          </div>
+        )}
+
+        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/15 transition-all duration-300 pointer-events-none" />
+      </div>
+
+      {/* Metadata */}
+      <div className="px-3.5 py-3 flex items-center justify-between gap-3 bg-background">
+        <div className="min-w-0 flex-1">
+          <p className="text-[13px] font-medium text-foreground leading-snug line-clamp-1 tracking-[-0.01em]">
+            {design.title}
+          </p>
+          <p className="text-[11px] font-mono text-muted-foreground mt-0.5 truncate">{domain}</p>
+        </div>
+
+        {design.colors.length > 0 && (
+          <div className="flex gap-1 shrink-0">
+            {design.colors.slice(0, 5).map((color, i) => (
+              <div
+                key={i}
+                className="w-3 h-3 rounded-full border border-black/10 dark:border-white/10"
+                style={{ backgroundColor: color }}
+                title={color}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+    </motion.article>
   )
 }

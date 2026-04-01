@@ -2,7 +2,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Copy, ShieldAlert, Lock, Clock, FileQuestion, AlertTriangle } from 'lucide-react'
+import { Copy, ShieldWarning, LockSimple, Clock, FileDashed, Warning } from '@phosphor-icons/react'
 import { classifyExtractionError } from '@/lib/classify-extraction-error'
 
 interface Asset {
@@ -112,7 +112,7 @@ function AssetItem({ asset, size, index }: { asset: Asset; size: 'sm' | 'md'; in
       {asset.type !== 'image' && (
         <div className="absolute bottom-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
           <div className="bg-background border border-border rounded p-0.5">
-            <Copy className="w-2.5 h-2.5 text-muted-foreground" />
+            <Copy className="w-2.5 h-2.5 text-muted-foreground" weight="regular" />
           </div>
         </div>
       )}
@@ -148,7 +148,7 @@ function AssetSection({
   )
 }
 
-const ICONS = { ShieldAlert, Lock, Clock, FileQuestion, AlertTriangle }
+const ICONS = { ShieldWarning, LockSimple, Clock, FileDashed, Warning }
 
 function FailureEmptyState({ message, extractionError }: { message: string; extractionError?: string | null }) {
   if (!extractionError) {

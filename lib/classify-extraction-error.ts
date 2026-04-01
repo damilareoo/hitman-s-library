@@ -11,19 +11,19 @@ export interface FailureInfo {
   category: FailureCategory
   label: string
   explanation: string
-  icon: 'ShieldAlert' | 'Lock' | 'Clock' | 'FileQuestion' | 'AlertTriangle'
+  icon: 'ShieldWarning' | 'LockSimple' | 'Clock' | 'FileDashed' | 'Warning'
 }
 
 const FAILURE_MAP: Record<FailureCategory, Omit<FailureInfo, 'category'>> = {
   bot_protection: {
     label: 'Bot protection',
     explanation: "This site blocks automated access. Design data can't be extracted — it requires a real browser session.",
-    icon: 'ShieldAlert',
+    icon: 'ShieldWarning',
   },
   login_required: {
     label: 'Login required',
     explanation: 'This site requires authentication. Only public pages can be analyzed.',
-    icon: 'Lock',
+    icon: 'LockSimple',
   },
   timeout: {
     label: 'Timed out',
@@ -33,12 +33,12 @@ const FAILURE_MAP: Record<FailureCategory, Omit<FailureInfo, 'category'>> = {
   not_found: {
     label: 'Not found',
     explanation: 'This URL returned a 404. Check the address and try again.',
-    icon: 'FileQuestion',
+    icon: 'FileDashed',
   },
   unknown: {
     label: 'Extraction failed',
     explanation: 'This site may use bot protection, require login, or block external requests.',
-    icon: 'AlertTriangle',
+    icon: 'Warning',
   },
 }
 

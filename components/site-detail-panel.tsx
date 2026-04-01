@@ -3,8 +3,9 @@
 
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence, useAnimate } from 'motion/react'
-import { RefreshCw } from 'lucide-react'
+import { ArrowClockwise } from '@phosphor-icons/react'
 import { PanelTabs, type PanelTab } from './panel-tabs'
+import { useSoundsContext } from '@/contexts/sounds-context'
 import { PreviewTab } from './preview-tab'
 import { ColorsTab } from './colors-tab'
 import { TypeTab } from './type-tab'
@@ -35,6 +36,12 @@ export function SiteDetailPanel({ sourceId, onClose }: SiteDetailPanelProps) {
   const [loading, setLoading] = useState(true)
   const [isReextracting, setIsReextracting] = useState(false)
   const [scope, animate] = useAnimate()
+  const { playPanelOpen, playClose } = useSoundsContext()
+
+  useEffect(() => {
+    playPanelOpen()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   useEffect(() => {
     setLoading(true)
@@ -84,7 +91,7 @@ export function SiteDetailPanel({ sourceId, onClose }: SiteDetailPanelProps) {
           <p className="font-mono text-[10px] text-muted-foreground truncate">{data?.url ?? ''}</p>
         </div>
         {onClose && (
-          <button onClick={onClose} className="ml-3 flex-shrink-0 text-muted-foreground hover:text-foreground transition-colors text-sm">
+          <button onClick={() => { playClose(); onClose() }} className="ml-3 flex-shrink-0 text-muted-foreground hover:text-foreground transition-colors text-sm">
             ✕
           </button>
         )}
@@ -176,7 +183,7 @@ export function SiteDetailPanel({ sourceId, onClose }: SiteDetailPanelProps) {
           className="flex items-center justify-center w-9 border border-border rounded-md text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-colors disabled:opacity-40"
         >
           <motion.span ref={scope} style={{ display: 'flex' }}>
-            <RefreshCw className="w-3 h-3" />
+            <ArrowClockwise className="w-3 h-3" weight="regular" />
           </motion.span>
         </button>
       </div>

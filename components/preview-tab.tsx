@@ -3,10 +3,10 @@
 
 import { useRef, useEffect, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
-import { ShieldAlert, Lock, Clock, FileQuestion, AlertTriangle } from 'lucide-react'
+import { ShieldWarning, LockSimple, Clock, FileDashed, Warning } from '@phosphor-icons/react'
 import { classifyExtractionError } from '@/lib/classify-extraction-error'
 
-const ICONS = { ShieldAlert, Lock, Clock, FileQuestion, AlertTriangle }
+const ICONS = { ShieldWarning, LockSimple, Clock, FileDashed, Warning }
 
 interface PreviewTabProps {
   screenshotUrl: string | null
