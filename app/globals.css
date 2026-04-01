@@ -194,8 +194,6 @@ html {
   /* Use color-scheme for native element theming */
   color-scheme: light;
   transition: color-scheme 0.3s ease-out !important;
-  height: 100dvh;
-  overflow: hidden;
 }
 
 html.dark {
@@ -211,8 +209,6 @@ body {
   transition: background-color 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94),
               color 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94) !important;
   will-change: background-color, color;
-  height: 100%;
-  overflow: hidden;
 }
 
 
