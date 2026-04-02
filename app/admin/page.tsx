@@ -15,6 +15,7 @@ interface Site {
   created_at: string
   thumbnail_url?: string
   screenshot_url?: string
+  mobile_screenshot_url?: string | null
   extraction_error?: string | null
 }
 
@@ -138,6 +139,8 @@ export default function AdminPage() {
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [isDeduping, setIsDeduping] = useState(false)
   const [dedupResult, setDedupResult] = useState<string | null>(null)
+  const [isBackfilling, setIsBackfilling] = useState(false)
+  const [backfillProgress, setBackfillProgress] = useState<{ done: number; total: number } | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
   const stageTimers = useRef<ReturnType<typeof setTimeout>[]>([])
   const addInputRef = useRef<HTMLInputElement>(null)
@@ -186,6 +189,7 @@ export default function AdminPage() {
         created_at: s.addedDate || s.created_at,
         thumbnail_url: s.thumbnail_url,
         screenshot_url: s.screenshot_url,
+        mobile_screenshot_url: s.mobile_screenshot_url ?? null,
         extraction_error: s.extraction_error ?? s.metadata?.extraction_error ?? null,
       })))
     } catch (e) {
@@ -317,6 +321,30 @@ export default function AdminPage() {
     } finally {
       setIsDeduping(false)
     }
+  }
+
+  const handleBackfillMobile = async () => {
+    const missing = allSites.filter(s => s.screenshot_url && !s.mobile_screenshot_url)
+    if (!missing.length) return alert('All sites already have mobile screenshots.')
+    if (!confirm(`Capture mobile screenshots for ${missing.length} sites? This will take a while.`)) return
+
+    setIsBackfilling(true)
+    setBackfillProgress({ done: 0, total: missing.length })
+
+    for (let i = 0; i < missing.length; i++) {
+      try {
+        await fetch('/api/admin/mobile-capture', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: missing[i].id }),
+        })
+      } catch { /* continue on individual failures */ }
+      setBackfillProgress({ done: i + 1, total: missing.length })
+    }
+
+    setIsBackfilling(false)
+    setBackfillProgress(null)
+    await loadSites()
   }
 
   const inGallery = allSites.filter(s => s.screenshot_url).length
@@ -498,6 +526,16 @@ export default function AdminPage() {
               {isDeduping
                 ? <><CircleNotch className="w-3 h-3 animate-spin" weight="bold" /> Deduplicating…</>
                 : <><ArrowCounterClockwise className="w-3 h-3" weight="regular" /> Remove duplicates</>
+              }
+            </button>
+            <button
+              onClick={handleBackfillMobile}
+              disabled={isBackfilling}
+              className="h-8 px-3 text-[12px] font-mono border border-border/60 rounded-sm disabled:opacity-40 hover:bg-muted transition-colors flex items-center gap-1.5 whitespace-nowrap"
+            >
+              {isBackfilling
+                ? <><CircleNotch className="w-3 h-3 animate-spin" weight="bold" /> {backfillProgress?.done}/{backfillProgress?.total}</>
+                : 'Backfill mobile'
               }
             </button>
           </div>
