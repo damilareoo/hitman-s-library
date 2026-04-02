@@ -6,6 +6,7 @@ import { Sun, Moon, SpeakerHigh, SpeakerSlash } from '@phosphor-icons/react'
 import { SiteDetailPanel } from '@/components/site-detail-panel'
 import { motion, AnimatePresence } from 'motion/react'
 import { useSoundsContext } from '@/contexts/sounds-context'
+import Link from 'next/link'
 
 const gridVariants = {
   hidden: {},
@@ -153,6 +154,13 @@ export default function DesignLibrary() {
           </h1>
 
           <div className="flex items-center gap-1.5">
+            <Link
+              href="/changelog"
+              className="hidden sm:flex items-center text-[11px] font-mono text-muted-foreground hover:text-foreground transition-colors mr-1"
+            >
+              Changelog
+            </Link>
+
             <span className="hidden sm:inline text-[11px] font-mono text-muted-foreground tabular-nums mr-1">
               {designs.length}
             </span>

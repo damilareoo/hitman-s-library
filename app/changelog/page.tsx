@@ -8,21 +8,27 @@ export const metadata: Metadata = {
   description: "What's new in Hitman's Library — feature releases and improvements.",
 }
 
-const TYPE_STYLES: Record<ChangeItem['type'], string> = {
-  new:      'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
-  improved: 'bg-blue-500/10 text-blue-600 dark:text-blue-400',
-  fixed:    'bg-muted text-muted-foreground',
-}
-
 const TYPE_LABEL: Record<ChangeItem['type'], string> = {
   new:      'New',
   improved: 'Improved',
   fixed:    'Fixed',
 }
 
+const TYPE_DOT: Record<ChangeItem['type'], string> = {
+  new:      'bg-emerald-500',
+  improved: 'bg-blue-500',
+  fixed:    'bg-border',
+}
+
+const TYPE_TEXT: Record<ChangeItem['type'], string> = {
+  new:      'text-emerald-600 dark:text-emerald-400',
+  improved: 'text-blue-500 dark:text-blue-400',
+  fixed:    'text-muted-foreground',
+}
+
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('en-US', {
-    month: 'long',
+    month: 'short',
     day: 'numeric',
     year: 'numeric',
     timeZone: 'UTC',
@@ -32,10 +38,12 @@ function formatDate(iso: string) {
 export default function ChangelogPage() {
   return (
     <div className="min-h-screen bg-background text-foreground">
+
+      {/* Header */}
       <header className="sticky top-0 z-50 border-b border-border/60 bg-background/95 backdrop-blur-sm">
-        <div className="h-14 px-5 md:px-7 flex items-center justify-between">
+        <div className="h-14 px-5 md:px-8 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <h1 className="text-[15px] font-medium tracking-[-0.01em]">Hitman's Library</h1>
+            <span className="text-[15px] font-medium tracking-[-0.01em]">Hitman's Library</span>
             <span className="text-[10px] font-mono uppercase tracking-[0.12em] text-muted-foreground border border-border/60 px-1.5 py-0.5 rounded-[3px]">
               Changelog
             </span>
@@ -50,66 +58,76 @@ export default function ChangelogPage() {
         </div>
       </header>
 
-      <div className="max-w-2xl mx-auto px-5 md:px-7 py-12">
+      <div className="max-w-2xl mx-auto px-5 md:px-8 pt-14 pb-24">
 
-        {/* Intro */}
-        <div className="mb-12">
-          <p className="text-[13px] font-mono text-muted-foreground leading-relaxed">
-            Every release, from the first ship to now.
-          </p>
-        </div>
+        {/* Timeline */}
+        <div className="relative">
 
-        {/* Releases */}
-        <div className="space-y-14">
-          {changelog.map((release, i) => (
-            <div key={i} className="grid grid-cols-[140px_1fr] gap-8 items-start">
+          {/* Vertical spine */}
+          <div className="absolute left-[7px] top-2 bottom-2 w-px bg-border/40" />
 
-              {/* Date column */}
-              <div className="pt-0.5 shrink-0">
-                <time
-                  dateTime={release.date}
-                  className="text-[11px] font-mono text-muted-foreground/60 tracking-wide"
-                >
-                  {formatDate(release.date)}
-                </time>
+          <div className="space-y-0">
+            {changelog.map((release, i) => (
+              <div key={i} className="relative pl-8">
+
+                {/* Timeline node */}
+                <div className="absolute left-0 top-[6px] w-[15px] h-[15px] rounded-full border border-border/60 bg-background flex items-center justify-center">
+                  <div className="w-[5px] h-[5px] rounded-full bg-foreground/40" />
+                </div>
+
+                {/* Horizontal connector */}
+                <div className="absolute left-[15px] top-[13px] w-4 h-px bg-border/40" />
+
+                {/* Release block */}
+                <div className="pb-12">
+
+                  {/* Date */}
+                  <time
+                    dateTime={release.date}
+                    className="block text-[10px] font-mono text-muted-foreground/50 tracking-[0.08em] uppercase mb-2"
+                  >
+                    {formatDate(release.date)}
+                  </time>
+
+                  {/* Title + description */}
+                  <h2 className="text-[14px] font-medium tracking-[-0.01em] leading-snug mb-1">
+                    {release.title}
+                  </h2>
+                  {release.description && (
+                    <p className="text-[12px] text-muted-foreground leading-relaxed mb-4 max-w-sm">
+                      {release.description}
+                    </p>
+                  )}
+
+                  {/* Change items */}
+                  <ul className="space-y-2.5">
+                    {release.items.map((item, j) => (
+                      <li key={j} className="flex items-baseline gap-3">
+                        <div className="flex items-center gap-1.5 shrink-0 w-[72px]">
+                          <div className={`w-1 h-1 rounded-full shrink-0 ${TYPE_DOT[item.type]}`} />
+                          <span className={`text-[9px] font-mono uppercase tracking-[0.1em] ${TYPE_TEXT[item.type]}`}>
+                            {TYPE_LABEL[item.type]}
+                          </span>
+                        </div>
+                        <span className="text-[12px] text-foreground/75 leading-snug">{item.text}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               </div>
+            ))}
 
-              {/* Content column */}
-              <div className="space-y-3">
-                <h2 className="text-[15px] font-medium tracking-[-0.01em] leading-snug">
-                  {release.title}
-                </h2>
-
-                {release.description && (
-                  <p className="text-[13px] text-muted-foreground leading-relaxed">
-                    {release.description}
-                  </p>
-                )}
-
-                <ul className="space-y-2 pt-1">
-                  {release.items.map((item, j) => (
-                    <li key={j} className="flex items-start gap-2.5">
-                      <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded-[3px] shrink-0 mt-0.5 uppercase tracking-[0.08em] ${TYPE_STYLES[item.type]}`}>
-                        {TYPE_LABEL[item.type]}
-                      </span>
-                      <span className="text-[13px] text-foreground/80 leading-snug">{item.text}</span>
-                    </li>
-                  ))}
-                </ul>
-
-                {i < changelog.length - 1 && (
-                  <div className="pt-6 border-b border-border/20" />
-                )}
+            {/* Origin cap */}
+            <div className="relative pl-8">
+              <div className="absolute left-0 top-[6px] w-[15px] h-[15px] rounded-full border border-border/40 bg-background flex items-center justify-center">
+                <div className="w-[5px] h-[5px] rounded-full bg-border" />
               </div>
+              <div className="absolute left-[15px] top-[13px] w-4 h-px bg-border/40" />
+              <p className="text-[10px] font-mono text-muted-foreground/30 tracking-[0.08em] pt-1">
+                Feb 23, 2026 — first commit
+              </p>
             </div>
-          ))}
-        </div>
-
-        {/* Footer note */}
-        <div className="mt-16 pt-6 border-t border-border/30">
-          <p className="text-[11px] font-mono text-muted-foreground/40">
-            Since Feb 23, 2026
-          </p>
+          </div>
         </div>
       </div>
     </div>

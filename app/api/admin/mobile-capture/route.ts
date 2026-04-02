@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { neon } from '@neondatabase/serverless'
 import { getBrowser, captureMobileScreenshot } from '@/lib/browser-extraction'
 
+export const maxDuration = 60
+
 const sql = neon(process.env.DATABASE_URL!)
 
 export async function POST(req: NextRequest) {

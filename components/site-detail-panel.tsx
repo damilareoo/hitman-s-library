@@ -198,13 +198,20 @@ export function SiteDetailPanel({ sourceId, onClose }: SiteDetailPanelProps) {
           ↗ Visit site
         </a>
         {data?.figma_capture_url && (
-          <button
-            onClick={copyToFigma}
-            disabled={figmaCopying}
-            className="flex items-center justify-center gap-1.5 flex-1 text-xs border border-border rounded-md py-2 min-h-[44px] text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-colors font-mono disabled:opacity-50"
-          >
-            {figmaCopying ? '···' : figmaCopied ? '✓ Copied' : 'Copy to Figma'}
-          </button>
+          <div className="flex flex-col gap-1 flex-1">
+            <button
+              onClick={copyToFigma}
+              disabled={figmaCopying}
+              className={`flex items-center justify-center gap-1.5 w-full text-xs border rounded-md py-2 min-h-[44px] transition-colors font-mono disabled:opacity-50 ${figmaCopied ? 'border-emerald-500/40 bg-emerald-500/5 text-emerald-600 dark:text-emerald-400' : 'border-border text-muted-foreground hover:text-foreground hover:border-foreground/30'}`}
+            >
+              {figmaCopying ? '···' : figmaCopied ? '✓ Ready — paste in Figma' : '⬡ Copy to Figma'}
+            </button>
+            {!figmaCopied && (
+              <p className="text-[10px] font-mono text-muted-foreground/40 text-center">
+                then ⌘V in Figma to import layers
+              </p>
+            )}
+          </div>
         )}
         <button
           type="button"

@@ -497,6 +497,14 @@ export async function captureFigmaLayers(
   siteUrl: string
 ): Promise<string | null> {
   try {
+    // Restore clean desktop state — previous operations (mobile screenshot,
+    // full-page scroll) may have left the page in an unknown state
+    await page.setViewport({ width: 1440, height: 900 })
+    await page.evaluate(() => window.scrollTo(0, 0))
+    // Wait for fonts and deferred renders
+    await page.evaluate(() => document.fonts.ready)
+    await new Promise(r => setTimeout(r, 1200))
+
     // Override clipboard.write to intercept the figma data before it fires
     await page.evaluate(() => {
       (window as any).__figmaCapture = null
@@ -510,21 +518,22 @@ export async function captureFigmaLayers(
       }
     })
 
-    // Inject capture.js (CSP already bypassed)
+    // Inject capture.js (CSP already bypassed via extractFullDesignData)
     await page.addScriptTag({
       url: 'https://mcp.figma.com/mcp/html-to-design/capture.js',
     })
 
-    // Wait for script to initialise, then trigger via hash
-    await new Promise(r => setTimeout(r, 800))
+    // Let the script initialise fully, then trigger capture
+    // figmadelay=2000 gives the capture script time to process the full DOM
+    await new Promise(r => setTimeout(r, 1500))
     await page.evaluate(() => {
-      window.location.hash = 'figmacapture&figmadelay=500'
+      window.location.hash = 'figmacapture&figmadelay=2000'
     })
 
-    // Wait for clipboard intercept (up to 20s)
+    // Wait for clipboard intercept — complex pages can take 20–25s
     await page.waitForFunction(
       '(window).__figmaCapture !== null',
-      { timeout: 20000 }
+      { timeout: 30000 }
     )
 
     const figmaHtml = await page.evaluate(
@@ -533,7 +542,6 @@ export async function captureFigmaLayers(
 
     if (!figmaHtml) return null
 
-    // Upload to Vercel Blob
     const hostname = new URL(siteUrl).hostname.replace(/\./g, '-')
     const filename = `figma/${hostname}-${Date.now()}.html`
     const blob = await put(filename, figmaHtml, {
