@@ -14,16 +14,10 @@ const TYPE_LABEL: Record<ChangeItem['type'], string> = {
   fixed:    'Fixed',
 }
 
-const TYPE_DOT: Record<ChangeItem['type'], string> = {
-  new:      'bg-emerald-500',
-  improved: 'bg-blue-500',
-  fixed:    'bg-border',
-}
-
-const TYPE_TEXT: Record<ChangeItem['type'], string> = {
-  new:      'text-emerald-600 dark:text-emerald-400',
-  improved: 'text-blue-500 dark:text-blue-400',
-  fixed:    'text-muted-foreground',
+const TYPE_BADGE: Record<ChangeItem['type'], string> = {
+  new:      'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20',
+  improved: 'bg-blue-500/10 text-blue-500 dark:text-blue-400 border border-blue-500/20',
+  fixed:    'bg-muted text-muted-foreground border border-border/60',
 }
 
 function formatDate(iso: string) {
@@ -100,15 +94,12 @@ export default function ChangelogPage() {
                   )}
 
                   {/* Change items */}
-                  <ul className="space-y-2.5">
+                  <ul className="space-y-2">
                     {release.items.map((item, j) => (
-                      <li key={j} className="flex items-baseline gap-3">
-                        <div className="flex items-center gap-1.5 shrink-0 w-[72px]">
-                          <div className={`w-1 h-1 rounded-full shrink-0 ${TYPE_DOT[item.type]}`} />
-                          <span className={`text-[9px] font-mono uppercase tracking-[0.1em] ${TYPE_TEXT[item.type]}`}>
-                            {TYPE_LABEL[item.type]}
-                          </span>
-                        </div>
+                      <li key={j} className="flex items-start gap-2.5">
+                        <span className={`text-[9px] font-mono uppercase tracking-[0.08em] px-1.5 py-0.5 rounded-[3px] shrink-0 mt-0.5 ${TYPE_BADGE[item.type]}`}>
+                          {TYPE_LABEL[item.type]}
+                        </span>
                         <span className="text-[12px] text-foreground/75 leading-snug">{item.text}</span>
                       </li>
                     ))}
