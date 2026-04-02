@@ -16,6 +16,7 @@ interface Site {
   thumbnail_url?: string
   screenshot_url?: string
   mobile_screenshot_url?: string | null
+  figma_capture_url?: string | null
   extraction_error?: string | null
 }
 
@@ -141,6 +142,8 @@ export default function AdminPage() {
   const [dedupResult, setDedupResult] = useState<string | null>(null)
   const [isBackfilling, setIsBackfilling] = useState(false)
   const [backfillProgress, setBackfillProgress] = useState<{ done: number; total: number } | null>(null)
+  const [isFigmaBackfilling, setIsFigmaBackfilling] = useState(false)
+  const [figmaBackfillProgress, setFigmaBackfillProgress] = useState<{ done: number; total: number } | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
   const stageTimers = useRef<ReturnType<typeof setTimeout>[]>([])
   const addInputRef = useRef<HTMLInputElement>(null)
@@ -190,6 +193,7 @@ export default function AdminPage() {
         thumbnail_url: s.thumbnail_url,
         screenshot_url: s.screenshot_url,
         mobile_screenshot_url: s.mobile_screenshot_url ?? null,
+        figma_capture_url: s.figma_capture_url ?? null,
         extraction_error: s.extraction_error ?? s.metadata?.extraction_error ?? null,
       })))
     } catch (e) {
@@ -344,6 +348,30 @@ export default function AdminPage() {
 
     setIsBackfilling(false)
     setBackfillProgress(null)
+    await loadSites()
+  }
+
+  const handleFigmaBackfill = async () => {
+    const missing = allSites.filter(s => s.screenshot_url && !s.figma_capture_url)
+    if (!missing.length) return alert('All sites already have Figma capture data.')
+    if (!confirm(`Capture Figma layers for ${missing.length} sites? Each takes ~15s.`)) return
+
+    setIsFigmaBackfilling(true)
+    setFigmaBackfillProgress({ done: 0, total: missing.length })
+
+    for (let i = 0; i < missing.length; i++) {
+      try {
+        await fetch('/api/admin/figma-backfill', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: missing[i].id }),
+        })
+      } catch { /* continue on failures */ }
+      setFigmaBackfillProgress({ done: i + 1, total: missing.length })
+    }
+
+    setIsFigmaBackfilling(false)
+    setFigmaBackfillProgress(null)
     await loadSites()
   }
 
@@ -536,6 +564,16 @@ export default function AdminPage() {
               {isBackfilling
                 ? <><CircleNotch className="w-3 h-3 animate-spin" weight="bold" /> {backfillProgress?.done}/{backfillProgress?.total}</>
                 : 'Backfill mobile'
+              }
+            </button>
+            <button
+              onClick={handleFigmaBackfill}
+              disabled={isFigmaBackfilling}
+              className="h-8 px-3 text-[12px] font-mono border border-border/60 rounded-sm disabled:opacity-40 hover:bg-muted transition-colors flex items-center gap-1.5 whitespace-nowrap"
+            >
+              {isFigmaBackfilling
+                ? <><CircleNotch className="w-3 h-3 animate-spin" weight="bold" /> {figmaBackfillProgress?.done}/{figmaBackfillProgress?.total}</>
+                : 'Backfill Figma'
               }
             </button>
           </div>
