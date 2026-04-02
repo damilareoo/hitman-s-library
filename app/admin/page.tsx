@@ -337,13 +337,21 @@ export default function AdminPage() {
               Admin
             </span>
           </div>
-          <Link
-            href="/"
-            className="flex items-center gap-1.5 text-[12px] font-mono text-muted-foreground hover:text-foreground transition-colors"
-          >
-            <ArrowLeft className="w-3.5 h-3.5" weight="regular" />
-            Gallery
-          </Link>
+          <div className="flex items-center gap-4">
+            <Link
+              href="/changelog"
+              className="flex items-center gap-1.5 text-[12px] font-mono text-muted-foreground hover:text-foreground transition-colors"
+            >
+              Changelog
+            </Link>
+            <Link
+              href="/"
+              className="flex items-center gap-1.5 text-[12px] font-mono text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" weight="regular" />
+              Gallery
+            </Link>
+          </div>
         </div>
       </header>
 
