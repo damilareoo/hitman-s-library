@@ -12,16 +12,19 @@ interface PreviewTabProps {
   screenshotUrl: string | null
   siteUrl: string
   extractionError?: string | null
+  mobileScreenshotUrl?: string | null
 }
 
-export function PreviewTab({ screenshotUrl, siteUrl, extractionError }: PreviewTabProps) {
+export function PreviewTab({ screenshotUrl, siteUrl, extractionError, mobileScreenshotUrl }: PreviewTabProps) {
   const scrollRef = useRef<HTMLDivElement>(null)
   const [showHint, setShowHint] = useState(true)
   const [showBackTop, setShowBackTop] = useState(false)
+  const [viewport, setViewport] = useState<'desktop' | 'mobile'>('desktop')
 
   useEffect(() => {
     setShowHint(true)
     setShowBackTop(false)
+    setViewport('desktop')
     if (scrollRef.current) scrollRef.current.scrollTop = 0
   }, [screenshotUrl])
 
@@ -68,17 +71,36 @@ export function PreviewTab({ screenshotUrl, siteUrl, extractionError }: PreviewT
     )
   }
 
+  const hasMobile = Boolean(mobileScreenshotUrl)
+  const activeUrl = hasMobile && viewport === 'mobile' ? mobileScreenshotUrl! : screenshotUrl
+
   return (
-    <div className="relative flex-1 overflow-hidden min-h-0">
+    <div className="relative flex-1 overflow-hidden min-h-0 flex flex-col">
+      {hasMobile && (
+        <div className="flex border-b border-border/40 shrink-0">
+          <button
+            onClick={() => setViewport('desktop')}
+            className={`flex-1 py-1.5 text-[10px] font-mono transition-colors ${viewport === 'desktop' ? 'text-foreground bg-muted' : 'text-muted-foreground hover:text-foreground'}`}
+          >
+            Desktop
+          </button>
+          <button
+            onClick={() => setViewport('mobile')}
+            className={`flex-1 py-1.5 text-[10px] font-mono border-l border-border/40 transition-colors ${viewport === 'mobile' ? 'text-foreground bg-muted' : 'text-muted-foreground hover:text-foreground'}`}
+          >
+            Mobile
+          </button>
+        </div>
+      )}
       <div
         ref={scrollRef}
         onScroll={handleScroll}
-        className="h-full overflow-y-auto overflow-x-hidden overscroll-contain"
+        className="flex-1 overflow-y-auto overflow-x-hidden overscroll-contain"
         style={{ scrollbarWidth: 'thin' }}
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src={screenshotUrl}
+          src={activeUrl!}
           alt={`Screenshot of ${siteUrl}`}
           className="w-full h-auto block"
           loading="lazy"

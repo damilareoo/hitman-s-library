@@ -19,6 +19,7 @@ interface DetailData {
   id: number
   url: string
   screenshot_url: string | null
+  mobile_screenshot_url: string | null
   extraction_error: string | null
   colors: ColorRow[]
   typography: TypographyRow[]
@@ -127,7 +128,7 @@ export function SiteDetailPanel({ sourceId, onClose }: SiteDetailPanelProps) {
                 <motion.div key="preview" className="flex flex-col flex-1 min-h-0"
                   initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -4, transition: { duration: 0.12 } }}>
-                  <PreviewTab screenshotUrl={data.screenshot_url} siteUrl={data.url} extractionError={data.extraction_error} />
+                  <PreviewTab screenshotUrl={data.screenshot_url} siteUrl={data.url} extractionError={data.extraction_error} mobileScreenshotUrl={data.mobile_screenshot_url} />
                 </motion.div>
               )}
               {activeTab === 'colors' && (
