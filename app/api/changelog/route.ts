@@ -4,8 +4,8 @@ import { neon } from '@neondatabase/serverless'
 const sql = neon(process.env.DATABASE_URL!)
 
 export async function GET(req: NextRequest) {
-  const limit = Math.min(parseInt(new URL(req.url).searchParams.get('limit') ?? '50'), 100)
-  const offset = parseInt(new URL(req.url).searchParams.get('offset') ?? '0')
+  const limit = Math.min(Math.max(1, parseInt(new URL(req.url).searchParams.get('limit') ?? '50') || 50), 100)
+  const offset = Math.max(0, parseInt(new URL(req.url).searchParams.get('offset') ?? '0') || 0)
 
   try {
     const rows = await sql`
