@@ -347,12 +347,155 @@ git commit -m "feat: desktop/mobile viewport toggle in preview tab"
 
 ---
 
-## Task 6: Deploy
+## Task 6: Backfill Mobile Screenshots for Existing Sites
+
+**Files:**
+- Create: `app/api/admin/mobile-capture/route.ts`
+- Modify: `app/admin/page.tsx`
+
+**Context:** Old sites have `mobile_screenshot_url = NULL`. Full re-extraction is wasteful (re-runs colors, typography, assets, Puppeteer full-page). Instead, a dedicated lightweight endpoint takes a single `id`, opens the browser, navigates to the URL, captures mobile only, and saves. The admin runs this sequentially across all sites missing mobile screenshots using the same queue pattern as bulk add.
+
+**Why not one big batch endpoint?** Vercel serverless functions have a 60s timeout. One site takes ~8–12s mobile. Processing all sites in one request would time out. Sequential calls from the client (one at a time) is the right pattern.
+
+- [ ] **Step 1: Create app/api/admin/mobile-capture/route.ts**
+
+```ts
+import { NextRequest, NextResponse } from 'next/server'
+import { neon } from '@neondatabase/serverless'
+import { getBrowser } from '@/lib/browser-extraction'
+import { captureMobileScreenshot } from '@/lib/browser-extraction'
+
+const sql = neon(process.env.DATABASE_URL!)
+
+export async function POST(req: NextRequest) {
+  const { id } = await req.json()
+  if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 })
+
+  const sources = await sql`SELECT id, source_url FROM design_sources WHERE id = ${id}`
+  if (!sources.length) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+
+  const { source_url } = sources[0]
+  const browser = await getBrowser()
+  if (!browser) return NextResponse.json({ error: 'Browser unavailable' }, { status: 500 })
+
+  const page = await browser.newPage()
+  try {
+    await page.setViewport({ width: 1440, height: 900 })
+    await page.goto(source_url, { waitUntil: 'networkidle2', timeout: 15000 })
+    await new Promise(r => setTimeout(r, 2000))
+
+    const mobileUrl = await captureMobileScreenshot(page, source_url)
+    if (mobileUrl) {
+      await sql`UPDATE design_sources SET mobile_screenshot_url = ${mobileUrl} WHERE id = ${id}`
+    }
+    return NextResponse.json({ ok: true, mobile_screenshot_url: mobileUrl })
+  } catch (err) {
+    console.error('[mobile-capture]', err)
+    return NextResponse.json({ error: String(err) }, { status: 500 })
+  } finally {
+    await page.close()
+  }
+}
+```
+
+- [ ] **Step 2: Add backfill state and handler to AdminPage**
+
+In `app/admin/page.tsx`, add state after the dedup state:
+
+```tsx
+const [isBackfilling, setIsBackfilling] = useState(false)
+const [backfillProgress, setBackfillProgress] = useState<{ done: number; total: number } | null>(null)
+```
+
+Add the handler after `handleDeduplicate`:
+
+```tsx
+const handleBackfillMobile = async () => {
+  // Find all sites that have a screenshot but no mobile screenshot
+  const missing = allSites.filter(s => s.screenshot_url && !s.mobile_screenshot_url)
+  if (!missing.length) return alert('All sites already have mobile screenshots.')
+  if (!confirm(`Capture mobile screenshots for ${missing.length} sites? This will take a while.`)) return
+
+  setIsBackfilling(true)
+  setBackfillProgress({ done: 0, total: missing.length })
+
+  for (let i = 0; i < missing.length; i++) {
+    try {
+      await fetch('/api/admin/mobile-capture', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: missing[i].id }),
+      })
+    } catch { /* continue on individual failures */ }
+    setBackfillProgress({ done: i + 1, total: missing.length })
+  }
+
+  setIsBackfilling(false)
+  setBackfillProgress(null)
+  await loadSites()
+}
+```
+
+**Note:** `allSites` currently doesn't include `mobile_screenshot_url` — the list API (`/api/design/list`) must also return this field. Add it to the SELECT and mapping in Task 4 of this plan (the list route step).
+
+- [ ] **Step 3: Update /api/design/list to include mobile_screenshot_url**
+
+In `app/api/design/list/route.ts`, add `mobile_screenshot_url` to the SELECT and to the mapped return object:
+
+```ts
+// In all 4 query branches, add:
+SELECT id, source_url, source_name, industry, metadata, tags, created_at,
+       screenshot_url, thumbnail_url, mobile_screenshot_url  -- ← add this
+FROM design_sources ...
+
+// In the .map():
+return {
+  ...
+  screenshot_url: row.screenshot_url ?? null,
+  thumbnail_url: row.thumbnail_url ?? null,
+  mobile_screenshot_url: row.mobile_screenshot_url ?? null,   // ← add this
+  extraction_error: metadata.extraction_error ?? null,
+}
+```
+
+Also add `mobile_screenshot_url?: string | null` to the `Site` interface at the top of `app/admin/page.tsx`.
+
+- [ ] **Step 4: Add backfill button to stats row in admin**
+
+Next to the "Remove duplicates" button in the stats row, add:
+
+```tsx
+<button
+  onClick={handleBackfillMobile}
+  disabled={isBackfilling}
+  className="h-8 px-3 text-[12px] font-mono border border-border/60 rounded-sm disabled:opacity-40 hover:bg-muted transition-colors flex items-center gap-1.5 whitespace-nowrap"
+>
+  {isBackfilling
+    ? <><CircleNotch className="w-3 h-3 animate-spin" weight="bold" /> {backfillProgress?.done}/{backfillProgress?.total}</>
+    : 'Backfill mobile'
+  }
+</button>
+```
+
+- [ ] **Step 5: Verify in browser**
+
+1. Open admin, click "Backfill mobile". Confirm prompt shows correct count.
+2. Progress counter increments as each site is processed.
+3. After completion, open detail panel for an old site — mobile toggle should appear in Preview tab.
+
+- [ ] **Step 6: Commit**
+
+```bash
+git add app/api/admin/mobile-capture/route.ts app/api/design/list/route.ts app/admin/page.tsx
+git commit -m "feat: backfill mobile screenshots for existing sites via admin"
+```
+
+---
+
+## Task 8: Deploy
 
 ```bash
 git push origin main
 ```
 
 No new env vars required. `BLOB_READ_WRITE_TOKEN` and `DATABASE_URL` already cover all new operations.
-
-**Note on existing sites:** Old entries will have `mobile_screenshot_url = NULL`. The toggle won't appear for them — graceful. They get mobile screenshots the next time they're re-extracted.
