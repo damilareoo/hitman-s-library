@@ -1,7 +1,7 @@
 // components/colors-tab.tsx
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { Copy, Check, ShieldWarning, LockSimple, Clock, FileDashed, Warning } from '@phosphor-icons/react'
 import { classifyExtractionError } from '@/lib/classify-extraction-error'
 import { useSoundsContext } from '@/contexts/sounds-context'
@@ -74,6 +74,7 @@ function parseOklch(s: string): { l: number; c: number; h: number } | null {
 export function ColorsTab({ colors, extractionError }: { colors: ColorRow[]; extractionError?: string | null }) {
   const [format, setFormat] = useState<'hex' | 'oklch'>('hex')
   const [exportCopied, setExportCopied] = useState<'css' | 'tailwind' | null>(null)
+  const exportTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   if (!colors.length) {
     return <FailureEmptyState message="No colors extracted" extractionError={extractionError} />
@@ -98,9 +99,14 @@ export function ColorsTab({ colors, extractionError }: { colors: ColorRow[]; ext
     const text = type === 'css'
       ? `:root {\n${buildCssVars()}\n}`
       : buildTailwind()
-    await navigator.clipboard.writeText(text)
-    setExportCopied(type)
-    setTimeout(() => setExportCopied(null), 1500)
+    try {
+      await navigator.clipboard.writeText(text)
+      setExportCopied(type)
+      if (exportTimerRef.current) clearTimeout(exportTimerRef.current)
+      exportTimerRef.current = setTimeout(() => setExportCopied(null), 1500)
+    } catch {
+      // clipboard unavailable
+    }
   }
 
   return (
