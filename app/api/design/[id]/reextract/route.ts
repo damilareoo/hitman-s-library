@@ -43,7 +43,7 @@ export async function POST(
 
     // Update screenshot URL
     if (extractionResult.screenshotUrl) {
-      await sql`UPDATE design_sources SET screenshot_url = ${extractionResult.screenshotUrl}, mobile_screenshot_url = ${extractionResult.mobileScreenshotUrl} WHERE id = ${id}`
+      await sql`UPDATE design_sources SET screenshot_url = ${extractionResult.screenshotUrl}, mobile_screenshot_url = ${extractionResult.mobileScreenshotUrl}, figma_capture_url = ${extractionResult.figmaCaptureUrl} WHERE id = ${id}`
     }
 
     // Write changelog entry for reextraction

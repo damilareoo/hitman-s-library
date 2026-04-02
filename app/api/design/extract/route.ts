@@ -276,7 +276,7 @@ export async function POST(req: NextRequest) {
 
       // Save screenshot URL if captured
       if (sourceId && extractionResult?.screenshotUrl) {
-        await sql`UPDATE design_sources SET screenshot_url = ${extractionResult.screenshotUrl}, mobile_screenshot_url = ${extractionResult.mobileScreenshotUrl} WHERE id = ${sourceId}`
+        await sql`UPDATE design_sources SET screenshot_url = ${extractionResult.screenshotUrl}, mobile_screenshot_url = ${extractionResult.mobileScreenshotUrl}, figma_capture_url = ${extractionResult.figmaCaptureUrl} WHERE id = ${sourceId}`
       }
 
       // Save colors if extracted
