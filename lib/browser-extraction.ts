@@ -462,6 +462,92 @@ export async function captureFullPageScreenshot(
   }
 }
 
+export async function captureMobileScreenshot(
+  page: Page,
+  siteUrl: string
+): Promise<string | null> {
+  try {
+    await page.setViewport({ width: 390, height: 844, isMobile: true, hasTouch: true })
+    await new Promise(r => setTimeout(r, 1200))
+
+    const buffer = await page.screenshot({
+      fullPage: false,
+      type: 'webp',
+      quality: 85,
+    }) as Buffer
+
+    const hostname = new URL(siteUrl).hostname.replace(/\./g, '-')
+    const filename = `screenshots/${hostname}-${Date.now()}-mobile.webp`
+
+    const blob = await put(filename, buffer, {
+      access: 'public',
+      contentType: 'image/webp',
+    })
+
+    await page.setViewport({ width: 1440, height: 900 })
+    return blob.url
+  } catch (err) {
+    console.error('[screenshot] mobile capture failed:', err)
+    return null
+  }
+}
+
+export async function captureFigmaLayers(
+  page: Page,
+  siteUrl: string
+): Promise<string | null> {
+  try {
+    // Override clipboard.write to intercept the figma data before it fires
+    await page.evaluate(() => {
+      (window as any).__figmaCapture = null
+      navigator.clipboard.write = async (items: ClipboardItem[]) => {
+        for (const item of items) {
+          if (item.types.includes('text/html')) {
+            const blob = await item.getType('text/html')
+            ;(window as any).__figmaCapture = await blob.text()
+          }
+        }
+      }
+    })
+
+    // Inject capture.js (CSP already bypassed)
+    await page.addScriptTag({
+      url: 'https://mcp.figma.com/mcp/html-to-design/capture.js',
+    })
+
+    // Wait for script to initialise, then trigger via hash
+    await new Promise(r => setTimeout(r, 800))
+    await page.evaluate(() => {
+      window.location.hash = 'figmacapture&figmadelay=500'
+    })
+
+    // Wait for clipboard intercept (up to 20s)
+    await page.waitForFunction(
+      '(window).__figmaCapture !== null',
+      { timeout: 20000 }
+    )
+
+    const figmaHtml = await page.evaluate(
+      '(window).__figmaCapture'
+    ) as string
+
+    if (!figmaHtml) return null
+
+    // Upload to Vercel Blob
+    const hostname = new URL(siteUrl).hostname.replace(/\./g, '-')
+    const filename = `figma/${hostname}-${Date.now()}.html`
+    const blob = await put(filename, figmaHtml, {
+      access: 'public',
+      contentType: 'text/html',
+    })
+
+    return blob.url
+  } catch (err) {
+    console.error('[figma-capture] failed:', err)
+    return null
+  }
+}
+
 export async function extractTypographyWithRoles(page: Page): Promise<Array<{
   fontFamily: string
   role: 'heading' | 'body' | 'mono'
@@ -520,6 +606,8 @@ export async function extractTypographyWithRoles(page: Page): Promise<Array<{
 export interface FullExtractionResult {
   colors: string[]
   screenshotUrl: string | null
+  mobileScreenshotUrl: string | null
+  figmaCaptureUrl: string | null
   assets: import('./asset-extraction').ExtractedAsset[]
   typography: Array<{
     fontFamily: string
@@ -533,11 +621,12 @@ export async function extractFullDesignData(url: string): Promise<FullExtraction
   const browser = await getBrowser()
   if (!browser) {
     console.error('[extractFullDesignData] Browser unavailable for:', url)
-    return { colors: [], screenshotUrl: null, assets: [], typography: [] }
+    return { colors: [], screenshotUrl: null, mobileScreenshotUrl: null, figmaCaptureUrl: null, assets: [], typography: [] }
   }
   const page = await browser.newPage()
 
   try {
+    await page.setBypassCSP(true)
     await page.setViewport({ width: 1440, height: 900 })
     await page.goto(url, { waitUntil: 'networkidle2', timeout: 15000 })
     await new Promise(r => setTimeout(r, 3000))
@@ -549,7 +638,10 @@ export async function extractFullDesignData(url: string): Promise<FullExtraction
       extractTypographyWithRoles(page),
     ])
 
-    return { colors, screenshotUrl, assets, typography }
+    const mobileScreenshotUrl = await captureMobileScreenshot(page, url)
+    const figmaCaptureUrl = await captureFigmaLayers(page, url)
+
+    return { colors, screenshotUrl, mobileScreenshotUrl, figmaCaptureUrl, assets, typography }
   } finally {
     await page.close()
   }

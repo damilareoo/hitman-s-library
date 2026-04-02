@@ -43,7 +43,18 @@ export async function POST(
 
     // Update screenshot URL
     if (extractionResult.screenshotUrl) {
-      await sql`UPDATE design_sources SET screenshot_url = ${extractionResult.screenshotUrl} WHERE id = ${id}`
+      await sql`UPDATE design_sources SET screenshot_url = ${extractionResult.screenshotUrl}, mobile_screenshot_url = ${extractionResult.mobileScreenshotUrl}, figma_capture_url = ${extractionResult.figmaCaptureUrl} WHERE id = ${id}`
+    }
+
+    // Write changelog entry for reextraction
+    {
+      const [source] = await sql`SELECT source_url, source_name FROM design_sources WHERE id = ${id}`
+      if (source) {
+        await sql`
+          INSERT INTO design_changelog (source_id, source_url, source_name, event_type)
+          VALUES (${id}, ${source.source_url}, ${source.source_name}, 'reextracted')
+        `.catch(() => null)
+      }
     }
 
     // Replace colors

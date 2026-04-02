@@ -1,7 +1,7 @@
 // components/colors-tab.tsx
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { Copy, Check, ShieldWarning, LockSimple, Clock, FileDashed, Warning } from '@phosphor-icons/react'
 import { classifyExtractionError } from '@/lib/classify-extraction-error'
 import { useSoundsContext } from '@/contexts/sounds-context'
@@ -73,6 +73,8 @@ function parseOklch(s: string): { l: number; c: number; h: number } | null {
 
 export function ColorsTab({ colors, extractionError }: { colors: ColorRow[]; extractionError?: string | null }) {
   const [format, setFormat] = useState<'hex' | 'oklch'>('hex')
+  const [exportCopied, setExportCopied] = useState<'css' | 'tailwind' | null>(null)
+  const exportTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   if (!colors.length) {
     return <FailureEmptyState message="No colors extracted" extractionError={extractionError} />
@@ -83,6 +85,29 @@ export function ColorsTab({ colors, extractionError }: { colors: ColorRow[]; ext
     const lB = b.oklch ? parseFloat(b.oklch.match(/oklch\(([\d.]+)/)?.[1] ?? '50') : 50
     return lA - lB
   })
+
+  function buildCssVars(): string {
+    return sorted.map((c, i) => `  --color-${i + 1}: ${c.hex_value};`).join('\n')
+  }
+
+  function buildTailwind(): string {
+    const entries = sorted.map((c, i) => `      '${i + 1}': '${c.hex_value}',`).join('\n')
+    return `extend: {\n  colors: {\n    brand: {\n${entries}\n    },\n  },\n}`
+  }
+
+  async function copyExport(type: 'css' | 'tailwind') {
+    const text = type === 'css'
+      ? `:root {\n${buildCssVars()}\n}`
+      : buildTailwind()
+    try {
+      await navigator.clipboard.writeText(text)
+      setExportCopied(type)
+      if (exportTimerRef.current) clearTimeout(exportTimerRef.current)
+      exportTimerRef.current = setTimeout(() => setExportCopied(null), 1500)
+    } catch {
+      // clipboard unavailable
+    }
+  }
 
   return (
     <div className="flex flex-col gap-2 p-4 overflow-y-auto">
@@ -101,6 +126,20 @@ export function ColorsTab({ colors, extractionError }: { colors: ColorRow[]; ext
               className={`text-[9px] font-mono px-2 py-0.5 transition-colors ${format === 'oklch' ? 'bg-foreground text-background' : 'text-muted-foreground hover:text-foreground'}`}
             >
               OKLCH
+            </button>
+          </div>
+          <div className="flex bg-secondary border border-border rounded overflow-hidden">
+            <button
+              onClick={() => copyExport('css')}
+              className={`text-[9px] font-mono px-2 py-0.5 transition-colors ${exportCopied === 'css' ? 'bg-foreground text-background' : 'text-muted-foreground hover:text-foreground'}`}
+            >
+              {exportCopied === 'css' ? '✓ CSS' : 'CSS'}
+            </button>
+            <button
+              onClick={() => copyExport('tailwind')}
+              className={`text-[9px] font-mono px-2 py-0.5 border-l border-border transition-colors ${exportCopied === 'tailwind' ? 'bg-foreground text-background' : 'text-muted-foreground hover:text-foreground'}`}
+            >
+              {exportCopied === 'tailwind' ? '✓ TW' : 'TW'}
             </button>
           </div>
           <span className="text-[9px] text-muted-foreground/40 bg-secondary border border-border rounded-full px-2 py-0.5">

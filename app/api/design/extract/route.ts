@@ -266,9 +266,17 @@ export async function POST(req: NextRequest) {
 
       const sourceId = result[0]?.id
 
+      // Write changelog entry for new source
+      if (sourceId) {
+        await sql`
+          INSERT INTO design_changelog (source_id, source_url, source_name, event_type)
+          VALUES (${sourceId}, ${url}, ${title}, 'added')
+        `.catch(() => null)
+      }
+
       // Save screenshot URL if captured
       if (sourceId && extractionResult?.screenshotUrl) {
-        await sql`UPDATE design_sources SET screenshot_url = ${extractionResult.screenshotUrl} WHERE id = ${sourceId}`
+        await sql`UPDATE design_sources SET screenshot_url = ${extractionResult.screenshotUrl}, mobile_screenshot_url = ${extractionResult.mobileScreenshotUrl}, figma_capture_url = ${extractionResult.figmaCaptureUrl} WHERE id = ${sourceId}`
       }
 
       // Save colors if extracted

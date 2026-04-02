@@ -19,6 +19,8 @@ interface DetailData {
   id: number
   url: string
   screenshot_url: string | null
+  mobile_screenshot_url: string | null
+  figma_capture_url: string | null
   extraction_error: string | null
   colors: ColorRow[]
   typography: TypographyRow[]
@@ -35,6 +37,8 @@ export function SiteDetailPanel({ sourceId, onClose }: SiteDetailPanelProps) {
   const [data, setData] = useState<DetailData | null>(null)
   const [loading, setLoading] = useState(true)
   const [isReextracting, setIsReextracting] = useState(false)
+  const [figmaCopied, setFigmaCopied] = useState(false)
+  const [figmaCopying, setFigmaCopying] = useState(false)
   const [scope, animate] = useAnimate()
   const { playPanelOpen, playClose } = useSoundsContext()
 
@@ -53,6 +57,24 @@ export function SiteDetailPanel({ sourceId, onClose }: SiteDetailPanelProps) {
       .catch(console.error)
       .finally(() => setLoading(false))
   }, [sourceId])
+
+  async function copyToFigma() {
+    if (!data?.figma_capture_url || figmaCopying) return
+    setFigmaCopying(true)
+    try {
+      const res = await fetch(data.figma_capture_url)
+      const html = await res.text()
+      await navigator.clipboard.write([
+        new ClipboardItem({ 'text/html': new Blob([html], { type: 'text/html' }) })
+      ])
+      setFigmaCopied(true)
+      setTimeout(() => setFigmaCopied(false), 2000)
+    } catch (err) {
+      console.error('[copy-to-figma]', err)
+    } finally {
+      setFigmaCopying(false)
+    }
+  }
 
   async function handleReextract() {
     if (isReextracting) return
@@ -127,7 +149,7 @@ export function SiteDetailPanel({ sourceId, onClose }: SiteDetailPanelProps) {
                 <motion.div key="preview" className="flex flex-col flex-1 min-h-0"
                   initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -4, transition: { duration: 0.12 } }}>
-                  <PreviewTab screenshotUrl={data.screenshot_url} siteUrl={data.url} extractionError={data.extraction_error} />
+                  <PreviewTab screenshotUrl={data.screenshot_url} siteUrl={data.url} extractionError={data.extraction_error} mobileScreenshotUrl={data.mobile_screenshot_url} />
                 </motion.div>
               )}
               {activeTab === 'colors' && (
@@ -175,6 +197,15 @@ export function SiteDetailPanel({ sourceId, onClose }: SiteDetailPanelProps) {
         >
           ↗ Visit site
         </a>
+        {data?.figma_capture_url && (
+          <button
+            onClick={copyToFigma}
+            disabled={figmaCopying}
+            className="flex items-center justify-center gap-1.5 flex-1 text-xs border border-border rounded-md py-2 min-h-[44px] text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-colors font-mono disabled:opacity-50"
+          >
+            {figmaCopying ? '···' : figmaCopied ? '✓ Copied' : 'Copy to Figma'}
+          </button>
+        )}
         <button
           type="button"
           onClick={handleReextract}
