@@ -197,20 +197,30 @@ export function SiteDetailPanel({ sourceId, onClose }: SiteDetailPanelProps) {
         >
           ↗ Visit site
         </a>
-        {data?.figma_capture_url && (
+        {data && (
           <div className="flex flex-col gap-1 flex-1">
             <button
-              onClick={copyToFigma}
-              disabled={figmaCopying}
-              className={`flex items-center justify-center gap-1.5 w-full text-xs border rounded-md py-2 min-h-[44px] transition-colors font-mono disabled:opacity-50 ${figmaCopied ? 'border-emerald-500/40 bg-emerald-500/5 text-emerald-600 dark:text-emerald-400' : 'border-border text-muted-foreground hover:text-foreground hover:border-foreground/30'}`}
+              onClick={data.figma_capture_url ? copyToFigma : handleReextract}
+              disabled={figmaCopying || isReextracting || !data.screenshot_url}
+              className={`flex items-center justify-center gap-1.5 w-full text-xs border rounded-md py-2 min-h-[44px] transition-colors font-mono disabled:opacity-40 ${
+                figmaCopied
+                  ? 'border-emerald-500/40 bg-emerald-500/5 text-emerald-600 dark:text-emerald-400'
+                  : data.figma_capture_url
+                    ? 'border-border text-muted-foreground hover:text-foreground hover:border-foreground/30'
+                    : 'border-border/40 text-muted-foreground/50 hover:text-muted-foreground hover:border-border/70'
+              }`}
             >
-              {figmaCopying ? '···' : figmaCopied ? '✓ Ready — paste in Figma' : '⬡ Copy to Figma'}
+              {figmaCopying ? '···'
+                : figmaCopied ? '✓ Paste in Figma ⌘V'
+                : data.figma_capture_url ? '⬡ Copy to Figma'
+                : isReextracting ? '···'
+                : '⬡ Capture Figma layers'}
             </button>
-            {!figmaCopied && (
-              <p className="text-[10px] font-mono text-muted-foreground/40 text-center">
-                then ⌘V in Figma to import layers
-              </p>
-            )}
+            <p className="text-[10px] font-mono text-muted-foreground/35 text-center">
+              {figmaCopied ? 'open Figma and paste'
+                : data.figma_capture_url ? 'then ⌘V in Figma to import'
+                : 'click to capture layers'}
+            </p>
           </div>
         )}
         <button
