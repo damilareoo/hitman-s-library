@@ -1,6 +1,6 @@
 // app/api/cron/backfill/route.ts
-// Vercel cron — processes one site per invocation, prioritising sites that
-// are missing screenshots or a Figma capture. Runs every 10 minutes.
+// Vercel cron — runs daily at 3am UTC. Processes as many sites as fit in
+// the 60s window, prioritising sites missing figma capture, then mobile.
 import { NextRequest, NextResponse } from 'next/server'
 import { neon } from '@neondatabase/serverless'
 import {
@@ -10,74 +10,71 @@ import {
   captureFigmaLayers,
 } from '@/lib/browser-extraction'
 
-export const maxDuration = 300
+export const maxDuration = 60
 
 const sql = neon(process.env.DATABASE_URL!)
+const BUDGET_MS = 50_000 // stop queuing new sites after 50s, leave buffer for cleanup
 
 export async function GET(req: NextRequest) {
-  // Verify this is a genuine Vercel cron invocation
   const authHeader = req.headers.get('authorization')
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  // Pick the next site that needs work — missing figma first, then missing mobile
-  const rows = await sql`
+  const pending = await sql`
     SELECT id, source_url
     FROM design_sources
     WHERE figma_capture_url IS NULL
        OR mobile_screenshot_url IS NULL
     ORDER BY
-      figma_capture_url IS NOT NULL,  -- sites without figma first
+      figma_capture_url IS NOT NULL,
       id ASC
-    LIMIT 1
+    LIMIT 20
   `
 
-  if (!rows.length) {
+  if (!pending.length) {
     return NextResponse.json({ done: true, message: 'All sites are up to date' })
   }
-
-  const { id, source_url } = rows[0]
-  console.log(`[cron/backfill] Processing id=${id} url=${source_url}`)
 
   const browser = await getBrowser()
   if (!browser) {
     return NextResponse.json({ error: 'Browser unavailable' }, { status: 500 })
   }
 
-  const page = await browser.newPage()
-  try {
-    await page.setBypassCSP(true)
-    await page.setViewport({ width: 1440, height: 900, deviceScaleFactor: 2 })
-    await page.goto(source_url, { waitUntil: 'networkidle2', timeout: 20000 })
-    await new Promise(r => setTimeout(r, 2000))
+  const results: Array<{ id: number; ok: boolean; error?: string }> = []
+  const start = Date.now()
 
-    const screenshotUrl = await captureFullPageScreenshot(page, source_url)
-    const mobileScreenshotUrl = await captureMobileScreenshot(page, source_url)
-    const figmaCaptureUrl = await captureFigmaLayers(page, source_url)
+  for (const { id, source_url } of pending) {
+    if (Date.now() - start > BUDGET_MS) break
 
-    await sql`
-      UPDATE design_sources
-      SET
-        screenshot_url        = COALESCE(${screenshotUrl}, screenshot_url),
-        mobile_screenshot_url = COALESCE(${mobileScreenshotUrl}, mobile_screenshot_url),
-        figma_capture_url     = COALESCE(${figmaCaptureUrl}, figma_capture_url)
-      WHERE id = ${id}
-    `
+    const page = await browser.newPage()
+    try {
+      await page.setBypassCSP(true)
+      await page.setViewport({ width: 1440, height: 900, deviceScaleFactor: 2 })
+      await page.goto(source_url, { waitUntil: 'networkidle2', timeout: 15000 })
+      await new Promise(r => setTimeout(r, 1500))
 
-    console.log(`[cron/backfill] Done id=${id} screenshot=${!!screenshotUrl} mobile=${!!mobileScreenshotUrl} figma=${!!figmaCaptureUrl}`)
+      const screenshotUrl = await captureFullPageScreenshot(page, source_url)
+      const mobileScreenshotUrl = await captureMobileScreenshot(page, source_url)
+      const figmaCaptureUrl = await captureFigmaLayers(page, source_url)
 
-    return NextResponse.json({
-      id,
-      url: source_url,
-      screenshot: !!screenshotUrl,
-      mobile: !!mobileScreenshotUrl,
-      figma: !!figmaCaptureUrl,
-    })
-  } catch (err) {
-    console.error(`[cron/backfill] Failed id=${id}:`, err)
-    return NextResponse.json({ error: String(err), id }, { status: 500 })
-  } finally {
-    await page.close()
+      await sql`
+        UPDATE design_sources
+        SET
+          screenshot_url        = COALESCE(${screenshotUrl}, screenshot_url),
+          mobile_screenshot_url = COALESCE(${mobileScreenshotUrl}, mobile_screenshot_url),
+          figma_capture_url     = COALESCE(${figmaCaptureUrl}, figma_capture_url)
+        WHERE id = ${id}
+      `
+
+      results.push({ id, ok: true })
+    } catch (err) {
+      console.error(`[cron/backfill] id=${id} failed:`, err)
+      results.push({ id, ok: false, error: String(err) })
+    } finally {
+      await page.close()
+    }
   }
+
+  return NextResponse.json({ processed: results.length, results })
 }
