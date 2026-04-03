@@ -436,15 +436,40 @@ export async function extractBrandColors(page: Page): Promise<string[]> {
   })
 }
 
+async function triggerLazyLoad(page: Page): Promise<void> {
+  await page.evaluate(async () => {
+    await new Promise<void>(resolve => {
+      const distance = 400
+      const interval = 80
+      let scrolled = 0
+      const totalHeight = document.body.scrollHeight
+
+      const timer = setInterval(() => {
+        window.scrollBy(0, distance)
+        scrolled += distance
+        if (scrolled >= totalHeight) {
+          clearInterval(timer)
+          window.scrollTo(0, 0)
+          resolve()
+        }
+      }, interval)
+    })
+  })
+  // Settle after scroll-back
+  await new Promise(r => setTimeout(r, 800))
+}
+
 export async function captureFullPageScreenshot(
   page: Page,
   siteUrl: string
 ): Promise<string | null> {
   try {
+    await triggerLazyLoad(page)
+
     const buffer = await page.screenshot({
       fullPage: true,
       type: 'webp',
-      quality: 85,
+      quality: 92,
     }) as Buffer
 
     const hostname = new URL(siteUrl).hostname.replace(/\./g, '-')
@@ -467,13 +492,14 @@ export async function captureMobileScreenshot(
   siteUrl: string
 ): Promise<string | null> {
   try {
-    await page.setViewport({ width: 390, height: 844, isMobile: true, hasTouch: true })
+    await page.setViewport({ width: 390, height: 844, isMobile: true, hasTouch: true, deviceScaleFactor: 3 })
     await new Promise(r => setTimeout(r, 1200))
+    await triggerLazyLoad(page)
 
     const buffer = await page.screenshot({
-      fullPage: false,
+      fullPage: true,
       type: 'webp',
-      quality: 85,
+      quality: 92,
     }) as Buffer
 
     const hostname = new URL(siteUrl).hostname.replace(/\./g, '-')
@@ -510,21 +536,27 @@ export async function captureFigmaLayers(
       }
     })
 
+    // Reset to standard desktop viewport and scroll to top so capture sees full page
+    await page.setViewport({ width: 1440, height: 900 })
+    await page.evaluate(() => window.scrollTo(0, 0))
+    await page.evaluate(() => document.fonts.ready)
+    await new Promise(r => setTimeout(r, 1200))
+
     // Inject capture.js (CSP already bypassed)
     await page.addScriptTag({
       url: 'https://mcp.figma.com/mcp/html-to-design/capture.js',
     })
 
-    // Wait for script to initialise, then trigger via hash
-    await new Promise(r => setTimeout(r, 800))
+    // Wait for script to initialise, then trigger via hash with generous delay
+    await new Promise(r => setTimeout(r, 1500))
     await page.evaluate(() => {
-      window.location.hash = 'figmacapture&figmadelay=500'
+      window.location.hash = 'figmacapture&figmadelay=2000'
     })
 
-    // Wait for clipboard intercept (up to 20s)
+    // Wait for clipboard intercept (up to 30s — figmadelay=2000 needs room)
     await page.waitForFunction(
       '(window).__figmaCapture !== null',
-      { timeout: 20000 }
+      { timeout: 30000 }
     )
 
     const figmaHtml = await page.evaluate(
@@ -627,7 +659,7 @@ export async function extractFullDesignData(url: string): Promise<FullExtraction
 
   try {
     await page.setBypassCSP(true)
-    await page.setViewport({ width: 1440, height: 900 })
+    await page.setViewport({ width: 1440, height: 900, deviceScaleFactor: 2 })
     await page.goto(url, { waitUntil: 'networkidle2', timeout: 15000 })
     await new Promise(r => setTimeout(r, 3000))
 
