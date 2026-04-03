@@ -436,15 +436,39 @@ export async function extractBrandColors(page: Page): Promise<string[]> {
   })
 }
 
+async function triggerLazyLoad(page: Page): Promise<void> {
+  await page.evaluate(async () => {
+    await new Promise<void>(resolve => {
+      const distance = 400
+      const interval = 80
+      let scrolled = 0
+      const totalHeight = document.body.scrollHeight
+
+      const timer = setInterval(() => {
+        window.scrollBy(0, distance)
+        scrolled += distance
+        if (scrolled >= totalHeight) {
+          clearInterval(timer)
+          window.scrollTo(0, 0)
+          resolve()
+        }
+      }, interval)
+    })
+  })
+  await new Promise(r => setTimeout(r, 800))
+}
+
 export async function captureFullPageScreenshot(
   page: Page,
   siteUrl: string
 ): Promise<string | null> {
   try {
+    await triggerLazyLoad(page)
+
     const buffer = await page.screenshot({
       fullPage: true,
       type: 'webp',
-      quality: 85,
+      quality: 92,
     }) as Buffer
 
     const hostname = new URL(siteUrl).hostname.replace(/\./g, '-')
@@ -467,13 +491,14 @@ export async function captureMobileScreenshot(
   siteUrl: string
 ): Promise<string | null> {
   try {
-    await page.setViewport({ width: 390, height: 844, isMobile: true, hasTouch: true })
+    await page.setViewport({ width: 390, height: 844, isMobile: true, hasTouch: true, deviceScaleFactor: 3 })
     await new Promise(r => setTimeout(r, 1200))
+    await triggerLazyLoad(page)
 
     const buffer = await page.screenshot({
-      fullPage: false,
+      fullPage: true,
       type: 'webp',
-      quality: 85,
+      quality: 92,
     }) as Buffer
 
     const hostname = new URL(siteUrl).hostname.replace(/\./g, '-')
@@ -635,7 +660,7 @@ export async function extractFullDesignData(url: string): Promise<FullExtraction
 
   try {
     await page.setBypassCSP(true)
-    await page.setViewport({ width: 1440, height: 900 })
+    await page.setViewport({ width: 1440, height: 900, deviceScaleFactor: 2 })
     await page.goto(url, { waitUntil: 'networkidle2', timeout: 15000 })
     await new Promise(r => setTimeout(r, 3000))
 
