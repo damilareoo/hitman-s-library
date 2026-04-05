@@ -17,6 +17,19 @@ export interface ChangelogRelease {
 // Types: "new" (green) | "improved" (blue) | "fixed" (muted)
 const changelog: ChangelogRelease[] = [
   {
+    date: '2026-04-05',
+    title: 'Live Preview & Figma Tab',
+    description: 'The panel is rethought — live site previews replace static screenshots, and Figma layers get their own dedicated tab.',
+    items: [
+      { type: 'new',      text: 'Live preview — desktop and mobile viewports load the actual site in an embedded frame' },
+      { type: 'new',      text: 'Figma tab — dedicated panel tab with a single prominent Copy Figma Layers button' },
+      { type: 'improved', text: 'Figma layers auto-captured when tab is opened — no manual trigger needed' },
+      { type: 'new',      text: 'Search input in the header — search across all sites in real time' },
+      { type: 'improved', text: 'Panel actions (visit, re-extract, close) moved into a compact icon row in the header' },
+      { type: 'fixed',    text: 'Filter effect dep used JSON.stringify on every render — replaced with stable primitives' },
+    ],
+  },
+  {
     date: '2026-04-02',
     title: 'Copy to Figma, Mobile Views & More',
     description: 'A batch of tools that make the library more actionable — export designs, capture mobile layouts, and send layers directly to Figma.',

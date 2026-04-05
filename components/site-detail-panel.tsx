@@ -57,6 +57,14 @@ export function SiteDetailPanel({ sourceId, onClose }: SiteDetailPanelProps) {
       .finally(() => setLoading(false))
   }, [sourceId])
 
+  // Auto-capture Figma layers when tab is opened and capture doesn't exist yet
+  useEffect(() => {
+    if (activeTab === 'figma' && data && !data.figma_capture_url && !isReextracting && !loading) {
+      handleReextract()
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, data?.id])
+
   async function handleReextract() {
     if (isReextracting) return
     setIsReextracting(true)
@@ -161,10 +169,8 @@ export function SiteDetailPanel({ sourceId, onClose }: SiteDetailPanelProps) {
                   initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -4, transition: { duration: 0.12 } }}>
                   <PreviewTab
-                    screenshotUrl={data.screenshot_url}
                     siteUrl={data.url}
                     extractionError={data.extraction_error}
-                    mobileScreenshotUrl={data.mobile_screenshot_url}
                   />
                 </motion.div>
               )}
