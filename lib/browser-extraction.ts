@@ -436,34 +436,29 @@ export async function extractBrandColors(page: Page): Promise<string[]> {
   })
 }
 
-async function triggerLazyLoad(page: Page): Promise<void> {
-  await page.evaluate(async () => {
-    await new Promise<void>(resolve => {
-      const distance = 400
-      const interval = 80
-      let scrolled = 0
-      const totalHeight = document.body.scrollHeight
-
-      const timer = setInterval(() => {
-        window.scrollBy(0, distance)
-        scrolled += distance
-        if (scrolled >= totalHeight) {
-          clearInterval(timer)
-          window.scrollTo(0, 0)
-          resolve()
-        }
-      }, interval)
-    })
-  })
-  await new Promise(r => setTimeout(r, 800))
-}
-
 export async function captureFullPageScreenshot(
   page: Page,
   siteUrl: string
 ): Promise<string | null> {
   try {
-    await triggerLazyLoad(page)
+    // Scroll through the page to trigger lazy-loaded images, then return to top
+    await page.evaluate(async () => {
+      await new Promise<void>((resolve) => {
+        const step = 400
+        let y = 0
+        const maxY = document.documentElement.scrollHeight
+        const id = setInterval(() => {
+          y = Math.min(y + step, maxY)
+          window.scrollTo(0, y)
+          if (y >= maxY) {
+            clearInterval(id)
+            window.scrollTo(0, 0)
+            resolve()
+          }
+        }, 80)
+      })
+    })
+    await new Promise(r => setTimeout(r, 800))
 
     const buffer = await page.screenshot({
       fullPage: true,
@@ -491,9 +486,28 @@ export async function captureMobileScreenshot(
   siteUrl: string
 ): Promise<string | null> {
   try {
-    await page.setViewport({ width: 390, height: 844, isMobile: true, hasTouch: true, deviceScaleFactor: 3 })
+    // 3× device pixel ratio matches iPhone retina — crisp at any display size
+    await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 3, isMobile: true, hasTouch: true })
     await new Promise(r => setTimeout(r, 1200))
-    await triggerLazyLoad(page)
+
+    // Scroll through to trigger lazy-loaded mobile content
+    await page.evaluate(async () => {
+      await new Promise<void>((resolve) => {
+        const step = 300
+        let y = 0
+        const maxY = document.documentElement.scrollHeight
+        const id = setInterval(() => {
+          y = Math.min(y + step, maxY)
+          window.scrollTo(0, y)
+          if (y >= maxY) {
+            clearInterval(id)
+            window.scrollTo(0, 0)
+            resolve()
+          }
+        }, 80)
+      })
+    })
+    await new Promise(r => setTimeout(r, 600))
 
     const buffer = await page.screenshot({
       fullPage: true,
@@ -660,6 +674,7 @@ export async function extractFullDesignData(url: string): Promise<FullExtraction
 
   try {
     await page.setBypassCSP(true)
+    // 2× device pixel ratio — crisp on retina displays, equivalent to ~2880px effective width
     await page.setViewport({ width: 1440, height: 900, deviceScaleFactor: 2 })
     await page.goto(url, { waitUntil: 'networkidle2', timeout: 15000 })
     await new Promise(r => setTimeout(r, 3000))
