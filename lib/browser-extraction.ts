@@ -7,10 +7,12 @@ import { extractAssets } from './asset-extraction'
 
 // For serverless environments, use the lightweight Chromium from Sparticuz
 let browser: any = null
+let browserInitPromise: Promise<any> | null = null
 
 export async function getBrowser() {
   if (browser) return browser
-
+  if (browserInitPromise) return browserInitPromise
+  browserInitPromise = (async () => {
   try {
     const isServerless = process.platform === 'linux' && (
       process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME || process.env.AWS_EXECUTION_ENV
@@ -71,7 +73,11 @@ export async function getBrowser() {
   } catch (error) {
     console.error('[v0] Failed to launch browser:', error)
     return null
+  } finally {
+    browserInitPromise = null
   }
+  })()
+  return browserInitPromise
 }
 
 export async function extractTypographyFromRenderedPage(url: string): Promise<string[]> {

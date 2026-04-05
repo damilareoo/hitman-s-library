@@ -1,7 +1,7 @@
 // components/preview-tab.tsx
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import { ShieldWarning, LockSimple, Clock, FileDashed, Warning } from '@phosphor-icons/react'
 import { classifyExtractionError } from '@/lib/classify-extraction-error'
@@ -16,7 +16,7 @@ interface PreviewTabProps {
 export function PreviewTab({ siteUrl, extractionError }: PreviewTabProps) {
   const [blocked, setBlocked] = useState(false)
   const [loaded, setLoaded] = useState(false)
-  const blockTimerRef = { current: null as ReturnType<typeof setTimeout> | null }
+  const blockTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // Reset on URL change
   useEffect(() => {

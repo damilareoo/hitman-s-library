@@ -400,7 +400,7 @@ function DesignCard({ design, isSelected, onClick, onHover, hasAnimated }: Desig
         {design.thumbnail_url && (
           <img
             src={design.thumbnail_url}
-            alt={design.title}
+            alt={design.title || domain}
             referrerPolicy="no-referrer"
             loading="lazy"
             onLoad={() => setImgStatus('loaded')}

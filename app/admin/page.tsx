@@ -42,7 +42,7 @@ function SiteStatus({ site }: { site: Site }) {
   if (site.screenshot_url) {
     return (
       <span className="inline-flex items-center gap-1.5 text-[11px] font-mono text-emerald-600 dark:text-emerald-400">
-        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" aria-label="Status: In gallery" />
         In gallery
       </span>
     )
@@ -51,14 +51,14 @@ function SiteStatus({ site }: { site: Site }) {
     const info = classifyExtractionError(site.extraction_error)
     return (
       <span className="inline-flex items-center gap-1.5 text-[11px] font-mono text-amber-600 dark:text-amber-400" title={info.explanation}>
-        <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
+        <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" aria-label={`Status: ${info.label}`} />
         {info.label}
       </span>
     )
   }
   return (
     <span className="inline-flex items-center gap-1.5 text-[11px] font-mono text-muted-foreground">
-      <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/40 shrink-0" />
+      <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/40 shrink-0" aria-label="Status: Pending" />
       Pending
     </span>
   )
@@ -290,6 +290,7 @@ export default function AdminPage() {
       } catch {
         setQueue(prev => prev.map((q, idx) => idx === i ? { ...q, status: 'error', message: 'Connection error' } : q))
       }
+      if (i < items.length - 1) await new Promise(r => setTimeout(r, 500))
     }
     setIsRunningQueue(false)
     await loadSites()

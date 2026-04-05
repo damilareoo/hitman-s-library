@@ -21,14 +21,32 @@ const TABS: { key: PanelTab; label: string }[] = [
 
 export function PanelTabs({ active, onChange, hasFigmaLayers }: PanelTabsProps) {
   const { playTabChange } = useSoundsContext()
+  const activeIndex = TABS.findIndex(t => t.key === active)
+
+  function handleKeyDown(e: React.KeyboardEvent) {
+    if (e.key === 'ArrowLeft') {
+      const prev = TABS[(activeIndex - 1 + TABS.length) % TABS.length]
+      playTabChange(); onChange(prev.key)
+    } else if (e.key === 'ArrowRight') {
+      const next = TABS[(activeIndex + 1) % TABS.length]
+      playTabChange(); onChange(next.key)
+    }
+  }
+
   return (
     <div
+      role="tablist"
+      aria-label="Site detail tabs"
       className="flex border-b border-border"
       style={{ overflowX: 'auto', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' } as React.CSSProperties}
+      onKeyDown={handleKeyDown}
     >
       {TABS.map(({ key, label }) => (
         <button
           key={key}
+          role="tab"
+          aria-selected={active === key}
+          tabIndex={active === key ? 0 : -1}
           onClick={() => { playTabChange(); onChange(key) }}
           className={[
             'flex-shrink-0 px-3.5 py-2.5 text-xs tracking-wide transition-colors -mb-px border-b-2 flex items-center gap-1.5',
@@ -42,7 +60,7 @@ export function PanelTabs({ active, onChange, hasFigmaLayers }: PanelTabsProps) 
               <span className="font-bold text-[11px] leading-none">F</span>
               {label}
               {hasFigmaLayers && (
-                <span className="w-1 h-1 rounded-full bg-emerald-500 shrink-0" />
+                <span className="w-1 h-1 rounded-full bg-emerald-500 shrink-0" aria-label="Layers captured" />
               )}
             </>
           ) : label}
