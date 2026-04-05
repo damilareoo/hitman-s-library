@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { useTheme } from 'next-themes'
-import { Sun, Moon, SpeakerHigh, SpeakerSlash } from '@phosphor-icons/react'
+import { Sun, Moon, SpeakerHigh, SpeakerSlash, MagnifyingGlass, X } from '@phosphor-icons/react'
 import { SiteDetailPanel } from '@/components/site-detail-panel'
 import { motion, AnimatePresence } from 'motion/react'
 import { useSoundsContext } from '@/contexts/sounds-context'
@@ -103,7 +103,7 @@ export default function DesignLibrary() {
       setIsFiltering(false)
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [JSON.stringify(activeFilters)])
+  }, [activeFilters.search, activeFilters.sortBy, activeFilters.industries.join(',')])
 
   const loadDesigns = async () => {
     try {
@@ -147,13 +147,34 @@ export default function DesignLibrary() {
 
       {/* Header */}
       <header className="sticky top-0 z-50 border-b border-border/60 bg-background/95 backdrop-blur-sm">
-        <div className="h-14 px-5 md:px-7 flex items-center justify-between gap-4">
+        <div className="h-14 px-5 md:px-7 flex items-center gap-4">
 
-          <h1 className="text-[15px] font-medium tracking-[-0.01em] text-foreground select-none">
+          <h1 className="text-[15px] font-medium tracking-[-0.01em] text-foreground select-none shrink-0">
             Hitman's Library
           </h1>
 
-          <div className="flex items-center gap-1.5">
+          {/* Search */}
+          <div className="flex-1 max-w-xs hidden sm:flex items-center relative">
+            <MagnifyingGlass className="absolute left-2.5 w-3 h-3 text-muted-foreground/50 pointer-events-none" weight="regular" />
+            <input
+              type="text"
+              placeholder="Search sites…"
+              value={activeFilters.search}
+              onChange={e => setActiveFilters(prev => ({ ...prev, search: e.target.value }))}
+              className="w-full h-7 pl-7 pr-6 text-[12px] font-mono bg-muted/60 border border-border/50 rounded-[3px] text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:border-foreground/30 focus:bg-muted transition-colors"
+            />
+            {activeFilters.search && (
+              <button
+                onClick={() => setActiveFilters(prev => ({ ...prev, search: '' }))}
+                className="absolute right-2 text-muted-foreground/40 hover:text-muted-foreground transition-colors"
+                aria-label="Clear search"
+              >
+                <X className="w-3 h-3" weight="bold" />
+              </button>
+            )}
+          </div>
+
+          <div className="flex items-center gap-1.5 ml-auto">
             <Link
               href="/changelog"
               className="hidden sm:flex items-center text-[11px] font-mono text-muted-foreground hover:text-foreground transition-colors mr-1"
@@ -161,9 +182,11 @@ export default function DesignLibrary() {
               Changelog
             </Link>
 
-            <span className="hidden sm:inline text-[11px] font-mono text-muted-foreground tabular-nums mr-1">
-              {designs.length}
-            </span>
+            {!isPageLoading && (
+              <span className="hidden sm:inline text-[11px] font-mono text-muted-foreground tabular-nums mr-1">
+                {designs.length}
+              </span>
+            )}
 
             <button
               onClick={() => sounds.setEnabled(p => !p)}
@@ -195,7 +218,7 @@ export default function DesignLibrary() {
             <p className="text-[10px] uppercase tracking-[0.12em] font-medium text-muted-foreground mb-3 px-2">
               Browse
             </p>
-            <ul className="space-y-px">
+            <ul className="space-y-px" role="list">
               <li>
                 <button
                   onClick={() => handleFilterChange('All')}
@@ -225,20 +248,43 @@ export default function DesignLibrary() {
 
         {/* Gallery */}
         <main className="col-span-1 md:col-span-7 flex flex-col">
-          {/* Mobile category pills */}
-          <div className="md:hidden sticky top-14 z-20 flex gap-2 overflow-x-auto px-4 py-3 bg-background border-b border-border/60 no-scrollbar">
-            {[{ name: 'All', count: designs.length }, ...categories].map(({ name, count }) => {
-              const isActive = name === 'All' ? activeFilters.industries.length === 0 : activeFilters.industries.includes(name)
-              return (
+          {/* Mobile filters */}
+          <div className="md:hidden sticky top-14 z-20 bg-background border-b border-border/60">
+            {/* Mobile search */}
+            <div className="px-4 pt-3 pb-2 relative">
+              <MagnifyingGlass className="absolute left-7 top-1/2 -translate-y-[2px] w-3 h-3 text-muted-foreground/50 pointer-events-none" weight="regular" />
+              <input
+                type="text"
+                placeholder="Search sites…"
+                value={activeFilters.search}
+                onChange={e => setActiveFilters(prev => ({ ...prev, search: e.target.value }))}
+                className="w-full h-8 pl-8 pr-7 text-[12px] font-mono bg-muted/60 border border-border/50 rounded-[3px] text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:border-foreground/30 focus:bg-muted transition-colors"
+              />
+              {activeFilters.search && (
                 <button
-                  key={name}
-                  onClick={() => handleFilterChange(name)}
-                  className={"shrink-0 px-3 py-1 rounded-full text-[12px] font-medium transition-colors whitespace-nowrap " + (isActive ? 'bg-foreground text-background' : 'bg-muted text-muted-foreground hover:text-foreground')}
+                  onClick={() => setActiveFilters(prev => ({ ...prev, search: '' }))}
+                  className="absolute right-7 top-1/2 -translate-y-[2px] text-muted-foreground/40 hover:text-muted-foreground transition-colors"
+                  aria-label="Clear search"
                 >
-                  {name} <span className="opacity-50 font-mono text-[10px]">{count}</span>
+                  <X className="w-3 h-3" weight="bold" />
                 </button>
-              )
-            })}
+              )}
+            </div>
+            {/* Category pills */}
+            <div className="flex gap-2 overflow-x-auto px-4 pb-3 no-scrollbar">
+              {[{ name: 'All', count: designs.length }, ...categories].map(({ name, count }) => {
+                const isActive = name === 'All' ? activeFilters.industries.length === 0 : activeFilters.industries.includes(name)
+                return (
+                  <button
+                    key={name}
+                    onClick={() => handleFilterChange(name)}
+                    className={"shrink-0 px-3 py-1 rounded-full text-[12px] font-medium transition-colors whitespace-nowrap " + (isActive ? 'bg-foreground text-background' : 'bg-muted text-muted-foreground hover:text-foreground')}
+                  >
+                    {name} <span className="opacity-50 font-mono text-[10px]">{count}</span>
+                  </button>
+                )
+              })}
+            </div>
           </div>
 
           <div className="flex-1 p-5 md:p-6">
@@ -338,7 +384,6 @@ function DesignCard({ design, isSelected, onClick, onHover, hasAnimated }: Desig
 
   return (
     <motion.article
-      layout
       variants={cardVariants}
       initial={hasAnimated ? false : 'hidden'}
       animate="show"
@@ -353,16 +398,14 @@ function DesignCard({ design, isSelected, onClick, onHover, hasAnimated }: Desig
           <div className="absolute inset-0 bg-muted animate-pulse" />
         )}
         {design.thumbnail_url && (
-          <motion.img
+          <img
             src={design.thumbnail_url}
             alt={design.title}
             referrerPolicy="no-referrer"
             loading="lazy"
             onLoad={() => setImgStatus('loaded')}
             onError={() => setImgStatus('error')}
-            className={"w-full h-full object-cover object-top transition-opacity duration-500 " + (imgStatus === 'loaded' ? 'opacity-100' : 'opacity-0')}
-            whileHover={{ scale: 1.03 }}
-            transition={{ type: 'spring', stiffness: 260, damping: 22 }}
+            className={"w-full h-full object-cover object-top transition-[opacity,transform] duration-300 group-hover:scale-[1.03] " + (imgStatus === 'loaded' ? 'opacity-100' : 'opacity-0')}
           />
         )}
         {imgStatus === 'error' && (

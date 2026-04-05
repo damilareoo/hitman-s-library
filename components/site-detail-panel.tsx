@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence, useAnimate } from 'motion/react'
-import { ArrowClockwise } from '@phosphor-icons/react'
+import { ArrowClockwise, Check, X } from '@phosphor-icons/react'
 import { PanelTabs, type PanelTab } from './panel-tabs'
 import { useSoundsContext } from '@/contexts/sounds-context'
 import { PreviewTab } from './preview-tab'
@@ -113,8 +113,12 @@ export function SiteDetailPanel({ sourceId, onClose }: SiteDetailPanelProps) {
           <p className="font-mono text-[10px] text-muted-foreground truncate">{data?.url ?? ''}</p>
         </div>
         {onClose && (
-          <button onClick={() => { playClose(); onClose() }} className="ml-3 flex-shrink-0 text-muted-foreground hover:text-foreground transition-colors text-sm">
-            ✕
+          <button
+            onClick={() => { playClose(); onClose() }}
+            className="ml-3 flex-shrink-0 w-6 h-6 flex items-center justify-center rounded-sm text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+            aria-label="Close panel"
+          >
+            <X className="w-3.5 h-3.5" weight="bold" />
           </button>
         )}
       </div>
@@ -188,52 +192,62 @@ export function SiteDetailPanel({ sourceId, onClose }: SiteDetailPanelProps) {
       </AnimatePresence>
 
       {/* Footer — always visible */}
-      <div className="flex-shrink-0 border-t border-border px-4 pt-3 pb-[max(12px,var(--safe-bottom))] flex gap-2">
-        <a
-          href={data?.url ?? '#'}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center justify-center gap-1.5 flex-1 text-xs border border-border rounded-md py-2 min-h-[44px] text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-colors font-mono"
-        >
-          ↗ Visit site
-        </a>
+      <div className="flex-shrink-0 border-t border-border px-4 pt-3 pb-[max(12px,var(--safe-bottom))] flex flex-col gap-2">
+        <div className="flex gap-2">
+          <a
+            href={data?.url ?? '#'}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-center gap-1.5 flex-1 text-xs border border-border rounded-md py-2 min-h-[36px] text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-colors font-mono"
+          >
+            ↗ Visit site
+          </a>
+          <button
+            type="button"
+            onClick={handleReextract}
+            disabled={isReextracting}
+            title="Re-extract design data"
+            className="flex items-center justify-center w-9 border border-border rounded-md text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-colors disabled:opacity-40"
+          >
+            <motion.span ref={scope} style={{ display: 'flex' }}>
+              <ArrowClockwise className="w-3 h-3" weight="regular" />
+            </motion.span>
+          </button>
+        </div>
+
+        {/* Figma copy action */}
         {data && (
-          <div className="flex flex-col gap-1 flex-1">
+          data.figma_capture_url ? (
             <button
-              onClick={data.figma_capture_url ? copyToFigma : handleReextract}
-              disabled={figmaCopying || isReextracting || !data.screenshot_url}
-              className={`flex items-center justify-center gap-1.5 w-full text-xs border rounded-md py-2 min-h-[44px] transition-colors font-mono disabled:opacity-40 ${
+              onClick={copyToFigma}
+              disabled={figmaCopying}
+              className={`flex items-center justify-center gap-2 w-full text-xs border rounded-md py-2 min-h-[36px] transition-all font-mono ${
                 figmaCopied
                   ? 'border-emerald-500/40 bg-emerald-500/5 text-emerald-600 dark:text-emerald-400'
-                  : data.figma_capture_url
-                    ? 'border-border text-muted-foreground hover:text-foreground hover:border-foreground/30'
-                    : 'border-border/40 text-muted-foreground/50 hover:text-muted-foreground hover:border-border/70'
-              }`}
+                  : 'border-border text-muted-foreground hover:text-foreground hover:border-foreground/30'
+              } disabled:opacity-40`}
             >
-              {figmaCopying ? '···'
-                : figmaCopied ? '✓ Paste in Figma ⌘V'
-                : data.figma_capture_url ? '⬡ Copy to Figma'
-                : isReextracting ? '···'
-                : '⬡ Capture Figma layers'}
+              {figmaCopying ? (
+                <span className="tracking-widest">···</span>
+              ) : figmaCopied ? (
+                <>
+                  <Check className="w-3 h-3" weight="bold" />
+                  Copied — paste in Figma with ⌘V
+                </>
+              ) : (
+                <>
+                  <span className="font-bold text-[11px] leading-none">F</span>
+                  Copy layers for Figma
+                </>
+              )}
             </button>
-            <p className="text-[10px] font-mono text-muted-foreground/35 text-center">
-              {figmaCopied ? 'open Figma and paste'
-                : data.figma_capture_url ? 'then ⌘V in Figma to import'
-                : 'click to capture layers'}
-            </p>
-          </div>
+          ) : (
+            <div className="flex items-center justify-center gap-1.5 w-full text-[11px] font-mono text-muted-foreground/40 border border-dashed border-border/40 rounded-md py-2 min-h-[36px]">
+              <span className="font-bold text-[10px] leading-none">F</span>
+              Figma layers not captured — use ↻ to re-extract
+            </div>
+          )
         )}
-        <button
-          type="button"
-          onClick={handleReextract}
-          disabled={isReextracting}
-          title="Re-extract design data"
-          className="flex items-center justify-center w-9 border border-border rounded-md text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-colors disabled:opacity-40"
-        >
-          <motion.span ref={scope} style={{ display: 'flex' }}>
-            <ArrowClockwise className="w-3 h-3" weight="regular" />
-          </motion.span>
-        </button>
       </div>
     </div>
   )
