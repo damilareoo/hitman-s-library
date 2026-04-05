@@ -13,23 +13,21 @@ interface FigmaTabProps {
 }
 
 interface SelectedElement {
-  html: string
   label: string
+  html: string | null   // null while capture.js is still processing
+  error: boolean
 }
 
 export function FigmaTab({ siteUrl, figmaCaptureUrl, onReextract, isReextracting }: FigmaTabProps) {
-  const [hoverLabel, setHoverLabel] = useState<string | null>(null)
-  const [selected, setSelected] = useState<SelectedElement | null>(null)
+  const [hoverLabel, setHoverLabel]   = useState<string | null>(null)
+  const [selected, setSelected]       = useState<SelectedElement | null>(null)
+  const [elemCopied, setElemCopied]   = useState(false)
 
-  // Full-page copy state — pre-fetched so copy is instant
+  // Full-page copy — pre-fetched so the button fires instantly
   const fullPageHtmlRef = useRef<string | null>(null)
   const [fullPageReady, setFullPageReady] = useState(false)
-  const [fullCopied, setFullCopied] = useState(false)
-  const [fullCopying, setFullCopying] = useState(false)
-  const [fullError, setFullError] = useState<string | null>(null)
-
-  // Element copy state
-  const [elemCopied, setElemCopied] = useState(false)
+  const [fullCopied, setFullCopied]       = useState(false)
+  const [fullError, setFullError]         = useState<string | null>(null)
 
   // Pre-fetch full-page Figma HTML when capture URL is available
   useEffect(() => {
@@ -44,69 +42,72 @@ export function FigmaTab({ siteUrl, figmaCaptureUrl, onReextract, isReextracting
         fullPageHtmlRef.current = html
         setFullPageReady(true)
       })
-      .catch(() => {
-        if (!cancelled) setFullPageReady(false)
-      })
+      .catch(() => { /* stays not-ready */ })
     return () => { cancelled = true }
   }, [figmaCaptureUrl])
 
-  // Listen for postMessage from proxied iframe
+  // postMessage listener — receives events from the proxied iframe picker script
   useEffect(() => {
-    function handleMessage(e: MessageEvent) {
+    function onMessage(e: MessageEvent) {
       if (!e.data || typeof e.data !== 'object') return
-      if (e.data.type === 'figma-hover') {
+      const { type, label, html } = e.data
+
+      if (type === 'figma-hover') {
         setHoverLabel(e.data.label ?? null)
-      } else if (e.data.type === 'figma-element-selected') {
-        setSelected({ html: e.data.html, label: e.data.label })
+
+      } else if (type === 'figma-element-capturing') {
+        // Capture.js is running inside the proxy frame — show a pending state
+        setSelected({ label: label ?? '…', html: null, error: false })
         setElemCopied(false)
+
+      } else if (type === 'figma-element-captured') {
+        // Structured Figma HTML is ready — store it; user clicks to copy
+        setSelected({ label: label ?? '…', html, error: false })
+
+      } else if (type === 'figma-element-error') {
+        setSelected({ label: label ?? '…', html: null, error: true })
       }
     }
-    window.addEventListener('message', handleMessage)
-    return () => window.removeEventListener('message', handleMessage)
+    window.addEventListener('message', onMessage)
+    return () => window.removeEventListener('message', onMessage)
   }, [])
 
   const copyFullPage = useCallback(async () => {
-    if (fullCopying) return
     const html = fullPageHtmlRef.current
-    if (!html) {
-      setFullError('Layers not loaded yet — try again in a moment.')
-      return
-    }
-    setFullCopying(true)
+    if (!html) { setFullError('Not ready — try again in a moment.'); return }
     setFullError(null)
     try {
       await navigator.clipboard.write([
-        new ClipboardItem({ 'text/html': new Blob([html], { type: 'text/html' }) })
+        new ClipboardItem({ 'text/html': new Blob([html], { type: 'text/html' }) }),
       ])
       setFullCopied(true)
       setTimeout(() => setFullCopied(false), 5000)
     } catch {
-      setFullError('Clipboard access denied. Make sure you\'re on HTTPS.')
-    } finally {
-      setFullCopying(false)
+      setFullError('Clipboard access denied. Ensure the page is served over HTTPS.')
     }
-  }, [fullCopying])
+  }, [])
 
+  // Element copy fires on button click — preserves the user-gesture required by
+  // the Clipboard API (can't call clipboard.write inside a postMessage handler)
   const copyElement = useCallback(async () => {
-    if (!selected) return
+    if (!selected?.html) return
     try {
       await navigator.clipboard.write([
-        new ClipboardItem({ 'text/html': new Blob([selected.html], { type: 'text/html' }) })
+        new ClipboardItem({ 'text/html': new Blob([selected.html], { type: 'text/html' }) }),
       ])
       setElemCopied(true)
       setTimeout(() => setElemCopied(false), 5000)
     } catch {
-      // silently ignore — user will see no feedback change
+      setSelected(s => s ? { ...s, error: true } : s)
     }
   }, [selected])
 
-  const proxyUrl = `/api/proxy?url=${encodeURIComponent(siteUrl)}`
-
-  const hostname = (() => {
+  const proxyUrl  = `/api/proxy?url=${encodeURIComponent(siteUrl)}`
+  const hostname  = (() => {
     try { return new URL(siteUrl).hostname.replace('www.', '') } catch { return siteUrl }
   })()
 
-  // No capture yet
+  // ── No capture yet ─────────────────────────────────────────────────────────
   if (!figmaCaptureUrl) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center gap-4 p-5">
@@ -143,42 +144,42 @@ export function FigmaTab({ siteUrl, figmaCaptureUrl, onReextract, isReextracting
     )
   }
 
+  // ── Main view ──────────────────────────────────────────────────────────────
   return (
     <div className="flex flex-col flex-1 min-h-0">
+
       {/* Action bar */}
       <div className="flex items-center gap-2 px-3 py-2 border-b border-border/40 shrink-0 bg-background">
-        <span className="font-black text-[14px] leading-none text-foreground/50 select-none">F</span>
-        <span className="text-[11px] font-mono text-muted-foreground/50 truncate flex-1">{hostname}</span>
+        <span className="font-black text-[14px] leading-none text-foreground/40 select-none">F</span>
+        <span className="text-[11px] font-mono text-muted-foreground/40 truncate flex-1">{hostname}</span>
 
         {fullError && (
-          <span className="text-[10px] font-mono text-destructive shrink-0">{fullError}</span>
+          <span className="text-[10px] font-mono text-destructive shrink-0 max-w-[140px] truncate">{fullError}</span>
         )}
 
         <button
           onClick={copyFullPage}
-          disabled={fullCopying || (!fullPageReady && !fullCopied)}
+          disabled={!fullPageReady}
           className={[
             'shrink-0 flex items-center gap-1.5 rounded-md px-3 py-1.5 text-[11px] font-mono font-semibold transition-all',
             fullCopied
               ? 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400'
               : fullPageReady
                 ? 'bg-foreground text-background hover:bg-foreground/90 active:scale-[0.97]'
-                : 'bg-muted text-muted-foreground border border-border/50 cursor-wait',
+                : 'bg-muted text-muted-foreground/50 border border-border/40 cursor-wait',
           ].join(' ')}
         >
-          {fullCopied ? (
-            <><Check className="w-3 h-3" weight="bold" />Paste in Figma</>
-          ) : fullPageReady ? (
-            'Copy full page'
-          ) : (
-            'Loading…'
-          )}
+          {fullCopied
+            ? <><Check className="w-3 h-3" weight="bold" />Paste in Figma</>
+            : fullPageReady ? 'Copy full page' : 'Loading…'
+          }
         </button>
       </div>
 
-      {/* Proxied iframe with element picker */}
+      {/* Proxied iframe — picker + capture.js injected server-side */}
       <div className="flex-1 overflow-hidden relative min-h-0">
-        {/* Hover label */}
+
+        {/* Hover label pill */}
         <AnimatePresence>
           {hoverLabel && !selected && (
             <motion.div
@@ -187,7 +188,7 @@ export function FigmaTab({ siteUrl, figmaCaptureUrl, onReextract, isReextracting
               exit={{ opacity: 0, y: -4 }}
               className="absolute top-2 left-1/2 -translate-x-1/2 z-20 pointer-events-none"
             >
-              <span className="bg-[#18A0FB] text-white text-[10px] font-mono px-2 py-0.5 rounded-full shadow-md whitespace-nowrap max-w-[220px] truncate block">
+              <span className="bg-[#18A0FB] text-white text-[10px] font-mono px-2 py-0.5 rounded-full shadow-sm whitespace-nowrap max-w-[220px] truncate block">
                 {hoverLabel}
               </span>
             </motion.div>
@@ -203,7 +204,7 @@ export function FigmaTab({ siteUrl, figmaCaptureUrl, onReextract, isReextracting
         />
       </div>
 
-      {/* Selected element tray */}
+      {/* Element tray */}
       <AnimatePresence>
         {selected && (
           <motion.div
@@ -213,30 +214,44 @@ export function FigmaTab({ siteUrl, figmaCaptureUrl, onReextract, isReextracting
             className="shrink-0 border-t border-border bg-background px-3 py-2.5 flex items-center gap-2"
           >
             <div className="flex-1 min-w-0">
-              <p className="text-[10px] font-mono text-muted-foreground/50 truncate">
-                <span className="text-foreground/60">{selected.label}</span>
-              </p>
+              {selected.error ? (
+                <p className="text-[10px] font-mono text-destructive">Capture failed — try a simpler element</p>
+              ) : selected.html === null ? (
+                <p className="text-[10px] font-mono text-muted-foreground/50 flex items-center gap-1.5">
+                  <span className="inline-block w-2.5 h-2.5 border border-current border-t-transparent rounded-full animate-spin" />
+                  Capturing <span className="text-foreground/50">{selected.label}</span>…
+                </p>
+              ) : (
+                <p className="text-[10px] font-mono text-muted-foreground/50 truncate">
+                  <span className="text-foreground/60">{selected.label}</span>
+                </p>
+              )}
             </div>
+
             <button
               onClick={() => setSelected(null)}
               className="w-5 h-5 flex items-center justify-center text-muted-foreground/30 hover:text-muted-foreground transition-colors shrink-0"
-              aria-label="Deselect element"
+              aria-label="Dismiss"
             >
               <X className="w-3 h-3" weight="bold" />
             </button>
-            <button
-              onClick={copyElement}
-              className={[
-                'shrink-0 flex items-center gap-1.5 rounded-md px-3 py-1.5 text-[11px] font-mono font-semibold transition-all',
-                elemCopied
-                  ? 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400'
-                  : 'bg-foreground text-background hover:bg-foreground/90 active:scale-[0.97]',
-              ].join(' ')}
-            >
-              {elemCopied ? (
-                <><Check className="w-3 h-3" weight="bold" />Paste in Figma</>
-              ) : 'Copy element'}
-            </button>
+
+            {selected.html !== null && !selected.error && (
+              <button
+                onClick={copyElement}
+                className={[
+                  'shrink-0 flex items-center gap-1.5 rounded-md px-3 py-1.5 text-[11px] font-mono font-semibold transition-all',
+                  elemCopied
+                    ? 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400'
+                    : 'bg-foreground text-background hover:bg-foreground/90 active:scale-[0.97]',
+                ].join(' ')}
+              >
+                {elemCopied
+                  ? <><Check className="w-3 h-3" weight="bold" />Paste in Figma</>
+                  : 'Copy element'
+                }
+              </button>
+            )}
           </motion.div>
         )}
       </AnimatePresence>
@@ -245,7 +260,7 @@ export function FigmaTab({ siteUrl, figmaCaptureUrl, onReextract, isReextracting
       {!selected && (
         <div className="shrink-0 border-t border-border/40 px-3 py-1.5 text-center">
           <p className="text-[10px] font-mono text-muted-foreground/30">
-            Hover to inspect · click to copy element · or copy the full page above
+            Hover to inspect · click any element to copy it · or copy the full page
           </p>
         </div>
       )}
