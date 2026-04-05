@@ -1,7 +1,7 @@
 // components/site-detail-panel.tsx
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence, useAnimate } from 'motion/react'
 import { ArrowClockwise, X } from '@phosphor-icons/react'
 import { PanelTabs, type PanelTab } from './panel-tabs'
@@ -41,6 +41,11 @@ export function SiteDetailPanel({ sourceId, onClose }: SiteDetailPanelProps) {
   const [scope, animate] = useAnimate()
   const { playPanelOpen, playClose } = useSoundsContext()
 
+  // Pre-fetch Figma HTML as soon as the capture URL is known — before the user
+  // ever clicks the Figma tab — so copy is instant when they get there.
+  const figmaHtmlRef = useRef<string | null>(null)
+  const [figmaHtmlReady, setFigmaHtmlReady] = useState(false)
+
   useEffect(() => {
     playPanelOpen()
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -50,12 +55,29 @@ export function SiteDetailPanel({ sourceId, onClose }: SiteDetailPanelProps) {
     setLoading(true)
     setActiveTab('preview')
     setData(null)
+    figmaHtmlRef.current = null
+    setFigmaHtmlReady(false)
     fetch(`/api/design/${sourceId}`)
       .then(r => r.json())
       .then(setData)
       .catch(console.error)
       .finally(() => setLoading(false))
   }, [sourceId])
+
+  // Start fetching Figma HTML the moment we know the capture URL — well before
+  // the user clicks the Figma tab, so the copy button is always ready.
+  useEffect(() => {
+    const url = data?.figma_capture_url
+    if (!url) return
+    let cancelled = false
+    figmaHtmlRef.current = null
+    setFigmaHtmlReady(false)
+    fetch(url)
+      .then(r => r.text())
+      .then(html => { if (!cancelled) { figmaHtmlRef.current = html; setFigmaHtmlReady(true) } })
+      .catch(() => {})
+    return () => { cancelled = true }
+  }, [data?.figma_capture_url])
 
   // Auto-capture Figma layers when tab is opened and capture doesn't exist yet
   useEffect(() => {
@@ -202,6 +224,7 @@ export function SiteDetailPanel({ sourceId, onClose }: SiteDetailPanelProps) {
                   <FigmaTab
                     siteUrl={data.url}
                     figmaCaptureUrl={data.figma_capture_url}
+                    figmaHtml={figmaHtmlReady ? figmaHtmlRef.current : null}
                     onReextract={handleReextract}
                     isReextracting={isReextracting}
                   />

@@ -8,19 +8,17 @@ import { AnimatePresence, motion } from 'motion/react'
 interface FigmaTabProps {
   siteUrl: string
   figmaCaptureUrl: string | null
+  figmaHtml: string | null   // pre-fetched by SiteDetailPanel — already in memory when tab opens
   onReextract: () => void
   isReextracting: boolean
 }
 
-export function FigmaTab({ siteUrl, figmaCaptureUrl, onReextract, isReextracting }: FigmaTabProps) {
-  // Pre-fetch full-page Figma HTML so copy is instant on click
-  const fullPageHtmlRef            = useRef<string | null>(null)
-  const [fullPageReady, setReady]  = useState(false)
-  const [copied, setCopied]        = useState(false)
-  const [error, setError]          = useState<string | null>(null)
-  const [iframeLoaded, setLoaded]  = useState(false)
-  const blockTimerRef              = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const [blocked, setBlocked]      = useState(false)
+export function FigmaTab({ siteUrl, figmaCaptureUrl, figmaHtml, onReextract, isReextracting }: FigmaTabProps) {
+  const [copied, setCopied]       = useState(false)
+  const [error, setError]         = useState<string | null>(null)
+  const [iframeLoaded, setLoaded] = useState(false)
+  const [blocked, setBlocked]     = useState(false)
+  const blockTimerRef             = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     setLoaded(false)
@@ -30,32 +28,19 @@ export function FigmaTab({ siteUrl, figmaCaptureUrl, onReextract, isReextracting
     return () => { if (blockTimerRef.current) clearTimeout(blockTimerRef.current) }
   }, [siteUrl])
 
-  useEffect(() => {
-    if (!figmaCaptureUrl) return
-    let cancelled = false
-    setReady(false)
-    fullPageHtmlRef.current = null
-    fetch(figmaCaptureUrl)
-      .then(r => r.text())
-      .then(html => { if (!cancelled) { fullPageHtmlRef.current = html; setReady(true) } })
-      .catch(() => {})
-    return () => { cancelled = true }
-  }, [figmaCaptureUrl])
-
-  const copyFullPage = useCallback(async () => {
-    const html = fullPageHtmlRef.current
-    if (!html) { setError('Not ready — try again in a moment.'); return }
+  const copyToFigma = useCallback(async () => {
+    if (!figmaHtml) return
     setError(null)
     try {
       await navigator.clipboard.write([
-        new ClipboardItem({ 'text/html': new Blob([html], { type: 'text/html' }) }),
+        new ClipboardItem({ 'text/html': new Blob([figmaHtml], { type: 'text/html' }) }),
       ])
       setCopied(true)
       setTimeout(() => setCopied(false), 5000)
     } catch {
-      setError('Clipboard access denied. Ensure the page is on HTTPS.')
+      setError('Clipboard access denied — ensure the page is on HTTPS.')
     }
-  }, [])
+  }, [figmaHtml])
 
   function handleIframeLoad() {
     if (blockTimerRef.current) clearTimeout(blockTimerRef.current)
@@ -117,25 +102,25 @@ export function FigmaTab({ siteUrl, figmaCaptureUrl, onReextract, isReextracting
         )}
 
         <button
-          onClick={copyFullPage}
-          disabled={!fullPageReady}
+          onClick={copyToFigma}
+          disabled={!figmaHtml}
           className={[
             'shrink-0 flex items-center gap-1.5 rounded-md px-3 py-1.5 text-[11px] font-mono font-semibold transition-all',
             copied
               ? 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400'
-              : fullPageReady
+              : figmaHtml
                 ? 'bg-foreground text-background hover:bg-foreground/90 active:scale-[0.97]'
-                : 'bg-muted text-muted-foreground/40 border border-border/40 cursor-wait',
+                : 'bg-muted text-muted-foreground/30 border border-border/30 cursor-wait',
           ].join(' ')}
         >
           {copied
             ? <><Check className="w-3 h-3" weight="bold" />Paste in Figma</>
-            : fullPageReady ? 'Copy to Figma' : 'Loading…'
+            : 'Copy to Figma'
           }
         </button>
       </div>
 
-      {/* Live iframe — same approach as Preview tab */}
+      {/* Live iframe */}
       <div className="flex-1 overflow-hidden relative min-h-0">
         {!iframeLoaded && (
           <div className="absolute inset-0 bg-muted/30 z-10 pointer-events-none flex items-center justify-center">
@@ -152,7 +137,6 @@ export function FigmaTab({ siteUrl, figmaCaptureUrl, onReextract, isReextracting
           sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
         />
 
-        {/* Blocked nudge */}
         <AnimatePresence>
           {blocked && !iframeLoaded && (
             <motion.div
@@ -162,12 +146,8 @@ export function FigmaTab({ siteUrl, figmaCaptureUrl, onReextract, isReextracting
               className="absolute bottom-3 left-3 right-3 z-20 bg-background/95 backdrop-blur-sm border border-border rounded-lg px-3 py-2.5 flex items-center justify-between gap-2"
             >
               <p className="text-[11px] font-mono text-muted-foreground">Site may block embedding</p>
-              <a
-                href={siteUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-[11px] font-mono text-foreground underline underline-offset-2 shrink-0"
-              >
+              <a href={siteUrl} target="_blank" rel="noopener noreferrer"
+                className="text-[11px] font-mono text-foreground underline underline-offset-2 shrink-0">
                 Open in tab ↗
               </a>
             </motion.div>
@@ -175,10 +155,9 @@ export function FigmaTab({ siteUrl, figmaCaptureUrl, onReextract, isReextracting
         </AnimatePresence>
       </div>
 
-      {/* Copy hint */}
       <div className="shrink-0 border-t border-border/40 px-3 py-1.5 text-center">
         <p className="text-[10px] font-mono text-muted-foreground/30">
-          {copied ? 'Switch to Figma and press ⌘V to paste layers' : 'Layers pre-loaded — copy is instant'}
+          {copied ? 'Switch to Figma and press ⌘V' : 'Click Copy to Figma — layers paste as editable frames'}
         </p>
       </div>
     </div>
