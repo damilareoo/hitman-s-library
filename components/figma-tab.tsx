@@ -2,20 +2,20 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { Check, ArrowClockwise } from '@phosphor-icons/react'
+import { Check, ArrowClockwise, DownloadSimple, Warning } from '@phosphor-icons/react'
 import { AnimatePresence, motion } from 'motion/react'
 
 interface FigmaTabProps {
   siteUrl: string
   figmaCaptureUrl: string | null
-  figmaHtml: string | null   // pre-fetched by SiteDetailPanel — already in memory when tab opens
+  figmaHtml: string | null
   onReextract: () => void
   isReextracting: boolean
 }
 
 export function FigmaTab({ siteUrl, figmaCaptureUrl, figmaHtml, onReextract, isReextracting }: FigmaTabProps) {
   const [copied, setCopied]       = useState(false)
-  const [error, setError]         = useState<string | null>(null)
+  const [copyError, setCopyError] = useState(false)
   const [iframeLoaded, setLoaded] = useState(false)
   const [blocked, setBlocked]     = useState(false)
   const blockTimerRef             = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -28,19 +28,34 @@ export function FigmaTab({ siteUrl, figmaCaptureUrl, figmaHtml, onReextract, isR
     return () => { if (blockTimerRef.current) clearTimeout(blockTimerRef.current) }
   }, [siteUrl])
 
+  // Validate the HTML has real content — empty or tiny strings mean capture failed silently
+  const htmlBytes   = figmaHtml?.length ?? 0
+  const htmlIsValid = htmlBytes > 5000   // real capture output is typically 50KB–5MB
+
   const copyToFigma = useCallback(async () => {
-    if (!figmaHtml) return
-    setError(null)
+    if (!figmaHtml || !htmlIsValid) return
+    setCopyError(false)
     try {
       await navigator.clipboard.write([
         new ClipboardItem({ 'text/html': new Blob([figmaHtml], { type: 'text/html' }) }),
       ])
       setCopied(true)
-      setTimeout(() => setCopied(false), 5000)
+      setTimeout(() => setCopied(false), 6000)
     } catch {
-      setError('Clipboard access denied — ensure the page is on HTTPS.')
+      // Clipboard write failed (permission denied, browser restriction, etc.)
+      // Fall through to the download path shown in the UI
+      setCopyError(true)
     }
-  }, [figmaHtml])
+  }, [figmaHtml, htmlIsValid])
+
+  const downloadHtml = useCallback(() => {
+    if (!figmaHtml) return
+    const blob = new Blob([figmaHtml], { type: 'text/html' })
+    const url  = URL.createObjectURL(blob)
+    const a    = document.createElement('a')
+    try { a.href = url; a.download = `${hostname}-figma.html`; a.click() }
+    finally { URL.revokeObjectURL(url) }
+  }, [figmaHtml]) // eslint-disable-line react-hooks/exhaustive-deps
 
   function handleIframeLoad() {
     if (blockTimerRef.current) clearTimeout(blockTimerRef.current)
@@ -51,7 +66,9 @@ export function FigmaTab({ siteUrl, figmaCaptureUrl, figmaHtml, onReextract, isR
     try { return new URL(siteUrl).hostname.replace('www.', '') } catch { return siteUrl }
   })()
 
-  // ── No capture yet ────────────────────────────────────────────────────────
+  const ready = !!figmaCaptureUrl && htmlIsValid
+
+  // ── Not captured yet ──────────────────────────────────────────────────────
   if (!figmaCaptureUrl) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center gap-4 p-5">
@@ -95,32 +112,49 @@ export function FigmaTab({ siteUrl, figmaCaptureUrl, figmaHtml, onReextract, isR
       {/* Action bar */}
       <div className="flex items-center gap-2 px-3 py-2 border-b border-border/40 shrink-0 bg-background">
         <span className="font-black text-[14px] leading-none text-foreground/40 select-none">F</span>
-        <span className="text-[11px] font-mono text-muted-foreground/40 truncate flex-1">{hostname}</span>
+        <span className="text-[11px] font-mono text-muted-foreground/40 truncate flex-1 min-w-0">
+          {hostname}
+        </span>
 
-        {error && (
-          <span className="text-[10px] font-mono text-destructive shrink-0 max-w-[160px] truncate">{error}</span>
+        {/* Download fallback — always available once captured */}
+        {htmlIsValid && (
+          <button
+            onClick={downloadHtml}
+            title="Download HTML file for Figma import"
+            className="w-7 h-7 flex items-center justify-center rounded-sm border border-border/50 text-muted-foreground/50 hover:text-foreground hover:border-foreground/30 transition-colors shrink-0"
+          >
+            <DownloadSimple className="w-3.5 h-3.5" weight="regular" />
+          </button>
         )}
 
+        {/* Primary copy button */}
         <button
           onClick={copyToFigma}
-          disabled={!figmaHtml}
+          disabled={!ready}
           className={[
             'shrink-0 flex items-center gap-1.5 rounded-md px-3 py-1.5 text-[11px] font-mono font-semibold transition-all',
             copied
               ? 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400'
-              : figmaHtml
-                ? 'bg-foreground text-background hover:bg-foreground/90 active:scale-[0.97]'
-                : 'bg-muted text-muted-foreground/30 border border-border/30 cursor-wait',
+              : copyError
+                ? 'bg-destructive/10 border border-destructive/30 text-destructive'
+                : ready
+                  ? 'bg-foreground text-background hover:bg-foreground/90 active:scale-[0.97]'
+                  : 'bg-muted text-muted-foreground/30 border border-border/30 cursor-wait',
           ].join(' ')}
         >
-          {copied
-            ? <><Check className="w-3 h-3" weight="bold" />Paste in Figma</>
-            : 'Copy to Figma'
-          }
+          {copied ? (
+            <><Check className="w-3 h-3" weight="bold" />Paste in Figma</>
+          ) : copyError ? (
+            <><Warning className="w-3 h-3" weight="bold" />Use download ↙</>
+          ) : ready ? (
+            'Copy to Figma'
+          ) : (
+            '…'
+          )}
         </button>
       </div>
 
-      {/* Live iframe */}
+      {/* Live preview */}
       <div className="flex-1 overflow-hidden relative min-h-0">
         {!iframeLoaded && (
           <div className="absolute inset-0 bg-muted/30 z-10 pointer-events-none flex items-center justify-center">
@@ -131,7 +165,7 @@ export function FigmaTab({ siteUrl, figmaCaptureUrl, figmaHtml, onReextract, isR
         <iframe
           key={siteUrl}
           src={siteUrl}
-          title={`Figma layers — ${hostname}`}
+          title={`${hostname} — Figma preview`}
           onLoad={handleIframeLoad}
           className="w-full h-full border-none"
           sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
@@ -155,9 +189,17 @@ export function FigmaTab({ siteUrl, figmaCaptureUrl, figmaHtml, onReextract, isR
         </AnimatePresence>
       </div>
 
+      {/* Footer hint — changes based on state */}
       <div className="shrink-0 border-t border-border/40 px-3 py-1.5 text-center">
         <p className="text-[10px] font-mono text-muted-foreground/30">
-          {copied ? 'Switch to Figma and press ⌘V' : 'Click Copy to Figma — layers paste as editable frames'}
+          {copied
+            ? 'Switch to Figma · press ⌘V · layers paste as editable frames'
+            : copyError
+              ? 'Clipboard blocked — download the HTML and import via Figma › Plugins › html.to.design'
+              : ready
+                ? 'Copy to Figma — or download HTML to import via the html.to.design plugin'
+                : 'Preparing layers…'
+          }
         </p>
       </div>
     </div>
