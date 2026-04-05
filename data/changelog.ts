@@ -18,6 +18,17 @@ export interface ChangelogRelease {
 const changelog: ChangelogRelease[] = [
   {
     date: '2026-04-05',
+    title: 'Figma Element Picker',
+    description: 'Click any element on any page and paste it into Figma as pixel-perfect editable layers. Full-page copy still works too.',
+    items: [
+      { type: 'new',      text: 'Element picker — hover to highlight, click to select any element, copy directly to Figma' },
+      { type: 'new',      text: 'HTML proxy — strips X-Frame-Options so any site can be displayed and interacted with inside the panel' },
+      { type: 'improved', text: 'Figma tab now has Full page and Pick element modes for granular or bulk export' },
+      { type: 'improved', text: 'Preview tab simplified — responsive live iframe with no desktop/mobile toggle' },
+    ],
+  },
+  {
+    date: '2026-04-05',
     title: 'Live Preview & Figma Tab',
     description: 'The panel is rethought — live site previews replace static screenshots, and Figma layers get their own dedicated tab.',
     items: [
