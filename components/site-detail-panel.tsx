@@ -200,6 +200,7 @@ export function SiteDetailPanel({ sourceId, onClose }: SiteDetailPanelProps) {
                   initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -4, transition: { duration: 0.12 } }}>
                   <FigmaTab
+                    siteUrl={data.url}
                     figmaCaptureUrl={data.figma_capture_url}
                     onReextract={handleReextract}
                     isReextracting={isReextracting}
