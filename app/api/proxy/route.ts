@@ -196,19 +196,45 @@ const PICKER_SCRIPT = `<script>
     _capturing = true;
     if (_overlay) _overlay.style.display = 'none';
     window.parent.postMessage({ type: 'figma-element-capturing', label: 'Full page' }, '*');
-    try {
-      var html = captureEl(document.body);
-      window.parent.postMessage({ type: 'figma-element-captured', html: html, label: 'Full page' }, '*');
-    } catch (err) {
-      window.parent.postMessage({ type: 'figma-element-error', label: 'Full page', error: String(err) }, '*');
+
+    // Async batched — avoids freezing the browser on pages with many elements
+    var base = window.location.href;
+    var el = document.body;
+    var clone = el.cloneNode(true);
+    var origAll = Array.from(el.querySelectorAll('*')).slice(0, 1200);
+    var cloneAll = Array.from(clone.querySelectorAll('*'));
+    inlineEl(el, clone);
+    var i = 0;
+
+    function tick() {
+      try {
+        var end = Math.min(i + 40, origAll.length);
+        while (i < end) {
+          if (cloneAll[i]) inlineEl(origAll[i], cloneAll[i]);
+          i++;
+        }
+        if (i < origAll.length) { setTimeout(tick, 0); return; }
+        fixUrls(clone, base);
+        var s = clone.querySelectorAll('script,noscript,iframe');
+        for (var k = 0; k < s.length; k++) s[k].remove();
+        var html = '<!DOCTYPE html><html><head><meta charset="utf-8">' +
+          '<style>*{box-sizing:border-box}body{margin:0;padding:0}</style>' +
+          '</head><body>' + clone.outerHTML + '</body></html>';
+        window.parent.postMessage({ type: 'figma-element-captured', html: html, label: 'Full page' }, '*');
+      } catch (err) {
+        window.parent.postMessage({ type: 'figma-element-error', label: 'Full page', error: String(err) }, '*');
+      }
+      _capturing = false;
     }
-    _capturing = false;
+
+    setTimeout(tick, 0);
   }, false);
 })();
 </script>`
 
 export async function GET(req: NextRequest) {
   const url = req.nextUrl.searchParams.get('url')
+  const picker = req.nextUrl.searchParams.get('picker') !== '0'
   if (!url) return new NextResponse('Missing url param', { status: 400 })
 
   let targetUrl: URL
@@ -240,11 +266,11 @@ export async function GET(req: NextRequest) {
   // <base href> resolves all relative URLs (CSS, images, links) against the real origin
   const baseTag = `<base href="${origin}/">`
 
+  const script = picker ? PICKER_SCRIPT : ''
   const injected = html
     .replace(/<head([^>]*)>/i, `<head$1>${baseTag}`)
-    .replace(/<\/body>/i, `${PICKER_SCRIPT}</body>`)
-    // If no </body>, append at end
-    || html + PICKER_SCRIPT
+    .replace(/<\/body>/i, `${script}</body>`)
+    || html + script
 
   return new NextResponse(injected, {
     headers: {

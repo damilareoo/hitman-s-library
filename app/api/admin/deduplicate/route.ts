@@ -6,12 +6,14 @@ const sql = neon(process.env.DATABASE_URL!)
 function normalizeUrl(url: string): string {
   try {
     const u = new URL(url.toLowerCase().trim())
-    // Remove trailing slash from pathname
-    u.pathname = u.pathname.replace(/\/+$/, '') || '/'
+    // Normalize protocol — treat http and https as the same
+    u.protocol = 'https:'
     // Drop www.
     u.hostname = u.hostname.replace(/^www\./, '')
-    // Use just origin + pathname (ignore query/hash)
-    return u.origin + u.pathname
+    // Remove trailing slash from pathname
+    u.pathname = u.pathname.replace(/\/+$/, '') || '/'
+    // Use just origin + pathname (ignore query/hash/port)
+    return `https://${u.hostname}${u.pathname}`
   } catch {
     return url.toLowerCase().trim()
   }

@@ -14,24 +14,23 @@ interface PreviewTabProps {
 }
 
 export function PreviewTab({ siteUrl, extractionError }: PreviewTabProps) {
-  const [blocked, setBlocked] = useState(false)
+  const [mode, setMode] = useState<'direct' | 'proxy'>('direct')
   const [loaded, setLoaded] = useState(false)
+  const [proxyFailed, setProxyFailed] = useState(false)
   const blockTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  // Reset on URL change
-  useEffect(() => {
-    setBlocked(false)
-    setLoaded(false)
-  }, [siteUrl])
+  const proxyUrl = `/api/proxy?url=${encodeURIComponent(siteUrl)}&picker=0`
 
-  // Blocked detection timer — fires if iframe doesn't load within 7s
   useEffect(() => {
-    if (blockTimerRef.current) clearTimeout(blockTimerRef.current)
-    setBlocked(false)
+    setMode('direct')
     setLoaded(false)
-    const t = setTimeout(() => setBlocked(true), 7000)
-    return () => clearTimeout(t)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    setProxyFailed(false)
+    if (blockTimerRef.current) clearTimeout(blockTimerRef.current)
+    // After 5s without load, switch to proxy
+    blockTimerRef.current = setTimeout(() => {
+      setMode(m => m === 'direct' ? 'proxy' : m)
+    }, 5000)
+    return () => { if (blockTimerRef.current) clearTimeout(blockTimerRef.current) }
   }, [siteUrl])
 
   function handleLoad() {
@@ -55,6 +54,8 @@ export function PreviewTab({ siteUrl, extractionError }: PreviewTabProps) {
     )
   }
 
+  const src = mode === 'proxy' ? proxyUrl : siteUrl
+
   return (
     <div className="relative flex-1 overflow-hidden min-h-0 flex flex-col">
       {/* Loading shimmer */}
@@ -69,18 +70,21 @@ export function PreviewTab({ siteUrl, extractionError }: PreviewTabProps) {
 
       <div className="flex-1 overflow-hidden relative">
         <iframe
-          key={siteUrl}
-          src={siteUrl}
+          key={src}
+          src={src}
           title={`Live preview of ${siteUrl}`}
           onLoad={handleLoad}
+          onError={() => {
+            if (mode === 'proxy') setProxyFailed(true)
+          }}
           className="w-full h-full border-none"
           sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
         />
       </div>
 
-      {/* Blocked nudge */}
+      {/* Proxy failed fallback */}
       <AnimatePresence>
-        {blocked && !loaded && (
+        {proxyFailed && (
           <motion.div
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
@@ -88,7 +92,7 @@ export function PreviewTab({ siteUrl, extractionError }: PreviewTabProps) {
             className="absolute bottom-3 left-3 right-3 z-20 bg-background/95 backdrop-blur-sm border border-border rounded-lg px-3 py-2.5 flex items-center justify-between gap-2"
           >
             <p className="text-[11px] font-mono text-muted-foreground">
-              Site may block embedding
+              Couldn&apos;t load preview
             </p>
             <a
               href={siteUrl}
