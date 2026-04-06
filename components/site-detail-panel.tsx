@@ -195,7 +195,7 @@ export function SiteDetailPanel({ sourceId, onClose }: SiteDetailPanelProps) {
                 <motion.div key="figma" className="flex flex-col flex-1 min-h-0"
                   initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -4, transition: { duration: 0.12 } }}>
-                  <FigmaTab siteUrl={data.url} />
+                  <FigmaTab siteUrl={data.url} screenshotUrl={data.screenshot_url} />
                 </motion.div>
               )}
             </AnimatePresence>

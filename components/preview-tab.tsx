@@ -19,6 +19,14 @@ export function PreviewTab({ siteUrl, extractionError }: PreviewTabProps) {
   const [proxyFailed, setProxyFailed] = useState(false)
   const blockTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
+  useEffect(() => {
+    function onMessage(e: MessageEvent) {
+      if (e.data?.type === 'proxy-failed') setProxyFailed(true)
+    }
+    window.addEventListener('message', onMessage)
+    return () => window.removeEventListener('message', onMessage)
+  }, [])
+
   const proxyUrl = `/api/proxy?url=${encodeURIComponent(siteUrl)}&picker=0`
 
   useEffect(() => {

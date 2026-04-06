@@ -7,6 +7,7 @@ import { AnimatePresence, motion } from 'motion/react'
 
 interface FigmaTabProps {
   siteUrl: string
+  screenshotUrl?: string | null
 }
 
 type Breakpoint = 'responsive' | 'mobile' | 'tablet' | 'desktop'
@@ -24,7 +25,7 @@ const BP_LABEL: Record<Breakpoint, string> = {
   desktop: '1440',
 }
 
-export function FigmaTab({ siteUrl }: FigmaTabProps) {
+export function FigmaTab({ siteUrl, screenshotUrl }: FigmaTabProps) {
   const [hoverLabel, setHoverLabel] = useState<string | null>(null)
   const [status, setStatus] = useState<'idle' | 'capturing' | 'copied' | 'error'>('idle')
   const [captureLabel, setCaptureLabel] = useState<string | null>(null)
@@ -81,6 +82,8 @@ export function FigmaTab({ siteUrl }: FigmaTabProps) {
     } else if (data.type === 'figma-element-error') {
       setStatus('error')
       setTimeout(() => setStatus('idle'), 3000)
+    } else if (data.type === 'proxy-failed') {
+      setProxyFailed(true)
     }
   }, [])
 
@@ -143,20 +146,40 @@ export function FigmaTab({ siteUrl }: FigmaTabProps) {
           </div>
         )}
 
-        {/* Proxy failed — show fallback */}
+        {/* Proxy failed — show screenshot fallback or message */}
         {proxyFailed ? (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 p-8 text-center">
-            <p className="text-xs text-muted-foreground max-w-[220px] leading-relaxed">
-              This site couldn&apos;t be proxied. Visit it directly to inspect elements.
-            </p>
-            <a
-              href={siteUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-[11px] font-mono text-foreground underline underline-offset-2"
-            >
-              Open in tab ↗
-            </a>
+          <div className="absolute inset-0 flex flex-col">
+            {screenshotUrl ? (
+              <>
+                <div className="flex-1 overflow-auto">
+                  <img
+                    src={screenshotUrl}
+                    alt="Site screenshot"
+                    className="w-full"
+                    referrerPolicy="no-referrer"
+                  />
+                </div>
+                <div className="shrink-0 border-t border-border bg-background/95 px-3 py-2 flex items-center justify-between gap-2">
+                  <p className="text-[11px] font-mono text-muted-foreground/60">
+                    Live proxy unavailable — showing screenshot
+                  </p>
+                  <a href={siteUrl} target="_blank" rel="noopener noreferrer"
+                    className="text-[11px] font-mono text-foreground/60 hover:text-foreground underline underline-offset-2 shrink-0 transition-colors">
+                    Open site ↗
+                  </a>
+                </div>
+              </>
+            ) : (
+              <div className="flex-1 flex flex-col items-center justify-center gap-3 p-8 text-center">
+                <p className="text-xs text-muted-foreground max-w-[220px] leading-relaxed">
+                  This site blocked the proxy. Visit it directly to inspect elements.
+                </p>
+                <a href={siteUrl} target="_blank" rel="noopener noreferrer"
+                  className="text-[11px] font-mono text-foreground underline underline-offset-2">
+                  Open in tab ↗
+                </a>
+              </div>
+            )}
           </div>
         ) : (
           <iframe

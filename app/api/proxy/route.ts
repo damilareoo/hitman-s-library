@@ -247,6 +247,13 @@ export async function GET(req: NextRequest) {
     return new NextResponse('Protocol not allowed', { status: 400 })
   }
 
+  const proxyErrorPage = (reason: string) => new NextResponse(
+    `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body><script>
+      window.parent.postMessage({ type: 'proxy-failed', reason: ${JSON.stringify(reason)} }, '*');
+    </script></body></html>`,
+    { headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' } }
+  )
+
   let html: string
   try {
     const res = await fetch(url, {
@@ -257,9 +264,12 @@ export async function GET(req: NextRequest) {
       redirect: 'follow',
       signal: AbortSignal.timeout(10000),
     })
+    if (!res.ok && res.status >= 400) return proxyErrorPage(`HTTP ${res.status}`)
+    const ct = res.headers.get('content-type') ?? ''
+    if (!ct.includes('html')) return proxyErrorPage('non-html response')
     html = await res.text()
   } catch (err) {
-    return new NextResponse(`Fetch failed: ${String(err)}`, { status: 502 })
+    return proxyErrorPage(String(err))
   }
 
   const origin = `${targetUrl.protocol}//${targetUrl.host}`
