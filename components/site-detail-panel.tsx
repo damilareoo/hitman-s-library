@@ -52,7 +52,15 @@ export function SiteDetailPanel({ sourceId, onClose }: SiteDetailPanelProps) {
     setData(null)
     fetch(`/api/design/${sourceId}`)
       .then(r => r.json())
-      .then(setData)
+      .then(raw => {
+        if (!raw || raw.error) return
+        setData({
+          ...raw,
+          colors: Array.isArray(raw.colors) ? raw.colors : [],
+          typography: Array.isArray(raw.typography) ? raw.typography : [],
+          assets: Array.isArray(raw.assets) ? raw.assets : [],
+        })
+      })
       .catch(console.error)
       .finally(() => setLoading(false))
   }, [sourceId])

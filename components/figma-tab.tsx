@@ -1,12 +1,27 @@
 // components/figma-tab.tsx
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
-import { Warning } from '@phosphor-icons/react'
+import { useState, useEffect, useCallback, useRef } from 'react'
+import { Warning, CopySimple } from '@phosphor-icons/react'
 import { AnimatePresence, motion } from 'motion/react'
 
 interface FigmaTabProps {
   siteUrl: string
+}
+
+type Breakpoint = 'responsive' | 'mobile' | 'tablet' | 'desktop'
+
+const BP_PX: Record<Exclude<Breakpoint, 'responsive'>, number> = {
+  mobile: 390,
+  tablet: 768,
+  desktop: 1440,
+}
+
+const BP_LABEL: Record<Breakpoint, string> = {
+  responsive: 'Auto',
+  mobile: '390',
+  tablet: '768',
+  desktop: '1440',
 }
 
 export function FigmaTab({ siteUrl }: FigmaTabProps) {
@@ -15,8 +30,22 @@ export function FigmaTab({ siteUrl }: FigmaTabProps) {
   const [captureLabel, setCaptureLabel] = useState<string | null>(null)
   const [iframeLoaded, setIframeLoaded] = useState(false)
   const [proxyFailed, setProxyFailed] = useState(false)
+  const [breakpoint, setBreakpoint] = useState<Breakpoint>('responsive')
+  const [outerWidth, setOuterWidth] = useState(0)
+
+  const iframeRef = useRef<HTMLIFrameElement>(null)
+  const outerRef = useRef<HTMLDivElement>(null)
 
   const proxyUrl = `/api/proxy?url=${encodeURIComponent(siteUrl)}`
+
+  // Measure container width for scale calculation
+  useEffect(() => {
+    if (!outerRef.current) return
+    const obs = new ResizeObserver(([entry]) => setOuterWidth(entry.contentRect.width))
+    obs.observe(outerRef.current)
+    setOuterWidth(outerRef.current.getBoundingClientRect().width)
+    return () => obs.disconnect()
+  }, [])
 
   useEffect(() => {
     setHoverLabel(null)
@@ -24,6 +53,7 @@ export function FigmaTab({ siteUrl }: FigmaTabProps) {
     setCaptureLabel(null)
     setIframeLoaded(false)
     setProxyFailed(false)
+    setBreakpoint('responsive')
   }, [siteUrl])
 
   const handleMessage = useCallback((e: MessageEvent) => {
@@ -59,11 +89,52 @@ export function FigmaTab({ siteUrl }: FigmaTabProps) {
     return () => window.removeEventListener('message', handleMessage)
   }, [handleMessage])
 
+  function copyFullPage() {
+    if (status === 'capturing' || !iframeLoaded || proxyFailed) return
+    iframeRef.current?.contentWindow?.postMessage({ type: 'figma-capture-full-page' }, '*')
+  }
+
+  // Scale calculation for breakpoint simulation
+  const bpPx = breakpoint !== 'responsive' ? BP_PX[breakpoint] : null
+  const scale = bpPx && outerWidth > 0 ? outerWidth / bpPx : 1
+
   return (
     <div className="flex flex-col flex-1 min-h-0">
 
+      {/* Toolbar: breakpoint selector + full-page copy */}
+      <div className="shrink-0 border-b border-border px-3 py-1.5 flex items-center justify-between gap-3">
+        {/* Breakpoint pills */}
+        <div className="flex items-center gap-0.5">
+          {(['responsive', 'mobile', 'tablet', 'desktop'] as Breakpoint[]).map(bp => (
+            <button
+              key={bp}
+              onClick={() => setBreakpoint(bp)}
+              className={[
+                'px-2 py-0.5 rounded-[3px] text-[10px] font-mono transition-colors',
+                breakpoint === bp
+                  ? 'bg-foreground text-background'
+                  : 'text-muted-foreground/60 hover:text-muted-foreground',
+              ].join(' ')}
+            >
+              {BP_LABEL[bp]}
+            </button>
+          ))}
+        </div>
+
+        {/* Full-page copy */}
+        <button
+          onClick={copyFullPage}
+          disabled={!iframeLoaded || proxyFailed || status === 'capturing'}
+          title="Copy full page as Figma layers"
+          className="flex items-center gap-1.5 text-[10px] font-mono text-muted-foreground/60 hover:text-muted-foreground transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+        >
+          <CopySimple className="w-3 h-3" weight="regular" />
+          Full page
+        </button>
+      </div>
+
       {/* Proxy iframe — live site with element picker injected */}
-      <div className="flex-1 relative overflow-hidden min-h-0">
+      <div ref={outerRef} className="flex-1 relative overflow-hidden min-h-0">
 
         {/* Loading shimmer */}
         {!iframeLoaded && !proxyFailed && (
@@ -72,7 +143,7 @@ export function FigmaTab({ siteUrl }: FigmaTabProps) {
           </div>
         )}
 
-        {/* Proxy failed — show direct iframe fallback with info */}
+        {/* Proxy failed — show fallback */}
         {proxyFailed ? (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 p-8 text-center">
             <p className="text-xs text-muted-foreground max-w-[220px] leading-relaxed">
@@ -89,12 +160,29 @@ export function FigmaTab({ siteUrl }: FigmaTabProps) {
           </div>
         ) : (
           <iframe
+            ref={iframeRef}
             key={siteUrl}
             src={proxyUrl}
             title="Click any section or element to copy Figma layers"
             onLoad={() => setIframeLoaded(true)}
             onError={() => setProxyFailed(true)}
-            className="w-full h-full border-none"
+            style={bpPx ? {
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: `${bpPx}px`,
+              height: `calc(100% / ${scale})`,
+              border: 'none',
+              transform: `scale(${scale})`,
+              transformOrigin: 'top left',
+            } : {
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: '100%',
+              height: '100%',
+              border: 'none',
+            }}
           />
         )}
 
@@ -116,7 +204,7 @@ export function FigmaTab({ siteUrl }: FigmaTabProps) {
           )}
         </AnimatePresence>
 
-        {/* Extracting overlay — brief, only while building the HTML */}
+        {/* Extracting overlay */}
         <AnimatePresence>
           {status === 'capturing' && (
             <motion.div

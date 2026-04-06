@@ -16,26 +16,21 @@ function denormalize(name: string): string[] {
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url)
-    
-    // Extract filter parameters
+
     const industries = searchParams.getAll('industry')
     const search = searchParams.get('search')
     const sortBy = searchParams.get('sortBy') || 'recent'
     const limit = parseInt(searchParams.get('limit') || '500')
     const offset = parseInt(searchParams.get('offset') || '0')
 
-    // Build sort clause (safe - whitelisted values only)
     let sortClause = 'ds.created_at DESC'
     if (sortBy === 'oldest') sortClause = 'ds.created_at ASC'
     else if (sortBy === 'name') sortClause = 'ds.source_name ASC'
-    else if (sortBy === 'quality') sortClause = 'CAST(ds.metadata->>\'quality\' AS INTEGER) DESC NULLS LAST'
 
-    // Build WHERE clause and collect parameters in order
-    // Always exclude sites with no screenshot (can't be previewed)
+    // Only show sites that have a screenshot — they're ready to preview
     const whereConditions: string[] = ['ds.screenshot_url IS NOT NULL']
     const filterParams: any[] = []
 
-    // Add industry filters (case-insensitive to handle DB inconsistencies)
     if (industries.length > 0 && !industries.includes('all')) {
       const denormalizedIndustries = industries.flatMap(i => denormalize(i))
       const placeholders = denormalizedIndustries.map((_, i) => `$${i + 1}`).join(',')
@@ -43,24 +38,20 @@ export async function GET(req: NextRequest) {
       filterParams.push(...denormalizedIndustries)
     }
 
-    // Add search filter
     if (search) {
       const searchPattern = `%${search}%`
       const paramIndex = filterParams.length + 1
-      whereConditions.push(`(ds.source_name ILIKE $${paramIndex} OR ds.tags::text ILIKE $${paramIndex} OR ds.metadata::text ILIKE $${paramIndex})`)
+      whereConditions.push(`(ds.source_name ILIKE $${paramIndex} OR ds.source_url ILIKE $${paramIndex})`)
       filterParams.push(searchPattern)
     }
 
-    // Build WHERE clause
     const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : ''
-    
-    // Add pagination params - they come after filter params
     const limitParamIndex = filterParams.length + 1
     const offsetParamIndex = filterParams.length + 2
     const allParams = [...filterParams, limit, offset]
 
-    // Build and execute main query
-    // Use aggregate subqueries so sites with multiple color/typography rows don't produce duplicates
+    // Use only confirmed columns — no optional/backfill columns that may not exist.
+    // Colors and typography are fetched via correlated subqueries on guaranteed columns.
     const mainQueryStr = `
       SELECT
         ds.id,
@@ -72,156 +63,86 @@ export async function GET(req: NextRequest) {
         ds.created_at,
         ds.thumbnail_url,
         ds.screenshot_url,
-        dc.color_harmony,
-        dc.mood,
-        dc.hex_colors,
-        dc.all_colors,
-        dt.heading_font,
-        dt.body_font,
-        dt.mono_font,
-        dt.mood as typography_mood,
-        dp.layout_structure,
-        dp.quality_score,
-        dp.pattern_type
+        (SELECT ARRAY(
+          SELECT hex_value FROM design_colors
+          WHERE source_id = ds.id AND hex_value IS NOT NULL
+          ORDER BY id LIMIT 8
+        )) AS hex_colors,
+        (SELECT ARRAY(
+          SELECT DISTINCT font_family FROM design_typography
+          WHERE source_id = ds.id AND role != 'legacy' AND font_family IS NOT NULL
+          LIMIT 3
+        )) AS font_families
       FROM design_sources ds
-      LEFT JOIN (
-        SELECT
-          source_id,
-          MAX(color_harmony) as color_harmony,
-          MAX(mood) as mood,
-          array_agg(hex_value ORDER BY id) FILTER (WHERE hex_value IS NOT NULL) as hex_colors,
-          (array_agg(all_colors) FILTER (WHERE all_colors IS NOT NULL))[1] as all_colors
-        FROM design_colors
-        GROUP BY source_id
-      ) dc ON ds.id = dc.source_id
-      LEFT JOIN (
-        SELECT
-          source_id,
-          COALESCE(MAX(CASE WHEN role = 'heading' THEN font_family END), MAX(heading_font)) as heading_font,
-          COALESCE(MAX(CASE WHEN role = 'body' THEN font_family END), MAX(body_font)) as body_font,
-          COALESCE(MAX(CASE WHEN role = 'mono' THEN font_family END), MAX(mono_font)) as mono_font,
-          MAX(mood) as mood
-        FROM design_typography
-        GROUP BY source_id
-      ) dt ON ds.id = dt.source_id
-      LEFT JOIN (
-        SELECT DISTINCT ON (source_id)
-          source_id, layout_structure, quality_score, pattern_type
-        FROM design_patterns
-        ORDER BY source_id, quality_score DESC NULLS LAST
-      ) dp ON ds.id = dp.source_id
       ${whereClause}
       ORDER BY ${sortClause}
       LIMIT $${limitParamIndex} OFFSET $${offsetParamIndex}
     `
 
-    console.log('[v0] Query params:', allParams, 'Query:', mainQueryStr.substring(0, 200))
-
-    const results = await sql.query(mainQueryStr, allParams)
-
-    // Count query — no joins needed, just count distinct sources
     const countQueryStr = `
-      SELECT COUNT(*) as total
-      FROM design_sources ds
-      ${whereClause}
+      SELECT COUNT(*) as total FROM design_sources ds ${whereClause}
     `
-    
-    const countResult = await sql.query(countQueryStr, filterParams)
-    const total = countResult[0]?.total || 0
 
-    // Transform results
+    const [results, countResult] = await Promise.all([
+      sql.query(mainQueryStr, allParams),
+      sql.query(countQueryStr, filterParams),
+    ])
+
+    const total = parseInt(countResult[0]?.total ?? '0', 10)
+
     const designs = results.map((row: any) => {
-      let colors: string[] = []
-      // Prefer new hex_colors (array of individual hex values from backfill)
-      if (Array.isArray(row.hex_colors) && row.hex_colors.length > 0) {
-        colors = row.hex_colors.filter(Boolean)
-      } else if (row.all_colors) {
-        // Legacy schema: all_colors is a JSONB array of hex strings
-        if (typeof row.all_colors === 'string') {
-          try {
-            colors = JSON.parse(row.all_colors)
-          } catch {
-            colors = row.all_colors.split(',').map((c: string) => c.trim())
-          }
-        } else if (Array.isArray(row.all_colors)) {
-          colors = row.all_colors
-        }
-      }
-
-      let metadata = { layout: 'Standard', architecture: 'Custom', quality: 5, style: 'Modern', useCase: 'General' }
+      let metadata: Record<string, any> = {}
       if (row.metadata) {
         if (typeof row.metadata === 'string') {
-          try {
-            metadata = { ...metadata, ...JSON.parse(row.metadata) }
-          } catch {
-            // metadata couldn't be parsed
-          }
+          try { metadata = JSON.parse(row.metadata) } catch {}
         } else if (typeof row.metadata === 'object') {
-          metadata = { ...metadata, ...row.metadata }
+          metadata = row.metadata
         }
       }
 
       let tags: string[] = []
       if (row.tags) {
         if (typeof row.tags === 'string') {
-          try {
-            tags = JSON.parse(row.tags)
-          } catch {
-            tags = row.tags.split(',').map((t: string) => t.trim())
-          }
+          try { tags = JSON.parse(row.tags) } catch { tags = row.tags.split(',').map((t: string) => t.trim()) }
         } else if (Array.isArray(row.tags)) {
           tags = row.tags
         }
       }
 
-      // Parse typography from categorized fonts
-      let typography: string[] = []
-      typography = [row.heading_font, row.body_font, row.mono_font].filter(Boolean)
+      const colors: string[] = Array.isArray(row.hex_colors) ? row.hex_colors.filter(Boolean) : []
+      const typography: string[] = Array.isArray(row.font_families) ? row.font_families.filter(Boolean) : []
 
-      const generatedUrl = row.thumbnail_url || row.screenshot_url || `https://screenshot.rocks/?url=${encodeURIComponent(row.source_url)}&width=1366&height=768`
       return {
         id: row.id,
         url: row.source_url,
         title: row.source_name,
         industry: row.industry,
-        thumbnail_url: generatedUrl,
+        thumbnail_url: row.thumbnail_url || row.screenshot_url,
+        screenshot_url: row.screenshot_url,
         colors,
-        colorHarmony: row.color_harmony,
-        colorMood: row.mood,
         typography,
-        typographyMood: row.typography_mood,
         layout: metadata.layout || 'Standard',
-        layoutType: metadata.layoutType,
         designStyle: metadata.designStyle || 'Modern',
         architecture: metadata.architecture || 'Custom',
         quality: metadata.quality || 5,
         complexity: metadata.complexity,
         useCase: metadata.useCase,
-        animationStyle: metadata.animationStyle,
-        accessibility: metadata.accessibility,
         tags,
         addedDate: new Date(row.created_at).toLocaleDateString(),
-        qualityScore: row.quality_score
       }
     })
 
     return NextResponse.json({
       designs,
-      pagination: {
-        total,
-        limit,
-        offset,
-        hasMore: offset + limit < total
-      }
+      pagination: { total, limit, offset, hasMore: offset + limit < total },
     }, {
-      headers: {
-        'Cache-Control': 'no-cache, no-store, must-revalidate',
-        'Pragma': 'no-cache',
-        'Expires': '0'
-      }
+      headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate' },
     })
   } catch (error) {
-    console.error('[v0] Advanced filter error:', error)
-    return NextResponse.json({ error: 'Failed to filter designs', designs: [], pagination: { total: 0, limit: 100, offset: 0, hasMore: false } }, { status: 200 })
+    console.error('[filter-advanced] error:', error)
+    return NextResponse.json(
+      { error: 'Failed to filter designs', designs: [], pagination: { total: 0, limit: 500, offset: 0, hasMore: false } },
+      { status: 200 }
+    )
   }
 }

@@ -17,6 +17,19 @@ export interface ChangelogRelease {
 // Types: "new" (green) | "improved" (blue) | "fixed" (muted)
 const changelog: ChangelogRelease[] = [
   {
+    date: '2026-04-06',
+    title: 'Breakpoints, Full-Page Copy & Bug Fixes',
+    description: 'Figma tab now lets you simulate any breakpoint and copy the full page. Stability fixes eliminate the client-side crash and missing site cards.',
+    items: [
+      { type: 'new',      text: 'Breakpoint selector in Figma tab — switch between Auto / 390 / 768 / 1440px and see the site respond live' },
+      { type: 'new',      text: 'Full-page copy — one click captures the entire page as Figma layers, not just a single element' },
+      { type: 'fixed',    text: 'Client-side exception on some sites — API error responses now handled gracefully, no more crash on load' },
+      { type: 'fixed',    text: 'Site cards not visible — gallery query was referencing non-existent DB columns, now uses safe correlated subqueries' },
+      { type: 'fixed',    text: 'Retina screenshots — desktop now captured at 2× DPR, mobile at 3×, with lazy-image scroll-through before capture' },
+      { type: 'improved', text: 'Card image hover — CSS transition replaces motion.img for better performance and no layout shift' },
+    ],
+  },
+  {
     date: '2026-04-05',
     title: 'Figma Element Picker & Live Preview',
     description: 'The Figma tab now shows the live site — hover to inspect, click any element to copy it to Figma instantly. Full-page copy is pre-loaded so it\'s immediate too.',

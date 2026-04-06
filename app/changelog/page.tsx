@@ -65,8 +65,14 @@ export default function ChangelogPage() {
               <div key={i} className="relative pl-8">
 
                 {/* Timeline node */}
-                <div className="absolute left-0 top-[6px] w-[15px] h-[15px] rounded-full border border-border/60 bg-background flex items-center justify-center">
-                  <div className="w-[5px] h-[5px] rounded-full bg-foreground/40" />
+                <div className={[
+                  'absolute left-0 top-[6px] w-[15px] h-[15px] rounded-full border bg-background flex items-center justify-center',
+                  i === 0 ? 'border-foreground/30' : 'border-border/60',
+                ].join(' ')}>
+                  <div className={[
+                    'w-[5px] h-[5px] rounded-full',
+                    i === 0 ? 'bg-foreground/70' : 'bg-foreground/40',
+                  ].join(' ')} />
                 </div>
 
                 {/* Horizontal connector */}
@@ -75,13 +81,20 @@ export default function ChangelogPage() {
                 {/* Release block */}
                 <div className="pb-12">
 
-                  {/* Date */}
-                  <time
-                    dateTime={release.date}
-                    className="block text-[10px] font-mono text-muted-foreground/50 tracking-[0.08em] uppercase mb-2"
-                  >
-                    {formatDate(release.date)}
-                  </time>
+                  {/* Date + Latest badge */}
+                  <div className="flex items-center gap-2 mb-2">
+                    <time
+                      dateTime={release.date}
+                      className="text-[10px] font-mono text-muted-foreground/50 tracking-[0.08em] uppercase"
+                    >
+                      {formatDate(release.date)}
+                    </time>
+                    {i === 0 && (
+                      <span className="text-[9px] font-mono uppercase tracking-[0.08em] px-1.5 py-0.5 rounded-[3px] bg-foreground text-background">
+                        Latest
+                      </span>
+                    )}
+                  </div>
 
                   {/* Title + description */}
                   <h2 className="text-[14px] font-medium tracking-[-0.01em] leading-snug mb-1">

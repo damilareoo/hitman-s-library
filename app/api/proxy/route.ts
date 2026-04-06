@@ -189,6 +189,21 @@ const PICKER_SCRIPT = `<script>
     }
     _capturing = false;
   }, true);
+
+  window.addEventListener('message', function (e) {
+    if (!e.data || e.data.type !== 'figma-capture-full-page') return;
+    if (_capturing) return;
+    _capturing = true;
+    if (_overlay) _overlay.style.display = 'none';
+    window.parent.postMessage({ type: 'figma-element-capturing', label: 'Full page' }, '*');
+    try {
+      var html = captureEl(document.body);
+      window.parent.postMessage({ type: 'figma-element-captured', html: html, label: 'Full page' }, '*');
+    } catch (err) {
+      window.parent.postMessage({ type: 'figma-element-error', label: 'Full page', error: String(err) }, '*');
+    }
+    _capturing = false;
+  }, false);
 })();
 </script>`
 
