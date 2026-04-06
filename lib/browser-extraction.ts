@@ -537,20 +537,46 @@ export async function captureMobileScreenshot(
   }
 }
 
+// Fetched once per server instance — avoids loading from inside the headless
+// browser where CDN access may be blocked or unreliable.
+let _captureScript: string | null = null
+async function getCaptureScript(): Promise<string | null> {
+  if (_captureScript) return _captureScript
+  try {
+    const res = await fetch('https://mcp.figma.com/mcp/html-to-design/capture.js', {
+      signal: AbortSignal.timeout(10000),
+    })
+    if (!res.ok) {
+      console.error(`[figma-capture] capture.js fetch failed: ${res.status}`)
+      return null
+    }
+    _captureScript = await res.text()
+    return _captureScript
+  } catch (err) {
+    console.error('[figma-capture] could not fetch capture.js:', err)
+    return null
+  }
+}
+
 export async function captureFigmaLayers(
   page: Page,
   siteUrl: string
 ): Promise<string | null> {
+  const captureScript = await getCaptureScript()
+  if (!captureScript) {
+    console.error('[figma-capture] capture.js unavailable — skipping')
+    return null
+  }
+
   try {
-    // Restore clean desktop state — previous operations (mobile screenshot,
-    // full-page scroll) may have left the page in an unknown state
+    // Restore clean desktop viewport
     await page.setViewport({ width: 1440, height: 900 })
     await page.evaluate(() => window.scrollTo(0, 0))
-    // Wait for fonts and deferred renders
     await page.evaluate(() => document.fonts.ready)
     await new Promise(r => setTimeout(r, 1200))
 
-    // Override clipboard.write to intercept the figma data before it fires
+    // Intercept clipboard.write before injecting the capture script so the
+    // script's output is captured even in headless mode (no real clipboard).
     await page.evaluate(() => {
       (window as any).__figmaCapture = null
       navigator.clipboard.write = async (items: ClipboardItem[]) => {
@@ -563,29 +589,30 @@ export async function captureFigmaLayers(
       }
     })
 
-    // Inject capture.js (CSP already bypassed via extractFullDesignData)
-    await page.addScriptTag({
-      url: 'https://mcp.figma.com/mcp/html-to-design/capture.js',
-    })
+    // Inject capture.js as content — fetched server-side so this works even
+    // when Puppeteer's browser context can't reach external CDNs.
+    await page.addScriptTag({ content: captureScript })
 
-    // Let the script initialise fully, then trigger capture
-    // figmadelay=2000 gives the capture script time to process the full DOM
+    // Give the script time to register its hash listener, then trigger capture.
+    // figmadelay=2000 tells the script to wait 2s before snapshotting the DOM.
     await new Promise(r => setTimeout(r, 1500))
     await page.evaluate(() => {
-      window.location.hash = 'figmacapture&figmadelay=2000'
+      window.location.hash = '#figmacapture&figmadelay=2000'
     })
 
-    // Wait for clipboard intercept — complex pages can take 20–25s
+    // Wait up to 35s — large/complex pages can take 20–25s to serialise.
     await page.waitForFunction(
       '(window).__figmaCapture !== null',
-      { timeout: 30000 }
+      { timeout: 35000 }
     )
 
-    const figmaHtml = await page.evaluate(
-      '(window).__figmaCapture'
-    ) as string
+    const figmaHtml = await page.evaluate('(window).__figmaCapture') as string
+    if (!figmaHtml || figmaHtml.length < 500) {
+      console.error('[figma-capture] captured HTML too small or empty')
+      return null
+    }
 
-    if (!figmaHtml) return null
+    console.log(`[figma-capture] captured ${figmaHtml.length} bytes for ${siteUrl}`)
 
     const hostname = new URL(siteUrl).hostname.replace(/\./g, '-')
     const filename = `figma/${hostname}-${Date.now()}.html`

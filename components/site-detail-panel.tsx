@@ -79,13 +79,30 @@ export function SiteDetailPanel({ sourceId, onClose }: SiteDetailPanelProps) {
     return () => { cancelled = true }
   }, [data?.figma_capture_url])
 
-  // Auto-capture Figma layers when tab is opened and capture doesn't exist yet
+  // Auto-capture Figma layers when the Figma tab is opened and no capture exists yet
   useEffect(() => {
     if (activeTab === 'figma' && data && !data.figma_capture_url && !isReextracting && !loading) {
-      handleReextract()
+      handleFigmaCapture()
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab, data?.id])
+
+  // Figma-only capture — fast path, no full re-extraction
+  async function handleFigmaCapture() {
+    if (isReextracting) return
+    setIsReextracting(true)
+    try {
+      const res = await fetch(`/api/design/${sourceId}/figma-capture`, { method: 'POST' })
+      const json = await res.json()
+      if (json.figma_capture_url) {
+        setData(prev => prev ? { ...prev, figma_capture_url: json.figma_capture_url } : prev)
+      }
+    } catch (err) {
+      console.error('[figma-capture]', err)
+    } finally {
+      setIsReextracting(false)
+    }
+  }
 
   async function handleReextract() {
     if (isReextracting) return
@@ -225,7 +242,7 @@ export function SiteDetailPanel({ sourceId, onClose }: SiteDetailPanelProps) {
                     siteUrl={data.url}
                     figmaCaptureUrl={data.figma_capture_url}
                     figmaHtml={figmaHtmlReady ? figmaHtmlRef.current : null}
-                    onReextract={handleReextract}
+                    onReextract={handleFigmaCapture}
                     isReextracting={isReextracting}
                   />
                 </motion.div>
