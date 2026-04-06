@@ -8,7 +8,6 @@ export type PanelTab = 'preview' | 'colors' | 'type' | 'assets' | 'figma'
 interface PanelTabsProps {
   active: PanelTab
   onChange: (tab: PanelTab) => void
-  hasFigmaLayers?: boolean
 }
 
 const TABS: { key: PanelTab; label: string }[] = [
@@ -19,7 +18,7 @@ const TABS: { key: PanelTab; label: string }[] = [
   { key: 'figma', label: 'Figma' },
 ]
 
-export function PanelTabs({ active, onChange, hasFigmaLayers }: PanelTabsProps) {
+export function PanelTabs({ active, onChange }: PanelTabsProps) {
   const { playTabChange } = useSoundsContext()
   const activeIndex = TABS.findIndex(t => t.key === active)
 
@@ -59,9 +58,6 @@ export function PanelTabs({ active, onChange, hasFigmaLayers }: PanelTabsProps) 
             <>
               <span className="font-bold text-[11px] leading-none">F</span>
               {label}
-              {hasFigmaLayers && (
-                <span className="w-1 h-1 rounded-full bg-emerald-500 shrink-0" aria-label="Layers captured" />
-              )}
             </>
           ) : label}
         </button>
