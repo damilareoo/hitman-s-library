@@ -10,39 +10,40 @@ const ICONS = { ShieldWarning, LockSimple, Clock, FileDashed, Warning }
 
 interface PreviewTabProps {
   siteUrl: string
+  screenshotUrl?: string | null
   extractionError?: string | null
 }
 
-export function PreviewTab({ siteUrl, extractionError }: PreviewTabProps) {
-  const [mode, setMode] = useState<'direct' | 'proxy'>('direct')
+export function PreviewTab({ siteUrl, screenshotUrl, extractionError }: PreviewTabProps) {
   const [loaded, setLoaded] = useState(false)
   const [proxyFailed, setProxyFailed] = useState(false)
-  const blockTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const loadTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // Proxy URL — strips X-Frame-Options / CSP frame-ancestors server-side
+  const proxyUrl = `/api/proxy?url=${encodeURIComponent(siteUrl)}&picker=0`
+
+  useEffect(() => {
+    setLoaded(false)
+    setProxyFailed(false)
+    if (loadTimerRef.current) clearTimeout(loadTimerRef.current)
+    // If proxy hasn't loaded after 12s, treat as failed
+    loadTimerRef.current = setTimeout(() => setProxyFailed(true), 12000)
+    return () => { if (loadTimerRef.current) clearTimeout(loadTimerRef.current) }
+  }, [siteUrl])
 
   useEffect(() => {
     function onMessage(e: MessageEvent) {
-      if (e.data?.type === 'proxy-failed') setProxyFailed(true)
+      if (e.data?.type === 'proxy-failed') {
+        if (loadTimerRef.current) clearTimeout(loadTimerRef.current)
+        setProxyFailed(true)
+      }
     }
     window.addEventListener('message', onMessage)
     return () => window.removeEventListener('message', onMessage)
   }, [])
 
-  const proxyUrl = `/api/proxy?url=${encodeURIComponent(siteUrl)}&picker=0`
-
-  useEffect(() => {
-    setMode('direct')
-    setLoaded(false)
-    setProxyFailed(false)
-    if (blockTimerRef.current) clearTimeout(blockTimerRef.current)
-    // After 5s without load, switch to proxy
-    blockTimerRef.current = setTimeout(() => {
-      setMode(m => m === 'direct' ? 'proxy' : m)
-    }, 5000)
-    return () => { if (blockTimerRef.current) clearTimeout(blockTimerRef.current) }
-  }, [siteUrl])
-
   function handleLoad() {
-    if (blockTimerRef.current) clearTimeout(blockTimerRef.current)
+    if (loadTimerRef.current) clearTimeout(loadTimerRef.current)
     setLoaded(true)
   }
 
@@ -62,7 +63,52 @@ export function PreviewTab({ siteUrl, extractionError }: PreviewTabProps) {
     )
   }
 
-  const src = mode === 'proxy' ? proxyUrl : siteUrl
+  // Proxy failed — show screenshot or open-in-tab fallback
+  if (proxyFailed) {
+    return (
+      <div className="flex flex-col flex-1 min-h-0">
+        {screenshotUrl ? (
+          <>
+            <div className="flex-1 overflow-auto">
+              <img
+                src={screenshotUrl}
+                alt="Site screenshot"
+                className="w-full"
+                referrerPolicy="no-referrer"
+              />
+            </div>
+            <div className="shrink-0 border-t border-border bg-background/95 px-3 py-2 flex items-center justify-between gap-2">
+              <p className="text-[11px] font-mono text-muted-foreground/60">
+                Live preview unavailable — showing screenshot
+              </p>
+              <a
+                href={siteUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[11px] font-mono text-foreground/60 hover:text-foreground underline underline-offset-2 shrink-0 transition-colors"
+              >
+                Open site ↗
+              </a>
+            </div>
+          </>
+        ) : (
+          <div className="flex flex-col items-center justify-center flex-1 gap-3 p-8 text-center">
+            <p className="text-xs text-muted-foreground max-w-[200px] leading-relaxed">
+              This site blocked the preview.
+            </p>
+            <a
+              href={siteUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[11px] font-mono text-foreground underline underline-offset-2"
+            >
+              Open in tab ↗
+            </a>
+          </div>
+        )}
+      </div>
+    )
+  }
 
   return (
     <div className="relative flex-1 overflow-hidden min-h-0 flex flex-col">
@@ -78,41 +124,14 @@ export function PreviewTab({ siteUrl, extractionError }: PreviewTabProps) {
 
       <div className="flex-1 overflow-hidden relative">
         <iframe
-          key={src}
-          src={src}
+          key={proxyUrl}
+          src={proxyUrl}
           title={`Live preview of ${siteUrl}`}
           onLoad={handleLoad}
-          onError={() => {
-            if (mode === 'proxy') setProxyFailed(true)
-          }}
+          onError={() => setProxyFailed(true)}
           className="w-full h-full border-none"
-          sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
         />
       </div>
-
-      {/* Proxy failed fallback */}
-      <AnimatePresence>
-        {proxyFailed && (
-          <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 8 }}
-            className="absolute bottom-3 left-3 right-3 z-20 bg-background/95 backdrop-blur-sm border border-border rounded-lg px-3 py-2.5 flex items-center justify-between gap-2"
-          >
-            <p className="text-[11px] font-mono text-muted-foreground">
-              Couldn&apos;t load preview
-            </p>
-            <a
-              href={siteUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-[11px] font-mono text-foreground underline underline-offset-2 shrink-0"
-            >
-              Open in tab ↗
-            </a>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </div>
   )
 }

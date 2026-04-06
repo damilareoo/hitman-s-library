@@ -166,6 +166,7 @@ export function SiteDetailPanel({ sourceId, onClose }: SiteDetailPanelProps) {
                   exit={{ opacity: 0, y: -4, transition: { duration: 0.12 } }}>
                   <PreviewTab
                     siteUrl={data.url}
+                    screenshotUrl={data.screenshot_url}
                     extractionError={data.extraction_error}
                   />
                 </motion.div>
