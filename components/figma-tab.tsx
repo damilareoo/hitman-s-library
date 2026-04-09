@@ -8,6 +8,8 @@ import { AnimatePresence, motion } from 'motion/react'
 interface FigmaTabProps {
   siteUrl: string
   screenshotUrl?: string | null
+  mobileScreenshotUrl?: string | null
+  figmaCaptureUrl?: string | null
 }
 
 type Breakpoint = 'responsive' | 'mobile' | 'tablet' | 'desktop'
@@ -25,7 +27,7 @@ const BP_LABEL: Record<Breakpoint, string> = {
   desktop: '1440',
 }
 
-export function FigmaTab({ siteUrl, screenshotUrl }: FigmaTabProps) {
+export function FigmaTab({ siteUrl, screenshotUrl, mobileScreenshotUrl, figmaCaptureUrl }: FigmaTabProps) {
   const [hoverLabel, setHoverLabel] = useState<string | null>(null)
   const [status, setStatus] = useState<'idle' | 'capturing' | 'copied' | 'error'>('idle')
   const [captureLabel, setCaptureLabel] = useState<string | null>(null)
@@ -33,6 +35,11 @@ export function FigmaTab({ siteUrl, screenshotUrl }: FigmaTabProps) {
   const [proxyFailed, setProxyFailed] = useState(false)
   const [breakpoint, setBreakpoint] = useState<Breakpoint>('responsive')
   const [outerWidth, setOuterWidth] = useState(0)
+  const [viewport, setViewport] = useState<'desktop' | 'mobile'>('desktop')
+  const [blobCopyStatus, setBlobCopyStatus] = useState<'idle' | 'copying' | 'copied' | 'error'>('idle')
+
+  const hasMobile = Boolean(mobileScreenshotUrl)
+  const activeScreenshot = hasMobile && viewport === 'mobile' ? mobileScreenshotUrl! : (screenshotUrl ?? null)
 
   const iframeRef = useRef<HTMLIFrameElement>(null)
   const outerRef = useRef<HTMLDivElement>(null)
@@ -55,7 +62,26 @@ export function FigmaTab({ siteUrl, screenshotUrl }: FigmaTabProps) {
     setIframeLoaded(false)
     setProxyFailed(false)
     setBreakpoint('responsive')
+    setViewport('desktop')
+    setBlobCopyStatus('idle')
   }, [siteUrl])
+
+  async function copyFromBlob() {
+    if (!figmaCaptureUrl || blobCopyStatus === 'copying') return
+    setBlobCopyStatus('copying')
+    try {
+      const res = await fetch(figmaCaptureUrl)
+      const html = await res.text()
+      await navigator.clipboard.write([
+        new ClipboardItem({ 'text/html': new Blob([html], { type: 'text/html' }) })
+      ])
+      setBlobCopyStatus('copied')
+      setTimeout(() => setBlobCopyStatus('idle'), 5000)
+    } catch {
+      setBlobCopyStatus('error')
+      setTimeout(() => setBlobCopyStatus('idle'), 3000)
+    }
+  }
 
   const handleMessage = useCallback((e: MessageEvent) => {
     const data = e.data ?? {}
@@ -149,11 +175,28 @@ export function FigmaTab({ siteUrl, screenshotUrl }: FigmaTabProps) {
         {/* Proxy failed — show screenshot fallback or message */}
         {proxyFailed ? (
           <div className="absolute inset-0 flex flex-col">
-            {screenshotUrl ? (
+            {/* Viewport toggle */}
+            {hasMobile && activeScreenshot && (
+              <div className="flex border-b border-border/40 shrink-0">
+                <button
+                  onClick={() => setViewport('desktop')}
+                  className={`flex-1 py-1 text-[9px] font-mono transition-colors ${viewport === 'desktop' ? 'text-foreground bg-muted/60' : 'text-muted-foreground hover:text-foreground'}`}
+                >
+                  Desktop
+                </button>
+                <button
+                  onClick={() => setViewport('mobile')}
+                  className={`flex-1 py-1 text-[9px] font-mono border-l border-border/40 transition-colors ${viewport === 'mobile' ? 'text-foreground bg-muted/60' : 'text-muted-foreground hover:text-foreground'}`}
+                >
+                  Mobile
+                </button>
+              </div>
+            )}
+            {activeScreenshot ? (
               <>
                 <div className="flex-1 overflow-auto">
                   <img
-                    src={screenshotUrl}
+                    src={activeScreenshot}
                     alt="Site screenshot"
                     className="w-full"
                     referrerPolicy="no-referrer"
@@ -163,10 +206,21 @@ export function FigmaTab({ siteUrl, screenshotUrl }: FigmaTabProps) {
                   <p className="text-[11px] font-mono text-muted-foreground/60">
                     Live proxy unavailable — showing screenshot
                   </p>
-                  <a href={siteUrl} target="_blank" rel="noopener noreferrer"
-                    className="text-[11px] font-mono text-foreground/60 hover:text-foreground underline underline-offset-2 shrink-0 transition-colors">
-                    Open site ↗
-                  </a>
+                  <div className="flex items-center gap-3 shrink-0">
+                    {figmaCaptureUrl && (
+                      <button
+                        onClick={copyFromBlob}
+                        disabled={blobCopyStatus === 'copying'}
+                        className="text-[11px] font-mono text-foreground/60 hover:text-foreground transition-colors disabled:opacity-40"
+                      >
+                        {blobCopyStatus === 'copied' ? '✓ Copied' : blobCopyStatus === 'copying' ? 'Copying…' : blobCopyStatus === 'error' ? 'Failed' : 'Copy to Figma'}
+                      </button>
+                    )}
+                    <a href={siteUrl} target="_blank" rel="noopener noreferrer"
+                      className="text-[11px] font-mono text-foreground/60 hover:text-foreground underline underline-offset-2 transition-colors">
+                      Open site ↗
+                    </a>
+                  </div>
                 </div>
               </>
             ) : (
@@ -174,10 +228,21 @@ export function FigmaTab({ siteUrl, screenshotUrl }: FigmaTabProps) {
                 <p className="text-xs text-muted-foreground max-w-[220px] leading-relaxed">
                   This site blocked the proxy. Visit it directly to inspect elements.
                 </p>
-                <a href={siteUrl} target="_blank" rel="noopener noreferrer"
-                  className="text-[11px] font-mono text-foreground underline underline-offset-2">
-                  Open in tab ↗
-                </a>
+                <div className="flex items-center gap-4">
+                  {figmaCaptureUrl && (
+                    <button
+                      onClick={copyFromBlob}
+                      disabled={blobCopyStatus === 'copying'}
+                      className="text-[11px] font-mono text-foreground underline underline-offset-2 disabled:opacity-40"
+                    >
+                      {blobCopyStatus === 'copied' ? '✓ Copied to Figma' : blobCopyStatus === 'copying' ? 'Copying…' : 'Copy to Figma'}
+                    </button>
+                  )}
+                  <a href={siteUrl} target="_blank" rel="noopener noreferrer"
+                    className="text-[11px] font-mono text-foreground underline underline-offset-2">
+                    Open in tab ↗
+                  </a>
+                </div>
               </div>
             )}
           </div>

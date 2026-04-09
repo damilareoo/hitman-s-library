@@ -2,7 +2,6 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { AnimatePresence, motion } from 'motion/react'
 import { ShieldWarning, LockSimple, Clock, FileDashed, Warning } from '@phosphor-icons/react'
 import { classifyExtractionError } from '@/lib/classify-extraction-error'
 
@@ -16,26 +15,31 @@ interface PreviewTabProps {
 }
 
 export function PreviewTab({ siteUrl, screenshotUrl, mobileScreenshotUrl, extractionError }: PreviewTabProps) {
+  const [mode, setMode] = useState<'live' | 'screenshot'>('live')
+  const [viewport, setViewport] = useState<'desktop' | 'mobile'>('desktop')
   const [loaded, setLoaded] = useState(false)
   const [proxyFailed, setProxyFailed] = useState(false)
-  const [viewport, setViewport] = useState<'desktop' | 'mobile'>('desktop')
   const loadTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
+  const hasScreenshot = Boolean(screenshotUrl)
   const hasMobile = Boolean(mobileScreenshotUrl)
   const activeScreenshot = hasMobile && viewport === 'mobile' ? mobileScreenshotUrl! : (screenshotUrl ?? null)
-
-  // Proxy URL — strips X-Frame-Options / CSP frame-ancestors server-side
   const proxyUrl = `/api/proxy?url=${encodeURIComponent(siteUrl)}&picker=0`
 
   useEffect(() => {
+    setMode('live')
+    setViewport('desktop')
     setLoaded(false)
     setProxyFailed(false)
-    setViewport('desktop')
     if (loadTimerRef.current) clearTimeout(loadTimerRef.current)
-    // If proxy hasn't loaded after 12s, treat as failed
     loadTimerRef.current = setTimeout(() => setProxyFailed(true), 12000)
     return () => { if (loadTimerRef.current) clearTimeout(loadTimerRef.current) }
   }, [siteUrl])
+
+  // Auto-fall to screenshot mode if proxy fails and we have one
+  useEffect(() => {
+    if (proxyFailed && hasScreenshot) setMode('screenshot')
+  }, [proxyFailed, hasScreenshot])
 
   useEffect(() => {
     function onMessage(e: MessageEvent) {
@@ -69,28 +73,52 @@ export function PreviewTab({ siteUrl, screenshotUrl, mobileScreenshotUrl, extrac
     )
   }
 
-  // Proxy failed — show screenshot or open-in-tab fallback
-  if (proxyFailed) {
-    return (
-      <div className="flex flex-col flex-1 min-h-0">
-        {activeScreenshot ? (
+  const showModeToggle = hasScreenshot && !proxyFailed
+  const showViewportToggle = hasMobile && mode === 'screenshot'
+
+  return (
+    <div className="flex flex-col flex-1 min-h-0">
+
+      {/* Mode toggle — Live vs Screenshot (only when both are available) */}
+      {showModeToggle && (
+        <div className="flex border-b border-border/40 shrink-0">
+          <button
+            onClick={() => setMode('live')}
+            className={`flex-1 py-1.5 text-[10px] font-mono transition-colors ${mode === 'live' ? 'text-foreground bg-muted' : 'text-muted-foreground hover:text-foreground'}`}
+          >
+            Live
+          </button>
+          <button
+            onClick={() => setMode('screenshot')}
+            className={`flex-1 py-1.5 text-[10px] font-mono border-l border-border/40 transition-colors ${mode === 'screenshot' ? 'text-foreground bg-muted' : 'text-muted-foreground hover:text-foreground'}`}
+          >
+            Screenshot
+          </button>
+        </div>
+      )}
+
+      {/* Desktop / Mobile sub-toggle (screenshot mode, mobile available) */}
+      {showViewportToggle && (
+        <div className="flex border-b border-border/40 shrink-0">
+          <button
+            onClick={() => setViewport('desktop')}
+            className={`flex-1 py-1 text-[9px] font-mono transition-colors ${viewport === 'desktop' ? 'text-foreground bg-muted/60' : 'text-muted-foreground hover:text-foreground'}`}
+          >
+            Desktop
+          </button>
+          <button
+            onClick={() => setViewport('mobile')}
+            className={`flex-1 py-1 text-[9px] font-mono border-l border-border/40 transition-colors ${viewport === 'mobile' ? 'text-foreground bg-muted/60' : 'text-muted-foreground hover:text-foreground'}`}
+          >
+            Mobile
+          </button>
+        </div>
+      )}
+
+      {/* Screenshot view */}
+      {mode === 'screenshot' ? (
+        activeScreenshot ? (
           <>
-            {hasMobile && (
-              <div className="flex border-b border-border/40 shrink-0">
-                <button
-                  onClick={() => setViewport('desktop')}
-                  className={`flex-1 py-1.5 text-[10px] font-mono transition-colors ${viewport === 'desktop' ? 'text-foreground bg-muted' : 'text-muted-foreground hover:text-foreground'}`}
-                >
-                  Desktop
-                </button>
-                <button
-                  onClick={() => setViewport('mobile')}
-                  className={`flex-1 py-1.5 text-[10px] font-mono border-l border-border/40 transition-colors ${viewport === 'mobile' ? 'text-foreground bg-muted' : 'text-muted-foreground hover:text-foreground'}`}
-                >
-                  Mobile
-                </button>
-              </div>
-            )}
             <div className="flex-1 overflow-auto">
               <img
                 src={activeScreenshot}
@@ -101,7 +129,7 @@ export function PreviewTab({ siteUrl, screenshotUrl, mobileScreenshotUrl, extrac
             </div>
             <div className="shrink-0 border-t border-border bg-background/95 px-3 py-2 flex items-center justify-between gap-2">
               <p className="text-[11px] font-mono text-muted-foreground/60">
-                Live preview unavailable — showing screenshot
+                {proxyFailed ? 'Live preview unavailable — showing screenshot' : 'Showing captured screenshot'}
               </p>
               <a
                 href={siteUrl}
@@ -116,7 +144,7 @@ export function PreviewTab({ siteUrl, screenshotUrl, mobileScreenshotUrl, extrac
         ) : (
           <div className="flex flex-col items-center justify-center flex-1 gap-3 p-8 text-center">
             <p className="text-xs text-muted-foreground max-w-[200px] leading-relaxed">
-              This site blocked the preview.
+              {proxyFailed ? 'This site blocked the preview.' : 'No screenshot captured yet.'}
             </p>
             <a
               href={siteUrl}
@@ -127,33 +155,25 @@ export function PreviewTab({ siteUrl, screenshotUrl, mobileScreenshotUrl, extrac
               Open in tab ↗
             </a>
           </div>
-        )}
-      </div>
-    )
-  }
-
-  return (
-    <div className="relative flex-1 overflow-hidden min-h-0 flex flex-col">
-      {/* Loading shimmer */}
-      {!loaded && (
-        <div className="absolute inset-0 bg-muted/30 z-10 pointer-events-none">
-          <div className="absolute inset-0 animate-pulse" />
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="w-4 h-4 border border-border border-t-foreground rounded-full animate-spin" />
-          </div>
+        )
+      ) : (
+        /* Live iframe view */
+        <div className="relative flex-1 overflow-hidden min-h-0">
+          {!loaded && (
+            <div className="absolute inset-0 bg-muted/30 z-10 pointer-events-none flex items-center justify-center">
+              <div className="w-4 h-4 border border-border border-t-foreground rounded-full animate-spin" />
+            </div>
+          )}
+          <iframe
+            key={proxyUrl}
+            src={proxyUrl}
+            title={`Live preview of ${siteUrl}`}
+            onLoad={handleLoad}
+            onError={() => setProxyFailed(true)}
+            className="w-full h-full border-none"
+          />
         </div>
       )}
-
-      <div className="flex-1 overflow-hidden relative">
-        <iframe
-          key={proxyUrl}
-          src={proxyUrl}
-          title={`Live preview of ${siteUrl}`}
-          onLoad={handleLoad}
-          onError={() => setProxyFailed(true)}
-          className="w-full h-full border-none"
-        />
-      </div>
     </div>
   )
 }
