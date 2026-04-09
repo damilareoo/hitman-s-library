@@ -21,7 +21,7 @@ When you add a URL, the app:
 
 - **Card grid** — Browse all sites with spring-animated cards, filter by category
 - **Detail panel** — Click any site to see preview, colors, type, and assets with smooth tab transitions
-- **Full-page preview** — Scrollable screenshot in a bounded panel with back-to-top button
+- **Full-page preview** — Scrollable screenshot in a bounded panel with back-to-top button; Desktop/Mobile toggle when mobile screenshot is available
 - **Color extraction** — HEX and OKLCH values, copy-paste ready, sorted by lightness
 - **Typography** — Font family, role, weight, and Google Fonts link
 - **Assets** — SVG logos, icons, and images
@@ -30,6 +30,9 @@ When you add a URL, the app:
 - **Sound effects** — Subtle UI sounds, toggleable via header
 - **Failure messaging** — Categorised error states (bot protection, login required, timeout, 404) with plain-language explanations
 - **Extraction progress** — Animated stage labels while a URL is being processed
+- **Bulk add** — Paste multiple URLs in admin and process them sequentially with live per-item status
+- **Changelog** — `/changelog` feed showing all additions, re-extractions, and deletions
+- **Color export** — Copy palette as CSS custom properties or Tailwind config snippet
 - **Admin CMS** — Passcode-protected admin at `/admin` to add, search, and delete sites; bulk duplicate removal
 
 ---
