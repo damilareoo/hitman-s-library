@@ -167,6 +167,7 @@ export function SiteDetailPanel({ sourceId, onClose }: SiteDetailPanelProps) {
                   <PreviewTab
                     siteUrl={data.url}
                     screenshotUrl={data.screenshot_url}
+                    mobileScreenshotUrl={data.mobile_screenshot_url}
                     extractionError={data.extraction_error}
                   />
                 </motion.div>

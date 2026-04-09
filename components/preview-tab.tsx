@@ -11,13 +11,18 @@ const ICONS = { ShieldWarning, LockSimple, Clock, FileDashed, Warning }
 interface PreviewTabProps {
   siteUrl: string
   screenshotUrl?: string | null
+  mobileScreenshotUrl?: string | null
   extractionError?: string | null
 }
 
-export function PreviewTab({ siteUrl, screenshotUrl, extractionError }: PreviewTabProps) {
+export function PreviewTab({ siteUrl, screenshotUrl, mobileScreenshotUrl, extractionError }: PreviewTabProps) {
   const [loaded, setLoaded] = useState(false)
   const [proxyFailed, setProxyFailed] = useState(false)
+  const [viewport, setViewport] = useState<'desktop' | 'mobile'>('desktop')
   const loadTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const hasMobile = Boolean(mobileScreenshotUrl)
+  const activeScreenshot = hasMobile && viewport === 'mobile' ? mobileScreenshotUrl! : (screenshotUrl ?? null)
 
   // Proxy URL — strips X-Frame-Options / CSP frame-ancestors server-side
   const proxyUrl = `/api/proxy?url=${encodeURIComponent(siteUrl)}&picker=0`
@@ -25,6 +30,7 @@ export function PreviewTab({ siteUrl, screenshotUrl, extractionError }: PreviewT
   useEffect(() => {
     setLoaded(false)
     setProxyFailed(false)
+    setViewport('desktop')
     if (loadTimerRef.current) clearTimeout(loadTimerRef.current)
     // If proxy hasn't loaded after 12s, treat as failed
     loadTimerRef.current = setTimeout(() => setProxyFailed(true), 12000)
@@ -67,11 +73,27 @@ export function PreviewTab({ siteUrl, screenshotUrl, extractionError }: PreviewT
   if (proxyFailed) {
     return (
       <div className="flex flex-col flex-1 min-h-0">
-        {screenshotUrl ? (
+        {activeScreenshot ? (
           <>
+            {hasMobile && (
+              <div className="flex border-b border-border/40 shrink-0">
+                <button
+                  onClick={() => setViewport('desktop')}
+                  className={`flex-1 py-1.5 text-[10px] font-mono transition-colors ${viewport === 'desktop' ? 'text-foreground bg-muted' : 'text-muted-foreground hover:text-foreground'}`}
+                >
+                  Desktop
+                </button>
+                <button
+                  onClick={() => setViewport('mobile')}
+                  className={`flex-1 py-1.5 text-[10px] font-mono border-l border-border/40 transition-colors ${viewport === 'mobile' ? 'text-foreground bg-muted' : 'text-muted-foreground hover:text-foreground'}`}
+                >
+                  Mobile
+                </button>
+              </div>
+            )}
             <div className="flex-1 overflow-auto">
               <img
-                src={screenshotUrl}
+                src={activeScreenshot}
                 alt="Site screenshot"
                 className="w-full"
                 referrerPolicy="no-referrer"
