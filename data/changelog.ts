@@ -18,6 +18,12 @@ export interface ChangelogRelease {
 const changelog: ChangelogRelease[] = [
   {
     date: '2026-05-11',
+    title: 'Accessibility, Polish & Code Health',
+    description: 'Keyboard navigation, screen-reader labels, design-token alignment, and bundle cleanup from a full quality audit.',
+    items: [],
+  },
+  {
+    date: '2026-05-11',
     title: 'Figma Native Paste, Thumbnail Fix & UI Polish',
     description: 'Copy any screenshot directly to your clipboard and paste into Figma without any plugin. All 177 site cards now show their own captured screenshots reliably.',
     items: [
