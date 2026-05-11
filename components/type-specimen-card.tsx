@@ -119,7 +119,7 @@ export function TypeSpecimenCard({ typography, index }: { typography: Typography
             title="Copy font name"
           >
             {copied
-              ? <Check className="w-3 h-3 text-emerald-500" weight="bold" />
+              ? <Check className="w-3 h-3 text-[var(--color-success)]" weight="bold" />
               : <Copy className="w-3 h-3" weight="regular" />}
           </button>
         </div>
@@ -169,7 +169,7 @@ export function TypeSpecimenCard({ typography, index }: { typography: Typography
             <span className={[
               'shrink-0 text-[7.5px] font-mono uppercase tracking-[0.1em] px-1.5 py-[3px] rounded-[2px]',
               source.type === 'free'
-                ? 'bg-emerald-500/10 text-emerald-600/60 dark:text-emerald-400/50'
+                ? 'bg-[var(--color-success)]/10 text-[var(--color-success)]/70'
                 : 'bg-muted/60 text-muted-foreground/35',
             ].join(' ')}>
               {source.type === 'free' ? 'free' : 'paid'}

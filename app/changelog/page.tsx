@@ -9,8 +9,8 @@ export const metadata: Metadata = {
 }
 
 const TYPE_COLOR: Record<ChangeItem['type'], string> = {
-  new:      'bg-emerald-500',
-  improved: 'bg-blue-400',
+  new:      'bg-[var(--color-success)]',
+  improved: 'bg-[var(--color-running)]',
   fixed:    'bg-foreground/20',
 }
 
@@ -21,8 +21,8 @@ const TYPE_LABEL: Record<ChangeItem['type'], string> = {
 }
 
 const TYPE_TEXT: Record<ChangeItem['type'], string> = {
-  new:      'text-emerald-600 dark:text-emerald-400',
-  improved: 'text-blue-500 dark:text-blue-400',
+  new:      'text-[var(--color-success)]',
+  improved: 'text-[var(--color-running)]',
   fixed:    'text-muted-foreground/50',
 }
 

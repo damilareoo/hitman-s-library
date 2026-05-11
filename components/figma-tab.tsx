@@ -124,7 +124,7 @@ export function FigmaTab({ siteUrl, screenshotUrl, mobileScreenshotUrl }: FigmaT
         className="flex items-center gap-1.5 px-2.5 py-1 rounded-[3px] border border-border/60 text-[10px] font-mono transition-colors disabled:opacity-40 disabled:cursor-not-allowed hover:border-foreground/30 hover:text-foreground text-muted-foreground"
       >
         {status === 'copied'
-          ? <Check className="w-3 h-3 text-emerald-500" weight="bold" />
+          ? <Check className="w-3 h-3 text-[var(--color-success)]" weight="bold" />
           : status === 'error'
             ? <Warning className="w-3 h-3 text-amber-500" weight="fill" />
             : <DownloadSimple className="w-3 h-3" weight="regular" />
@@ -227,8 +227,8 @@ export function FigmaTab({ siteUrl, screenshotUrl, mobileScreenshotUrl }: FigmaT
         <AnimatePresence mode="wait">
           {(desktopCopy === 'copied' || mobileCopy === 'copied') ? (
             <motion.div key="copied" initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="flex items-center gap-2 w-full">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
-              <span className="text-[11px] font-mono text-emerald-600 dark:text-emerald-400">
+              <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-success)] shrink-0" />
+              <span className="text-[11px] font-mono text-[var(--color-success)]">
                 Screenshot copied — paste in Figma with <span className="text-foreground/50">⌘V</span>
               </span>
             </motion.div>

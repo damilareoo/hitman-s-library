@@ -35,9 +35,9 @@ function DesignRetrieverNode({ data, selected }: NodeProps) {
 
   const statusIcon = {
     idle: null,
-    running: <Loader2 className="h-3 w-3 animate-spin text-blue-500" />,
-    completed: <CheckCircle2 className="h-3 w-3 text-green-500" />,
-    error: <XCircle className="h-3 w-3 text-red-500" />,
+    running: <Loader2 className="h-3 w-3 animate-spin text-[var(--color-running)]" />,
+    completed: <CheckCircle2 className="h-3 w-3 text-[var(--color-success)]" />,
+    error: <XCircle className="h-3 w-3 text-[var(--color-error)]" />,
   }[status]
 
   const industries = [

@@ -54,9 +54,9 @@ function ExcelParserNode({ data, selected }: NodeProps) {
 
   const statusIcon = {
     idle: null,
-    running: <Loader2 className="h-3 w-3 animate-spin text-blue-500" />,
-    completed: <CheckCircle2 className="h-3 w-3 text-green-500" />,
-    error: <XCircle className="h-3 w-3 text-red-500" />,
+    running: <Loader2 className="h-3 w-3 animate-spin text-[var(--color-running)]" />,
+    completed: <CheckCircle2 className="h-3 w-3 text-[var(--color-success)]" />,
+    error: <XCircle className="h-3 w-3 text-[var(--color-error)]" />,
   }[status]
 
   const commonColumns = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J"]
@@ -65,8 +65,8 @@ function ExcelParserNode({ data, selected }: NodeProps) {
     <Card className={`w-96 ${selected ? "ring-2 ring-primary" : ""}`}>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <div className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-green-500/10">
-            <FileSpreadsheet className="h-4 w-4 text-green-500" />
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--color-success)]/10">
+            <FileSpreadsheet className="h-4 w-4 text-[var(--color-success)]" />
           </div>
           <div>
             <h3 className="font-semibold text-sm">Excel Parser</h3>
@@ -75,7 +75,7 @@ function ExcelParserNode({ data, selected }: NodeProps) {
         </div>
         <div className="flex items-center gap-2">
           {statusIcon}
-          <Badge variant="outline" className="text-xs bg-green-500/10 text-green-500 border-green-500/20">
+          <Badge variant="outline" className="text-xs bg-[var(--color-success)]/10 text-[var(--color-success)] border-[var(--color-success)]/20">
             Import
           </Badge>
         </div>
@@ -84,7 +84,7 @@ function ExcelParserNode({ data, selected }: NodeProps) {
         {/* File drop zone */}
         <div
           className={`border-2 border-dashed rounded-lg p-4 text-center transition-colors ${
-            dragOver ? "border-green-500 bg-green-500/10" : "border-muted-foreground/20"
+            dragOver ? "border-green-500 bg-[var(--color-success)]/10" : "border-muted-foreground/20"
           }`}
           onDragOver={(e) => {
             e.preventDefault()
@@ -95,8 +95,8 @@ function ExcelParserNode({ data, selected }: NodeProps) {
         >
           {nodeData.fileUrl ? (
             <div className="flex items-center justify-center gap-2">
-              <Table className="h-4 w-4 text-green-500" />
-              <span className="text-xs text-green-600">File loaded</span>
+              <Table className="h-4 w-4 text-[var(--color-success)]" />
+              <span className="text-xs text-[var(--color-success)]">File loaded</span>
               <Button 
                 variant="ghost" 
                 size="sm" 
@@ -231,7 +231,7 @@ function ExcelParserNode({ data, selected }: NodeProps) {
         </div>
 
         {nodeData.parsedCount !== undefined && (
-          <div className="flex items-center gap-2 text-xs text-green-600">
+          <div className="flex items-center gap-2 text-xs text-[var(--color-success)]">
             <CheckCircle2 className="h-3 w-3" />
             {nodeData.parsedCount} URLs ready to process
           </div>

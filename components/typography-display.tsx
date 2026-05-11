@@ -140,7 +140,7 @@ export function TypographyDisplay({
               title={`Copy ${fontObj.name}`}
             >
               {copiedFont === fontObj.name ? (
-                <Check className="w-4 h-4 text-green-600 animate-checkmark" weight="bold" aria-hidden="true" />
+                <Check className="w-4 h-4 text-[var(--color-success)] animate-checkmark" weight="bold" aria-hidden="true" />
               ) : (
                 <Copy className="w-4 h-4 group-hover:scale-110 transition-transform" weight="regular" aria-hidden="true" />
               )}

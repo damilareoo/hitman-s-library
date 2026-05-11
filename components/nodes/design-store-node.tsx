@@ -167,8 +167,8 @@ function DesignStoreNode({ data, selected }: NodeProps) {
         </Button>
 
         {nodeData.output && (
-          <div className="rounded-md bg-green-500/10 border border-green-500/20 p-2 text-xs">
-            <div className="flex items-center gap-1 text-green-700">
+          <div className="rounded-md bg-[var(--color-success)]/10 border border-[var(--color-success)]/20 p-2 text-xs">
+            <div className="flex items-center gap-1 text-[var(--color-success)]">
               <CheckCircle2 className="h-3 w-3" />
               Saved to library
             </div>

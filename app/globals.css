@@ -57,6 +57,11 @@
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
+
+  /* Semantic status colors */
+  --color-success: #16a34a;
+  --color-error:   #dc2626;
+  --color-running: #2563eb;
 }
 
 .dark {
@@ -97,6 +102,11 @@
   --primary-rgb: 230, 226, 219;
   --secondary-rgb: 28, 28, 28;
   --foreground-rgb: 230, 226, 219;
+
+  /* Semantic status colors */
+  --color-success: #22c55e;
+  --color-error:   #f87171;
+  --color-running: #60a5fa;
 
   /* Sidebar colors (from user's existing oklch values) */
   --sidebar: oklch(0.205 0 0);
