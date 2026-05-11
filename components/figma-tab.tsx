@@ -1,9 +1,9 @@
 // components/figma-tab.tsx
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
-import { Warning, CopySimple } from '@phosphor-icons/react'
+import { useState, useEffect, useRef } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
+import { DownloadSimple, Check, Warning } from '@phosphor-icons/react'
 
 interface FigmaTabProps {
   siteUrl: string
@@ -13,6 +13,7 @@ interface FigmaTabProps {
 }
 
 type Breakpoint = 'responsive' | 'mobile' | 'tablet' | 'desktop'
+type CopyStatus = 'idle' | 'copying' | 'copied' | 'error'
 
 const BP_PX: Record<Exclude<Breakpoint, 'responsive'>, number> = {
   mobile: 390,
@@ -27,26 +28,51 @@ const BP_LABEL: Record<Breakpoint, string> = {
   desktop: '1440',
 }
 
-export function FigmaTab({ siteUrl, screenshotUrl, mobileScreenshotUrl, figmaCaptureUrl }: FigmaTabProps) {
-  const [hoverLabel, setHoverLabel] = useState<string | null>(null)
-  const [status, setStatus] = useState<'idle' | 'capturing' | 'copied' | 'error'>('idle')
-  const [captureLabel, setCaptureLabel] = useState<string | null>(null)
-  const [iframeLoaded, setIframeLoaded] = useState(false)
-  const [proxyFailed, setProxyFailed] = useState(false)
+async function copyScreenshotAsImage(imageUrl: string): Promise<void> {
+  const response = await fetch(imageUrl)
+  if (!response.ok) throw new Error(`Fetch failed: ${response.status}`)
+  const blob = await response.blob()
+  const blobUrl = URL.createObjectURL(blob)
+
+  try {
+    const img = new Image()
+    img.crossOrigin = 'anonymous'
+    await new Promise<void>((resolve, reject) => {
+      img.onload = () => resolve()
+      img.onerror = () => reject(new Error('Image failed to load'))
+      img.src = blobUrl
+    })
+
+    const canvas = document.createElement('canvas')
+    canvas.width = img.naturalWidth
+    canvas.height = img.naturalHeight
+    canvas.getContext('2d')!.drawImage(img, 0, 0)
+
+    const pngBlob = await new Promise<Blob>((resolve, reject) =>
+      canvas.toBlob(b => b ? resolve(b) : reject(new Error('Canvas export failed')), 'image/png')
+    )
+
+    await navigator.clipboard.write([new ClipboardItem({ 'image/png': pngBlob })])
+  } finally {
+    URL.revokeObjectURL(blobUrl)
+  }
+}
+
+export function FigmaTab({ siteUrl, screenshotUrl, mobileScreenshotUrl }: FigmaTabProps) {
   const [breakpoint, setBreakpoint] = useState<Breakpoint>('responsive')
   const [outerWidth, setOuterWidth] = useState(0)
+  const [iframeLoaded, setIframeLoaded] = useState(false)
+  const [proxyFailed, setProxyFailed] = useState(false)
   const [viewport, setViewport] = useState<'desktop' | 'mobile'>('desktop')
-  const [blobCopyStatus, setBlobCopyStatus] = useState<'idle' | 'copying' | 'copied' | 'error'>('idle')
+  const [desktopCopy, setDesktopCopy] = useState<CopyStatus>('idle')
+  const [mobileCopy, setMobileCopy] = useState<CopyStatus>('idle')
+
+  const outerRef = useRef<HTMLDivElement>(null)
 
   const hasMobile = Boolean(mobileScreenshotUrl)
   const activeScreenshot = hasMobile && viewport === 'mobile' ? mobileScreenshotUrl! : (screenshotUrl ?? null)
+  const proxyUrl = `/api/proxy?url=${encodeURIComponent(siteUrl)}&picker=0`
 
-  const iframeRef = useRef<HTMLIFrameElement>(null)
-  const outerRef = useRef<HTMLDivElement>(null)
-
-  const proxyUrl = `/api/proxy?url=${encodeURIComponent(siteUrl)}`
-
-  // Measure container width for scale calculation
   useEffect(() => {
     if (!outerRef.current) return
     const obs = new ResizeObserver(([entry]) => setOuterWidth(entry.contentRect.width))
@@ -56,83 +82,63 @@ export function FigmaTab({ siteUrl, screenshotUrl, mobileScreenshotUrl, figmaCap
   }, [])
 
   useEffect(() => {
-    setHoverLabel(null)
-    setStatus('idle')
-    setCaptureLabel(null)
+    setBreakpoint('responsive')
     setIframeLoaded(false)
     setProxyFailed(false)
-    setBreakpoint('responsive')
     setViewport('desktop')
-    setBlobCopyStatus('idle')
+    setDesktopCopy('idle')
+    setMobileCopy('idle')
   }, [siteUrl])
 
-  async function copyFromBlob() {
-    if (!figmaCaptureUrl || blobCopyStatus === 'copying') return
-    setBlobCopyStatus('copying')
-    try {
-      const res = await fetch(figmaCaptureUrl)
-      const html = await res.text()
-      await navigator.clipboard.write([
-        new ClipboardItem({ 'text/html': new Blob([html], { type: 'text/html' }) })
-      ])
-      setBlobCopyStatus('copied')
-      setTimeout(() => setBlobCopyStatus('idle'), 5000)
-    } catch {
-      setBlobCopyStatus('error')
-      setTimeout(() => setBlobCopyStatus('idle'), 3000)
+  useEffect(() => {
+    function onMessage(e: MessageEvent) {
+      if (e.data?.type === 'proxy-failed') setProxyFailed(true)
     }
-  }
-
-  const handleMessage = useCallback((e: MessageEvent) => {
-    const data = e.data ?? {}
-    if (data.type === 'figma-hover') {
-      setHoverLabel(data.label ?? null)
-    } else if (data.type === 'figma-element-capturing') {
-      setStatus('capturing')
-      setCaptureLabel(data.label ?? null)
-    } else if (data.type === 'figma-element-captured') {
-      const html = data.html as string
-      const done = () => { setStatus('copied'); setTimeout(() => setStatus('idle'), 5000) }
-      const fail = () => setStatus('error')
-
-      if (navigator.clipboard?.write) {
-        navigator.clipboard
-          .write([new ClipboardItem({ 'text/html': new Blob([html], { type: 'text/html' }) })])
-          .then(done)
-          .catch(() => navigator.clipboard.writeText(html).then(done).catch(fail))
-      } else if (navigator.clipboard?.writeText) {
-        navigator.clipboard.writeText(html).then(done).catch(fail)
-      } else {
-        fail()
-      }
-    } else if (data.type === 'figma-element-error') {
-      setStatus('error')
-      setTimeout(() => setStatus('idle'), 3000)
-    } else if (data.type === 'proxy-failed') {
-      setProxyFailed(true)
-    }
+    window.addEventListener('message', onMessage)
+    return () => window.removeEventListener('message', onMessage)
   }, [])
 
-  useEffect(() => {
-    window.addEventListener('message', handleMessage)
-    return () => window.removeEventListener('message', handleMessage)
-  }, [handleMessage])
-
-  function copyFullPage() {
-    if (status === 'capturing' || !iframeLoaded || proxyFailed) return
-    iframeRef.current?.contentWindow?.postMessage({ type: 'figma-capture-full-page' }, '*')
+  async function handleCopy(which: 'desktop' | 'mobile') {
+    const url = which === 'mobile' ? mobileScreenshotUrl : screenshotUrl
+    if (!url) return
+    const setter = which === 'desktop' ? setDesktopCopy : setMobileCopy
+    setter('copying')
+    try {
+      await copyScreenshotAsImage(url)
+      setter('copied')
+      setTimeout(() => setter('idle'), 5000)
+    } catch {
+      setter('error')
+      setTimeout(() => setter('idle'), 3000)
+    }
   }
 
-  // Scale calculation for breakpoint simulation
   const bpPx = breakpoint !== 'responsive' ? BP_PX[breakpoint] : null
   const scale = bpPx && outerWidth > 0 ? outerWidth / bpPx : 1
+
+  function CopyBtn({ which, status }: { which: 'desktop' | 'mobile'; status: CopyStatus }) {
+    return (
+      <button
+        onClick={() => handleCopy(which)}
+        disabled={status === 'copying'}
+        className="flex items-center gap-1.5 px-2.5 py-1 rounded-[3px] border border-border/60 text-[10px] font-mono transition-colors disabled:opacity-40 disabled:cursor-not-allowed hover:border-foreground/30 hover:text-foreground text-muted-foreground"
+      >
+        {status === 'copied'
+          ? <Check className="w-3 h-3 text-emerald-500" weight="bold" />
+          : status === 'error'
+            ? <Warning className="w-3 h-3 text-amber-500" weight="fill" />
+            : <DownloadSimple className="w-3 h-3" weight="regular" />
+        }
+        {status === 'copying' ? 'Copying…' : status === 'copied' ? 'Copied!' : status === 'error' ? 'Failed' : which === 'desktop' ? 'Desktop' : 'Mobile'}
+      </button>
+    )
+  }
 
   return (
     <div className="flex flex-col flex-1 min-h-0">
 
-      {/* Toolbar: breakpoint selector + full-page copy */}
+      {/* Toolbar */}
       <div className="shrink-0 border-b border-border px-3 py-1.5 flex items-center justify-between gap-3">
-        {/* Breakpoint pills */}
         <div className="flex items-center gap-0.5">
           {(['responsive', 'mobile', 'tablet', 'desktop'] as Breakpoint[]).map(bp => (
             <button
@@ -150,32 +156,22 @@ export function FigmaTab({ siteUrl, screenshotUrl, mobileScreenshotUrl, figmaCap
           ))}
         </div>
 
-        {/* Full-page copy */}
-        <button
-          onClick={copyFullPage}
-          disabled={!iframeLoaded || proxyFailed || status === 'capturing'}
-          title="Copy full page as Figma layers"
-          className="flex items-center gap-1.5 text-[10px] font-mono text-muted-foreground/60 hover:text-muted-foreground transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-        >
-          <CopySimple className="w-3 h-3" weight="regular" />
-          Full page
-        </button>
+        <div className="flex items-center gap-1.5">
+          {screenshotUrl && <CopyBtn which="desktop" status={desktopCopy} />}
+          {hasMobile && mobileScreenshotUrl && <CopyBtn which="mobile" status={mobileCopy} />}
+        </div>
       </div>
 
-      {/* Proxy iframe — live site with element picker injected */}
+      {/* Preview */}
       <div ref={outerRef} className="flex-1 relative overflow-hidden min-h-0">
-
-        {/* Loading shimmer */}
         {!iframeLoaded && !proxyFailed && (
           <div className="absolute inset-0 bg-muted/30 z-10 pointer-events-none flex items-center justify-center">
             <div className="w-4 h-4 border border-border border-t-foreground rounded-full animate-spin" />
           </div>
         )}
 
-        {/* Proxy failed — show screenshot fallback or message */}
         {proxyFailed ? (
           <div className="absolute inset-0 flex flex-col">
-            {/* Viewport toggle */}
             {hasMobile && activeScreenshot && (
               <div className="flex border-b border-border/40 shrink-0">
                 <button
@@ -193,166 +189,59 @@ export function FigmaTab({ siteUrl, screenshotUrl, mobileScreenshotUrl, figmaCap
               </div>
             )}
             {activeScreenshot ? (
-              <>
-                <div className="flex-1 overflow-auto">
-                  <img
-                    src={activeScreenshot}
-                    alt="Site screenshot"
-                    className="w-full"
-                    referrerPolicy="no-referrer"
-                  />
-                </div>
-                <div className="shrink-0 border-t border-border bg-background/95 px-3 py-2 flex items-center justify-between gap-2">
-                  <p className="text-[11px] font-mono text-muted-foreground/60">
-                    Live proxy unavailable — showing screenshot
-                  </p>
-                  <div className="flex items-center gap-3 shrink-0">
-                    {figmaCaptureUrl && (
-                      <button
-                        onClick={copyFromBlob}
-                        disabled={blobCopyStatus === 'copying'}
-                        className="text-[11px] font-mono text-foreground/60 hover:text-foreground transition-colors disabled:opacity-40"
-                      >
-                        {blobCopyStatus === 'copied' ? '✓ Copied' : blobCopyStatus === 'copying' ? 'Copying…' : blobCopyStatus === 'error' ? 'Failed' : 'Copy to Figma'}
-                      </button>
-                    )}
-                    <a href={siteUrl} target="_blank" rel="noopener noreferrer"
-                      className="text-[11px] font-mono text-foreground/60 hover:text-foreground underline underline-offset-2 transition-colors">
-                      Open site ↗
-                    </a>
-                  </div>
-                </div>
-              </>
+              <div className="flex-1 overflow-auto">
+                <img src={activeScreenshot} alt="Site screenshot" className="w-full" referrerPolicy="no-referrer" />
+              </div>
             ) : (
-              <div className="flex-1 flex flex-col items-center justify-center gap-3 p-8 text-center">
+              <div className="flex-1 flex items-center justify-center p-8 text-center">
                 <p className="text-xs text-muted-foreground max-w-[220px] leading-relaxed">
-                  This site blocked the proxy. Visit it directly to inspect elements.
+                  This site blocked the live preview.
                 </p>
-                <div className="flex items-center gap-4">
-                  {figmaCaptureUrl && (
-                    <button
-                      onClick={copyFromBlob}
-                      disabled={blobCopyStatus === 'copying'}
-                      className="text-[11px] font-mono text-foreground underline underline-offset-2 disabled:opacity-40"
-                    >
-                      {blobCopyStatus === 'copied' ? '✓ Copied to Figma' : blobCopyStatus === 'copying' ? 'Copying…' : 'Copy to Figma'}
-                    </button>
-                  )}
-                  <a href={siteUrl} target="_blank" rel="noopener noreferrer"
-                    className="text-[11px] font-mono text-foreground underline underline-offset-2">
-                    Open in tab ↗
-                  </a>
-                </div>
               </div>
             )}
           </div>
         ) : (
           <iframe
-            ref={iframeRef}
             key={siteUrl}
             src={proxyUrl}
-            title="Click any section or element to copy Figma layers"
+            title={`Preview of ${siteUrl}`}
             onLoad={() => setIframeLoaded(true)}
             onError={() => setProxyFailed(true)}
             style={bpPx ? {
-              position: 'absolute',
-              top: 0,
-              left: 0,
+              position: 'absolute', top: 0, left: 0,
               width: `${bpPx}px`,
               height: `calc(100% / ${scale})`,
               border: 'none',
               transform: `scale(${scale})`,
               transformOrigin: 'top left',
             } : {
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              width: '100%',
-              height: '100%',
-              border: 'none',
+              position: 'absolute', top: 0, left: 0,
+              width: '100%', height: '100%', border: 'none',
             }}
           />
         )}
-
-        {/* Hover label badge */}
-        <AnimatePresence>
-          {hoverLabel && status === 'idle' && iframeLoaded && (
-            <motion.div
-              initial={{ opacity: 0, y: -4 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -4 }}
-              transition={{ duration: 0.1 }}
-              className="absolute top-2 left-2 z-20 pointer-events-none"
-            >
-              <span className="inline-flex items-center gap-1.5 bg-background/95 backdrop-blur-sm border border-[#18A0FB]/30 rounded px-2 py-1 text-[11px] font-mono text-foreground/60 max-w-[200px] truncate">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#18A0FB] shrink-0" />
-                {hoverLabel}
-              </span>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Extracting overlay */}
-        <AnimatePresence>
-          {status === 'capturing' && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="absolute inset-0 z-20 bg-background/40 backdrop-blur-[2px] flex items-center justify-center"
-            >
-              <div className="flex items-center gap-2.5 bg-background border border-border rounded-lg px-4 py-3 shadow-sm">
-                <div className="w-3.5 h-3.5 border border-border border-t-foreground rounded-full animate-spin" />
-                <span className="text-[12px] font-mono text-foreground/70">
-                  Extracting {captureLabel ?? 'element'}…
-                </span>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
       </div>
 
       {/* Status bar */}
       <div className="shrink-0 border-t border-border bg-background px-4 py-2.5 flex items-center min-h-[40px]">
         <AnimatePresence mode="wait">
-          {status === 'copied' && (
-            <motion.div
-              key="copied"
-              initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-              className="flex items-center gap-2 w-full"
-            >
+          {(desktopCopy === 'copied' || mobileCopy === 'copied') ? (
+            <motion.div key="copied" initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="flex items-center gap-2 w-full">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
               <span className="text-[11px] font-mono text-emerald-600 dark:text-emerald-400">
-                Copied — paste in Figma using the{' '}
-                <span className="text-foreground/50">html.to.design</span>
-                {' '}plugin
+                Screenshot copied — paste in Figma with <span className="text-foreground/50">⌘V</span>
               </span>
             </motion.div>
-          )}
-          {status === 'error' && (
-            <motion.div
-              key="error"
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              className="flex items-center gap-2 w-full"
-            >
+          ) : (desktopCopy === 'error' || mobileCopy === 'error') ? (
+            <motion.div key="error" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex items-center gap-2 w-full">
               <Warning className="w-3 h-3 text-amber-500 shrink-0" weight="fill" />
-              <span className="text-[11px] font-mono text-muted-foreground">
-                Capture failed — try selecting a containing section
-              </span>
+              <span className="text-[11px] font-mono text-muted-foreground">Copy failed — try again</span>
             </motion.div>
-          )}
-          {(status === 'idle' || status === 'capturing') && (
-            <motion.div
-              key="idle"
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              className="flex items-center gap-2 w-full"
-            >
-              <span className="w-1.5 h-1.5 rounded-full bg-[#18A0FB]/50 shrink-0" />
+          ) : (
+            <motion.div key="idle" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex items-center gap-2 w-full">
+              <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/30 shrink-0" />
               <span className="text-[11px] font-mono text-muted-foreground/50">
-                Hover to inspect · click to copy as Figma layers
-              </span>
-              <span className="ml-auto text-[10px] font-mono text-muted-foreground/30 shrink-0 hidden sm:block">
-                html.to.design
+                Copy Desktop or Mobile screenshot — paste directly in Figma, no plugin needed
               </span>
             </motion.div>
           )}

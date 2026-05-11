@@ -17,6 +17,26 @@ export interface ChangelogRelease {
 // Types: "new" (green) | "improved" (blue) | "fixed" (muted)
 const changelog: ChangelogRelease[] = [
   {
+    date: '2026-05-11',
+    title: 'Figma Native Paste, Thumbnail Fix & UI Polish',
+    description: 'Copy any screenshot directly to your clipboard and paste into Figma without any plugin. All 177 site cards now show their own captured screenshots reliably.',
+    items: [
+      { type: 'new',      text: 'Figma tab — copy Desktop or Mobile screenshot as a PNG image, paste directly into Figma with ⌘V — no html.to.design plugin required' },
+      { type: 'new',      text: 'Sort pills in header — New / Old / A–Z / Top (quality)' },
+      { type: 'new',      text: 'Multi-select industry filters — hold multiple categories at once' },
+      { type: 'new',      text: 'Card hover reveals a visit ↗ button without opening the detail panel' },
+      { type: 'new',      text: 'Tags shown on gallery cards and in the detail panel header' },
+      { type: 'new',      text: 'Detail panel hostname is now a direct link to the site' },
+      { type: 'improved', text: 'All 177 thumbnails now use captured blob screenshots — eliminates blank cards from rate-limited external screenshot services' },
+      { type: 'improved', text: 'Sidebar category counts now match exactly what the gallery shows' },
+      { type: 'fixed',    text: 'Font 404 errors — removed dead @font-face declarations for missing SuisseIntl files' },
+      { type: 'fixed',    text: 'Extraction error UI in Preview tab was never visible due to an impossible condition' },
+      { type: 'fixed',    text: 'Re-extract could crash Colors/Type/Assets tabs by not normalizing null arrays' },
+      { type: 'fixed',    text: 'Quality sort silently fell back to "newest" — now correctly sorts by extracted quality score' },
+      { type: 'fixed',    text: 'SVG assets tab had an XSS vector from inline rendering of raw DB content' },
+    ],
+  },
+  {
     date: '2026-04-06',
     title: 'Breakpoints, Full-Page Copy & Bug Fixes',
     description: 'Figma tab now lets you simulate any breakpoint and copy the full page. Stability fixes eliminate the client-side crash and missing site cards.',

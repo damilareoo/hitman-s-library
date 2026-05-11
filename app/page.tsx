@@ -23,6 +23,7 @@ interface Design {
   title: string
   industry: string
   thumbnail_url?: string
+  fallback_thumbnail?: string | null
   colors: string[]
   typography: string[]
   layout: string
@@ -418,8 +419,19 @@ interface DesignCardProps {
 }
 
 function DesignCard({ design, isSelected, onClick, onHover, hasAnimated }: DesignCardProps) {
+  const [imgSrc, setImgSrc] = useState<string | null>(design.thumbnail_url ?? null)
   const [imgStatus, setImgStatus] = useState<'loading' | 'loaded' | 'error'>('loading')
   const domain = getDomain(design.url)
+
+  function handleImgError() {
+    // Primary failed — try fallback (external OG image)
+    if (design.fallback_thumbnail && imgSrc !== design.fallback_thumbnail) {
+      setImgSrc(design.fallback_thumbnail)
+      setImgStatus('loading')
+    } else {
+      setImgStatus('error')
+    }
+  }
 
   return (
     <motion.article
@@ -436,14 +448,14 @@ function DesignCard({ design, isSelected, onClick, onHover, hasAnimated }: Desig
         {imgStatus === 'loading' && (
           <div className="absolute inset-0 bg-muted animate-pulse" />
         )}
-        {design.thumbnail_url && (
+        {imgSrc && (
           <img
-            src={design.thumbnail_url}
+            src={imgSrc}
             alt={design.title || domain}
             referrerPolicy="no-referrer"
             loading="lazy"
-            onLoad={() => setImgStatus('loaded')}
-            onError={() => setImgStatus('error')}
+            onLoad={e => (e.currentTarget.naturalWidth > 0 ? setImgStatus('loaded') : handleImgError())}
+            onError={handleImgError}
             className={"w-full h-full object-cover object-top transition-[opacity,transform] duration-300 group-hover:scale-[1.03] " + (imgStatus === 'loaded' ? 'opacity-100' : 'opacity-0')}
           />
         )}
