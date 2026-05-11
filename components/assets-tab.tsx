@@ -17,6 +17,15 @@ function isSvg(content: string) {
   return content.trimStart().toLowerCase().startsWith('<svg')
 }
 
+// Strip script tags and event-handler attributes before rendering SVG inline
+function sanitizeSvg(svg: string): string {
+  return svg
+    .replace(/<script[\s\S]*?<\/script>/gi, '')
+    .replace(/\s+on\w+="[^"]*"/gi, '')
+    .replace(/\s+on\w+='[^']*'/gi, '')
+    .replace(/javascript:[^"']*/gi, '')
+}
+
 function useClipboard() {
   const [copiedId, setCopiedId] = useState<number | string | null>(null)
   async function copy(id: number | string, value: string) {
@@ -65,7 +74,7 @@ function LogoSection({ logos }: { logos: Asset[] }) {
             {isSvg(logo.content) ? (
               <div
                 className="h-10 min-w-[60px] max-w-[140px] flex items-center justify-center [&>svg]:max-h-full [&>svg]:max-w-full"
-                dangerouslySetInnerHTML={{ __html: logo.content }}
+                dangerouslySetInnerHTML={{ __html: sanitizeSvg(logo.content) }}
               />
             ) : (
               // eslint-disable-next-line @next/next/no-img-element
@@ -102,7 +111,7 @@ function AssetItem({ asset, size, index }: { asset: Asset; size: 'sm' | 'md'; in
         {isSvg(asset.content) ? (
           <div
             className="w-full h-full flex items-center justify-center [&>svg]:max-w-full [&>svg]:max-h-full"
-            dangerouslySetInnerHTML={{ __html: asset.content }}
+            dangerouslySetInnerHTML={{ __html: sanitizeSvg(asset.content) }}
           />
         ) : (
           // eslint-disable-next-line @next/next/no-img-element

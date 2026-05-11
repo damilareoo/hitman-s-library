@@ -26,6 +26,7 @@ export async function GET(req: NextRequest) {
     let sortClause = 'ds.created_at DESC'
     if (sortBy === 'oldest') sortClause = 'ds.created_at ASC'
     else if (sortBy === 'name') sortClause = 'ds.source_name ASC'
+    else if (sortBy === 'quality') sortClause = "(ds.metadata->>'quality')::int DESC NULLS LAST, ds.created_at DESC"
 
     // Only show sites that have a screenshot — they're ready to preview
     const whereConditions: string[] = ['ds.screenshot_url IS NOT NULL']

@@ -41,6 +41,13 @@ interface ActiveFilters {
   sortBy: 'recent' | 'oldest' | 'name' | 'quality'
 }
 
+const SORT_OPTIONS: { value: ActiveFilters['sortBy']; label: string }[] = [
+  { value: 'recent', label: 'New' },
+  { value: 'oldest', label: 'Old' },
+  { value: 'name', label: 'A–Z' },
+  { value: 'quality', label: 'Top' },
+]
+
 function getDomain(url: string) {
   try { return new URL(url).hostname.replace('www.', '') } catch { return url }
 }
@@ -137,7 +144,7 @@ export default function DesignLibrary() {
         ...prev,
         industries: prev.industries.includes(industry)
           ? prev.industries.filter(i => i !== industry)
-          : [industry],
+          : [...prev.industries, industry],
       }))
     }
   }, [sounds])
@@ -181,6 +188,24 @@ export default function DesignLibrary() {
             >
               Changelog
             </Link>
+
+            {/* Sort pills */}
+            <div className="hidden sm:flex items-center gap-px mr-1">
+              {SORT_OPTIONS.map(({ value, label }) => (
+                <button
+                  key={value}
+                  onClick={() => setActiveFilters(prev => ({ ...prev, sortBy: value }))}
+                  className={[
+                    'px-2 py-0.5 rounded-[3px] text-[10px] font-mono transition-colors',
+                    activeFilters.sortBy === value
+                      ? 'bg-muted text-foreground'
+                      : 'text-muted-foreground/50 hover:text-muted-foreground',
+                  ].join(' ')}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
 
             {!isPageLoading && (
               <span className="hidden sm:inline text-[11px] font-mono text-muted-foreground tabular-nums mr-1">
@@ -327,6 +352,13 @@ export default function DesignLibrary() {
               >
                 <SiteDetailPanel
                   sourceId={Number(selectedDesign.id)}
+                  metadata={{
+                    tags: selectedDesign.tags,
+                    designStyle: selectedDesign.designStyle,
+                    complexity: selectedDesign.complexity,
+                    useCase: selectedDesign.useCase,
+                    industry: selectedDesign.industry,
+                  }}
                   onClose={() => setSelectedDesign(null)}
                 />
               </motion.div>
@@ -359,6 +391,13 @@ export default function DesignLibrary() {
             >
               <SiteDetailPanel
                 sourceId={Number(selectedDesign.id)}
+                metadata={{
+                  tags: selectedDesign.tags,
+                  designStyle: selectedDesign.designStyle,
+                  complexity: selectedDesign.complexity,
+                  useCase: selectedDesign.useCase,
+                  industry: selectedDesign.industry,
+                }}
                 onClose={() => setSelectedDesign(null)}
               />
             </dialog>
@@ -414,20 +453,40 @@ function DesignCard({ design, isSelected, onClick, onHover, hasAnimated }: Desig
           </div>
         )}
 
-        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/15 transition-all duration-300 pointer-events-none" />
+        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-300 pointer-events-none" />
+
+        {/* Visit overlay button */}
+        <a
+          href={design.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={e => e.stopPropagation()}
+          className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center gap-1 bg-background/90 backdrop-blur-sm border border-border/50 rounded-[3px] px-2 py-1 text-[10px] font-mono text-foreground hover:border-foreground/50 hover:bg-background"
+        >
+          ↗
+        </a>
       </div>
 
       {/* Metadata */}
-      <div className="px-3.5 py-3 flex items-center justify-between gap-3 bg-background">
+      <div className="px-3.5 py-3 flex items-start justify-between gap-3 bg-background">
         <div className="min-w-0 flex-1">
           <p className="text-[13px] font-medium text-foreground leading-snug line-clamp-1 tracking-[-0.01em]">
             {design.title}
           </p>
           <p className="text-[11px] font-mono text-muted-foreground mt-0.5 truncate">{domain}</p>
+          {design.tags.length > 0 && (
+            <div className="flex gap-1 flex-wrap mt-1.5">
+              {design.tags.slice(0, 3).map(tag => (
+                <span key={tag} className="px-1.5 py-0.5 rounded-[2px] bg-muted text-[9px] font-mono text-muted-foreground/60 leading-none">
+                  {tag}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
 
         {design.colors.length > 0 && (
-          <div className="flex gap-1 shrink-0">
+          <div className="flex gap-1 shrink-0 mt-0.5">
             {design.colors.slice(0, 5).map((color, i) => (
               <div
                 key={i}

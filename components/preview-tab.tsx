@@ -57,7 +57,7 @@ export function PreviewTab({ siteUrl, screenshotUrl, mobileScreenshotUrl, extrac
     setLoaded(true)
   }
 
-  if (extractionError && !siteUrl) {
+  if (extractionError && !screenshotUrl && !siteUrl) {
     const info = classifyExtractionError(extractionError)
     const Icon = ICONS[info.icon]
     return (

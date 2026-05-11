@@ -37,6 +37,7 @@ export async function GET() {
     const rows = await sql`
       SELECT industry, COUNT(*) as count
       FROM design_sources
+      WHERE screenshot_url IS NOT NULL
       GROUP BY industry
     `
 
