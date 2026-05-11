@@ -20,7 +20,9 @@ const changelog: ChangelogRelease[] = [
     date: '2026-05-11',
     title: 'Accessibility, Polish & Code Health',
     description: 'Keyboard navigation, screen-reader labels, design-token alignment, and bundle cleanup from a full quality audit.',
-    items: [],
+    items: [
+      { type: 'improved', text: 'Removed unused DesignBrowser component — eliminates dead code and reduces bundle' },
+    ],
   },
   {
     date: '2026-05-11',

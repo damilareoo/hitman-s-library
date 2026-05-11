@@ -3,7 +3,7 @@
 
 import { useSoundsContext } from '@/contexts/sounds-context'
 
-export type PanelTab = 'preview' | 'colors' | 'type' | 'assets' | 'figma'
+export type PanelTab = 'preview' | 'colors' | 'type' | 'assets'
 
 interface PanelTabsProps {
   active: PanelTab
@@ -15,7 +15,6 @@ const TABS: { key: PanelTab; label: string }[] = [
   { key: 'colors', label: 'Colors' },
   { key: 'type', label: 'Type' },
   { key: 'assets', label: 'Assets' },
-  { key: 'figma', label: 'Figma' },
 ]
 
 export function PanelTabs({ active, onChange }: PanelTabsProps) {
@@ -54,12 +53,7 @@ export function PanelTabs({ active, onChange }: PanelTabsProps) {
               : 'text-muted-foreground border-transparent hover:text-foreground',
           ].join(' ')}
         >
-          {key === 'figma' ? (
-            <>
-              <span className="font-bold text-[11px] leading-none">F</span>
-              {label}
-            </>
-          ) : label}
+          {label}
         </button>
       ))}
     </div>

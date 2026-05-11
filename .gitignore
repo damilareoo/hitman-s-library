@@ -51,3 +51,4 @@ coverage/
 .worktrees/
 .superpowers/
 .env*.local
+.gstack/

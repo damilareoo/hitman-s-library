@@ -10,7 +10,6 @@ import { PreviewTab } from './preview-tab'
 import { ColorsTab } from './colors-tab'
 import { TypeTab } from './type-tab'
 import { AssetsTab } from './assets-tab'
-import { FigmaTab } from './figma-tab'
 
 interface Asset { id: number; type: 'logo' | 'icon' | 'illustration' | 'image'; content: string; width: number; height: number }
 interface ColorRow { hex_value: string; oklch: string | null }
@@ -21,7 +20,6 @@ interface DetailData {
   url: string
   screenshot_url: string | null
   mobile_screenshot_url: string | null
-  figma_capture_url: string | null
   extraction_error: string | null
   colors: ColorRow[]
   typography: TypographyRow[]
@@ -229,18 +227,7 @@ export function SiteDetailPanel({ sourceId, metadata, onClose }: SiteDetailPanel
                   <AssetsTab assets={data.assets} extractionError={data.extraction_error} />
                 </motion.div>
               )}
-              {activeTab === 'figma' && (
-                <motion.div key="figma" className="flex flex-col flex-1 min-h-0"
-                  initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -4, transition: { duration: 0.12 } }}>
-                  <FigmaTab
-                    siteUrl={data.url}
-                    screenshotUrl={data.screenshot_url}
-                    mobileScreenshotUrl={data.mobile_screenshot_url}
-                    figmaCaptureUrl={data.figma_capture_url}
-                  />
-                </motion.div>
-              )}
+
             </AnimatePresence>
           </motion.div>
         ) : (

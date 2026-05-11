@@ -2,8 +2,9 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { useTheme } from 'next-themes'
-import { Sun, Moon, SpeakerHigh, SpeakerSlash, MagnifyingGlass, X } from '@phosphor-icons/react'
+import { Sun, Moon, SpeakerHigh, SpeakerSlash, MagnifyingGlass, X, Presentation } from '@phosphor-icons/react'
 import { SiteDetailPanel } from '@/components/site-detail-panel'
+import { PresentationMode } from '@/components/presentation-mode'
 import { motion, AnimatePresence } from 'motion/react'
 import { useSoundsContext } from '@/contexts/sounds-context'
 import Link from 'next/link'
@@ -38,9 +39,12 @@ interface Design {
 
 interface ActiveFilters {
   industries: string[]
+  tags: string[]
   search: string
   sortBy: 'recent' | 'oldest' | 'name' | 'quality'
 }
+
+const LIMIT = 32
 
 const SORT_OPTIONS: { value: ActiveFilters['sortBy']; label: string }[] = [
   { value: 'recent', label: 'New' },
@@ -67,11 +71,17 @@ function SkeletonCard() {
 
 export default function DesignLibrary() {
   const [designs, setDesigns] = useState<Design[]>([])
+  const [pagination, setPagination] = useState({ total: 0, hasMore: false, offset: 0 })
   const [selectedDesign, setSelectedDesign] = useState<Design | null>(null)
+  const [presentationIndex, setPresentationIndex] = useState<number | null>(null)
+  const [isLoadingMore, setIsLoadingMore] = useState(false)
+  const sentinelRef = useRef<HTMLDivElement>(null)
+  const isThemeTransitioning = useRef(false)
 
   const { resolvedTheme, setTheme } = useTheme()
   const [activeFilters, setActiveFilters] = useState<ActiveFilters>({
     industries: [],
+    tags: [],
     search: '',
     sortBy: 'recent',
   })
@@ -80,7 +90,10 @@ export default function DesignLibrary() {
   const [isFiltering, setIsFiltering] = useState(false)
   const hasAnimated = useRef(false)
   const isFirstFilterRun = useRef(true)
+  const activeFiltersRef = useRef(activeFilters)
   const sounds = useSoundsContext()
+
+  activeFiltersRef.current = activeFilters
 
   useEffect(() => {
     fetch('/api/design/categories')
@@ -90,13 +103,39 @@ export default function DesignLibrary() {
 
   useEffect(() => { hasAnimated.current = true }, [])
 
+  const loadDesigns = useCallback(async (offset = 0, append = false) => {
+    const f = activeFiltersRef.current
+    try {
+      const params = new URLSearchParams()
+      if (f.industries.length > 0) f.industries.forEach(ind => params.append('industry', ind))
+      if (f.search) params.append('search', f.search)
+      if (f.sortBy) params.append('sortBy', f.sortBy)
+      params.append('limit', String(LIMIT))
+      params.append('offset', String(offset))
+      const data = await fetch('/api/design/filter-advanced?' + params).then(r => r.json())
+      const newDesigns = data.designs || []
+      if (append) {
+        setDesigns(prev => [...prev, ...newDesigns])
+      } else {
+        setDesigns(newDesigns)
+      }
+      setPagination({
+        total: data.pagination?.total ?? newDesigns.length,
+        hasMore: data.pagination?.hasMore ?? false,
+        offset: data.pagination?.offset ?? offset,
+      })
+    } catch {
+      if (!append) setDesigns([])
+    }
+  }, [])
+
   // Initial page load
   useEffect(() => {
-    loadDesignsRef.current().finally(() => setIsPageLoading(false))
+    loadDesigns(0, false).finally(() => setIsPageLoading(false))
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // Filter changes — debounced, skips initial mount
+  // Filter changes — debounced, resets to page 0
   useEffect(() => {
     if (isFirstFilterRun.current) {
       isFirstFilterRun.current = false
@@ -104,32 +143,46 @@ export default function DesignLibrary() {
     }
     setIsFiltering(true)
     const t = setTimeout(() => {
-      loadDesignsRef.current().finally(() => setIsFiltering(false))
+      loadDesigns(0, false).finally(() => setIsFiltering(false))
     }, 200)
     return () => {
       clearTimeout(t)
       setIsFiltering(false)
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeFilters.search, activeFilters.sortBy, activeFilters.industries.join(',')])
+  }, [activeFilters.search, activeFilters.sortBy, activeFilters.industries.join(','), activeFilters.tags.join(',')])
 
-  const loadDesigns = async () => {
-    try {
-      const params = new URLSearchParams()
-      if (activeFilters.industries.length > 0) {
-        activeFilters.industries.forEach(ind => params.append('industry', ind))
-      }
-      if (activeFilters.search) params.append('search', activeFilters.search)
-      if (activeFilters.sortBy) params.append('sortBy', activeFilters.sortBy)
-      const response = await fetch('/api/design/filter-advanced?' + params)
-      const data = await response.json()
-      setDesigns(data.designs || [])
-    } catch {
-      setDesigns([])
+  // Infinite scroll sentinel
+  useEffect(() => {
+    const sentinel = sentinelRef.current
+    if (!sentinel) return
+    const obs = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && pagination.hasMore && !isLoadingMore && !isFiltering && !isPageLoading) {
+          setIsLoadingMore(true)
+          loadDesigns(pagination.offset + LIMIT, true).finally(() => setIsLoadingMore(false))
+        }
+      },
+      { rootMargin: '300px' },
+    )
+    obs.observe(sentinel)
+    return () => obs.disconnect()
+  }, [pagination.hasMore, pagination.offset, isLoadingMore, isFiltering, isPageLoading, loadDesigns])
+
+  const openPresentation = useCallback((startIndex = 0) => {
+    if (designs.length === 0) return
+    setPresentationIndex(Math.min(startIndex, designs.length - 1))
+  }, [designs.length])
+
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      const tag = (e.target as HTMLElement).tagName
+      if (tag === 'INPUT' || tag === 'TEXTAREA') return
+      if (e.key === 'p' || e.key === 'P') openPresentation(selectedDesign ? designs.findIndex(d => d.id === selectedDesign.id) : 0)
     }
-  }
-  const loadDesignsRef = useRef(loadDesigns)
-  loadDesignsRef.current = loadDesigns
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [openPresentation, selectedDesign, designs])
 
   const handleCardClick = useCallback((design: Design) => {
     sounds.playSelect()
@@ -139,7 +192,7 @@ export default function DesignLibrary() {
   const handleFilterChange = useCallback((industry: string) => {
     sounds.playFilterClick()
     if (industry === 'All') {
-      setActiveFilters(prev => ({ ...prev, industries: [] }))
+      setActiveFilters(prev => ({ ...prev, industries: [], tags: [] }))
     } else {
       setActiveFilters(prev => ({
         ...prev,
@@ -148,6 +201,17 @@ export default function DesignLibrary() {
           : [...prev.industries, industry],
       }))
     }
+  }, [sounds])
+
+  const handleTagClick = useCallback((tag: string) => {
+    sounds.playFilterClick()
+    setActiveFilters(prev => ({
+      ...prev,
+      tags: prev.tags.includes(tag)
+        ? prev.tags.filter(t => t !== tag)
+        : [...prev.tags, tag],
+    }))
+    setSelectedDesign(null)
   }, [sounds])
 
   return (
@@ -209,10 +273,20 @@ export default function DesignLibrary() {
             </div>
 
             {!isPageLoading && (
-              <span className="hidden sm:inline text-[11px] font-mono text-muted-foreground tabular-nums mr-1">
-                {designs.length}
+              <span className="hidden sm:inline text-[11px] font-mono text-muted-foreground/50 tabular-nums mr-1">
+                {pagination.total > 0 ? pagination.total : designs.length}
               </span>
             )}
+
+            <button
+              onClick={() => openPresentation(selectedDesign ? designs.findIndex(d => d.id === selectedDesign.id) : 0)}
+              disabled={designs.length === 0}
+              className="w-8 h-8 flex items-center justify-center rounded-sm border border-border/60 text-muted-foreground hover:text-foreground hover:border-foreground/40 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+              aria-label="Presentation mode"
+              title="Presentation mode (P)"
+            >
+              <Presentation className="w-3.5 h-3.5" weight="regular" />
+            </button>
 
             <button
               onClick={() => sounds.setEnabled(p => !p)}
@@ -223,7 +297,25 @@ export default function DesignLibrary() {
             </button>
 
             <button
-              onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
+              onClick={(e) => {
+                if (isThemeTransitioning.current) return
+                const next = resolvedTheme === 'dark' ? 'light' : 'dark'
+                if (!document.startViewTransition) { setTheme(next); return }
+                isThemeTransitioning.current = true
+                const { clientX: x, clientY: y } = e
+                const endRadius = Math.hypot(
+                  Math.max(x, window.innerWidth - x),
+                  Math.max(y, window.innerHeight - y),
+                )
+                const t = document.startViewTransition(() => setTheme(next))
+                t.ready.then(() => {
+                  document.documentElement.animate(
+                    { clipPath: [`circle(0px at ${x}px ${y}px)`, `circle(${endRadius}px at ${x}px ${y}px)`] },
+                    { duration: 360, easing: 'cubic-bezier(0.22, 1, 0.36, 1)', pseudoElement: '::view-transition-new(root)' },
+                  )
+                })
+                t.finished.then(() => { isThemeTransitioning.current = false })
+              }}
               className="w-8 h-8 flex items-center justify-center rounded-sm border border-border/60 text-muted-foreground hover:text-foreground hover:border-foreground/40 transition-colors"
               aria-label="Toggle theme"
             >
@@ -322,20 +414,42 @@ export default function DesignLibrary() {
             >
               <AnimatePresence mode="popLayout">
                 {(isPageLoading || isFiltering)
-                  ? Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)
-                  : designs.map(design => (
-                    <DesignCard
-                      key={design.id}
-                      design={design}
-                      isSelected={selectedDesign?.id === design.id}
-                      onClick={() => handleCardClick(design)}
-                      onHover={() => sounds.playHover()}
-                      hasAnimated={hasAnimated.current}
-                    />
-                  ))
+                  ? Array.from({ length: LIMIT }).map((_, i) => <SkeletonCard key={i} />)
+                  : designs.length === 0
+                    ? (
+                      <div className="col-span-full flex flex-col items-center justify-center py-24 gap-3">
+                        <p className="text-[13px] text-muted-foreground/50">No sites found</p>
+                        <button
+                          onClick={() => setActiveFilters({ industries: [], tags: [], search: '', sortBy: 'recent' })}
+                          className="text-[11px] font-mono text-muted-foreground/40 hover:text-foreground underline underline-offset-2 transition-colors"
+                        >
+                          Clear filters
+                        </button>
+                      </div>
+                    )
+                    : designs.map((design, i) => (
+                      <DesignCard
+                        key={design.id}
+                        design={design}
+                        index={i}
+                        isSelected={selectedDesign?.id === design.id}
+                        onClick={() => handleCardClick(design)}
+                        onHover={() => sounds.playHover()}
+                        onTagClick={handleTagClick}
+                        hasAnimated={hasAnimated.current}
+                      />
+                    ))
                 }
               </AnimatePresence>
             </motion.div>
+
+            {/* Infinite scroll sentinel */}
+            <div ref={sentinelRef} className="h-1 mt-4" />
+            {isLoadingMore && (
+              <div className="flex justify-center py-6">
+                <div className="w-4 h-4 border border-border border-t-foreground/50 rounded-full animate-spin" />
+              </div>
+            )}
           </div>
         </main>
 
@@ -405,6 +519,18 @@ export default function DesignLibrary() {
           </>
         )}
       </div>
+      {/* Presentation mode */}
+      <AnimatePresence>
+        {presentationIndex !== null && (
+          <PresentationMode
+            designs={designs}
+            initialIndex={presentationIndex}
+            onClose={() => setPresentationIndex(null)}
+            onSelect={design => { const full = designs.find(d => d.id === design.id); if (full) setSelectedDesign(full) }}
+          />
+        )}
+      </AnimatePresence>
+
     </div>
   )
 }
@@ -412,13 +538,15 @@ export default function DesignLibrary() {
 /* Design card */
 interface DesignCardProps {
   design: Design
+  index: number
   isSelected: boolean
   onClick: () => void
   onHover: () => void
+  onTagClick: (tag: string) => void
   hasAnimated: boolean
 }
 
-function DesignCard({ design, isSelected, onClick, onHover, hasAnimated }: DesignCardProps) {
+function DesignCard({ design, index, isSelected, onClick, onHover, onTagClick, hasAnimated }: DesignCardProps) {
   const [imgSrc, setImgSrc] = useState<string | null>(design.thumbnail_url ?? null)
   const [imgStatus, setImgStatus] = useState<'loading' | 'loaded' | 'error'>('loading')
   const domain = getDomain(design.url)
@@ -441,6 +569,7 @@ function DesignCard({ design, isSelected, onClick, onHover, hasAnimated }: Desig
       exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.12 } }}
       onClick={onClick}
       onHoverStart={onHover}
+      style={{ contain: 'layout paint style' }}
       className={"group relative flex flex-col cursor-pointer rounded-[4px] overflow-hidden border transition-colors " + (isSelected ? 'border-foreground/50' : 'border-border/60 hover:border-foreground/25')}
     >
       {/* Screenshot */}
@@ -453,7 +582,8 @@ function DesignCard({ design, isSelected, onClick, onHover, hasAnimated }: Desig
             src={imgSrc}
             alt={design.title || domain}
             referrerPolicy="no-referrer"
-            loading="lazy"
+            loading={index < 6 ? 'eager' : 'lazy'}
+            fetchPriority={index < 3 ? 'high' : 'auto'}
             onLoad={e => (e.currentTarget.naturalWidth > 0 ? setImgStatus('loaded') : handleImgError())}
             onError={handleImgError}
             className={"w-full h-full object-cover object-top transition-[opacity,transform] duration-300 group-hover:scale-[1.03] " + (imgStatus === 'loaded' ? 'opacity-100' : 'opacity-0')}
@@ -489,9 +619,13 @@ function DesignCard({ design, isSelected, onClick, onHover, hasAnimated }: Desig
           {design.tags.length > 0 && (
             <div className="flex gap-1 flex-wrap mt-1.5">
               {design.tags.slice(0, 3).map(tag => (
-                <span key={tag} className="px-1.5 py-0.5 rounded-[2px] bg-muted text-[9px] font-mono text-muted-foreground/60 leading-none">
+                <button
+                  key={tag}
+                  onClick={e => { e.stopPropagation(); onTagClick(tag) }}
+                  className="px-1.5 py-0.5 rounded-[2px] bg-muted text-[9px] font-mono text-muted-foreground/60 leading-none hover:bg-foreground hover:text-background transition-colors"
+                >
                   {tag}
-                </span>
+                </button>
               ))}
             </div>
           )}

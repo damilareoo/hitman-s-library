@@ -8,26 +8,26 @@
    SHADCN/UI & PREMIUM THEME CONFIGURATION
    ============================================================================ */
 :root {
-  /* User-defined colors - PRESERVED */
-  --background: #fafafa;
-  --foreground: #0f0f0f;
+  /* Light mode — warm paper */
+  --background: #f7f7f5;
+  --foreground: #111111;
   --card: #ffffff;
-  --card-foreground: #0f0f0f;
+  --card-foreground: #111111;
   --popover: #ffffff;
-  --popover-foreground: #0f0f0f;
-  --primary: #000000;
-  --primary-foreground: #ffffff;
-  --secondary: #f0f0f0;
-  --secondary-foreground: #0f0f0f;
-  --muted: #f3f3f3;
-  --muted-foreground: #666666;
-  --accent: #0f0f0f;
-  --accent-foreground: #ffffff;
+  --popover-foreground: #111111;
+  --primary: #111111;
+  --primary-foreground: #f7f7f5;
+  --secondary: #efefec;
+  --secondary-foreground: #111111;
+  --muted: #efefec;
+  --muted-foreground: #737370;
+  --accent: #111111;
+  --accent-foreground: #f7f7f5;
   --destructive: #ef4444;
   --destructive-foreground: #ffffff;
-  --border: #e5e5e5;
-  --input: #fafafa;
-  --ring: #000000;
+  --border: #e2e2de;
+  --input: #f7f7f5;
+  --ring: #111111;
   --chart-1: #3b82f6;
   --chart-2: #8b5cf6;
   --chart-3: #ec4899;
@@ -36,16 +36,16 @@
   --radius: 0.5rem; /* User's value */
 
   /* Additional user-defined colors */
-  --grid-line: #f0f0f0;
-  --grid-hover: #efefef;
+  --grid-line: #ebebе8;
+  --grid-hover: #e8e8e4;
 
   /* RGB values for rgba() calculations */
-  --background-rgb: 250, 250, 250;
+  --background-rgb: 247, 247, 245;
   --card-rgb: 255, 255, 255;
-  --border-rgb: 229, 229, 229;
-  --primary-rgb: 0, 0, 0;
-  --secondary-rgb: 240, 240, 240;
-  --foreground-rgb: 15, 15, 15;
+  --border-rgb: 226, 226, 222;
+  --primary-rgb: 17, 17, 17;
+  --secondary-rgb: 239, 239, 236;
+  --foreground-rgb: 17, 17, 17;
 
   /* Sidebar colors (from user's existing oklch values) */
   --sidebar: oklch(0.985 0 0);
@@ -60,26 +60,26 @@
 }
 
 .dark {
-  /* Editorial dark palette — warm off-white on deep charcoal */
-  --background: #0b0b0b;
-  --foreground: #ede9e3;
-  --card: #111111;
-  --card-foreground: #ede9e3;
-  --popover: #141414;
-  --popover-foreground: #ede9e3;
-  --primary: #ede9e3;
-  --primary-foreground: #0b0b0b;
-  --secondary: #1a1a1a;
-  --secondary-foreground: #ede9e3;
-  --muted: #181818;
-  --muted-foreground: #6b6b6b;
-  --accent: #ede9e3;
-  --accent-foreground: #0b0b0b;
+  /* Dark mode — deep neutral with warm cream text */
+  --background: #0e0e0e;
+  --foreground: #e6e2db;
+  --card: #141414;
+  --card-foreground: #e6e2db;
+  --popover: #161616;
+  --popover-foreground: #e6e2db;
+  --primary: #e6e2db;
+  --primary-foreground: #0e0e0e;
+  --secondary: #1c1c1c;
+  --secondary-foreground: #e6e2db;
+  --muted: #1a1a1a;
+  --muted-foreground: #767672;
+  --accent: #e6e2db;
+  --accent-foreground: #0e0e0e;
   --destructive: #f87171;
   --destructive-foreground: #000000;
-  --border: #232323;
-  --input: #181818;
-  --ring: #ede9e3;
+  --border: #272727;
+  --input: #1a1a1a;
+  --ring: #e6e2db;
   --chart-1: #60a5fa;
   --chart-2: #a78bfa;
   --chart-3: #f472b6;
@@ -87,16 +87,16 @@
   --chart-5: #fbbf24;
 
   /* Additional user-defined dark mode colors */
-  --grid-line: #1f1f1f;
-  --grid-hover: #2a2a2a;
+  --grid-line: #222222;
+  --grid-hover: #2c2c2c;
 
   /* RGB values for dark mode */
-  --background-rgb: 11, 11, 11;
-  --card-rgb: 17, 17, 17;
-  --border-rgb: 35, 35, 35;
-  --primary-rgb: 237, 233, 227;
-  --secondary-rgb: 26, 26, 26;
-  --foreground-rgb: 237, 233, 227;
+  --background-rgb: 14, 14, 14;
+  --card-rgb: 20, 20, 20;
+  --border-rgb: 39, 39, 39;
+  --primary-rgb: 230, 226, 219;
+  --secondary-rgb: 28, 28, 28;
+  --foreground-rgb: 230, 226, 219;
 
   /* Sidebar colors (from user's existing oklch values) */
   --sidebar: oklch(0.205 0 0);
@@ -154,14 +154,8 @@
    BASE STYLES & LAYOUT
    ============================================================================ */
 
-/* Premium theme switching inspired by Emil Kowalski's principles */
-/* Foundation: Spring physics, fast transitions, hardware acceleration only */
-
 html {
-  /* Smooth scroll behavior applied via data-scroll-behavior attribute in layout */
-  /* Use color-scheme for native element theming */
   color-scheme: light;
-  transition: color-scheme 0.3s ease-out !important;
 }
 
 html.dark {
@@ -174,26 +168,25 @@ body {
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  transition: background-color 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94),
-              color 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94) !important;
-  will-change: background-color, color;
 }
 
+/* Circle-reveal theme switch — new theme expands from click point */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
 
-/* Interruptible animations - transitions can be interrupted smoothly */
-* {
-  /* Only animate performant properties: transform and opacity */
-  transition: background-color 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94),
-              border-color 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94),
-              color 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94),
-              box-shadow 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94),
-              /* Spring physics for micro-interactions */
-              transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+/* Disable when user prefers reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation-duration: 0.01ms !important;
+  }
 }
 
 button, a, [role="button"] {
   position: relative;
-  overflow: hidden;
 }
 
 :focus-visible {
@@ -202,21 +195,18 @@ button, a, [role="button"] {
   transition: outline-color 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
-/* Smooth scrollbar with transitions */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--muted);
-  transition: background 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
   background: var(--border);
-  border-radius: 4px;
-  transition: background 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
