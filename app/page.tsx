@@ -569,8 +569,17 @@ function DesignCard({ design, index, isSelected, onClick, onHover, onTagClick, h
       exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.12 } }}
       onClick={onClick}
       onHoverStart={onHover}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault()
+          onClick()
+        }
+      }}
+      tabIndex={0}
+      role="button"
+      aria-label={`View ${design.title || getDomain(design.url)}`}
       style={{ contain: 'layout paint style' }}
-      className={"group relative flex flex-col cursor-pointer rounded-[4px] overflow-hidden border transition-colors " + (isSelected ? 'border-foreground/50' : 'border-border/60 hover:border-foreground/25')}
+      className={"group relative flex flex-col cursor-pointer rounded-[4px] overflow-hidden border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/40 focus-visible:ring-offset-1 " + (isSelected ? 'border-foreground/50' : 'border-border/60 hover:border-foreground/25')}
     >
       {/* Screenshot */}
       <div className="relative overflow-hidden bg-muted aspect-[16/10]">
