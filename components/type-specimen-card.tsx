@@ -132,7 +132,7 @@ export function TypeSpecimenCard({ typography, index }: { typography: Typography
           fontFamily,
           fontSize: isMono ? 10.5 : 12.5,
           fontWeight: isMono ? 400 : Math.min(weight, 450),
-          color: 'hsl(var(--muted-foreground) / 0.45)',
+          color: 'oklch(from var(--muted-foreground) l c h / 0.45)',
           opacity: fontLoaded ? 1 : 0.04,
         }}
       >
@@ -146,7 +146,7 @@ export function TypeSpecimenCard({ typography, index }: { typography: Typography
           fontFamily,
           fontSize: 9,
           letterSpacing: '0.14em',
-          color: 'hsl(var(--muted-foreground) / 0.18)',
+          color: 'oklch(from var(--muted-foreground) l c h / 0.18)',
           opacity: fontLoaded ? 1 : 0.03,
         }}
       >

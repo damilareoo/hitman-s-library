@@ -22,6 +22,7 @@ const changelog: ChangelogRelease[] = [
     description: 'Keyboard navigation, screen-reader labels, design-token alignment, and bundle cleanup from a full quality audit.',
     items: [
       { type: 'improved', text: 'Removed unused DesignBrowser component — eliminates dead code and reduces bundle' },
+      { type: 'fixed', text: 'Type specimen sample text and glyphs now render at correct opacity — was using hsl() around an oklch token which browsers silently ignored' },
     ],
   },
   {
