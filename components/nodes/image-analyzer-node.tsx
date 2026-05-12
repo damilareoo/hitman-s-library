@@ -10,7 +10,8 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Image, CircleNotch, CheckCircle, XCircle, UploadSimple } from "@phosphor-icons/react"
+import { Image, UploadSimple } from "@phosphor-icons/react"
+import { NodeStatus } from "@/components/nodes/node-status"
 import type { BaseNodeData } from "@/lib/types"
 
 export interface ImageAnalyzerNodeData extends BaseNodeData {
@@ -32,13 +33,6 @@ function ImageAnalyzerNode({ data, selected }: NodeProps) {
       nodeData.onUpdate({ ...nodeData, [field]: value })
     }
   }
-
-  const statusIcon = {
-    idle: null,
-    running: <CircleNotch className="h-3 w-3 animate-spin text-[var(--color-running)]" weight="regular" />,
-    completed: <CheckCircle className="h-3 w-3 text-[var(--color-success)]" weight="regular" />,
-    error: <XCircle className="h-3 w-3 text-[var(--color-error)]" weight="regular" />,
-  }[status]
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault()
@@ -65,7 +59,7 @@ function ImageAnalyzerNode({ data, selected }: NodeProps) {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          {statusIcon}
+          <NodeStatus status={status as 'idle' | 'running' | 'completed' | 'error'} />
           <Badge variant="outline" className="text-xs bg-pink-500/10 text-pink-500 border-pink-500/20">
             Vision
           </Badge>

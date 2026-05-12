@@ -7,7 +7,8 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
-import { Globe, CircleNotch, CheckCircle, XCircle } from "@phosphor-icons/react"
+import { Globe } from "@phosphor-icons/react"
+import { NodeStatus } from "@/components/nodes/node-status"
 import type { BaseNodeData } from "@/lib/types"
 
 export interface UrlAnalyzerNodeData extends BaseNodeData {
@@ -26,13 +27,6 @@ function UrlAnalyzerNode({ data, selected }: NodeProps) {
       nodeData.onUpdate({ ...nodeData, [field]: value })
     }
   }
-
-  const statusIcon = {
-    idle: null,
-    running: <CircleNotch className="h-3 w-3 animate-spin text-[var(--color-running)]" weight="regular" />,
-    completed: <CheckCircle className="h-3 w-3 text-[var(--color-success)]" weight="regular" />,
-    error: <XCircle className="h-3 w-3 text-[var(--color-error)]" weight="regular" />,
-  }[status]
 
   const industries = [
     "SaaS",
@@ -63,7 +57,7 @@ function UrlAnalyzerNode({ data, selected }: NodeProps) {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          {statusIcon}
+          <NodeStatus status={status as 'idle' | 'running' | 'completed' | 'error'} />
           <Badge variant="outline" className="text-xs bg-cyan-500/10 text-cyan-500 border-cyan-500/20">
             Design
           </Badge>

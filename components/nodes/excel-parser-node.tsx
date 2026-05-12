@@ -10,7 +10,8 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Table, CircleNotch, CheckCircle, XCircle, UploadSimple, FileCsv, Link } from "@phosphor-icons/react"
+import { Table, UploadSimple, FileCsv, Link } from "@phosphor-icons/react"
+import { NodeStatus } from "@/components/nodes/node-status"
 import type { BaseNodeData } from "@/lib/types"
 
 export interface ExcelParserNodeData extends BaseNodeData {
@@ -52,13 +53,6 @@ function ExcelParserNode({ data, selected }: NodeProps) {
     }
   }, [])
 
-  const statusIcon = {
-    idle: null,
-    running: <CircleNotch className="h-3 w-3 animate-spin text-[var(--color-running)]" weight="regular" />,
-    completed: <CheckCircle className="h-3 w-3 text-[var(--color-success)]" weight="regular" />,
-    error: <XCircle className="h-3 w-3 text-[var(--color-error)]" weight="regular" />,
-  }[status]
-
   const commonColumns = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J"]
 
   return (
@@ -74,7 +68,7 @@ function ExcelParserNode({ data, selected }: NodeProps) {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          {statusIcon}
+          <NodeStatus status={status as 'idle' | 'running' | 'completed' | 'error'} />
           <Badge variant="outline" className="text-xs bg-[var(--color-success)]/10 text-[var(--color-success)] border-[var(--color-success)]/20">
             Import
           </Badge>

@@ -8,7 +8,8 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { Slider } from "@/components/ui/slider"
-import { Sparkle, CircleNotch, CheckCircle, XCircle, MagnifyingGlass } from "@phosphor-icons/react"
+import { Sparkle, MagnifyingGlass } from "@phosphor-icons/react"
+import { NodeStatus } from "@/components/nodes/node-status"
 import type { BaseNodeData } from "@/lib/types"
 
 export interface DesignRetrieverNodeData extends BaseNodeData {
@@ -33,12 +34,6 @@ function DesignRetrieverNode({ data, selected }: NodeProps) {
     }
   }
 
-  const statusIcon = {
-    idle: null,
-    running: <CircleNotch className="h-3 w-3 animate-spin text-[var(--color-running)]" weight="regular" />,
-    completed: <CheckCircle className="h-3 w-3 text-[var(--color-success)]" weight="regular" />,
-    error: <XCircle className="h-3 w-3 text-[var(--color-error)]" weight="regular" />,
-  }[status]
 
   const industries = [
     "SaaS", "E-commerce", "Portfolio", "Agency", "Healthcare",
@@ -63,7 +58,7 @@ function DesignRetrieverNode({ data, selected }: NodeProps) {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          {statusIcon}
+          <NodeStatus status={status as 'idle' | 'running' | 'completed' | 'error'} />
           <Badge variant="outline" className="text-xs bg-amber-500/10 text-amber-500 border-amber-500/20">
             AI
           </Badge>
