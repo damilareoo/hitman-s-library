@@ -8,6 +8,7 @@ export function Preloader() {
   const [exiting, setExiting] = useState(false)
   const [done, setDone] = useState(false)
   const rafRef = useRef<number>(0)
+  const timerRef = useRef<ReturnType<typeof setTimeout>>()
 
   useEffect(() => {
     // Only show on gallery page, once per session
@@ -34,21 +35,25 @@ export function Preloader() {
         rafRef.current = requestAnimationFrame(tick)
       } else {
         setCount(100)
-        setTimeout(() => {
+        timerRef.current = setTimeout(() => {
           setExiting(true)
-          setTimeout(() => setDone(true), 550)
+          timerRef.current = setTimeout(() => setDone(true), 550)
         }, 180)
       }
     }
 
     rafRef.current = requestAnimationFrame(tick)
-    return () => cancelAnimationFrame(rafRef.current)
+    return () => {
+      cancelAnimationFrame(rafRef.current)
+      clearTimeout(timerRef.current)
+    }
   }, [])
 
   if (done) return null
 
   return (
     <motion.div
+      aria-hidden="true"
       className="fixed inset-0 z-[9999] bg-background flex items-center justify-center pointer-events-none"
       animate={exiting ? { y: '-100%' } : { y: 0 }}
       transition={

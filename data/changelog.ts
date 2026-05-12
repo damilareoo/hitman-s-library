@@ -35,6 +35,8 @@ const changelog: ChangelogRelease[] = [
       { type: 'improved', text: 'Extracted shared NodeStatus component — eliminates duplicated status icon logic across all node components' },
       { type: 'fixed', text: 'Google Fonts stylesheet now only injected once per URL — prevents duplicate network requests when multiple type specimens share a font' },
       { type: 'fixed', text: 'Theme toggle button now announces the destination mode ("Switch to dark mode") rather than just "Toggle theme"' },
+      { type: 'fixed', text: 'Preloader is now hidden from screen readers via aria-hidden — decorative counter is not meaningful content' },
+      { type: 'fixed', text: 'Preloader setTimeout calls now properly cleaned up on unmount — eliminates potential state updates after component is removed' },
     ],
   },
   {
