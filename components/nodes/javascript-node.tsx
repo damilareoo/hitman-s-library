@@ -3,7 +3,7 @@
 import type React from "react"
 import { memo } from "react"
 import { Handle, Position, type NodeProps } from "@xyflow/react"
-import { Code } from "lucide-react"
+import { Code } from "@phosphor-icons/react"
 import { getStatusColor } from "@/lib/node-utils"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
@@ -37,7 +37,7 @@ function JavaScriptNode({ data, selected }: NodeProps<JavaScriptNodeData>) {
     >
       <div className="p-3">
         <div className="flex items-center gap-2">
-          <Code className="h-4 w-4 text-muted-foreground" />
+          <Code className="h-4 w-4 text-muted-foreground" weight="regular"  />
           <span className="text-xs font-medium text-foreground">JavaScript</span>
         </div>
 

@@ -25,6 +25,7 @@ const changelog: ChangelogRelease[] = [
       { type: 'fixed', text: 'Type specimen sample text and glyphs now render at correct opacity — was using hsl() around an oklch token which browsers silently ignored' },
       { type: 'fixed', text: 'Design cards are now keyboard-navigable — Tab to reach, Enter or Space to open the detail panel' },
       { type: 'improved', text: 'Status colors (success, error, loading) now use design tokens — consistent across nodes, type specimens, figma tab, and changelog' },
+      { type: 'improved', text: 'Consolidated to single icon library (@phosphor-icons) — removed lucide-react dependency' },
     ],
   },
   {

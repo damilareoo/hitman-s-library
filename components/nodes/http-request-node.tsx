@@ -3,7 +3,7 @@
 import type React from "react"
 import { memo } from "react"
 import { Handle, Position, type NodeProps } from "@xyflow/react"
-import { Globe } from "lucide-react"
+import { Globe } from "@phosphor-icons/react"
 import { getStatusColor } from "@/lib/node-utils"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -42,7 +42,7 @@ function HttpRequestNode({ data, selected }: NodeProps<HttpRequestNodeData>) {
     >
       <div className="p-3">
         <div className="flex items-center gap-2">
-          <Globe className="h-4 w-4 text-muted-foreground" />
+          <Globe className="h-4 w-4 text-muted-foreground" weight="regular"  />
           <span className="text-xs font-medium text-foreground">HTTP</span>
           <span className="ml-auto text-xs text-muted-foreground font-mono">{data.method || "GET"}</span>
         </div>

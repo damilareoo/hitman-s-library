@@ -3,7 +3,7 @@
 import type React from "react"
 import { memo } from "react"
 import { Handle, Position, type NodeProps } from "@xyflow/react"
-import { Wrench } from "lucide-react"
+import { Wrench } from "@phosphor-icons/react"
 import { getStatusColor } from "@/lib/node-utils"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
@@ -41,7 +41,7 @@ function ToolNode({ data, selected }: NodeProps<ToolNodeData>) {
     >
       <div className="p-3">
         <div className="flex items-center gap-2">
-          <Wrench className="h-3.5 w-3.5 text-muted-foreground" />
+          <Wrench className="h-3.5 w-3.5 text-muted-foreground" weight="regular"  />
           <span className="text-xs font-medium text-foreground">Tool</span>
           <span className="ml-auto text-xs text-muted-foreground font-mono">{data.name || "customTool"}</span>
         </div>

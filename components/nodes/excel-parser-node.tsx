@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Table, Loader2, CheckCircle2, XCircle, Upload, FileSpreadsheet, Link } from "lucide-react"
+import { Table, CircleNotch, CheckCircle, XCircle, UploadSimple, FileCsv, Link } from "@phosphor-icons/react"
 import type { BaseNodeData } from "@/lib/types"
 
 export interface ExcelParserNodeData extends BaseNodeData {
@@ -54,9 +54,9 @@ function ExcelParserNode({ data, selected }: NodeProps) {
 
   const statusIcon = {
     idle: null,
-    running: <Loader2 className="h-3 w-3 animate-spin text-[var(--color-running)]" />,
-    completed: <CheckCircle2 className="h-3 w-3 text-[var(--color-success)]" />,
-    error: <XCircle className="h-3 w-3 text-[var(--color-error)]" />,
+    running: <CircleNotch className="h-3 w-3 animate-spin text-[var(--color-running)]" weight="regular" />,
+    completed: <CheckCircle className="h-3 w-3 text-[var(--color-success)]" weight="regular" />,
+    error: <XCircle className="h-3 w-3 text-[var(--color-error)]" weight="regular" />,
   }[status]
 
   const commonColumns = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J"]
@@ -66,7 +66,7 @@ function ExcelParserNode({ data, selected }: NodeProps) {
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <div className="flex items-center gap-2">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--color-success)]/10">
-            <FileSpreadsheet className="h-4 w-4 text-[var(--color-success)]" />
+            <FileCsv className="h-4 w-4 text-[var(--color-success)]" weight="regular" />
           </div>
           <div>
             <h3 className="font-semibold text-sm">Excel Parser</h3>
@@ -95,7 +95,7 @@ function ExcelParserNode({ data, selected }: NodeProps) {
         >
           {nodeData.fileUrl ? (
             <div className="flex items-center justify-center gap-2">
-              <Table className="h-4 w-4 text-[var(--color-success)]" />
+              <Table className="h-4 w-4 text-[var(--color-success)]" weight="regular" />
               <span className="text-xs text-[var(--color-success)]">File loaded</span>
               <Button 
                 variant="ghost" 
@@ -111,7 +111,7 @@ function ExcelParserNode({ data, selected }: NodeProps) {
             </div>
           ) : (
             <div className="space-y-1">
-              <Upload className="h-6 w-6 mx-auto text-muted-foreground" />
+              <UploadSimple className="h-6 w-6 mx-auto text-muted-foreground" weight="regular" />
               <p className="text-xs text-muted-foreground">
                 Drop .xlsx, .xls, or .csv file
               </p>
@@ -141,7 +141,7 @@ function ExcelParserNode({ data, selected }: NodeProps) {
 
         <div className="p-2 rounded-md bg-muted/50">
           <Label className="text-xs font-medium flex items-center gap-1 mb-2">
-            <Link className="h-3 w-3" />
+            <Link className="h-3 w-3" weight="regular" />
             Column Mapping
           </Label>
           
@@ -232,7 +232,7 @@ function ExcelParserNode({ data, selected }: NodeProps) {
 
         {nodeData.parsedCount !== undefined && (
           <div className="flex items-center gap-2 text-xs text-[var(--color-success)]">
-            <CheckCircle2 className="h-3 w-3" />
+            <CheckCircle className="h-3 w-3" weight="regular" />
             {nodeData.parsedCount} URLs ready to process
           </div>
         )}

@@ -2,7 +2,7 @@
 
 import { useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { AlertCircle, RefreshCw } from "lucide-react"
+import { WarningCircle, ArrowsClockwise } from "@phosphor-icons/react"
 
 export default function Error({
   error,
@@ -18,7 +18,7 @@ export default function Error({
   return (
     <div className="flex h-screen w-full flex-col items-center justify-center gap-4 bg-background p-4">
       <div className="flex items-center gap-2 text-destructive">
-        <AlertCircle className="h-5 w-5" />
+        <WarningCircle className="h-5 w-5" weight="regular"  />
         <h2 className="text-lg font-medium">Something went wrong</h2>
       </div>
       <p className="text-sm text-muted-foreground text-center max-w-md">
@@ -26,7 +26,7 @@ export default function Error({
       </p>
       {error.digest && <p className="text-xs text-muted-foreground font-mono">Error ID: {error.digest}</p>}
       <Button onClick={reset} variant="outline" size="sm">
-        <RefreshCw className="mr-2 h-4 w-4" />
+        <ArrowsClockwise className="mr-2 h-4 w-4" weight="regular"  />
         Try again
       </Button>
     </div>

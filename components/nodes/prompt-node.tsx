@@ -3,7 +3,7 @@
 import type React from "react"
 import { memo } from "react"
 import { Handle, Position, type NodeProps } from "@xyflow/react"
-import { FileText } from "lucide-react"
+import { FileText } from "@phosphor-icons/react"
 import { getStatusColor } from "@/lib/node-utils"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
@@ -37,7 +37,7 @@ function PromptNode({ data, selected }: NodeProps<PromptNodeData>) {
     >
       <div className="p-3">
         <div className="flex items-center gap-2">
-          <FileText className="h-4 w-4 text-muted-foreground" />
+          <FileText className="h-4 w-4 text-muted-foreground" weight="regular"  />
           <span className="text-xs font-medium text-foreground">Prompt</span>
         </div>
 

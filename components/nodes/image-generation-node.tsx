@@ -3,7 +3,7 @@
 import type React from "react"
 import { memo } from "react"
 import { Handle, Position, type NodeProps } from "@xyflow/react"
-import { ImageIcon } from "lucide-react"
+import { Image } from "@phosphor-icons/react"
 import { getStatusColor } from "@/lib/node-utils"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -54,7 +54,7 @@ function ImageGenerationNode({ data, selected }: NodeProps<ImageGenerationNodeDa
     >
       <div className="p-3">
         <div className="flex items-center gap-2">
-          <ImageIcon className="h-3.5 w-3.5 text-muted-foreground" />
+          <Image className="h-3.5 w-3.5 text-muted-foreground" weight="regular"  />
           <span className="text-[11px] font-medium text-foreground">Image</span>
           <span className="ml-auto text-[10px] text-muted-foreground font-mono">{data.aspectRatio || "1:1"}</span>
         </div>

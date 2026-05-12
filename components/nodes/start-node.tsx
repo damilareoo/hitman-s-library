@@ -2,7 +2,7 @@
 
 import { memo } from "react"
 import { Handle, Position, type NodeProps } from "@xyflow/react"
-import { Play } from "lucide-react"
+import { Play } from "@phosphor-icons/react"
 import { getStatusColor } from "@/lib/node-utils"
 
 export type StartNodeData = {
@@ -16,7 +16,7 @@ function StartNode({ data, selected }: NodeProps<StartNodeData>) {
   return (
     <div className={`rounded border bg-card px-4 py-2 ${getStatusColor(status, selected)}`}>
       <div className="flex items-center gap-2">
-        <Play className="h-4 w-4 text-muted-foreground" />
+        <Play className="h-4 w-4 text-muted-foreground" weight="regular"  />
         <span className="text-xs font-medium text-foreground">Start</span>
       </div>
 

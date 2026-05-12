@@ -2,7 +2,7 @@
 
 import { memo } from "react"
 import { Handle, Position, type NodeProps } from "@xyflow/react"
-import { Flag, Download } from "lucide-react"
+import { Flag, DownloadSimple } from "@phosphor-icons/react"
 import { getStatusColor } from "@/lib/node-utils"
 
 export type EndNodeData = {
@@ -47,7 +47,7 @@ function EndNode({ data, selected }: NodeProps<EndNodeData>) {
   return (
     <div className={`min-w-[120px] max-w-[280px] rounded border bg-card p-3 ${getStatusColor(status, selected)}`}>
       <div className="flex items-center gap-2">
-        <Flag className="h-4 w-4 text-muted-foreground" />
+        <Flag className="h-4 w-4 text-muted-foreground" weight="regular"  />
         <span className="text-xs font-medium text-foreground">End</span>
       </div>
 
@@ -67,7 +67,7 @@ function EndNode({ data, selected }: NodeProps<EndNodeData>) {
                     className="absolute top-1 right-1 p-1.5 rounded bg-background/80 border border-border opacity-0 group-hover:opacity-100 transition-opacity hover:bg-background"
                     title="Download image"
                   >
-                    <Download className="h-3 w-3 text-foreground" />
+                    <DownloadSimple className="h-3 w-3 text-foreground" weight="regular"  />
                   </button>
                 </div>
               ))}

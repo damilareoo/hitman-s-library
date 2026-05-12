@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Slider } from "@/components/ui/slider"
-import { Database, Save, CheckCircle2 } from "lucide-react"
+import { Database, FloppyDisk, CheckCircle } from "@phosphor-icons/react"
 import type { BaseNodeData } from "@/lib/types"
 
 export interface DesignStoreNodeData extends BaseNodeData {
@@ -74,7 +74,7 @@ function DesignStoreNode({ data, selected }: NodeProps) {
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <div className="flex items-center gap-2">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-500/10">
-            <Database className="h-4 w-4 text-indigo-500" />
+            <Database className="h-4 w-4 text-indigo-500" weight="regular"  />
           </div>
           <div>
             <h3 className="font-semibold text-sm">Design Store</h3>
@@ -162,14 +162,14 @@ function DesignStoreNode({ data, selected }: NodeProps) {
           onClick={handleSave}
           className="text-xs h-8 w-full"
         >
-          <Save className="mr-1 h-3 w-3" />
+          <FloppyDisk className="mr-1 h-3 w-3" weight="regular"  />
           Store Design Reference
         </Button>
 
         {nodeData.output && (
           <div className="rounded-md bg-[var(--color-success)]/10 border border-[var(--color-success)]/20 p-2 text-xs">
             <div className="flex items-center gap-1 text-[var(--color-success)]">
-              <CheckCircle2 className="h-3 w-3" />
+              <CheckCircle className="h-3 w-3" weight="regular"  />
               Saved to library
             </div>
           </div>

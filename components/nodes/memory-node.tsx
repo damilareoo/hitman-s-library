@@ -3,7 +3,7 @@
 import type React from "react"
 import { memo } from "react"
 import { Handle, Position, type NodeProps } from "@xyflow/react"
-import { Brain } from "lucide-react"
+import { Brain } from "@phosphor-icons/react"
 import { getStatusColor } from "@/lib/node-utils"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
@@ -70,7 +70,7 @@ function MemoryNode({ data, selected }: NodeProps<MemoryNodeData>) {
     >
       <div className="p-3">
         <div className="flex items-center gap-2">
-          <Brain className="h-4 w-4 text-muted-foreground" />
+          <Brain className="h-4 w-4 text-muted-foreground" weight="regular"  />
           <span className="text-xs font-medium text-foreground">Memory</span>
           <span className="ml-auto text-xs text-muted-foreground font-mono">{getOperationLabel()}</span>
         </div>

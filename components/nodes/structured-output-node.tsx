@@ -3,7 +3,7 @@
 import type React from "react"
 import { memo } from "react"
 import { Handle, Position, type NodeProps } from "@xyflow/react"
-import { FileJson } from "lucide-react"
+import { FileCode } from "@phosphor-icons/react"
 import { getStatusColor } from "@/lib/node-utils"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
@@ -39,7 +39,7 @@ function StructuredOutputNode({ data, selected }: NodeProps<StructuredOutputNode
     >
       <div className="p-3">
         <div className="flex items-center gap-2">
-          <FileJson className="h-3.5 w-3.5 text-muted-foreground" />
+          <FileCode className="h-3.5 w-3.5 text-muted-foreground" weight="regular"  />
           <span className="text-xs font-medium text-foreground">Structured</span>
           <span className="ml-auto text-xs text-muted-foreground font-mono">{data.mode || "object"}</span>
         </div>

@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { ImageIcon, Loader2, CheckCircle2, XCircle, Upload } from "lucide-react"
+import { Image, CircleNotch, CheckCircle, XCircle, UploadSimple } from "@phosphor-icons/react"
 import type { BaseNodeData } from "@/lib/types"
 
 export interface ImageAnalyzerNodeData extends BaseNodeData {
@@ -35,9 +35,9 @@ function ImageAnalyzerNode({ data, selected }: NodeProps) {
 
   const statusIcon = {
     idle: null,
-    running: <Loader2 className="h-3 w-3 animate-spin text-[var(--color-running)]" />,
-    completed: <CheckCircle2 className="h-3 w-3 text-[var(--color-success)]" />,
-    error: <XCircle className="h-3 w-3 text-[var(--color-error)]" />,
+    running: <CircleNotch className="h-3 w-3 animate-spin text-[var(--color-running)]" weight="regular" />,
+    completed: <CheckCircle className="h-3 w-3 text-[var(--color-success)]" weight="regular" />,
+    error: <XCircle className="h-3 w-3 text-[var(--color-error)]" weight="regular" />,
   }[status]
 
   const handleDrop = (e: React.DragEvent) => {
@@ -57,7 +57,7 @@ function ImageAnalyzerNode({ data, selected }: NodeProps) {
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <div className="flex items-center gap-2">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-pink-500/10">
-            <ImageIcon className="h-4 w-4 text-pink-500" />
+            <Image className="h-4 w-4 text-pink-500" weight="regular" />
           </div>
           <div>
             <h3 className="font-semibold text-sm">Image Analyzer</h3>
@@ -102,7 +102,7 @@ function ImageAnalyzerNode({ data, selected }: NodeProps) {
             </div>
           ) : (
             <div className="space-y-1">
-              <Upload className="h-6 w-6 mx-auto text-muted-foreground" />
+              <UploadSimple className="h-6 w-6 mx-auto text-muted-foreground" weight="regular" />
               <p className="text-xs text-muted-foreground">
                 Drop image or paste URL
               </p>

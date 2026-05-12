@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { Sun, Moon, Monitor } from "lucide-react"
+import { Sun, Moon, Monitor } from "@phosphor-icons/react"
 import { Button } from "@/components/ui/button"
 
 type Theme = "light" | "dark" | "system"
@@ -51,9 +51,9 @@ export function ThemeToggle() {
 
   return (
     <Button variant="ghost" size="sm" className="h-8 px-2" onClick={cycleTheme} title={`Theme: ${theme}`}>
-      {theme === "light" && <Sun className="h-4 w-4" />}
-      {theme === "dark" && <Moon className="h-4 w-4" />}
-      {theme === "system" && <Monitor className="h-4 w-4" />}
+      {theme === "light" && <Sun className="h-4 w-4" weight="regular"  />}
+      {theme === "dark" && <Moon className="h-4 w-4" weight="regular"  />}
+      {theme === "system" && <Monitor className="h-4 w-4" weight="regular"  />}
     </Button>
   )
 }

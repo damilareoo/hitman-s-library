@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
-import { Globe, CheckCircle2, Sparkles } from "lucide-react"
+import { Globe, CheckCircle, Sparkle } from "@phosphor-icons/react"
 import type { BaseNodeData } from "@/lib/types"
 
 export interface LinkAnalyzerNodeData extends BaseNodeData {
@@ -59,7 +59,7 @@ function LinkAnalyzerNode({ data, selected }: NodeProps) {
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <div className="flex items-center gap-2">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-cyan-500/10">
-            <Globe className="h-4 w-4 text-cyan-500" />
+            <Globe className="h-4 w-4 text-cyan-500" weight="regular"  />
           </div>
           <div>
             <h3 className="font-semibold text-sm">Link Analyzer</h3>
@@ -153,7 +153,7 @@ function LinkAnalyzerNode({ data, selected }: NodeProps) {
           onClick={handleSave}
           className="text-xs h-8 w-full"
         >
-          <Sparkles className="mr-1 h-3 w-3" />
+          <Sparkle className="mr-1 h-3 w-3" weight="regular"  />
           Save Design Reference
         </Button>
       </CardContent>

@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
-import { Globe, Loader2, CheckCircle2, XCircle } from "lucide-react"
+import { Globe, CircleNotch, CheckCircle, XCircle } from "@phosphor-icons/react"
 import type { BaseNodeData } from "@/lib/types"
 
 export interface UrlAnalyzerNodeData extends BaseNodeData {
@@ -29,9 +29,9 @@ function UrlAnalyzerNode({ data, selected }: NodeProps) {
 
   const statusIcon = {
     idle: null,
-    running: <Loader2 className="h-3 w-3 animate-spin text-[var(--color-running)]" />,
-    completed: <CheckCircle2 className="h-3 w-3 text-[var(--color-success)]" />,
-    error: <XCircle className="h-3 w-3 text-[var(--color-error)]" />,
+    running: <CircleNotch className="h-3 w-3 animate-spin text-[var(--color-running)]" weight="regular" />,
+    completed: <CheckCircle className="h-3 w-3 text-[var(--color-success)]" weight="regular" />,
+    error: <XCircle className="h-3 w-3 text-[var(--color-error)]" weight="regular" />,
   }[status]
 
   const industries = [
@@ -55,7 +55,7 @@ function UrlAnalyzerNode({ data, selected }: NodeProps) {
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <div className="flex items-center gap-2">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-cyan-500/10">
-            <Globe className="h-4 w-4 text-cyan-500" />
+            <Globe className="h-4 w-4 text-cyan-500" weight="regular" />
           </div>
           <div>
             <h3 className="font-semibold text-sm">URL Analyzer</h3>

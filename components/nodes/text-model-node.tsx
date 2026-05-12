@@ -3,7 +3,7 @@
 import type React from "react"
 import { memo } from "react"
 import { Handle, Position, type NodeProps } from "@xyflow/react"
-import { MessageSquare } from "lucide-react"
+import { ChatCircle } from "@phosphor-icons/react"
 import { getStatusColor } from "@/lib/node-utils"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Slider } from "@/components/ui/slider"
@@ -58,7 +58,7 @@ function TextModelNode({ data, selected }: NodeProps<TextModelNodeData>) {
     >
       <div className="p-3">
         <div className="flex items-center gap-2">
-          <MessageSquare className="h-4 w-4 text-muted-foreground" />
+          <ChatCircle className="h-4 w-4 text-muted-foreground" weight="regular"  />
           <span className="text-xs font-medium text-foreground">Text Model</span>
           <span className="ml-auto text-xs text-muted-foreground font-mono">{getShortModelName()}</span>
         </div>

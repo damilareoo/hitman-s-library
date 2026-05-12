@@ -3,7 +3,7 @@
 import type React from "react"
 import { memo } from "react"
 import { Handle, Position, type NodeProps } from "@xyflow/react"
-import { Layers } from "lucide-react"
+import { Stack } from "@phosphor-icons/react"
 import { getStatusColor } from "@/lib/node-utils"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
@@ -40,7 +40,7 @@ function EmbeddingModelNode({ data, selected }: NodeProps<EmbeddingModelNodeData
     >
       <div className="p-3">
         <div className="flex items-center gap-2">
-          <Layers className="h-4 w-4 text-muted-foreground" />
+          <Stack className="h-4 w-4 text-muted-foreground" weight="regular"  />
           <span className="text-xs font-medium text-foreground">Embedding</span>
         </div>
 

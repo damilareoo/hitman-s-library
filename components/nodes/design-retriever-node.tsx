@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { Slider } from "@/components/ui/slider"
-import { Sparkles, Loader2, CheckCircle2, XCircle, Search } from "lucide-react"
+import { Sparkle, CircleNotch, CheckCircle, XCircle, MagnifyingGlass } from "@phosphor-icons/react"
 import type { BaseNodeData } from "@/lib/types"
 
 export interface DesignRetrieverNodeData extends BaseNodeData {
@@ -35,9 +35,9 @@ function DesignRetrieverNode({ data, selected }: NodeProps) {
 
   const statusIcon = {
     idle: null,
-    running: <Loader2 className="h-3 w-3 animate-spin text-[var(--color-running)]" />,
-    completed: <CheckCircle2 className="h-3 w-3 text-[var(--color-success)]" />,
-    error: <XCircle className="h-3 w-3 text-[var(--color-error)]" />,
+    running: <CircleNotch className="h-3 w-3 animate-spin text-[var(--color-running)]" weight="regular" />,
+    completed: <CheckCircle className="h-3 w-3 text-[var(--color-success)]" weight="regular" />,
+    error: <XCircle className="h-3 w-3 text-[var(--color-error)]" weight="regular" />,
   }[status]
 
   const industries = [
@@ -55,7 +55,7 @@ function DesignRetrieverNode({ data, selected }: NodeProps) {
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <div className="flex items-center gap-2">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-amber-500/20 to-orange-500/20">
-            <Sparkles className="h-4 w-4 text-amber-500" />
+            <Sparkle className="h-4 w-4 text-amber-500" weight="regular" />
           </div>
           <div>
             <h3 className="font-semibold text-sm">Design Retriever</h3>
@@ -72,7 +72,7 @@ function DesignRetrieverNode({ data, selected }: NodeProps) {
       <CardContent className="space-y-3">
         <div className="space-y-1.5">
           <Label className="text-xs flex items-center gap-1">
-            <Search className="h-3 w-3" />
+            <MagnifyingGlass className="h-3 w-3" weight="regular" />
             Search Query
           </Label>
           <Input

@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { Loader2, Search, Palette, BookOpen, Sparkles, Copy, Check } from "lucide-react"
+import { CircleNotch, MagnifyingGlass, Palette, BookOpen, Sparkle, Copy, Check } from "@phosphor-icons/react"
 import { cn } from "@/lib/utils"
 
 interface DesignSource {
@@ -161,7 +161,7 @@ export function DesignPanel() {
     <Card className="h-full flex flex-col">
       <CardHeader className="pb-3">
         <div className="flex items-center gap-2">
-          <BookOpen className="h-5 w-5 text-blue-500" />
+          <BookOpen className="h-5 w-5 text-muted-foreground" weight="regular" />
           <div>
             <CardTitle className="text-base">Design Knowledge Base</CardTitle>
             <CardDescription className="text-xs">
@@ -211,7 +211,7 @@ export function DesignPanel() {
               disabled={!selectedIndustry || loading}
               className="w-full text-xs h-8"
             >
-              {loading && <Loader2 className="mr-2 h-3 w-3 animate-spin" />}
+              {loading && <CircleNotch className="mr-2 h-3 w-3 animate-spin" weight="regular" />}
               Load Designs
             </Button>
 
@@ -232,7 +232,7 @@ export function DesignPanel() {
                                 href={source.url}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="text-xs font-medium text-blue-500 hover:underline truncate block"
+                                className="text-xs font-medium text-muted-foreground hover:underline truncate block"
                               >
                                 {new URL(source.url).hostname}
                               </a>
@@ -281,7 +281,7 @@ export function DesignPanel() {
               disabled={!selectedIndustry || loading}
               className="w-full text-xs h-8"
             >
-              {loading && <Loader2 className="mr-2 h-3 w-3 animate-spin" />}
+              {loading && <CircleNotch className="mr-2 h-3 w-3 animate-spin" weight="regular" />}
               Load Context
             </Button>
 
@@ -302,7 +302,7 @@ export function DesignPanel() {
                   {designContext.colors && designContext.colors.length > 0 && (
                     <div>
                       <p className="text-xs font-semibold mb-2 flex items-center gap-1">
-                        <Palette className="h-3 w-3" />
+                        <Palette className="h-3 w-3" weight="regular" />
                         Color Palettes
                       </p>
                       {designContext.colors.map((color, i) => (
@@ -322,7 +322,7 @@ export function DesignPanel() {
                               aria-label={`Copy primary color ${color.primary}`}
                             >
                               {copiedColor === color.primary && (
-                                <Check className="h-3 w-3 text-white absolute inset-0 m-auto animate-check-appear" />
+                                <Check className="h-3 w-3 text-white absolute inset-0 m-auto animate-check-appear" weight="regular" />
                               )}
                             </button>
                             {color.secondary && (
@@ -339,7 +339,7 @@ export function DesignPanel() {
                                 aria-label={`Copy secondary color ${color.secondary}`}
                               >
                                 {copiedColor === color.secondary && (
-                                  <Check className="h-3 w-3 text-white absolute inset-0 m-auto animate-check-appear" />
+                                  <Check className="h-3 w-3 text-white absolute inset-0 m-auto animate-check-appear" weight="regular" />
                                 )}
                               </button>
                             )}
@@ -357,7 +357,7 @@ export function DesignPanel() {
                                 aria-label={`Copy accent color ${color.accent}`}
                               >
                                 {copiedColor === color.accent && (
-                                  <Check className="h-3 w-3 text-white absolute inset-0 m-auto animate-check-appear" />
+                                  <Check className="h-3 w-3 text-white absolute inset-0 m-auto animate-check-appear" weight="regular" />
                                 )}
                               </button>
                             )}
@@ -384,7 +384,7 @@ export function DesignPanel() {
                   {designContext.patterns && designContext.patterns.length > 0 && (
                     <div>
                       <p className="text-xs font-semibold mb-2 flex items-center gap-1">
-                        <Sparkles className="h-3 w-3" />
+                        <Sparkle className="h-3 w-3" weight="regular" />
                         Design Patterns
                       </p>
                       {designContext.patterns.slice(0, 3).map((pattern, i) => (

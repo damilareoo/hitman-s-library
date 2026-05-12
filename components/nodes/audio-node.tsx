@@ -3,7 +3,7 @@
 import type React from "react"
 import { memo } from "react"
 import { Handle, Position, type NodeProps } from "@xyflow/react"
-import { Mic } from "lucide-react"
+import { Microphone } from "@phosphor-icons/react"
 import { getStatusColor } from "@/lib/node-utils"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -40,7 +40,7 @@ function AudioNode({ data, selected }: NodeProps<AudioNodeData>) {
     >
       <div className="p-3">
         <div className="flex items-center gap-2">
-          <Mic className="h-4 w-4 text-muted-foreground" />
+          <Microphone className="h-4 w-4 text-muted-foreground" weight="regular"  />
           <span className="text-xs font-medium text-foreground">Audio</span>
           <span className="ml-auto text-xs text-muted-foreground font-mono">{data.voice || "alloy"}</span>
         </div>
