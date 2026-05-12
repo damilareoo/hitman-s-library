@@ -23,6 +23,7 @@ function CopyBtn({ value }: { value: string }) {
   return (
     <button
       onClick={copy}
+      aria-label={copied ? 'Copied' : `Copy ${value}`}
       className="opacity-0 group-hover:opacity-100 p-1 rounded transition-opacity text-muted-foreground hover:text-foreground hover:bg-secondary"
     >
       {copied

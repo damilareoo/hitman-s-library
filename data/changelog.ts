@@ -28,6 +28,7 @@ const changelog: ChangelogRelease[] = [
       { type: 'improved', text: 'Consolidated to single icon library (@phosphor-icons) — removed lucide-react dependency' },
       { type: 'fixed', text: 'Search inputs now have accessible labels for screen readers via aria-label' },
       { type: 'fixed', text: 'Filter and sort buttons now announce their active/inactive state to screen readers via aria-pressed' },
+      { type: 'fixed', text: 'Color swatch copy button now announces its action and value to screen readers' },
     ],
   },
   {
