@@ -29,6 +29,7 @@ const changelog: ChangelogRelease[] = [
       { type: 'fixed', text: 'Search inputs now have accessible labels for screen readers via aria-label' },
       { type: 'fixed', text: 'Filter and sort buttons now announce their active/inactive state to screen readers via aria-pressed' },
       { type: 'fixed', text: 'Color swatch copy button now announces its action and value to screen readers' },
+      { type: 'fixed', text: 'Re-extract button uses aria-label instead of title — now accessible to screen readers and keyboard users' },
     ],
   },
   {

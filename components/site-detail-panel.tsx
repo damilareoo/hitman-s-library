@@ -149,7 +149,7 @@ export function SiteDetailPanel({ sourceId, metadata, onClose }: SiteDetailPanel
             type="button"
             onClick={handleReextract}
             disabled={isReextracting}
-            title="Re-extract design data"
+            aria-label="Re-extract design data"
             className="w-7 h-7 flex items-center justify-center rounded-sm border border-border/60 text-muted-foreground hover:text-foreground hover:border-foreground/40 transition-colors disabled:opacity-40"
           >
             <motion.span ref={scope} style={{ display: 'flex' }}>
