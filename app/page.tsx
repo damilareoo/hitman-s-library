@@ -77,6 +77,7 @@ export default function DesignLibrary() {
   const [isLoadingMore, setIsLoadingMore] = useState(false)
   const sentinelRef = useRef<HTMLDivElement>(null)
   const isThemeTransitioning = useRef(false)
+  const mobileDialogRef = useRef<HTMLDialogElement>(null)
 
   const { resolvedTheme, setTheme } = useTheme()
   const [activeFilters, setActiveFilters] = useState<ActiveFilters>({
@@ -102,6 +103,24 @@ export default function DesignLibrary() {
   }, [])
 
   useEffect(() => { hasAnimated.current = true }, [])
+
+  useEffect(() => {
+    const dialog = mobileDialogRef.current
+    if (!dialog) return
+    if (selectedDesign) {
+      if (!dialog.open) dialog.showModal()
+    } else {
+      if (dialog.open) dialog.close()
+    }
+  }, [selectedDesign])
+
+  useEffect(() => {
+    const dialog = mobileDialogRef.current
+    if (!dialog) return
+    const handleClose = () => setSelectedDesign(null)
+    dialog.addEventListener('close', handleClose)
+    return () => dialog.removeEventListener('close', handleClose)
+  }, [])
 
   const loadDesigns = useCallback(async (offset = 0, append = false) => {
     const f = activeFiltersRef.current
@@ -497,33 +516,25 @@ export default function DesignLibrary() {
         </div>
 
         {/* Mobile bottom sheet */}
-        {selectedDesign && (
-          <>
-            <div
-              className="md:hidden fixed inset-0 bg-black/50 z-30 top-14"
-              onClick={() => setSelectedDesign(null)}
-              role="presentation"
-              aria-hidden="true"
+        <dialog
+          ref={mobileDialogRef}
+          className="md:hidden fixed bottom-0 left-0 right-0 bg-background border-t border-border/60 rounded-t-xl z-40 h-[72vh] w-full flex flex-col p-0 max-w-full"
+          aria-label="Design details"
+        >
+          {selectedDesign && (
+            <SiteDetailPanel
+              sourceId={Number(selectedDesign.id)}
+              metadata={{
+                tags: selectedDesign.tags,
+                designStyle: selectedDesign.designStyle,
+                complexity: selectedDesign.complexity,
+                useCase: selectedDesign.useCase,
+                industry: selectedDesign.industry,
+              }}
+              onClose={() => setSelectedDesign(null)}
             />
-            <dialog
-              className="md:hidden fixed bottom-0 left-0 right-0 bg-background border-t border-border/60 rounded-t-xl z-40 h-[72vh] w-full flex flex-col"
-              open
-              aria-label="Design details"
-            >
-              <SiteDetailPanel
-                sourceId={Number(selectedDesign.id)}
-                metadata={{
-                  tags: selectedDesign.tags,
-                  designStyle: selectedDesign.designStyle,
-                  complexity: selectedDesign.complexity,
-                  useCase: selectedDesign.useCase,
-                  industry: selectedDesign.industry,
-                }}
-                onClose={() => setSelectedDesign(null)}
-              />
-            </dialog>
-          </>
-        )}
+          )}
+        </dialog>
       </div>
       {/* Presentation mode */}
       <AnimatePresence>

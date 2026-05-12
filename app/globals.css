@@ -1486,3 +1486,7 @@ a,
   );
   background-size: 1000px 100%;
 }
+
+dialog::backdrop {
+  background: oklch(0% 0 0 / 0.5);
+}
