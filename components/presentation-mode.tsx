@@ -139,7 +139,7 @@ export function PresentationMode({ designs, initialIndex, onClose, onSelect }: P
             {current.thumbnail_url ? (
               <img
                 src={current.thumbnail_url}
-                alt={domain}
+                alt={`Screenshot of ${current.title || domain}`}
                 className="w-full h-full object-cover object-top"
                 referrerPolicy="no-referrer"
                 draggable={false}

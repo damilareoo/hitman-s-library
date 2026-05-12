@@ -31,6 +31,7 @@ const changelog: ChangelogRelease[] = [
       { type: 'fixed', text: 'Color swatch copy button now announces its action and value to screen readers' },
       { type: 'fixed', text: 'Re-extract button uses aria-label instead of title — now accessible to screen readers and keyboard users' },
       { type: 'fixed', text: 'Mobile detail sheet upgraded to native <dialog> with showModal() — gains proper focus trapping, Escape to close, and system backdrop' },
+      { type: 'fixed', text: 'Presentation mode screenshot alt text now describes the site by name, not just domain' },
     ],
   },
   {
