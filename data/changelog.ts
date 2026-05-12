@@ -34,6 +34,7 @@ const changelog: ChangelogRelease[] = [
       { type: 'fixed', text: 'Presentation mode screenshot alt text now describes the site by name, not just domain' },
       { type: 'improved', text: 'Extracted shared NodeStatus component — eliminates duplicated status icon logic across all node components' },
       { type: 'fixed', text: 'Google Fonts stylesheet now only injected once per URL — prevents duplicate network requests when multiple type specimens share a font' },
+      { type: 'fixed', text: 'Theme toggle button now announces the destination mode ("Switch to dark mode") rather than just "Toggle theme"' },
     ],
   },
   {
