@@ -36,17 +36,6 @@ function useClipboard() {
   return { copiedId, copy }
 }
 
-const CHECKERBOARD = {
-  backgroundImage: `
-    linear-gradient(45deg,#1a1a1a 25%,transparent 25%),
-    linear-gradient(-45deg,#1a1a1a 25%,transparent 25%),
-    linear-gradient(45deg,transparent 75%,#1a1a1a 75%),
-    linear-gradient(-45deg,transparent 75%,#1a1a1a 75%)
-  `,
-  backgroundSize: '8px 8px',
-  backgroundPosition: '0 0,0 4px,4px -4px,-4px 0px',
-  backgroundColor: '#111',
-}
 
 function SectionLabel({ label, count }: { label: string; count: number }) {
   return (
@@ -67,9 +56,8 @@ function LogoSection({ logos }: { logos: Asset[] }) {
           <button
             key={logo.id}
             onClick={() => copy(logo.id, logo.content)}
-            className="relative group border border-border rounded-md p-3 hover:border-foreground/30 transition-colors"
-            style={CHECKERBOARD}
-            title={isSvg(logo.content) ? 'Copy SVG' : 'Copy URL'}
+            className="checkerboard relative group border border-border rounded-md p-3 hover:border-foreground/30 transition-colors"
+            aria-label={isSvg(logo.content) ? 'Copy SVG' : 'Copy URL'}
           >
             {isSvg(logo.content) ? (
               <div
