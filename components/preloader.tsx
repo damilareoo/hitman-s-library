@@ -8,7 +8,7 @@ export function Preloader() {
   const [exiting, setExiting] = useState(false)
   const [done, setDone] = useState(false)
   const rafRef = useRef<number>(0)
-  const timerRef = useRef<ReturnType<typeof setTimeout>>()
+  const timerRef = useRef<ReturnType<typeof setTimeout>>(undefined)
 
   useEffect(() => {
     // Only show on gallery page, once per session
