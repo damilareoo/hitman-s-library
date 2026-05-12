@@ -150,7 +150,7 @@ export function SiteDetailPanel({ sourceId, metadata, onClose }: SiteDetailPanel
             onClick={handleReextract}
             disabled={isReextracting}
             aria-label="Re-extract design data"
-            className="w-7 h-7 flex items-center justify-center rounded-sm border border-border/60 text-muted-foreground hover:text-foreground hover:border-foreground/40 transition-colors disabled:opacity-40"
+            className="w-8 h-8 flex items-center justify-center rounded-sm border border-border/60 text-muted-foreground hover:text-foreground hover:border-foreground/40 transition-colors disabled:opacity-40"
           >
             <motion.span ref={scope} style={{ display: 'flex' }}>
               <ArrowClockwise className="w-3 h-3" weight="regular" />
@@ -159,7 +159,7 @@ export function SiteDetailPanel({ sourceId, metadata, onClose }: SiteDetailPanel
           {onClose && (
             <button
               onClick={() => { playClose(); onClose() }}
-              className="w-7 h-7 flex items-center justify-center rounded-sm border border-border/60 text-muted-foreground hover:text-foreground hover:border-foreground/40 transition-colors"
+              className="w-8 h-8 flex items-center justify-center rounded-sm border border-border/60 text-muted-foreground hover:text-foreground hover:border-foreground/40 transition-colors"
               aria-label="Close panel"
             >
               <X className="w-3.5 h-3.5" weight="bold" />
