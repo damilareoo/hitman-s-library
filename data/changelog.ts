@@ -43,6 +43,7 @@ const changelog: ChangelogRelease[] = [
       { type: 'improved', text: 'Assets tab checkerboard background now uses design tokens — adapts correctly to light and dark mode' },
       { type: 'improved', text: 'Preview tab screenshot image now uses loading="lazy" — deferred until the panel is actually viewed' },
       { type: 'improved', text: 'Re-extract and close icon buttons in the detail panel increased from 28px to 32px for easier touch activation' },
+      { type: 'improved', text: 'Package name corrected from "ai-agent-builder" to "hitmans-library"' },
     ],
   },
   {
