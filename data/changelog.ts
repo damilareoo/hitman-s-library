@@ -33,6 +33,7 @@ const changelog: ChangelogRelease[] = [
       { type: 'fixed', text: 'Mobile detail sheet upgraded to native <dialog> with showModal() — gains proper focus trapping, Escape to close, and system backdrop' },
       { type: 'fixed', text: 'Presentation mode screenshot alt text now describes the site by name, not just domain' },
       { type: 'improved', text: 'Extracted shared NodeStatus component — eliminates duplicated status icon logic across all node components' },
+      { type: 'fixed', text: 'Google Fonts stylesheet now only injected once per URL — prevents duplicate network requests when multiple type specimens share a font' },
     ],
   },
   {

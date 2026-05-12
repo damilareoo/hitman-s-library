@@ -44,12 +44,13 @@ export function TypeSpecimenCard({ typography, index }: { typography: Typography
 
   useEffect(() => {
     if (!typography.google_fonts_url) { setFontLoaded(true); return }
+    const existing = document.querySelector(`link[href="${typography.google_fonts_url.replace(/"/g, '\\"')}"]`)
+    if (existing) { setFontLoaded(true); return }
     const link = document.createElement('link')
     link.rel = 'stylesheet'
     link.href = typography.google_fonts_url
     link.onload = () => setFontLoaded(true)
     document.head.appendChild(link)
-    return () => { try { document.head.removeChild(link) } catch {} }
   }, [typography.google_fonts_url])
 
   const weight = typography.primary_weight ?? (typography.role === 'heading' ? 700 : 400)
