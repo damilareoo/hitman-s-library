@@ -662,9 +662,10 @@ function DesignCard({ design, index, isSelected, onClick, onHover, onTagClick, h
             {design.colors.slice(0, 5).map((color, i) => (
               <div
                 key={i}
+                role="img"
+                aria-label={color}
                 className="w-3 h-3 rounded-full border border-black/10 dark:border-white/10"
                 style={{ backgroundColor: color }}
-                title={color}
               />
             ))}
           </div>

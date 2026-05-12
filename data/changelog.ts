@@ -37,6 +37,7 @@ const changelog: ChangelogRelease[] = [
       { type: 'fixed', text: 'Theme toggle button now announces the destination mode ("Switch to dark mode") rather than just "Toggle theme"' },
       { type: 'fixed', text: 'Preloader is now hidden from screen readers via aria-hidden — decorative counter is not meaningful content' },
       { type: 'fixed', text: 'Preloader setTimeout calls now properly cleaned up on unmount — eliminates potential state updates after component is removed' },
+      { type: 'fixed', text: 'Color swatches on gallery cards now have role="img" and aria-label with the hex value for screen readers' },
     ],
   },
   {
