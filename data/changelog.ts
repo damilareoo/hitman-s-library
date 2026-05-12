@@ -38,6 +38,7 @@ const changelog: ChangelogRelease[] = [
       { type: 'fixed', text: 'Preloader is now hidden from screen readers via aria-hidden — decorative counter is not meaningful content' },
       { type: 'fixed', text: 'Preloader setTimeout calls now properly cleaned up on unmount — eliminates potential state updates after component is removed' },
       { type: 'fixed', text: 'Color swatches on gallery cards now have role="img" and aria-label with the hex value for screen readers' },
+      { type: 'improved', text: 'Replaced all spring/bounce easing (0.34,1.56,0.64,1) with ease-out-expo (0.22,1,0.36,1) — animations feel faster and more intentional' },
     ],
   },
   {

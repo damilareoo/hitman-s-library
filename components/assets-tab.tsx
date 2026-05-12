@@ -104,7 +104,7 @@ function AssetItem({ asset, size, index }: { asset: Asset; size: 'sm' | 'md'; in
   return (
     <div
       className="group relative border border-border rounded-md overflow-hidden bg-secondary/30 cursor-pointer hover:border-foreground/30 transition-colors"
-      style={{ animationDelay: `${animDelay}ms`, animation: 'scale-in 0.3s cubic-bezier(0.34,1.56,0.64,1) both' }}
+      style={{ animationDelay: `${animDelay}ms`, animation: 'scale-in 0.3s cubic-bezier(0.22, 1, 0.36, 1) both' }}
       onClick={handleClick}
     >
       <div className={`${size === 'sm' ? 'h-11' : 'h-20'} flex items-center justify-center p-1`}>

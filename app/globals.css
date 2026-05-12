@@ -307,7 +307,7 @@ button, a, [role="button"] {
 
   /* Staggered animation for lists */
   .stagger {
-    animation: fade-in-up 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+    animation: fade-in-up 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
   }
 
   @supports (animation-timeline: view()) {
@@ -331,12 +331,12 @@ button, a, [role="button"] {
   }
 
   .animate-fade-in-up {
-    animation: fade-in-up 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    animation: fade-in-up 0.4s cubic-bezier(0.22, 1, 0.36, 1);
   }
 
   /* Emil's spring easing for natural motion */
   .cubic-bezier-spring {
-    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+    transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1) !important;
   }
 }
 
@@ -744,13 +744,13 @@ a,
 
 /* Copy feedback animation */
 .copy-feedback {
-  animation: fade-in 0.2s ease-out, slide-in 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  animation: fade-in 0.2s ease-out, slide-in 0.3s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 /* Filter transition */
 .filter-transition {
   transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1),
-              transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+              transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .filter-exit {
@@ -1242,7 +1242,7 @@ a,
 
 /* Button Press Animation */
 .animate-press {
-  animation: button-press 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  animation: button-press 0.3s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 /* Loading Spinner */
@@ -1273,12 +1273,12 @@ a,
 
 /* Success Checkmark */
 .animate-checkmark {
-  animation: checkmark-bounce 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+  animation: checkmark-bounce 0.6s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 /* Toast Notifications */
 .animate-toast-in {
-  animation: toast-slide-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  animation: toast-slide-in 0.4s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .animate-toast-out {
@@ -1286,7 +1286,7 @@ a,
 }
 
 .animate-toast-bounce {
-  animation: toast-bounce 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  animation: toast-bounce 0.4s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 /* Input Focus */
@@ -1316,12 +1316,12 @@ a,
 
 /* Item Reveal (for lists) */
 .animate-item-reveal {
-  animation: item-reveal 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  animation: item-reveal 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 /* Badge Pop */
 .animate-badge-pop {
-  animation: badge-pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  animation: badge-pop 0.4s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 /* Node Glow */
@@ -1335,7 +1335,7 @@ a,
 
 /* Panel Entrance */
 .animate-panel-in {
-  animation: panel-slide-in 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  animation: panel-slide-in 0.3s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .animate-backdrop {
@@ -1343,7 +1343,7 @@ a,
 }
 
 .animate-modal {
-  animation: modal-scale-in 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  animation: modal-scale-in 0.3s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 /* Icon Animations */
@@ -1361,7 +1361,7 @@ a,
 
 /* Tab Highlight */
 .animate-tab-highlight {
-  animation: tab-highlight 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  animation: tab-highlight 0.3s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 /* Content Fade */
@@ -1375,7 +1375,7 @@ a,
 
 /* Stagger Delays (for list items) */
 .stagger-item {
-  animation: item-reveal 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  animation: item-reveal 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 .stagger-item:nth-child(1) { animation-delay: 0ms; }
@@ -1387,7 +1387,7 @@ a,
 
 /* Interactive State Transitions */
 .interactive-hover {
-  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .interactive-hover:hover {
@@ -1395,7 +1395,7 @@ a,
 }
 
 .interactive-active:active {
-  animation: button-press 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  animation: button-press 0.3s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 /* ============================================================================
@@ -1404,7 +1404,7 @@ a,
 
 /* Color swatch copy feedback */
 .animate-color-success {
-  animation: color-swatch-success 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  animation: color-swatch-success 0.4s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .animate-color-ring {
@@ -1412,11 +1412,11 @@ a,
 }
 
 .animate-check-appear {
-  animation: color-check-appear 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  animation: color-check-appear 0.3s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .animate-toast-content {
-  animation: toast-content-enter 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  animation: toast-content-enter 0.3s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 /* Color swatch hover + focus states */
@@ -1436,7 +1436,7 @@ a,
 
 /* Toast with enhanced visual hierarchy */
 .toast-container {
-  animation: toast-slide-in 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  animation: toast-slide-in 0.3s cubic-bezier(0.22, 1, 0.36, 1);
   backdrop-filter: blur(4px);
 }
 
@@ -1457,7 +1457,7 @@ a,
 
 /* Website Preview Animations */
 .animate-preview-enter {
-  animation: preview-fade-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  animation: preview-fade-in 0.4s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .animate-overlay-enter {
@@ -1465,11 +1465,11 @@ a,
 }
 
 .animate-scale-up {
-  animation: scale-up-smooth 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  animation: scale-up-smooth 0.3s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .preview-hover-scale {
-  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .preview-hover-scale:hover {
