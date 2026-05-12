@@ -231,6 +231,7 @@ export default function DesignLibrary() {
             <input
               type="text"
               placeholder="Search sites…"
+              aria-label="Search sites"
               value={activeFilters.search}
               onChange={e => setActiveFilters(prev => ({ ...prev, search: e.target.value }))}
               className="w-full h-7 pl-7 pr-6 text-[12px] font-mono bg-muted/60 border border-border/50 rounded-[3px] text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:border-foreground/30 focus:bg-muted transition-colors"
@@ -260,6 +261,7 @@ export default function DesignLibrary() {
                 <button
                   key={value}
                   onClick={() => setActiveFilters(prev => ({ ...prev, sortBy: value }))}
+                  aria-pressed={activeFilters.sortBy === value}
                   className={[
                     'px-2 py-0.5 rounded-[3px] text-[10px] font-mono transition-colors',
                     activeFilters.sortBy === value
@@ -340,6 +342,7 @@ export default function DesignLibrary() {
               <li>
                 <button
                   onClick={() => handleFilterChange('All')}
+                  aria-pressed={activeFilters.industries.length === 0}
                   className={"w-full flex items-center justify-between px-2 py-1.5 rounded-[3px] text-[13px] transition-colors " + (activeFilters.industries.length === 0 ? 'text-foreground font-medium bg-muted' : 'text-muted-foreground hover:text-foreground hover:bg-muted/40')}
                 >
                   <span>All</span>
@@ -352,6 +355,7 @@ export default function DesignLibrary() {
                   <li key={name}>
                     <button
                       onClick={() => handleFilterChange(name)}
+                      aria-pressed={isActive}
                       className={"w-full flex items-center justify-between px-2 py-1.5 rounded-[3px] text-[13px] transition-colors " + (isActive ? 'text-foreground font-medium bg-muted' : 'text-muted-foreground hover:text-foreground hover:bg-muted/40')}
                     >
                       <span>{name}</span>
@@ -374,6 +378,7 @@ export default function DesignLibrary() {
               <input
                 type="text"
                 placeholder="Search sites…"
+                aria-label="Search sites"
                 value={activeFilters.search}
                 onChange={e => setActiveFilters(prev => ({ ...prev, search: e.target.value }))}
                 className="w-full h-8 pl-8 pr-7 text-[12px] font-mono bg-muted/60 border border-border/50 rounded-[3px] text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:border-foreground/30 focus:bg-muted transition-colors"
@@ -396,6 +401,7 @@ export default function DesignLibrary() {
                   <button
                     key={name}
                     onClick={() => handleFilterChange(name)}
+                    aria-pressed={isActive}
                     className={"shrink-0 px-3 py-1 rounded-full text-[12px] font-medium transition-colors whitespace-nowrap " + (isActive ? 'bg-foreground text-background' : 'bg-muted text-muted-foreground hover:text-foreground')}
                   >
                     {name} <span className="opacity-50 font-mono text-[10px]">{count}</span>
