@@ -123,6 +123,7 @@ export function PreviewTab({ siteUrl, screenshotUrl, mobileScreenshotUrl, extrac
               <img
                 src={activeScreenshot}
                 alt="Site screenshot"
+                loading="lazy"
                 className="w-full"
                 referrerPolicy="no-referrer"
               />

@@ -41,6 +41,7 @@ const changelog: ChangelogRelease[] = [
       { type: 'improved', text: 'Replaced all spring/bounce easing (0.34,1.56,0.64,1) with ease-out-expo (0.22,1,0.36,1) — animations feel faster and more intentional' },
       { type: 'improved', text: 'Extracted DesignCard component and getDomain helper to their own files — reduces page.tsx by ~130 lines' },
       { type: 'improved', text: 'Assets tab checkerboard background now uses design tokens — adapts correctly to light and dark mode' },
+      { type: 'improved', text: 'Preview tab screenshot image now uses loading="lazy" — deferred until the panel is actually viewed' },
     ],
   },
   {
