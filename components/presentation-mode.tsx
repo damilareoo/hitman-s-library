@@ -204,64 +204,63 @@ export function PresentationMode({ designs, initialIndex, onClose, onSelect }: P
       </div>
 
       {/* Bottom HUD */}
-      <div className="shrink-0 h-12 border-t border-white/[0.05] flex items-center px-4 gap-2.5">
-        {/* Always-visible prev button */}
-        <button
-          onClick={() => go(-1)}
-          className="w-7 h-7 flex items-center justify-center rounded-md bg-white/[0.05] hover:bg-white/[0.1] text-white/35 hover:text-white/80 transition-colors shrink-0"
-          aria-label="Previous site"
-        >
-          <CaretLeft className="w-3.5 h-3.5" weight="bold" />
-        </button>
+      <div className="shrink-0 border-t border-white/[0.05]">
+        <div className="h-[60px] flex items-center px-5 gap-3">
 
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={current.id + '-info'}
-            initial={{ opacity: 0, x: direction * 8 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: direction * -4 }}
-            transition={{ duration: 0.14 }}
-            className="flex items-center gap-2.5 min-w-0 flex-1"
+          <button
+            onClick={() => go(-1)}
+            className="w-7 h-7 flex items-center justify-center rounded-[4px] bg-white/[0.05] hover:bg-white/[0.1] text-white/30 hover:text-white/80 transition-colors shrink-0"
+            aria-label="Previous site"
           >
-            <span className="text-[12px] font-mono text-white/50 truncate">{domain}</span>
-            {current.industry && (
-              <span className="text-[9px] font-mono text-white/20 bg-white/[0.04] px-1.5 py-0.5 rounded-[2px] shrink-0 hidden sm:block">
-                {current.industry}
+            <CaretLeft className="w-3.5 h-3.5" weight="bold" />
+          </button>
+
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={current.id + '-hud'}
+              initial={{ opacity: 0, x: direction * 10 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: direction * -5 }}
+              transition={{ duration: 0.14 }}
+              className="flex items-center gap-4 min-w-0 flex-1"
+            >
+              {/* Domain + industry — left */}
+              <div className="min-w-0 flex-1">
+                <p className="text-[14px] font-mono text-white/65 tracking-[-0.01em] truncate leading-none">{domain}</p>
+                {current.industry && (
+                  <p className="text-[9px] font-mono text-white/25 uppercase tracking-[0.1em] mt-[5px]">{current.industry}</p>
+                )}
+              </div>
+
+              {/* Color swatches — center */}
+              {current.colors?.length > 0 && (
+                <div className="hidden sm:flex gap-1.5 shrink-0">
+                  {current.colors.slice(0, 5).map((hex, i) => (
+                    <div
+                      key={i}
+                      className="w-3.5 h-3.5 rounded-full border border-white/[0.12]"
+                      style={{ backgroundColor: hex }}
+                    />
+                  ))}
+                </div>
+              )}
+
+              {/* Counter — right */}
+              <span className="text-[10px] font-mono text-white/15 tabular-nums shrink-0">
+                {index + 1} / {designs.length}
               </span>
-            )}
-            <span className="text-[10px] font-mono text-white/15 tabular-nums shrink-0">
-              {index + 1} / {designs.length}
-            </span>
-          </motion.div>
-        </AnimatePresence>
+            </motion.div>
+          </AnimatePresence>
 
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={current.id + '-colors'}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.15 }}
-            className="hidden sm:flex gap-1 shrink-0"
+          <button
+            onClick={() => go(1)}
+            className="w-7 h-7 flex items-center justify-center rounded-[4px] bg-white/[0.05] hover:bg-white/[0.1] text-white/30 hover:text-white/80 transition-colors shrink-0"
+            aria-label="Next site"
           >
-            {current.colors?.slice(0, 5).map((hex, i) => (
-              <div
-                key={i}
-                className="w-3 h-3 rounded-full border border-white/[0.1]"
-                style={{ backgroundColor: hex }}
-              />
-            ))}
-          </motion.div>
-        </AnimatePresence>
+            <CaretRight className="w-3.5 h-3.5" weight="bold" />
+          </button>
 
-        {/* Always-visible next button */}
-        <button
-          onClick={() => go(1)}
-          className="w-7 h-7 flex items-center justify-center rounded-md bg-white/[0.05] hover:bg-white/[0.1] text-white/35 hover:text-white/80 transition-colors shrink-0"
-          aria-label="Next site"
-        >
-          <CaretRight className="w-3.5 h-3.5" weight="bold" />
-        </button>
+        </div>
       </div>
     </motion.div>
   )

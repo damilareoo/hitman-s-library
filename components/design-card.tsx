@@ -113,12 +113,12 @@ export function DesignCard({ design, index, isSelected, onClick, onHover, onTagC
       </div>
 
       {/* Metadata */}
-      <div className="px-3.5 py-3 flex items-start justify-between gap-3 bg-background">
+      <div className="px-3.5 py-3.5 flex items-start justify-between gap-3 bg-background">
         <div className="min-w-0 flex-1">
-          <p className="text-[13px] font-medium text-foreground leading-snug line-clamp-1 tracking-[-0.01em]">
+          <p className="text-[13.5px] font-medium text-foreground leading-snug line-clamp-1 tracking-[-0.02em]">
             {design.title}
           </p>
-          <p className="text-[11px] font-mono text-muted-foreground mt-0.5 truncate">{domain}</p>
+          <p className="text-[11px] font-mono text-muted-foreground/70 mt-0.5 truncate">{domain}</p>
           {design.tags.length > 0 && (
             <div className="flex gap-1 flex-wrap mt-1.5">
               {design.tags.slice(0, 3).map(tag => (

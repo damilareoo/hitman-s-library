@@ -236,6 +236,37 @@ const PICKER_SCRIPT = `<script>
 // before triggering so capture.js sees a fully-rendered DOM (better 1:1 fidelity).
 const CAPTURE_SCRIPT = `<script>
 (function () {
+  // Polyfill clipboard.write for browsers that block it (e.g. Dia).
+  // Falls back to execCommand('copy') via a hidden contentEditable node so
+  // text/html structure is preserved — Figma can still read it on paste.
+  if (navigator.clipboard && navigator.clipboard.write) {
+    var _origWrite = navigator.clipboard.write.bind(navigator.clipboard);
+    navigator.clipboard.write = function (items) {
+      return _origWrite(items).catch(function () {
+        if (!items || !items.length) return Promise.resolve();
+        var item = items[0];
+        if (!item || !item.types) return Promise.resolve();
+        var type = item.types.includes('text/html') ? 'text/html'
+                 : item.types.includes('text/plain') ? 'text/plain' : null;
+        if (!type) return Promise.resolve();
+        return item.getType(type).then(function (blob) { return blob.text(); }).then(function (text) {
+          var el = document.createElement('div');
+          el.contentEditable = 'true';
+          if (type === 'text/html') { el.innerHTML = text; } else { el.textContent = text; }
+          Object.assign(el.style, { position: 'fixed', top: '-9999px', left: '-9999px', opacity: '0', pointerEvents: 'none' });
+          document.body.appendChild(el);
+          var range = document.createRange();
+          range.selectNodeContents(el);
+          var sel = window.getSelection();
+          if (sel) { sel.removeAllRanges(); sel.addRange(range); }
+          document.execCommand('copy');
+          if (sel) sel.removeAllRanges();
+          document.body.removeChild(el);
+        });
+      });
+    };
+  }
+
   var banner = document.createElement('div');
   banner.id = '__hl_capture_banner';
   Object.assign(banner.style, {
