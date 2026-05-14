@@ -48,17 +48,19 @@ export function PanelTabs({ active, onChange }: PanelTabsProps) {
             role="tab"
             aria-selected={isActive}
             aria-label={label}
-            title={label}
             tabIndex={isActive ? 0 : -1}
             onClick={() => { playTabChange(); onChange(key) }}
             className={[
-              'flex-1 py-2.5 transition-colors -mb-px border-b-2 flex items-center justify-center',
+              'flex-1 py-2.5 transition-colors -mb-px border-b-2 flex flex-col items-center justify-center gap-1 min-h-[44px]',
               isActive
                 ? 'text-foreground border-foreground'
-                : 'text-muted-foreground/40 border-transparent hover:text-muted-foreground',
+                : 'text-muted-foreground/50 border-transparent hover:text-muted-foreground',
             ].join(' ')}
           >
-            <Icon className="w-4 h-4 shrink-0" weight={isActive ? 'fill' : 'regular'} />
+            <Icon className="w-[15px] h-[15px] shrink-0" weight={isActive ? 'fill' : 'regular'} />
+            <span className={['text-[9px] font-mono tracking-wide leading-none', isActive ? 'opacity-100' : 'opacity-70'].join(' ')}>
+              {label}
+            </span>
           </button>
         )
       })}
