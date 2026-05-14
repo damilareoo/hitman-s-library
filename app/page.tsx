@@ -12,7 +12,7 @@ import Link from 'next/link'
 
 const gridVariants = {
   hidden: {},
-  show: { transition: { staggerChildren: 0.05 } },
+  show: { transition: { staggerChildren: 0.03 } },
 }
 
 interface ActiveFilters {
@@ -81,6 +81,13 @@ export default function DesignLibrary() {
   useEffect(() => {
     const dialog = mobileDialogRef.current
     if (!dialog) return
+    // Only use showModal on mobile — on desktop the dialog has md:hidden but showModal()
+    // still places it in the top layer with a ::backdrop that blocks all pointer events.
+    const isMobile = window.matchMedia('(max-width: 767px)').matches
+    if (!isMobile) {
+      if (dialog.open) dialog.close()
+      return
+    }
     if (selectedDesign) {
       if (!dialog.open) dialog.showModal()
     } else {
@@ -276,7 +283,7 @@ export default function DesignLibrary() {
             <button
               onClick={() => openPresentation(selectedDesign ? designs.findIndex(d => d.id === selectedDesign.id) : 0)}
               disabled={designs.length === 0}
-              className="w-8 h-8 flex items-center justify-center rounded-sm border border-border/60 text-muted-foreground hover:text-foreground hover:border-foreground/40 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+              className="w-9 h-9 flex items-center justify-center rounded-sm border border-border/60 text-muted-foreground hover:text-foreground hover:border-foreground/40 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
               aria-label="Presentation mode"
               title="Presentation mode (P)"
             >
@@ -285,7 +292,7 @@ export default function DesignLibrary() {
 
             <button
               onClick={() => sounds.setEnabled(p => !p)}
-              className="w-8 h-8 flex items-center justify-center rounded-sm border border-border/60 text-muted-foreground hover:text-foreground hover:border-foreground/40 transition-colors"
+              className="w-9 h-9 flex items-center justify-center rounded-sm border border-border/60 text-muted-foreground hover:text-foreground hover:border-foreground/40 transition-colors"
               aria-label={sounds.enabled ? 'Mute' : 'Enable sounds'}
             >
               {sounds.enabled ? <SpeakerHigh className="w-3.5 h-3.5" weight="regular" /> : <SpeakerSlash className="w-3.5 h-3.5" weight="regular" />}
@@ -311,7 +318,7 @@ export default function DesignLibrary() {
                 })
                 t.finished.then(() => { isThemeTransitioning.current = false })
               }}
-              className="w-8 h-8 flex items-center justify-center rounded-sm border border-border/60 text-muted-foreground hover:text-foreground hover:border-foreground/40 transition-colors"
+              className="w-9 h-9 flex items-center justify-center rounded-sm border border-border/60 text-muted-foreground hover:text-foreground hover:border-foreground/40 transition-colors"
               aria-label={resolvedTheme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
             >
               <motion.span key={resolvedTheme} initial={{ rotate: -20, scale: 0.8 }} animate={{ rotate: 0, scale: 1 }} style={{ display: 'flex' }}>
@@ -336,10 +343,10 @@ export default function DesignLibrary() {
                 <button
                   onClick={() => handleFilterChange('All')}
                   aria-pressed={activeFilters.industries.length === 0}
-                  className={"w-full flex items-center justify-between px-2 py-1.5 rounded-[3px] text-[13px] transition-colors " + (activeFilters.industries.length === 0 ? 'text-foreground font-medium bg-muted' : 'text-muted-foreground hover:text-foreground hover:bg-muted/40')}
+                  className={"w-full flex items-center justify-between rounded-[3px] text-[13px] transition-colors border-l-2 py-2 " + (activeFilters.industries.length === 0 ? 'text-foreground font-medium bg-muted/70 border-foreground/40 px-[6px]' : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/40 px-2')}
                 >
                   <span>All</span>
-                  <span className="text-[11px] tabular-nums font-mono opacity-50">{designs.length}</span>
+                  <span className="text-[11px] tabular-nums font-mono opacity-50">{pagination.total || designs.length}</span>
                 </button>
               </li>
               {categories.map(({ name, count }) => {
@@ -349,7 +356,7 @@ export default function DesignLibrary() {
                     <button
                       onClick={() => handleFilterChange(name)}
                       aria-pressed={isActive}
-                      className={"w-full flex items-center justify-between px-2 py-1.5 rounded-[3px] text-[13px] transition-colors " + (isActive ? 'text-foreground font-medium bg-muted' : 'text-muted-foreground hover:text-foreground hover:bg-muted/40')}
+                      className={"w-full flex items-center justify-between rounded-[3px] text-[13px] transition-colors border-l-2 py-2 " + (isActive ? 'text-foreground font-medium bg-muted/70 border-foreground/40 px-[6px]' : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/40 px-2')}
                     >
                       <span>{name}</span>
                       <span className="text-[11px] tabular-nums font-mono opacity-50">{count}</span>
@@ -388,14 +395,14 @@ export default function DesignLibrary() {
             </div>
             {/* Category pills */}
             <div className="flex gap-2 overflow-x-auto px-4 pb-3 no-scrollbar">
-              {[{ name: 'All', count: designs.length }, ...categories].map(({ name, count }) => {
+              {[{ name: 'All', count: pagination.total || designs.length }, ...categories].map(({ name, count }) => {
                 const isActive = name === 'All' ? activeFilters.industries.length === 0 : activeFilters.industries.includes(name)
                 return (
                   <button
                     key={name}
                     onClick={() => handleFilterChange(name)}
                     aria-pressed={isActive}
-                    className={"shrink-0 px-3 py-1 rounded-full text-[12px] font-medium transition-colors whitespace-nowrap " + (isActive ? 'bg-foreground text-background' : 'bg-muted text-muted-foreground hover:text-foreground')}
+                    className={"shrink-0 px-3.5 py-2 rounded-full text-[12px] font-medium transition-colors whitespace-nowrap " + (isActive ? 'bg-foreground text-background' : 'bg-muted text-muted-foreground hover:text-foreground')}
                   >
                     {name} <span className="opacity-50 font-mono text-[10px]">{count}</span>
                   </button>
@@ -411,7 +418,7 @@ export default function DesignLibrary() {
               initial={hasAnimated.current ? false : 'hidden'}
               animate="show"
             >
-              <AnimatePresence mode="popLayout">
+              <AnimatePresence mode="sync">
                 {(isPageLoading || isFiltering)
                   ? Array.from({ length: LIMIT }).map((_, i) => <SkeletonCard key={i} />)
                   : designs.length === 0
@@ -483,7 +490,12 @@ export default function DesignLibrary() {
                 animate={{ opacity: 1 }}
                 className="flex items-center justify-center h-full"
               >
-                <p className="text-[12px] font-mono text-muted-foreground/50">Select a site</p>
+                <div className="flex flex-col items-center gap-2.5 text-center px-6">
+                  <p className="text-[12px] font-mono text-muted-foreground/35">Select a site</p>
+                  <p className="text-[10px] font-mono text-muted-foreground/20 tracking-wide leading-relaxed">
+                    preview · colors · type<br />assets · figma
+                  </p>
+                </div>
               </motion.div>
             )}
           </AnimatePresence>

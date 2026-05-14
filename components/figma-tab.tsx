@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
-import { DownloadSimple, Check, Warning } from '@phosphor-icons/react'
+import { DownloadSimple, Check, Warning, Stack } from '@phosphor-icons/react'
 
 interface FigmaTabProps {
   siteUrl: string
@@ -66,6 +66,9 @@ export function FigmaTab({ siteUrl, screenshotUrl, mobileScreenshotUrl }: FigmaT
   const [viewport, setViewport] = useState<'desktop' | 'mobile'>('desktop')
   const [desktopCopy, setDesktopCopy] = useState<CopyStatus>('idle')
   const [mobileCopy, setMobileCopy] = useState<CopyStatus>('idle')
+  const [captureOpen, setCaptureOpen] = useState(false)
+  const [captureBlocked, setCaptureBlocked] = useState(false)
+  const captureCheckRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const outerRef = useRef<HTMLDivElement>(null)
 
@@ -88,6 +91,9 @@ export function FigmaTab({ siteUrl, screenshotUrl, mobileScreenshotUrl }: FigmaT
     setViewport('desktop')
     setDesktopCopy('idle')
     setMobileCopy('idle')
+    setCaptureOpen(false)
+    setCaptureBlocked(false)
+    if (captureCheckRef.current) clearInterval(captureCheckRef.current)
   }, [siteUrl])
 
   useEffect(() => {
@@ -97,6 +103,31 @@ export function FigmaTab({ siteUrl, screenshotUrl, mobileScreenshotUrl }: FigmaT
     window.addEventListener('message', onMessage)
     return () => window.removeEventListener('message', onMessage)
   }, [])
+
+  useEffect(() => {
+    return () => { if (captureCheckRef.current) clearInterval(captureCheckRef.current) }
+  }, [])
+
+  function handleCaptureLayers() {
+    if (captureCheckRef.current) clearInterval(captureCheckRef.current)
+    const captureUrl = `/api/proxy?url=${encodeURIComponent(siteUrl)}&capture=1`
+    // Fixed window name reuses the same popup if already open
+    const popup = window.open(captureUrl, 'figma-layers-capture', 'width=1440,height=900,scrollbars=yes,resizable=yes')
+    if (!popup) {
+      setCaptureBlocked(true)
+      setTimeout(() => setCaptureBlocked(false), 5000)
+      return
+    }
+    setCaptureOpen(true)
+    setCaptureBlocked(false)
+    // Poll until the popup closes, then clear the status
+    captureCheckRef.current = setInterval(() => {
+      if (popup.closed) {
+        setCaptureOpen(false)
+        if (captureCheckRef.current) clearInterval(captureCheckRef.current)
+      }
+    }, 600)
+  }
 
   async function handleCopy(which: 'desktop' | 'mobile') {
     const url = which === 'mobile' ? mobileScreenshotUrl : screenshotUrl
@@ -159,6 +190,14 @@ export function FigmaTab({ siteUrl, screenshotUrl, mobileScreenshotUrl }: FigmaT
         <div className="flex items-center gap-1.5">
           {screenshotUrl && <CopyBtn which="desktop" status={desktopCopy} />}
           {hasMobile && mobileScreenshotUrl && <CopyBtn which="mobile" status={mobileCopy} />}
+          <div className="w-px h-4 bg-border/60 mx-0.5" />
+          <button
+            onClick={handleCaptureLayers}
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-[3px] border text-[10px] font-mono transition-colors border-foreground/20 bg-foreground/[0.04] text-foreground/60 hover:border-foreground/40 hover:text-foreground hover:bg-foreground/[0.07]"
+          >
+            <Stack className="w-3 h-3" weight="regular" />
+            Layers
+          </button>
         </div>
       </div>
 
@@ -207,6 +246,7 @@ export function FigmaTab({ siteUrl, screenshotUrl, mobileScreenshotUrl }: FigmaT
             title={`Preview of ${siteUrl}`}
             onLoad={() => setIframeLoaded(true)}
             onError={() => setProxyFailed(true)}
+            sandbox="allow-scripts allow-forms allow-popups allow-top-navigation-by-user-activation"
             style={bpPx ? {
               position: 'absolute', top: 0, left: 0,
               width: `${bpPx}px`,
@@ -225,7 +265,21 @@ export function FigmaTab({ siteUrl, screenshotUrl, mobileScreenshotUrl }: FigmaT
       {/* Status bar */}
       <div className="shrink-0 border-t border-border bg-background px-4 py-2.5 flex items-center min-h-[40px]">
         <AnimatePresence mode="wait">
-          {(desktopCopy === 'copied' || mobileCopy === 'copied') ? (
+          {captureBlocked ? (
+            <motion.div key="blocked" initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="flex items-center gap-2 w-full">
+              <Warning className="w-3 h-3 text-amber-500 shrink-0" weight="fill" />
+              <span className="text-[11px] font-mono text-muted-foreground">
+                Popup blocked — allow popups for this site in your browser, then try again
+              </span>
+            </motion.div>
+          ) : captureOpen ? (
+            <motion.div key="capture" initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="flex items-center gap-2 w-full">
+              <Stack className="w-3 h-3 text-foreground/50 shrink-0" weight="regular" />
+              <span className="text-[11px] font-mono text-foreground/60">
+                Click <strong className="text-foreground/80">Copy to clipboard</strong> in the toolbar that appeared — then <span className="text-foreground/50">⌘V</span> in Figma for real layers
+              </span>
+            </motion.div>
+          ) : (desktopCopy === 'copied' || mobileCopy === 'copied') ? (
             <motion.div key="copied" initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="flex items-center gap-2 w-full">
               <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-success)] shrink-0" />
               <span className="text-[11px] font-mono text-[var(--color-success)]">
@@ -241,7 +295,7 @@ export function FigmaTab({ siteUrl, screenshotUrl, mobileScreenshotUrl }: FigmaT
             <motion.div key="idle" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex items-center gap-2 w-full">
               <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/30 shrink-0" />
               <span className="text-[11px] font-mono text-muted-foreground/50">
-                Copy Desktop or Mobile screenshot — paste directly in Figma, no plugin needed
+                Screenshot → flat PNG · Layers → real editable Figma layers, no plugin
               </span>
             </motion.div>
           )}

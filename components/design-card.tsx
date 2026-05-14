@@ -25,7 +25,7 @@ export interface Design {
 
 export const cardVariants = {
   hidden: { opacity: 0, y: 20 },
-  show: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 280, damping: 24 } },
+  show: { opacity: 1, y: 0, transition: { type: 'spring' as const, stiffness: 280, damping: 24 } },
 }
 
 interface DesignCardProps {
@@ -57,7 +57,7 @@ export function DesignCard({ design, index, isSelected, onClick, onHover, onTagC
       variants={cardVariants}
       initial={hasAnimated ? false : 'hidden'}
       animate="show"
-      exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.12 } }}
+      exit={{ opacity: 0, transition: { duration: 0.08 } }}
       onClick={onClick}
       onHoverStart={onHover}
       onKeyDown={(e) => {
@@ -72,6 +72,9 @@ export function DesignCard({ design, index, isSelected, onClick, onHover, onTagC
       style={{ contain: 'layout paint style' }}
       className={"group relative flex flex-col cursor-pointer rounded-[4px] overflow-hidden border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/40 focus-visible:ring-offset-1 " + (isSelected ? 'border-foreground/50' : 'border-border/60 hover:border-foreground/25')}
     >
+      {isSelected && (
+        <div className="absolute top-0 left-0 right-0 h-[2px] bg-foreground/50 z-10 pointer-events-none" />
+      )}
       {/* Screenshot */}
       <div className="relative overflow-hidden bg-muted aspect-[16/10]">
         {imgStatus === 'loading' && (
@@ -95,7 +98,7 @@ export function DesignCard({ design, index, isSelected, onClick, onHover, onTagC
           </div>
         )}
 
-        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-300 pointer-events-none" />
+        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300 pointer-events-none" />
 
         {/* Visit overlay button */}
         <a
@@ -138,7 +141,7 @@ export function DesignCard({ design, index, isSelected, onClick, onHover, onTagC
                 key={i}
                 role="img"
                 aria-label={color}
-                className="w-3 h-3 rounded-full border border-black/10 dark:border-white/10"
+                className="w-3.5 h-3.5 rounded-full border border-black/10 dark:border-white/10"
                 style={{ backgroundColor: color }}
               />
             ))}

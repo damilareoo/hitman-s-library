@@ -232,9 +232,68 @@ const PICKER_SCRIPT = `<script>
 })();
 </script>`
 
+// Replicates the html-to-design bookmarklet but waits for fonts + full page load
+// before triggering so capture.js sees a fully-rendered DOM (better 1:1 fidelity).
+const CAPTURE_SCRIPT = `<script>
+(function () {
+  var banner = document.createElement('div');
+  banner.id = '__hl_capture_banner';
+  Object.assign(banner.style, {
+    position:'fixed', top:'0', left:'0', right:'0', zIndex:'2147483647',
+    padding:'9px 16px', background:'#18181b', color:'#a1a1aa',
+    fontFamily:'ui-monospace,monospace', fontSize:'11px', letterSpacing:'0.04em',
+    borderBottom:'1px solid #27272a', pointerEvents:'none',
+  });
+  banner.textContent = 'Waiting for page and fonts to load…';
+  function appendBanner() {
+    if (document.body && !document.getElementById('__hl_capture_banner')) {
+      document.body.appendChild(banner);
+    }
+  }
+  if (document.body) appendBanner();
+  else document.addEventListener('DOMContentLoaded', appendBanner);
+
+  function load() {
+    var s = document.createElement('script');
+    s.src = 'https://mcp.figma.com/mcp/html-to-design/capture.js';
+    document.head.appendChild(s);
+  }
+
+  // First load initialises capture.js global state
+  load();
+
+  // Wait for full page render + all fonts before triggering the capture UI.
+  // Both promises race against timeouts so a hung resource never blocks capture.
+  function waitOrTimeout(p, ms) {
+    return Promise.race([p, new Promise(function (r) { setTimeout(r, ms); })]);
+  }
+  Promise.all([
+    waitOrTimeout(document.fonts ? document.fonts.ready : Promise.resolve(null), 5000),
+    waitOrTimeout(
+      new Promise(function (resolve) {
+        if (document.readyState === 'complete') { resolve(null); return; }
+        window.addEventListener('load', function () { resolve(null); }, { once: true });
+      }),
+      8000
+    ),
+  ]).then(function () {
+    var b = document.getElementById('__hl_capture_banner');
+    if (b) b.textContent = 'Loading Figma capture toolbar…';
+    // figmadelay=3000 tells capture.js to wait 3s after showing before auto-capturing
+    window.location.hash = 'figmacapture&figmadelay=3000';
+    load(); // second load sees the hash and activates the toolbar UI
+    setTimeout(function () {
+      var b2 = document.getElementById('__hl_capture_banner');
+      if (b2) b2.remove();
+    }, 2500);
+  });
+})();
+</script>`
+
 export async function GET(req: NextRequest) {
   const url = req.nextUrl.searchParams.get('url')
   const picker = req.nextUrl.searchParams.get('picker') !== '0'
+  const capture = req.nextUrl.searchParams.get('capture') === '1'
   if (!url) return new NextResponse('Missing url param', { status: 400 })
 
   let targetUrl: URL
@@ -276,7 +335,13 @@ export async function GET(req: NextRequest) {
   // <base href> resolves all relative URLs (CSS, images, links) against the real origin
   const baseTag = `<base href="${origin}/">`
 
-  const script = picker ? PICKER_SCRIPT : ''
+  // Strip CSP and X-Frame-Options meta tags — they block our injected scripts
+  // (header-based CSP/XFO is already absent from our response, but some sites
+  //  also set them via <meta http-equiv>, which the browser still enforces)
+  html = html.replace(/<meta\b[^>]+\bhttp-equiv\s*=\s*["']?content-security-policy["']?[^>]*>/gi, '')
+  html = html.replace(/<meta\b[^>]+\bhttp-equiv\s*=\s*["']?x-frame-options["']?[^>]*>/gi, '')
+
+  const script = capture ? CAPTURE_SCRIPT : picker ? PICKER_SCRIPT : ''
   const injected = html
     .replace(/<head([^>]*)>/i, `<head$1>${baseTag}`)
     .replace(/<\/body>/i, `${script}</body>`)
