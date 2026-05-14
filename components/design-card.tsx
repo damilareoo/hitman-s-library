@@ -113,40 +113,39 @@ export function DesignCard({ design, index, isSelected, onClick, onHover, onTagC
       </div>
 
       {/* Metadata */}
-      <div className="px-3.5 py-3.5 flex items-start justify-between gap-3 bg-background">
-        <div className="min-w-0 flex-1">
+      <div className="px-3.5 pt-3 pb-3.5 flex flex-col gap-2.5 bg-background">
+        <div className="min-w-0">
           <p className="text-[13.5px] font-medium text-foreground leading-snug line-clamp-1 tracking-[-0.02em]">
             {design.title}
           </p>
-          <p className="text-[11px] font-mono text-muted-foreground/70 mt-0.5 truncate">{domain}</p>
-          {design.tags.length > 0 && (
-            <div className="flex gap-1 flex-wrap mt-1.5">
-              {design.tags.slice(0, 3).map(tag => (
-                <button
-                  key={tag}
-                  onClick={e => { e.stopPropagation(); onTagClick(tag) }}
-                  className="px-1.5 py-0.5 rounded-[2px] bg-muted text-[9px] font-mono text-muted-foreground/60 leading-none hover:bg-foreground hover:text-background transition-colors"
-                >
-                  {tag}
-                </button>
-              ))}
-            </div>
-          )}
+          <p className="text-[11px] font-mono text-muted-foreground/55 mt-0.5 truncate">{domain}</p>
         </div>
 
-        {design.colors.length > 0 && (
-          <div className="flex gap-1 shrink-0 mt-0.5">
-            {design.colors.slice(0, 5).map((color, i) => (
-              <div
-                key={i}
-                role="img"
-                aria-label={color}
-                className="w-3.5 h-3.5 rounded-full border border-black/10 dark:border-white/10"
-                style={{ backgroundColor: color }}
-              />
-            ))}
-          </div>
-        )}
+        <div className="flex items-center justify-between gap-2">
+          {design.colors.length > 0 ? (
+            <div className="flex gap-1">
+              {design.colors.slice(0, 5).map((color, i) => (
+                <div
+                  key={i}
+                  role="img"
+                  aria-label={color}
+                  className="w-3.5 h-3.5 rounded-full border border-black/10 dark:border-white/10"
+                  style={{ backgroundColor: color }}
+                />
+              ))}
+            </div>
+          ) : <span />}
+          {design.industry ? (
+            <span className="text-[9px] font-mono text-muted-foreground/35 truncate shrink-0">{design.industry}</span>
+          ) : design.tags[0] ? (
+            <button
+              onClick={e => { e.stopPropagation(); onTagClick(design.tags[0]) }}
+              className="text-[9px] font-mono text-muted-foreground/35 hover:text-muted-foreground truncate shrink-0 transition-colors"
+            >
+              {design.tags[0]}
+            </button>
+          ) : null}
+        </div>
       </div>
     </motion.article>
   )

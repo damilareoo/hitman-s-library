@@ -130,7 +130,7 @@ export async function extractTypographyFromRenderedPage(url: string): Promise<st
               return cleaned
             })
             
-            fontList.forEach(f => {
+            fontList.forEach((f: string) => {
               if (f && f.length > 0 && f.length < 200) {
                 fonts.add(f)
                 foundCount++
@@ -146,7 +146,7 @@ export async function extractTypographyFromRenderedPage(url: string): Promise<st
       return Array.from(fonts)
     })
 
-    computedFonts.forEach(f => {
+    computedFonts.forEach((f: string) => {
       if (f) fonts.add(f)
     })
     console.log('[v0] Computed fonts extracted:', fonts.size)
@@ -193,7 +193,7 @@ export async function extractTypographyFromRenderedPage(url: string): Promise<st
       return fonts
     })
 
-    fontFaceRules.forEach(f => {
+    fontFaceRules.forEach((f: string) => {
       if (f) fonts.add(f)
     })
     console.log('[v0] Font-face rules extracted:', fontFaceRules.length)
@@ -212,7 +212,7 @@ export async function extractTypographyFromRenderedPage(url: string): Promise<st
           if (match) {
             try {
               const families = decodeURIComponent(match[1]).split('|')
-              families.forEach(f => {
+              families.forEach((f: string) => {
                 const name = f.split(':')[0].trim()
                 if (name) fonts.push(name)
               })
@@ -224,7 +224,7 @@ export async function extractTypographyFromRenderedPage(url: string): Promise<st
       return fonts
     })
 
-    linkFonts.forEach(f => {
+    linkFonts.forEach((f: string) => {
       if (f) fonts.add(f)
     })
     console.log('[v0] Link fonts extracted:', linkFonts.length)
@@ -244,7 +244,7 @@ export async function extractTypographyFromRenderedPage(url: string): Promise<st
             matches.forEach(match => {
               const value = match.replace(/font-family\s*:\s*/i, '').trim()
               const fontList = value.split(',').map(f => f.trim().replace(/^["']|["']$/g, ''))
-              fontList.forEach(f => {
+              fontList.forEach((f: string) => {
                 if (f && f.length > 0) fonts.push(f)
               })
             })
@@ -257,7 +257,7 @@ export async function extractTypographyFromRenderedPage(url: string): Promise<st
       return fonts
     })
 
-    cssTextFonts.forEach(f => {
+    cssTextFonts.forEach((f: string) => {
       if (f) fonts.add(f)
     })
     console.log('[v0] CSS text fonts extracted:', cssTextFonts.length)
@@ -273,7 +273,7 @@ export async function extractTypographyFromRenderedPage(url: string): Promise<st
         if (matches) {
           const value = matches[1].trim()
           const fontList = value.split(',').map(f => f.trim().replace(/^["']|["']$/g, ''))
-          fontList.forEach(f => {
+          fontList.forEach((f: string) => {
             if (f && f.length > 0) fonts.push(f)
           })
         }
@@ -282,7 +282,7 @@ export async function extractTypographyFromRenderedPage(url: string): Promise<st
       return fonts
     })
 
-    inlineFonts.forEach(f => {
+    inlineFonts.forEach((f: string) => {
       if (f) fonts.add(f)
     })
     console.log('[v0] Inline fonts extracted:', inlineFonts.length)
@@ -337,7 +337,7 @@ export async function extractAllDesignDataFromRenderedPage(url: string): Promise
           
           // Fonts - NO filtering
           if (styles.fontFamily && styles.fontFamily !== 'initial') {
-            styles.fontFamily.split(',').forEach(f => {
+            styles.fontFamily.split(',').forEach((f: string) => {
               const cleaned = f.trim().replace(/^["']|["']$/g, '')
               if (cleaned && cleaned.length > 0) fonts.add(cleaned)
             })

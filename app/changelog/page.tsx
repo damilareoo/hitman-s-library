@@ -8,10 +8,10 @@ export const metadata: Metadata = {
   description: "What's new in Hitman's Library.",
 }
 
-const TYPE_COLOR: Record<ChangeItem['type'], string> = {
+const DOT_COLOR: Record<ChangeItem['type'], string> = {
   new:      'bg-[var(--color-success)]',
   improved: 'bg-[var(--color-running)]',
-  fixed:    'bg-foreground/20',
+  fixed:    'bg-muted-foreground/30',
 }
 
 const TYPE_LABEL: Record<ChangeItem['type'], string> = {
@@ -21,14 +21,14 @@ const TYPE_LABEL: Record<ChangeItem['type'], string> = {
 }
 
 const TYPE_TEXT: Record<ChangeItem['type'], string> = {
-  new:      'text-[var(--color-success)]',
-  improved: 'text-[var(--color-running)]',
-  fixed:    'text-muted-foreground/50',
+  new:      'text-[var(--color-success)]/70',
+  improved: 'text-[var(--color-running)]/70',
+  fixed:    'text-muted-foreground/35',
 }
 
 function formatDate(iso: string) {
   return new Date(iso + 'T00:00:00Z').toLocaleDateString('en-US', {
-    weekday: 'long', month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC',
+    month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC',
   })
 }
 
@@ -38,68 +38,101 @@ export default function ChangelogPage() {
 
       {/* Nav */}
       <nav className="sticky top-0 z-50 border-b border-border/40 bg-background/90 backdrop-blur-md">
-        <div className="max-w-2xl mx-auto px-5 h-12 flex items-center justify-between">
+        <div className="max-w-[640px] mx-auto px-6 h-12 flex items-center justify-between">
           <Link
             href="/"
-            className="flex items-center gap-1.5 text-[11px] font-mono text-muted-foreground hover:text-foreground transition-colors"
+            className="flex items-center gap-1.5 text-[11px] font-mono text-muted-foreground/60 hover:text-foreground transition-colors"
           >
             <ArrowLeft className="w-3 h-3" weight="regular" />
             Gallery
           </Link>
-          <span className="text-[11px] font-mono text-muted-foreground/40">Changelog</span>
+          <span className="text-[11px] font-mono text-muted-foreground/30 tracking-wide">Changelog</span>
         </div>
       </nav>
 
-      <main className="max-w-2xl mx-auto px-5 pt-10 pb-24">
+      <main className="max-w-[640px] mx-auto px-6 pt-14 pb-32">
 
-        {changelog.map((release, i) => (
-          <section key={i} className="mb-10">
+        {/* Page header */}
+        <div className="mb-14">
+          <h1 className="text-[28px] font-semibold tracking-[-0.03em] text-foreground leading-none mb-2">
+            Changelog
+          </h1>
+          <p className="text-[13px] text-muted-foreground/50">
+            What's new in Hitman's Library
+          </p>
+        </div>
 
-            {/* Date header — like the Deputy "Thursday, 05 March" */}
-            <div className="flex items-center gap-3 mb-1">
-              <h2 className="text-[13px] font-semibold text-foreground shrink-0">
-                {formatDate(release.date)}
-              </h2>
-              {i === 0 && (
-                <span className="text-[9px] font-mono uppercase tracking-[0.1em] px-1.5 py-px rounded-[2px] bg-foreground text-background shrink-0">
-                  Latest
-                </span>
+        {/* Releases */}
+        <div className="space-y-0">
+          {changelog.map((release, i) => (
+            <div key={i} className="relative flex gap-8 pb-14 last:pb-0">
+
+              {/* Timeline line */}
+              {i < changelog.length - 1 && (
+                <div className="absolute left-[5px] top-[11px] bottom-0 w-px bg-border/40" />
               )}
-            </div>
-            <hr className="border-border/50 mb-1" />
 
-            {/* Release title row */}
-            <div className="py-2.5 border-b border-border/30">
-              <p className="text-[13px] text-muted-foreground/60 italic">{release.title}</p>
-            </div>
+              {/* Timeline dot */}
+              <div className="relative shrink-0 mt-[4px]">
+                <div className={[
+                  'w-[11px] h-[11px] rounded-full border-2',
+                  i === 0
+                    ? 'bg-foreground border-foreground'
+                    : 'bg-background border-border',
+                ].join(' ')} />
+              </div>
 
-            {/* Change rows */}
-            {release.items.map((item, j) => (
-              <div
-                key={j}
-                className="flex items-start gap-3 py-2.5 border-b border-border/20 last:border-b-0"
-              >
-                {/* Left indicator */}
-                <div className="shrink-0 mt-[5px] flex items-center justify-center w-5 h-5 rounded-full bg-muted border border-border/50">
-                  <div className={`w-1.5 h-1.5 rounded-full ${TYPE_COLOR[item.type]}`} />
+              {/* Content */}
+              <div className="flex-1 min-w-0">
+
+                {/* Date + latest badge */}
+                <div className="flex items-center gap-2 mb-1">
+                  <time className="text-[11px] font-mono text-muted-foreground/50 tracking-wide">
+                    {formatDate(release.date)}
+                  </time>
+                  {i === 0 && (
+                    <span className="text-[8px] font-mono uppercase tracking-[0.12em] px-1.5 py-0.5 rounded-[2px] bg-foreground text-background">
+                      Latest
+                    </span>
+                  )}
                 </div>
 
-                {/* Text */}
-                <p className="flex-1 text-[13px] text-foreground/80 leading-snug pt-0.5">
-                  {item.text}
-                </p>
+                {/* Release title */}
+                <h2 className="text-[16px] font-semibold tracking-[-0.02em] text-foreground leading-snug mb-1">
+                  {release.title}
+                </h2>
 
-                {/* Type label */}
-                <span className={`shrink-0 text-[10px] font-mono pt-0.5 ${TYPE_TEXT[item.type]}`}>
-                  {TYPE_LABEL[item.type]}
-                </span>
+                {/* Optional description */}
+                {release.description && (
+                  <p className="text-[12.5px] text-muted-foreground/55 leading-relaxed mb-4">
+                    {release.description}
+                  </p>
+                )}
+
+                {/* Change items */}
+                <div className="mt-4 space-y-3">
+                  {release.items.map((item, j) => (
+                    <div key={j} className="flex items-start gap-3">
+                      <div className="shrink-0 mt-[6px]">
+                        <div className={`w-1.5 h-1.5 rounded-full ${DOT_COLOR[item.type]}`} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[12.5px] text-foreground/70 leading-relaxed">
+                          {item.text}
+                        </p>
+                      </div>
+                      <span className={`shrink-0 text-[9px] font-mono pt-[3px] ${TYPE_TEXT[item.type]}`}>
+                        {TYPE_LABEL[item.type]}
+                      </span>
+                    </div>
+                  ))}
+                </div>
               </div>
-            ))}
+            </div>
+          ))}
+        </div>
 
-          </section>
-        ))}
-
-        <p className="text-[10px] font-mono text-muted-foreground/25 mt-6">
+        <p className="text-[10px] font-mono text-muted-foreground/20 mt-10">
           Feb 23, 2026 — first commit
         </p>
       </main>

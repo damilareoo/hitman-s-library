@@ -36,7 +36,7 @@ export const metadata: Metadata = {
     address: false,
     telephone: false,
   },
-  metadataBase: new URL("https://mars-hitman-library.vercel.app"),
+  metadataBase: new URL("https://hitmanslibrary.xyz"),
   icons: {
     icon: [
       { url: "/icon.jpg", type: "image/jpeg" },
@@ -58,7 +58,7 @@ export const metadata: Metadata = {
     siteName: "Hitman's Library",
     images: [
       {
-        url: "https://mars-hitman-library.vercel.app/og-image-v2.png",
+        url: "https://hitmanslibrary.xyz/og-image-v2.png",
         width: 1200,
         height: 630,
         alt: "Hitman's Library - A personal infrastructure for everything worth saving on the web",
@@ -71,7 +71,7 @@ export const metadata: Metadata = {
     title: "Hitman's Library",
     description:
       "A personal infrastructure for everything worth saving on the web. No folders. No bookmarks. Just the library.",
-    images: ["https://mars-hitman-library.vercel.app/og-image-v2.png"],
+    images: ["https://hitmanslibrary.xyz/og-image-v2.png"],
     creator: "@damilareoo",
   },
   robots: {

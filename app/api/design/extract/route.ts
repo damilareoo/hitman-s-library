@@ -52,6 +52,9 @@ export async function POST(req: NextRequest) {
     try {
       // Follow redirects manually with proper handling
       while (redirectCount < maxRedirects) {
+        const controller = new AbortController()
+        const timeoutId = setTimeout(() => controller.abort(), 8000)
+        try {
         response = await fetch(currentUrl, {
           headers: {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
@@ -61,9 +64,12 @@ export async function POST(req: NextRequest) {
             'Connection': 'keep-alive',
             'Upgrade-Insecure-Requests': '1'
           },
-          timeout: 8000,
+          signal: controller.signal,
           method: 'GET'
         })
+        } finally {
+          clearTimeout(timeoutId)
+        }
 
         // Check if this is a redirect
         const isRedirect = response.status >= 300 && response.status < 400 && response.headers.get('location')

@@ -10,6 +10,7 @@ import { PreviewTab } from './preview-tab'
 import { ColorsTab } from './colors-tab'
 import { TypeTab } from './type-tab'
 import { AssetsTab } from './assets-tab'
+import { FigmaTab } from './figma-tab'
 
 interface Asset { id: number; type: 'logo' | 'icon' | 'illustration' | 'image'; content: string; width: number; height: number }
 interface ColorRow { hex_value: string; oklch: string | null }
@@ -20,6 +21,7 @@ interface DetailData {
   url: string
   screenshot_url: string | null
   mobile_screenshot_url: string | null
+  figma_capture_url: string | null
   extraction_error: string | null
   colors: ColorRow[]
   typography: TypographyRow[]
@@ -63,6 +65,7 @@ export function SiteDetailPanel({ sourceId, metadata, onClose }: SiteDetailPanel
         if (!raw || raw.error) return
         setData({
           ...raw,
+          figma_capture_url: raw.figma_capture_url ?? null,
           colors: Array.isArray(raw.colors) ? raw.colors : [],
           typography: Array.isArray(raw.typography) ? raw.typography : [],
           assets: Array.isArray(raw.assets) ? raw.assets : [],
@@ -87,6 +90,7 @@ export function SiteDetailPanel({ sourceId, metadata, onClose }: SiteDetailPanel
       const updated = await fetch(`/api/design/${sourceId}`).then(r => r.json())
       setData({
         ...updated,
+        figma_capture_url: updated.figma_capture_url ?? null,
         colors: Array.isArray(updated.colors) ? updated.colors : [],
         typography: Array.isArray(updated.typography) ? updated.typography : [],
         assets: Array.isArray(updated.assets) ? updated.assets : [],
@@ -107,59 +111,38 @@ export function SiteDetailPanel({ sourceId, metadata, onClose }: SiteDetailPanel
   return (
     <div className="flex flex-col h-full bg-background">
       {/* Header */}
-      <div className="flex items-start gap-2 px-4 py-2.5 border-b border-border flex-shrink-0">
+      <div className="flex items-center gap-2 px-4 py-3 border-b border-border flex-shrink-0">
         <div className="min-w-0 flex-1">
           <a
             href={data?.url ?? '#'}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-[13px] font-semibold text-foreground truncate tracking-[-0.01em] hover:underline underline-offset-2 block"
+            className="text-[14px] font-semibold text-foreground truncate tracking-[-0.01em] hover:underline underline-offset-2 block"
           >
             {hostname}
           </a>
-          {/* Metadata pills */}
-          {(metadata?.tags?.length || metadata?.designStyle || metadata?.industry) && (
-            <div className="flex gap-1 flex-wrap mt-1.5">
-              {metadata.industry && (
-                <span className="px-1.5 py-0.5 rounded-[2px] bg-muted text-[9px] font-mono text-muted-foreground/60 leading-none">
-                  {metadata.industry}
-                </span>
-              )}
-              {metadata.designStyle && (
-                <span className="px-1.5 py-0.5 rounded-[2px] bg-muted text-[9px] font-mono text-muted-foreground/60 leading-none">
-                  {metadata.designStyle}
-                </span>
-              )}
-              {metadata.complexity && (
-                <span className="px-1.5 py-0.5 rounded-[2px] bg-muted text-[9px] font-mono text-muted-foreground/60 leading-none">
-                  {metadata.complexity}
-                </span>
-              )}
-              {metadata.tags?.slice(0, 3).map(tag => (
-                <span key={tag} className="px-1.5 py-0.5 rounded-[2px] bg-muted text-[9px] font-mono text-muted-foreground/50 leading-none">
-                  {tag}
-                </span>
-              ))}
-            </div>
+          {(metadata?.industry || metadata?.tags?.[0]) && (
+            <p className="text-[10px] font-mono text-muted-foreground/45 mt-0.5 truncate">
+              {[metadata.industry, metadata.tags?.[0]].filter(Boolean).join(' · ')}
+            </p>
           )}
         </div>
-        {/* Quick actions in header */}
-        <div className="flex items-center gap-1 shrink-0 mt-0.5">
+        <div className="flex items-center gap-1 shrink-0">
           <button
             type="button"
             onClick={handleReextract}
             disabled={isReextracting}
             aria-label="Re-extract design data"
-            className="w-8 h-8 flex items-center justify-center rounded-sm border border-border/60 text-muted-foreground hover:text-foreground hover:border-foreground/40 transition-colors disabled:opacity-40"
+            className="w-8 h-8 flex items-center justify-center rounded-[4px] text-muted-foreground/50 hover:text-foreground hover:bg-muted transition-colors disabled:opacity-40"
           >
             <motion.span ref={scope} style={{ display: 'flex' }}>
-              <ArrowClockwise className="w-3 h-3" weight="regular" />
+              <ArrowClockwise className="w-3.5 h-3.5" weight="regular" />
             </motion.span>
           </button>
           {onClose && (
             <button
               onClick={() => { playClose(); onClose() }}
-              className="w-8 h-8 flex items-center justify-center rounded-sm border border-border/60 text-muted-foreground hover:text-foreground hover:border-foreground/40 transition-colors"
+              className="w-8 h-8 flex items-center justify-center rounded-[4px] text-muted-foreground/50 hover:text-foreground hover:bg-muted transition-colors"
               aria-label="Close panel"
             >
               <X className="w-3.5 h-3.5" weight="bold" />
@@ -225,6 +208,18 @@ export function SiteDetailPanel({ sourceId, metadata, onClose }: SiteDetailPanel
                   initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -4, transition: { duration: 0.12 } }}>
                   <AssetsTab assets={data.assets} extractionError={data.extraction_error} />
+                </motion.div>
+              )}
+              {activeTab === 'figma' && (
+                <motion.div key="figma" className="flex flex-col flex-1 min-h-0"
+                  initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -4, transition: { duration: 0.12 } }}>
+                  <FigmaTab
+                    siteUrl={data.url}
+                    screenshotUrl={data.screenshot_url}
+                    mobileScreenshotUrl={data.mobile_screenshot_url}
+                    figmaCaptureUrl={data.figma_capture_url}
+                  />
                 </motion.div>
               )}
 

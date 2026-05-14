@@ -180,27 +180,19 @@ export function PresentationMode({ designs, initialIndex, onClose, onSelect }: P
           />
         )}
 
-        {/* Left nav zone — wide invisible target, arrow appears on hover */}
+        {/* Left nav zone — wide invisible click target, no visible arrow */}
         <button
           onClick={() => go(-1)}
-          className="absolute left-0 inset-y-0 w-14 md:w-20 z-20 flex items-center justify-center opacity-0 group-hover/preview:opacity-100 transition-opacity duration-200"
+          className="absolute left-0 inset-y-0 w-14 md:w-20 z-20"
           aria-label="Previous site"
-        >
-          <div className="w-9 h-9 flex items-center justify-center rounded-full bg-black/55 backdrop-blur-sm border border-white/[0.07] text-white/35 hover:text-white hover:bg-black/75 hover:border-white/15 transition-colors">
-            <CaretLeft className="w-4 h-4" weight="bold" />
-          </div>
-        </button>
+        />
 
         {/* Right nav zone */}
         <button
           onClick={() => go(1)}
-          className="absolute right-0 inset-y-0 w-14 md:w-20 z-20 flex items-center justify-center opacity-0 group-hover/preview:opacity-100 transition-opacity duration-200"
+          className="absolute right-0 inset-y-0 w-14 md:w-20 z-20"
           aria-label="Next site"
-        >
-          <div className="w-9 h-9 flex items-center justify-center rounded-full bg-black/55 backdrop-blur-sm border border-white/[0.07] text-white/35 hover:text-white hover:bg-black/75 hover:border-white/15 transition-colors">
-            <CaretRight className="w-4 h-4" weight="bold" />
-          </div>
-        </button>
+        />
       </div>
 
       {/* Bottom HUD */}
@@ -209,7 +201,7 @@ export function PresentationMode({ designs, initialIndex, onClose, onSelect }: P
 
           <button
             onClick={() => go(-1)}
-            className="w-7 h-7 flex items-center justify-center rounded-[4px] bg-white/[0.05] hover:bg-white/[0.1] text-white/30 hover:text-white/80 transition-colors shrink-0"
+            className="w-7 h-7 flex items-center justify-center rounded-[4px] bg-white/10 hover:bg-white/20 text-white/70 hover:text-white transition-colors shrink-0"
             aria-label="Previous site"
           >
             <CaretLeft className="w-3.5 h-3.5" weight="bold" />
@@ -224,7 +216,6 @@ export function PresentationMode({ designs, initialIndex, onClose, onSelect }: P
               transition={{ duration: 0.14 }}
               className="flex items-center gap-4 min-w-0 flex-1"
             >
-              {/* Domain + industry — left */}
               <div className="min-w-0 flex-1">
                 <p className="text-[14px] font-mono text-white/65 tracking-[-0.01em] truncate leading-none">{domain}</p>
                 {current.industry && (
@@ -232,7 +223,6 @@ export function PresentationMode({ designs, initialIndex, onClose, onSelect }: P
                 )}
               </div>
 
-              {/* Color swatches — center */}
               {current.colors?.length > 0 && (
                 <div className="hidden sm:flex gap-1.5 shrink-0">
                   {current.colors.slice(0, 5).map((hex, i) => (
@@ -245,7 +235,6 @@ export function PresentationMode({ designs, initialIndex, onClose, onSelect }: P
                 </div>
               )}
 
-              {/* Counter — right */}
               <span className="text-[10px] font-mono text-white/15 tabular-nums shrink-0">
                 {index + 1} / {designs.length}
               </span>
@@ -254,7 +243,7 @@ export function PresentationMode({ designs, initialIndex, onClose, onSelect }: P
 
           <button
             onClick={() => go(1)}
-            className="w-7 h-7 flex items-center justify-center rounded-[4px] bg-white/[0.05] hover:bg-white/[0.1] text-white/30 hover:text-white/80 transition-colors shrink-0"
+            className="w-7 h-7 flex items-center justify-center rounded-[4px] bg-white/10 hover:bg-white/20 text-white/70 hover:text-white transition-colors shrink-0"
             aria-label="Next site"
           >
             <CaretRight className="w-3.5 h-3.5" weight="bold" />

@@ -1,6 +1,7 @@
-// components/panel-tabs.tsx
 'use client'
 
+import React from 'react'
+import { Monitor, Palette, TextT, Images, Shapes } from '@phosphor-icons/react'
 import { useSoundsContext } from '@/contexts/sounds-context'
 
 export type PanelTab = 'preview' | 'colors' | 'type' | 'assets' | 'figma'
@@ -10,12 +11,12 @@ interface PanelTabsProps {
   onChange: (tab: PanelTab) => void
 }
 
-const TABS: { key: PanelTab; label: string }[] = [
-  { key: 'preview', label: 'Preview' },
-  { key: 'colors', label: 'Colors' },
-  { key: 'type', label: 'Type' },
-  { key: 'assets', label: 'Assets' },
-  { key: 'figma', label: 'Figma' },
+const TABS: { key: PanelTab; label: string; Icon: React.ComponentType<{ className?: string; weight?: 'regular' | 'fill' }> }[] = [
+  { key: 'preview', label: 'Preview', Icon: Monitor },
+  { key: 'colors', label: 'Colors', Icon: Palette },
+  { key: 'type',   label: 'Type',    Icon: TextT },
+  { key: 'assets', label: 'Assets',  Icon: Images },
+  { key: 'figma',  label: 'Figma',   Icon: Shapes },
 ]
 
 export function PanelTabs({ active, onChange }: PanelTabsProps) {
@@ -37,26 +38,30 @@ export function PanelTabs({ active, onChange }: PanelTabsProps) {
       role="tablist"
       aria-label="Site detail tabs"
       className="flex border-b border-border"
-      style={{ overflowX: 'auto', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' } as React.CSSProperties}
       onKeyDown={handleKeyDown}
     >
-      {TABS.map(({ key, label }) => (
-        <button
-          key={key}
-          role="tab"
-          aria-selected={active === key}
-          tabIndex={active === key ? 0 : -1}
-          onClick={() => { playTabChange(); onChange(key) }}
-          className={[
-            'flex-shrink-0 px-3.5 py-3 text-xs tracking-wide transition-colors -mb-px border-b-2 flex items-center gap-1.5',
-            active === key
-              ? 'text-foreground border-foreground font-medium'
-              : 'text-muted-foreground border-transparent hover:text-foreground',
-          ].join(' ')}
-        >
-          {label}
-        </button>
-      ))}
+      {TABS.map(({ key, label, Icon }) => {
+        const isActive = active === key
+        return (
+          <button
+            key={key}
+            role="tab"
+            aria-selected={isActive}
+            aria-label={label}
+            title={label}
+            tabIndex={isActive ? 0 : -1}
+            onClick={() => { playTabChange(); onChange(key) }}
+            className={[
+              'flex-1 py-2.5 transition-colors -mb-px border-b-2 flex items-center justify-center',
+              isActive
+                ? 'text-foreground border-foreground'
+                : 'text-muted-foreground/40 border-transparent hover:text-muted-foreground',
+            ].join(' ')}
+          >
+            <Icon className="w-4 h-4 shrink-0" weight={isActive ? 'fill' : 'regular'} />
+          </button>
+        )
+      })}
     </div>
   )
 }

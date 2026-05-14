@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, useRef, useCallback } from 'react'
+import { useDragControls } from 'motion/react'
 import { useTheme } from 'next-themes'
 import { Sun, Moon, SpeakerHigh, SpeakerSlash, MagnifyingGlass, X, Presentation } from '@phosphor-icons/react'
 import { SiteDetailPanel } from '@/components/site-detail-panel'
@@ -51,7 +52,7 @@ export default function DesignLibrary() {
   const [isLoadingMore, setIsLoadingMore] = useState(false)
   const sentinelRef = useRef<HTMLDivElement>(null)
   const isThemeTransitioning = useRef(false)
-  const mobileDialogRef = useRef<HTMLDialogElement>(null)
+  const sheetDragControls = useDragControls()
 
   const { resolvedTheme, setTheme } = useTheme()
   const [activeFilters, setActiveFilters] = useState<ActiveFilters>({
@@ -78,30 +79,17 @@ export default function DesignLibrary() {
 
   useEffect(() => { hasAnimated.current = true }, [])
 
+  // Lock body scroll when sheet is open on mobile
   useEffect(() => {
-    const dialog = mobileDialogRef.current
-    if (!dialog) return
-    // Only use showModal on mobile — on desktop the dialog has md:hidden but showModal()
-    // still places it in the top layer with a ::backdrop that blocks all pointer events.
     const isMobile = window.matchMedia('(max-width: 767px)').matches
-    if (!isMobile) {
-      if (dialog.open) dialog.close()
-      return
-    }
+    if (!isMobile) return
     if (selectedDesign) {
-      if (!dialog.open) dialog.showModal()
+      document.body.style.overflow = 'hidden'
     } else {
-      if (dialog.open) dialog.close()
+      document.body.style.overflow = ''
     }
+    return () => { document.body.style.overflow = '' }
   }, [selectedDesign])
-
-  useEffect(() => {
-    const dialog = mobileDialogRef.current
-    if (!dialog) return
-    const handleClose = () => setSelectedDesign(null)
-    dialog.addEventListener('close', handleClose)
-    return () => dialog.removeEventListener('close', handleClose)
-  }, [])
 
   const loadDesigns = useCallback(async (offset = 0, append = false) => {
     const f = activeFiltersRef.current
@@ -256,17 +244,17 @@ export default function DesignLibrary() {
             </Link>
 
             {/* Sort pills */}
-            <div className="hidden sm:flex items-center gap-px mr-1">
+            <div className="hidden sm:flex items-center gap-1 mr-1">
               {SORT_OPTIONS.map(({ value, label }) => (
                 <button
                   key={value}
                   onClick={() => setActiveFilters(prev => ({ ...prev, sortBy: value }))}
                   aria-pressed={activeFilters.sortBy === value}
                   className={[
-                    'px-2 py-0.5 rounded-[3px] text-[10px] font-mono transition-colors',
+                    'px-2 py-0.5 rounded-[3px] text-[10px] font-mono transition-colors border',
                     activeFilters.sortBy === value
-                      ? 'bg-muted text-foreground'
-                      : 'text-muted-foreground/50 hover:text-muted-foreground',
+                      ? 'bg-muted text-foreground border-border/60'
+                      : 'text-muted-foreground/50 border-transparent hover:text-muted-foreground hover:border-border/40',
                   ].join(' ')}
                 >
                   {label}
@@ -334,19 +322,16 @@ export default function DesignLibrary() {
 
         {/* Sidebar */}
         <aside className="hidden md:flex md:col-span-2 flex-col sticky top-14 h-[calc(100vh-56px)] border-r border-border/60 bg-background overflow-y-auto">
-          <nav className="flex-1 p-4 pt-5" aria-label="Category filters">
-            <p className="text-[10px] uppercase tracking-[0.12em] font-medium text-muted-foreground mb-3 px-2">
-              Browse
-            </p>
-            <ul className="space-y-px" role="list">
+          <nav className="flex-1 py-4 px-3" aria-label="Category filters">
+            <ul className="space-y-0.5" role="list">
               <li>
                 <button
                   onClick={() => handleFilterChange('All')}
                   aria-pressed={activeFilters.industries.length === 0}
-                  className={"w-full flex items-center justify-between rounded-[3px] text-[13px] transition-colors border-l-2 py-2 " + (activeFilters.industries.length === 0 ? 'text-foreground font-medium bg-muted/70 border-foreground/40 px-[6px]' : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/40 px-2')}
+                  className={"w-full flex items-center justify-between rounded-[4px] text-[13px] transition-colors px-2.5 py-2 " + (activeFilters.industries.length === 0 ? 'bg-foreground text-background font-medium' : 'text-muted-foreground hover:text-foreground hover:bg-muted/60')}
                 >
                   <span>All</span>
-                  <span className="text-[11px] tabular-nums font-mono opacity-50">{pagination.total || designs.length}</span>
+                  <span className="text-[11px] tabular-nums font-mono opacity-40">{pagination.total || designs.length}</span>
                 </button>
               </li>
               {categories.map(({ name, count }) => {
@@ -356,10 +341,10 @@ export default function DesignLibrary() {
                     <button
                       onClick={() => handleFilterChange(name)}
                       aria-pressed={isActive}
-                      className={"w-full flex items-center justify-between rounded-[3px] text-[13px] transition-colors border-l-2 py-2 " + (isActive ? 'text-foreground font-medium bg-muted/70 border-foreground/40 px-[6px]' : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/40 px-2')}
+                      className={"w-full flex items-center justify-between rounded-[4px] text-[13px] transition-colors px-2.5 py-2 " + (isActive ? 'bg-foreground text-background font-medium' : 'text-muted-foreground hover:text-foreground hover:bg-muted/60')}
                     >
                       <span>{name}</span>
-                      <span className="text-[11px] tabular-nums font-mono opacity-50">{count}</span>
+                      <span className="text-[11px] tabular-nums font-mono opacity-40">{count}</span>
                     </button>
                   </li>
                 )
@@ -501,27 +486,71 @@ export default function DesignLibrary() {
           </AnimatePresence>
         </div>
 
-        {/* Mobile bottom sheet */}
-        <dialog
-          ref={mobileDialogRef}
-          className="md:hidden fixed bottom-0 left-0 right-0 bg-background border-t border-border/60 rounded-t-xl z-40 h-[72vh] w-full flex flex-col p-0 max-w-full"
-          aria-label="Design details"
-        >
-          {selectedDesign && (
-            <SiteDetailPanel
-              sourceId={Number(selectedDesign.id)}
-              metadata={{
-                tags: selectedDesign.tags,
-                designStyle: selectedDesign.designStyle,
-                complexity: selectedDesign.complexity,
-                useCase: selectedDesign.useCase,
-                industry: selectedDesign.industry,
-              }}
-              onClose={() => setSelectedDesign(null)}
-            />
-          )}
-        </dialog>
       </div>
+
+      {/* Mobile bottom sheet */}
+      <AnimatePresence>
+        {selectedDesign && (
+          <>
+            {/* Blurred backdrop */}
+            <motion.div
+              key="sheet-backdrop"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.22 }}
+              className="md:hidden fixed inset-0 z-40 bg-black/40 backdrop-blur-[3px]"
+              onClick={() => setSelectedDesign(null)}
+            />
+
+            {/* Sheet */}
+            <motion.div
+              key="sheet"
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ type: 'spring', damping: 36, stiffness: 380, mass: 0.7 }}
+              drag="y"
+              dragControls={sheetDragControls}
+              dragListener={false}
+              dragConstraints={{ top: 0, bottom: 0 }}
+              dragElastic={{ top: 0, bottom: 0.6 }}
+              onDragEnd={(_, info) => {
+                if (info.offset.y > 80 || info.velocity.y > 500) setSelectedDesign(null)
+              }}
+              className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-background flex flex-col"
+              style={{
+                height: '82vh',
+                borderRadius: '20px 20px 0 0',
+                boxShadow: '0 -12px 40px rgba(0,0,0,0.12)',
+              }}
+            >
+              {/* Drag handle — touch here to swipe down */}
+              <div
+                className="flex justify-center pt-3 pb-1 shrink-0 cursor-grab active:cursor-grabbing select-none"
+                onPointerDown={e => sheetDragControls.start(e)}
+              >
+                <div className="w-10 h-[5px] rounded-full bg-foreground/12" />
+              </div>
+
+              {/* Content */}
+              <div className="flex flex-col flex-1 min-h-0" style={{ touchAction: 'pan-y' }}>
+                <SiteDetailPanel
+                  sourceId={Number(selectedDesign.id)}
+                  metadata={{
+                    tags: selectedDesign.tags,
+                    designStyle: selectedDesign.designStyle,
+                    complexity: selectedDesign.complexity,
+                    useCase: selectedDesign.useCase,
+                    industry: selectedDesign.industry,
+                  }}
+                  onClose={() => setSelectedDesign(null)}
+                />
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
       {/* Presentation mode */}
       <AnimatePresence>
         {presentationIndex !== null && (
