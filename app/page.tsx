@@ -275,7 +275,7 @@ export default function DesignLibrary() {
               aria-label="Presentation mode"
               title="Presentation mode (P)"
             >
-              <Presentation className="w-3.5 h-3.5" weight="regular" />
+              <Presentation className="w-4 h-4" weight="regular" />
             </button>
 
             <button
@@ -283,7 +283,7 @@ export default function DesignLibrary() {
               className="w-9 h-9 flex items-center justify-center rounded-sm border border-border/60 text-muted-foreground hover:text-foreground hover:border-foreground/40 transition-colors"
               aria-label={sounds.enabled ? 'Mute' : 'Enable sounds'}
             >
-              {sounds.enabled ? <SpeakerHigh className="w-3.5 h-3.5" weight="regular" /> : <SpeakerSlash className="w-3.5 h-3.5" weight="regular" />}
+              {sounds.enabled ? <SpeakerHigh className="w-4 h-4" weight="regular" /> : <SpeakerSlash className="w-4 h-4" weight="regular" />}
             </button>
 
             <button

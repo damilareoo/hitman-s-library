@@ -57,7 +57,7 @@ export function PanelTabs({ active, onChange }: PanelTabsProps) {
                 : 'text-muted-foreground/50 border-transparent hover:text-muted-foreground',
             ].join(' ')}
           >
-            <Icon className="w-[15px] h-[15px] shrink-0" weight={isActive ? 'fill' : 'regular'} />
+            <Icon className="w-[18px] h-[18px] shrink-0" weight={isActive ? 'fill' : 'regular'} />
             <span className={['text-[9px] font-mono tracking-wide leading-none', isActive ? 'opacity-100' : 'opacity-70'].join(' ')}>
               {label}
             </span>

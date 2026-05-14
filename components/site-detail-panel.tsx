@@ -136,7 +136,7 @@ export function SiteDetailPanel({ sourceId, metadata, onClose }: SiteDetailPanel
             className="w-8 h-8 flex items-center justify-center rounded-[4px] text-muted-foreground/50 hover:text-foreground hover:bg-muted transition-colors disabled:opacity-40"
           >
             <motion.span ref={scope} style={{ display: 'flex' }}>
-              <ArrowClockwise className="w-3.5 h-3.5" weight="regular" />
+              <ArrowClockwise className="w-4 h-4" weight="regular" />
             </motion.span>
           </button>
           {onClose && (
@@ -145,7 +145,7 @@ export function SiteDetailPanel({ sourceId, metadata, onClose }: SiteDetailPanel
               className="w-8 h-8 flex items-center justify-center rounded-[4px] text-muted-foreground/50 hover:text-foreground hover:bg-muted transition-colors"
               aria-label="Close panel"
             >
-              <X className="w-3.5 h-3.5" weight="bold" />
+              <X className="w-4 h-4" weight="bold" />
             </button>
           )}
         </div>
