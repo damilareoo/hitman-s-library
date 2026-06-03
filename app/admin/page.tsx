@@ -144,6 +144,9 @@ export default function AdminPage() {
   const [backfillProgress, setBackfillProgress] = useState<{ done: number; total: number } | null>(null)
   const [isFigmaBackfilling, setIsFigmaBackfilling] = useState(false)
   const [figmaBackfillProgress, setFigmaBackfillProgress] = useState<{ done: number; total: number } | null>(null)
+  const [isMobbinImporting, setIsMobbinImporting] = useState(false)
+  const [mobbinResult, setMobbinResult] = useState<{ added: number; skipped: number; errors: number } | null>(null)
+  const [mobbinSites, setMobbinSites] = useState<{ url: string; name: string; industry: string }[]>([])
   const [currentPage, setCurrentPage] = useState(1)
   const stageTimers = useRef<ReturnType<typeof setTimeout>[]>([])
   const addInputRef = useRef<HTMLInputElement>(null)
@@ -181,6 +184,11 @@ export default function AdminPage() {
   const loadSites = async () => {
     setIsLoadingSites(true)
     try {
+      // Fetch Mobbin curated list preview (no auth needed, GET endpoint)
+      fetch('/api/admin/bulk-import')
+        .then(r => r.json())
+        .then(d => { if (Array.isArray(d.sites)) setMobbinSites(d.sites) })
+        .catch(() => null)
       const res = await fetch('/api/design/list')
       const data = await res.json()
       const raw = Array.isArray(data) ? data : data.designs || []
@@ -306,6 +314,22 @@ export default function AdminPage() {
     setQueue(items)
     setBulkInput('')
     processQueue(items)
+  }
+
+  const handleMobbinImport = async () => {
+    if (!confirm(`Import ${mobbinSites.length} curated Mobbin sites? Existing sites will be skipped automatically.`)) return
+    setIsMobbinImporting(true)
+    setMobbinResult(null)
+    try {
+      const res = await fetch('/api/admin/bulk-import', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) })
+      const data = await res.json()
+      setMobbinResult({ added: data.added ?? 0, skipped: data.skipped ?? 0, errors: data.errors ?? 0 })
+      if ((data.added ?? 0) > 0) await loadSites()
+    } catch {
+      setMobbinResult({ added: 0, skipped: 0, errors: 1 })
+    } finally {
+      setIsMobbinImporting(false)
+    }
   }
 
   const handleDeduplicate = async () => {
@@ -579,6 +603,59 @@ export default function AdminPage() {
             </button>
           </div>
         </div>
+
+        {/* Mobbin import */}
+        {mobbinSites.length > 0 && (
+          <div className="border border-border/40 rounded-sm p-4 space-y-3">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <p className="text-[13px] font-medium tracking-[-0.01em]">Mobbin curated sites</p>
+                <p className="text-[11px] font-mono text-muted-foreground mt-0.5">
+                  {mobbinSites.length} sites · SaaS, Fintech, Design, Dev Tools — duplicates skipped automatically
+                </p>
+              </div>
+              <div className="flex items-center gap-3 shrink-0">
+                {mobbinResult && (
+                  <span className="text-[11px] font-mono text-muted-foreground">
+                    +{mobbinResult.added} added · {mobbinResult.skipped} skipped{mobbinResult.errors > 0 ? ` · ${mobbinResult.errors} errors` : ''}
+                  </span>
+                )}
+                <button
+                  onClick={handleMobbinImport}
+                  disabled={isMobbinImporting}
+                  className="h-8 px-3 text-[12px] font-mono border border-foreground/20 bg-foreground/[0.04] rounded-sm disabled:opacity-40 hover:bg-foreground/[0.08] hover:border-foreground/40 transition-colors flex items-center gap-1.5 whitespace-nowrap"
+                >
+                  {isMobbinImporting
+                    ? <><CircleNotch className="w-3 h-3 animate-spin" weight="bold" /> Importing…</>
+                    : `Import ${mobbinSites.length} sites`
+                  }
+                </button>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {mobbinSites.map(s => {
+                const alreadyIn = allSites.some(a =>
+                  a.source_url.replace(/\/$/, '').replace('https://', '').replace('http://', '').replace('www.', '') ===
+                  s.url.replace(/\/$/, '').replace('https://', '').replace('http://', '').replace('www.', '')
+                )
+                return (
+                  <span
+                    key={s.url}
+                    className={[
+                      'text-[10px] font-mono px-2 py-1 rounded-[3px] border',
+                      alreadyIn
+                        ? 'text-muted-foreground/30 border-border/20'
+                        : 'text-muted-foreground/70 border-border/50',
+                    ].join(' ')}
+                    title={alreadyIn ? 'Already in library' : s.industry}
+                  >
+                    {alreadyIn ? '✓ ' : ''}{s.name}
+                  </span>
+                )
+              })}
+            </div>
+          </div>
+        )}
 
         {/* Search + count */}
         <div className="flex items-center gap-3">
