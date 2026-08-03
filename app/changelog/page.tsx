@@ -2,7 +2,6 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { ArrowLeft } from '@phosphor-icons/react/dist/ssr'
 import changelog, { type ChangeItem } from '@/data/changelog'
-import { ChangelogActivity } from '@/components/changelog-activity'
 
 export const metadata: Metadata = {
   title: 'Changelog',
@@ -61,21 +60,6 @@ export default function ChangelogPage() {
           <p className="text-[13px] text-muted-foreground/50">
             What's new in Hitman's Library
           </p>
-        </div>
-
-        {/* Live activity feed */}
-        <div className="mb-16">
-          <h2 className="text-[11px] font-mono uppercase tracking-[0.1em] text-muted-foreground/40 mb-5">
-            Recent activity
-          </h2>
-          <ChangelogActivity />
-        </div>
-
-        {/* Release divider */}
-        <div className="flex items-center gap-3 mb-14">
-          <div className="flex-1 h-px bg-border/40" />
-          <span className="text-[10px] font-mono uppercase tracking-[0.1em] text-muted-foreground/30">Release notes</span>
-          <div className="flex-1 h-px bg-border/40" />
         </div>
 
         {/* Releases */}

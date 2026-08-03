@@ -17,6 +17,22 @@ export interface ChangelogRelease {
 // Types: "new" (green) | "improved" (blue) | "fixed" (muted)
 const changelog: ChangelogRelease[] = [
   {
+    date: '2026-08-03',
+    title: 'Design Language Lift & Figma Tab Removed',
+    description: 'Warmer, more refined UI across every surface — same density, better craft. Figma tab removed entirely.',
+    items: [
+      { type: 'improved', text: 'Design cards: subtler hover scale (1.02×), visit link replaced with a blurred pill that reveals on hover, metadata section has cleaner hierarchy — title in tight tracking, domain in 40% opacity mono, industry in uppercase caps' },
+      { type: 'improved', text: 'Header title: "Hitman\'s Library" split so the apostrophe-s renders in font-light — intentional weight contrast, not a typo' },
+      { type: 'improved', text: 'Sidebar: active category now uses bg-muted/70 instead of full bg-foreground inversion — less aggressive, more editorial' },
+      { type: 'improved', text: 'Panel tabs: labels now uppercase with wider letter-spacing, 1.5px border indicator, slightly smaller icons — tighter and more refined' },
+      { type: 'improved', text: 'Panel header: hostname uses tighter tracking, industry/tag shows as uppercase badge below' },
+      { type: 'improved', text: 'Empty panel state: stale "figma" removed from hint text, type treatment more restrained' },
+      { type: 'improved', text: 'Globals: 2.2% SVG fractal noise grain overlay on body — gives all surfaces a material, warm quality instead of flat digital feel' },
+      { type: 'improved', text: 'Skeleton cards match the updated 3px border-radius of real cards' },
+      { type: 'fixed',    text: 'Removed Figma tab entirely — panel-tabs, site-detail-panel updated; figma-tab.tsx deleted' },
+    ],
+  },
+  {
     date: '2026-05-14',
     title: 'Designed States — No More Screenshot Crutches',
     description: 'Every "loading" and "blocked" state is now a proper designed UI — honest, intentional, and consistent with the design language. Screenshots are no longer used as automatic fallbacks when a live preview fails.',
