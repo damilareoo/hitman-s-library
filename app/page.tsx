@@ -236,8 +236,8 @@ export default function DesignLibrary() {
       <header className="sticky top-0 z-50 border-b border-border/60 bg-background/95 backdrop-blur-sm">
         <div className="h-14 px-5 md:px-7 flex items-center gap-4">
 
-          <h1 className="text-[15px] font-medium tracking-[-0.01em] text-foreground select-none shrink-0">
-            Hitman's Library
+          <h1 className="text-[15px] font-semibold tracking-[-0.04em] text-foreground select-none shrink-0">
+            Hitman<span className="font-light opacity-50">'s</span> Library
           </h1>
 
           {/* Search */}
@@ -355,10 +355,10 @@ export default function DesignLibrary() {
                 <button
                   onClick={() => handleFilterChange('All')}
                   aria-pressed={activeFilters.industries.length === 0}
-                  className={"w-full flex items-center justify-between rounded-[4px] text-[13px] transition-colors px-2.5 py-2 " + (activeFilters.industries.length === 0 ? 'bg-foreground text-background font-medium' : 'text-muted-foreground hover:text-foreground hover:bg-muted/60')}
+                  className={"w-full flex items-center justify-between rounded-[3px] text-[12.5px] transition-colors px-2.5 py-[7px] " + (activeFilters.industries.length === 0 ? 'text-foreground font-medium bg-muted/70' : 'text-muted-foreground/70 hover:text-foreground hover:bg-muted/40 font-normal')}
                 >
                   <span>All</span>
-                  <span className="text-[11px] tabular-nums font-mono opacity-40">{pagination.total || designs.length}</span>
+                  <span className="text-[10.5px] tabular-nums font-mono opacity-35">{pagination.total || designs.length}</span>
                 </button>
               </li>
               {categories.map(({ name, count }) => {
@@ -368,10 +368,10 @@ export default function DesignLibrary() {
                     <button
                       onClick={() => handleFilterChange(name)}
                       aria-pressed={isActive}
-                      className={"w-full flex items-center justify-between rounded-[4px] text-[13px] transition-colors px-2.5 py-2 " + (isActive ? 'bg-foreground text-background font-medium' : 'text-muted-foreground hover:text-foreground hover:bg-muted/60')}
+                      className={"w-full flex items-center justify-between rounded-[3px] text-[12.5px] transition-colors px-2.5 py-[7px] " + (isActive ? 'text-foreground font-medium bg-muted/70' : 'text-muted-foreground/70 hover:text-foreground hover:bg-muted/40 font-normal')}
                     >
                       <span>{name}</span>
-                      <span className="text-[11px] tabular-nums font-mono opacity-40">{count}</span>
+                      <span className="text-[10.5px] tabular-nums font-mono opacity-35">{count}</span>
                     </button>
                   </li>
                 )
@@ -513,10 +513,10 @@ export default function DesignLibrary() {
                 animate={{ opacity: 1 }}
                 className="flex items-center justify-center h-full"
               >
-                <div className="flex flex-col items-center gap-2.5 text-center px-6">
-                  <p className="text-[12px] font-mono text-muted-foreground/35">Select a site</p>
-                  <p className="text-[10px] font-mono text-muted-foreground/20 tracking-wide leading-relaxed">
-                    preview · colors · type<br />assets · figma
+                <div className="flex flex-col items-center gap-2 text-center px-6">
+                  <p className="text-[12px] font-mono text-muted-foreground/30 tracking-[0.01em]">Select a site</p>
+                  <p className="text-[9.5px] font-mono text-muted-foreground/18 tracking-[0.08em] uppercase">
+                    preview · colors · type · assets
                   </p>
                 </div>
               </motion.div>

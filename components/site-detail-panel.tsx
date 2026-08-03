@@ -10,8 +10,6 @@ import { PreviewTab } from './preview-tab'
 import { ColorsTab } from './colors-tab'
 import { TypeTab } from './type-tab'
 import { AssetsTab } from './assets-tab'
-import { FigmaTab } from './figma-tab'
-
 interface Asset { id: number; type: 'logo' | 'icon' | 'illustration' | 'image'; content: string; width: number; height: number }
 interface ColorRow { hex_value: string; oklch: string | null }
 interface TypographyRow { font_family: string; role: string; google_fonts_url: string | null; primary_weight: number | null }
@@ -21,7 +19,6 @@ interface DetailData {
   url: string
   screenshot_url: string | null
   mobile_screenshot_url: string | null
-  figma_capture_url: string | null
   extraction_error: string | null
   colors: ColorRow[]
   typography: TypographyRow[]
@@ -65,7 +62,6 @@ export function SiteDetailPanel({ sourceId, metadata, onClose }: SiteDetailPanel
         if (!raw || raw.error) return
         setData({
           ...raw,
-          figma_capture_url: raw.figma_capture_url ?? null,
           colors: Array.isArray(raw.colors) ? raw.colors : [],
           typography: Array.isArray(raw.typography) ? raw.typography : [],
           assets: Array.isArray(raw.assets) ? raw.assets : [],
@@ -90,7 +86,6 @@ export function SiteDetailPanel({ sourceId, metadata, onClose }: SiteDetailPanel
       const updated = await fetch(`/api/design/${sourceId}`).then(r => r.json())
       setData({
         ...updated,
-        figma_capture_url: updated.figma_capture_url ?? null,
         colors: Array.isArray(updated.colors) ? updated.colors : [],
         typography: Array.isArray(updated.typography) ? updated.typography : [],
         assets: Array.isArray(updated.assets) ? updated.assets : [],
@@ -111,18 +106,18 @@ export function SiteDetailPanel({ sourceId, metadata, onClose }: SiteDetailPanel
   return (
     <div className="flex flex-col h-full bg-background">
       {/* Header */}
-      <div className="flex items-center gap-2 px-4 py-3 border-b border-border flex-shrink-0">
+      <div className="flex items-center gap-2 px-4 py-3.5 border-b border-border/60 flex-shrink-0">
         <div className="min-w-0 flex-1">
           <a
             href={data?.url ?? '#'}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-[14px] font-semibold text-foreground truncate tracking-[-0.01em] hover:underline underline-offset-2 block"
+            className="text-[13.5px] font-semibold text-foreground truncate tracking-[-0.03em] hover:opacity-70 transition-opacity block"
           >
             {hostname}
           </a>
           {(metadata?.industry || metadata?.tags?.[0]) && (
-            <p className="text-[10px] font-mono text-muted-foreground/45 mt-0.5 truncate">
+            <p className="text-[9.5px] font-mono text-muted-foreground/40 mt-0.5 truncate uppercase tracking-[0.06em]">
               {[metadata.industry, metadata.tags?.[0]].filter(Boolean).join(' · ')}
             </p>
           )}
@@ -210,19 +205,6 @@ export function SiteDetailPanel({ sourceId, metadata, onClose }: SiteDetailPanel
                   <AssetsTab assets={data.assets} extractionError={data.extraction_error} />
                 </motion.div>
               )}
-              {activeTab === 'figma' && (
-                <motion.div key="figma" className="flex flex-col flex-1 min-h-0"
-                  initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -4, transition: { duration: 0.12 } }}>
-                  <FigmaTab
-                    siteUrl={data.url}
-                    screenshotUrl={data.screenshot_url}
-                    mobileScreenshotUrl={data.mobile_screenshot_url}
-                    figmaCaptureUrl={data.figma_capture_url}
-                  />
-                </motion.div>
-              )}
-
             </AnimatePresence>
           </motion.div>
         ) : (

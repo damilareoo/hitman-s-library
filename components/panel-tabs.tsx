@@ -1,10 +1,10 @@
 'use client'
 
 import React from 'react'
-import { Monitor, Palette, TextT, Images, Shapes } from '@phosphor-icons/react'
+import { Monitor, Palette, TextT, Images } from '@phosphor-icons/react'
 import { useSoundsContext } from '@/contexts/sounds-context'
 
-export type PanelTab = 'preview' | 'colors' | 'type' | 'assets' | 'figma'
+export type PanelTab = 'preview' | 'colors' | 'type' | 'assets'
 
 interface PanelTabsProps {
   active: PanelTab
@@ -16,7 +16,6 @@ const TABS: { key: PanelTab; label: string; Icon: React.ComponentType<{ classNam
   { key: 'colors', label: 'Colors', Icon: Palette },
   { key: 'type',   label: 'Type',    Icon: TextT },
   { key: 'assets', label: 'Assets',  Icon: Images },
-  { key: 'figma',  label: 'Figma',   Icon: Shapes },
 ]
 
 export function PanelTabs({ active, onChange }: PanelTabsProps) {
@@ -51,14 +50,14 @@ export function PanelTabs({ active, onChange }: PanelTabsProps) {
             tabIndex={isActive ? 0 : -1}
             onClick={() => { playTabChange(); onChange(key) }}
             className={[
-              'flex-1 py-2.5 transition-colors -mb-px border-b-2 flex flex-col items-center justify-center gap-1 min-h-[44px]',
+              'flex-1 py-3 transition-colors -mb-px border-b-[1.5px] flex flex-col items-center justify-center gap-1.5 min-h-[44px]',
               isActive
-                ? 'text-foreground border-foreground'
-                : 'text-muted-foreground/50 border-transparent hover:text-muted-foreground',
+                ? 'text-foreground border-foreground/70'
+                : 'text-muted-foreground/40 border-transparent hover:text-muted-foreground/70',
             ].join(' ')}
           >
-            <Icon className="w-[18px] h-[18px] shrink-0" weight={isActive ? 'fill' : 'regular'} />
-            <span className={['text-[9px] font-mono tracking-wide leading-none', isActive ? 'opacity-100' : 'opacity-70'].join(' ')}>
+            <Icon className="w-4 h-4 shrink-0" weight={isActive ? 'fill' : 'regular'} />
+            <span className={['text-[9px] font-mono tracking-[0.07em] uppercase leading-none', isActive ? 'opacity-80' : 'opacity-60'].join(' ')}>
               {label}
             </span>
           </button>

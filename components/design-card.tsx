@@ -25,8 +25,8 @@ export interface Design {
 }
 
 export const cardVariants = {
-  hidden: { opacity: 0, y: 20 },
-  show: { opacity: 1, y: 0, transition: { type: 'spring' as const, stiffness: 280, damping: 24 } },
+  hidden: { opacity: 0, y: 16 },
+  show: { opacity: 1, y: 0, transition: { type: 'spring' as const, stiffness: 300, damping: 28 } },
 }
 
 interface DesignCardProps {
@@ -71,11 +71,12 @@ export function DesignCard({ design, index, isSelected, onClick, onHover, onTagC
       role="button"
       aria-label={`View ${design.title || getDomain(design.url)}`}
       style={{ contain: 'layout paint style' }}
-      className={"group relative flex flex-col cursor-pointer rounded-[4px] overflow-hidden border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/40 focus-visible:ring-offset-1 " + (isSelected ? 'border-foreground/50' : 'border-border/60 hover:border-foreground/25')}
+      className={"group relative flex flex-col cursor-pointer rounded-[3px] overflow-hidden border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/40 focus-visible:ring-offset-1 " + (isSelected ? 'border-foreground/40 shadow-[0_0_0_1px_var(--foreground)] shadow-foreground/10' : 'border-border/50 hover:border-foreground/20')}
     >
       {isSelected && (
-        <div className="absolute top-0 left-0 right-0 h-[2px] bg-foreground/50 z-10 pointer-events-none" />
+        <div className="absolute top-0 left-0 right-0 h-[2px] bg-foreground/60 z-10 pointer-events-none" />
       )}
+
       {/* Screenshot */}
       <div className="relative overflow-hidden bg-muted aspect-[16/10]">
         {imgStatus === 'loading' && (
@@ -94,60 +95,61 @@ export function DesignCard({ design, index, isSelected, onClick, onHover, onTagC
               img.naturalWidth > 0 ? setImgStatus('loaded') : handleImgError()
             }}
             onError={handleImgError}
-            className={"object-cover object-top transition-[opacity,transform] duration-300 group-hover:scale-[1.03] " + (imgStatus === 'loaded' ? 'opacity-100' : 'opacity-0')}
+            className={"object-cover object-top transition-[opacity,transform] duration-500 group-hover:scale-[1.02] " + (imgStatus === 'loaded' ? 'opacity-100' : 'opacity-0')}
             unoptimized={!imgSrc.includes('vercel-storage.com')}
           />
         )}
         {imgStatus === 'error' && (
           <div className="absolute inset-0 flex items-center justify-center">
-            <span className="text-[11px] font-mono text-muted-foreground/40">{domain}</span>
+            <span className="text-[11px] font-mono text-muted-foreground/30">{domain}</span>
           </div>
         )}
 
-        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300 pointer-events-none" />
+        {/* Hover scrim — subtle, not harsh */}
+        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/[0.07] dark:group-hover:bg-black/[0.14] transition-colors duration-300 pointer-events-none" />
 
-        {/* Visit overlay button */}
+        {/* Visit link — revealed on hover */}
         <a
           href={design.url}
           target="_blank"
           rel="noopener noreferrer"
           onClick={e => e.stopPropagation()}
           aria-label={`Visit ${design.title || domain}`}
-          className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center gap-1 bg-background/90 backdrop-blur-sm border border-border/50 rounded-[3px] px-2 py-1 text-[10px] font-mono text-foreground hover:border-foreground/50 hover:bg-background"
+          className="absolute bottom-2.5 right-2.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center gap-1 bg-background/85 backdrop-blur-[6px] border border-border/60 rounded-[3px] px-2 py-1 text-[10px] font-mono text-foreground/70 hover:text-foreground hover:border-foreground/40 hover:bg-background"
         >
           ↗
         </a>
       </div>
 
       {/* Metadata */}
-      <div className="px-3.5 pt-3 pb-3.5 flex flex-col gap-2.5 bg-background">
+      <div className="px-3.5 pt-2.5 pb-3 flex flex-col gap-2 border-t border-border/40">
         <div className="min-w-0">
-          <p className="text-[13.5px] font-medium text-foreground leading-snug line-clamp-1 tracking-[-0.02em]">
+          <p className="text-[13px] font-medium text-foreground leading-snug line-clamp-1 tracking-[-0.025em]">
             {design.title}
           </p>
-          <p className="text-[11px] font-mono text-muted-foreground/55 mt-0.5 truncate">{domain}</p>
+          <p className="text-[11px] font-mono text-muted-foreground/40 mt-0.5 truncate">{domain}</p>
         </div>
 
         <div className="flex items-center justify-between gap-2">
           {design.colors.length > 0 ? (
-            <div className="flex gap-1">
+            <div className="flex gap-[3px]">
               {design.colors.slice(0, 5).map((color, i) => (
                 <div
                   key={i}
                   role="img"
                   aria-label={color}
-                  className="w-3.5 h-3.5 rounded-full border border-black/10 dark:border-white/10"
+                  className="w-4 h-4 rounded-full border border-black/[0.06] dark:border-white/[0.08]"
                   style={{ backgroundColor: color }}
                 />
               ))}
             </div>
           ) : <span />}
           {design.industry ? (
-            <span className="text-[9px] font-mono text-muted-foreground/35 truncate shrink-0">{design.industry}</span>
+            <span className="text-[9.5px] font-mono text-muted-foreground/30 truncate shrink-0 uppercase tracking-[0.06em]">{design.industry}</span>
           ) : design.tags[0] ? (
             <button
               onClick={e => { e.stopPropagation(); onTagClick(design.tags[0]) }}
-              className="text-[9px] font-mono text-muted-foreground/35 hover:text-muted-foreground truncate shrink-0 transition-colors"
+              className="text-[9.5px] font-mono text-muted-foreground/30 hover:text-muted-foreground truncate shrink-0 transition-colors uppercase tracking-[0.06em]"
             >
               {design.tags[0]}
             </button>
