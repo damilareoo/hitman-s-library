@@ -51,6 +51,7 @@ export default function DesignLibrary() {
   const [presentationIndex, setPresentationIndex] = useState<number | null>(null)
   const [isLoadingMore, setIsLoadingMore] = useState(false)
   const sentinelRef = useRef<HTMLDivElement>(null)
+  const sheetRef = useRef<HTMLDivElement>(null)
   const isThemeTransitioning = useRef(false)
   const sheetDragControls = useDragControls()
 
@@ -79,16 +80,42 @@ export default function DesignLibrary() {
 
   useEffect(() => { hasAnimated.current = true }, [])
 
-  // Lock body scroll when sheet is open on mobile
+  // Lock body scroll when sheet is open (sheet is only rendered on mobile via md:hidden)
   useEffect(() => {
-    const isMobile = window.matchMedia('(max-width: 767px)').matches
-    if (!isMobile) return
     if (selectedDesign) {
       document.body.style.overflow = 'hidden'
     } else {
       document.body.style.overflow = ''
     }
     return () => { document.body.style.overflow = '' }
+  }, [selectedDesign])
+
+  // Focus trap + focus management for mobile sheet
+  useEffect(() => {
+    if (!selectedDesign || !sheetRef.current) return
+    const sheet = sheetRef.current
+    const focusable = sheet.querySelectorAll<HTMLElement>(
+      'button, [href], input, [tabindex]:not([tabindex="-1"])'
+    )
+    if (focusable.length) focusable[0].focus()
+
+    function onKeyDown(e: globalThis.KeyboardEvent) {
+      if (e.key === 'Escape') { setSelectedDesign(null); return }
+      if (e.key !== 'Tab') return
+      const els = Array.from(sheet.querySelectorAll<HTMLElement>(
+        'button:not([disabled]), [href], input, [tabindex]:not([tabindex="-1"])'
+      ))
+      if (!els.length) return
+      const first = els[0]
+      const last = els[els.length - 1]
+      if (e.shiftKey) {
+        if (document.activeElement === first) { e.preventDefault(); last.focus() }
+      } else {
+        if (document.activeElement === last) { e.preventDefault(); first.focus() }
+      }
+    }
+    document.addEventListener('keydown', onKeyDown)
+    return () => document.removeEventListener('keydown', onKeyDown)
   }, [selectedDesign])
 
   const loadDesigns = useCallback(async (offset = 0, append = false) => {
@@ -378,7 +405,7 @@ export default function DesignLibrary() {
                 </button>
               )}
             </div>
-            {/* Category pills */}
+            {/* Category + sort pills */}
             <div className="flex gap-2 overflow-x-auto px-4 pb-3 no-scrollbar">
               {[{ name: 'All', count: pagination.total || designs.length }, ...categories].map(({ name, count }) => {
                 const isActive = name === 'All' ? activeFilters.industries.length === 0 : activeFilters.industries.includes(name)
@@ -393,6 +420,17 @@ export default function DesignLibrary() {
                   </button>
                 )
               })}
+              <div className="w-px bg-border/60 shrink-0 my-1" aria-hidden="true" />
+              {SORT_OPTIONS.map(({ value, label }) => (
+                <button
+                  key={value}
+                  onClick={() => setActiveFilters(prev => ({ ...prev, sortBy: value }))}
+                  aria-pressed={activeFilters.sortBy === value}
+                  className={"shrink-0 px-3.5 py-2 rounded-full text-[12px] font-medium transition-colors whitespace-nowrap " + (activeFilters.sortBy === value ? 'bg-foreground text-background' : 'bg-muted text-muted-foreground hover:text-foreground')}
+                >
+                  {label}
+                </button>
+              ))}
             </div>
           </div>
 
@@ -506,6 +544,10 @@ export default function DesignLibrary() {
             {/* Sheet */}
             <motion.div
               key="sheet"
+              ref={sheetRef}
+              role="dialog"
+              aria-modal="true"
+              aria-label="Site details"
               initial={{ y: '100%' }}
               animate={{ y: 0 }}
               exit={{ y: '100%' }}
@@ -520,7 +562,7 @@ export default function DesignLibrary() {
               }}
               className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-background flex flex-col"
               style={{
-                height: '82vh',
+                height: '82svh',
                 borderRadius: '20px 20px 0 0',
                 boxShadow: '0 -12px 40px rgba(0,0,0,0.12)',
               }}

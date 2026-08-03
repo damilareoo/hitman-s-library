@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
 import { X, ArrowSquareOut, CaretLeft, CaretRight } from '@phosphor-icons/react'
+import { getDomain } from '@/lib/get-domain'
 
 interface Design {
   id: string
@@ -19,10 +20,6 @@ interface PresentationModeProps {
   initialIndex: number
   onClose: () => void
   onSelect: (design: Design) => void
-}
-
-function getDomain(url: string) {
-  try { return new URL(url).hostname.replace('www.', '') } catch { return url }
 }
 
 export function PresentationMode({ designs, initialIndex, onClose, onSelect }: PresentationModeProps) {
@@ -68,11 +65,42 @@ export function PresentationMode({ designs, initialIndex, onClose, onSelect }: P
 
   useEffect(() => {
     document.body.style.overflow = 'hidden'
-    return () => { document.body.style.overflow = '' }
+    // Restore focus to the element that opened presentation mode
+    const previousFocus = document.activeElement as HTMLElement | null
+    return () => {
+      document.body.style.overflow = ''
+      previousFocus?.focus()
+    }
+  }, [])
+
+  // Focus trap
+  useEffect(() => {
+    function onTab(e: KeyboardEvent) {
+      if (e.key !== 'Tab') return
+      const container = document.querySelector('[data-presentation-mode]') as HTMLElement | null
+      if (!container) return
+      const els = Array.from(container.querySelectorAll<HTMLElement>(
+        'button:not([disabled]), [href], [tabindex]:not([tabindex="-1"])'
+      ))
+      if (!els.length) return
+      const first = els[0]
+      const last = els[els.length - 1]
+      if (e.shiftKey) {
+        if (document.activeElement === first) { e.preventDefault(); last.focus() }
+      } else {
+        if (document.activeElement === last) { e.preventDefault(); first.focus() }
+      }
+    }
+    document.addEventListener('keydown', onTab)
+    return () => document.removeEventListener('keydown', onTab)
   }, [])
 
   return (
     <motion.div
+      role="dialog"
+      aria-modal="true"
+      aria-label="Presentation mode"
+      data-presentation-mode
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}

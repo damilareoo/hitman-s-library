@@ -4,7 +4,13 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
   images: {
-    unoptimized: true,
+    remotePatterns: [
+      // Vercel Blob storage — where screenshots and thumbnails are saved
+      { protocol: 'https', hostname: '*.public.blob.vercel-storage.com' },
+      // Broad catch-all for user-submitted site thumbnails from arbitrary domains
+      { protocol: 'https', hostname: '**' },
+    ],
+    formats: ['image/avif', 'image/webp'],
   },
   serverExternalPackages: ['puppeteer', '@sparticuz/chromium'],
 }

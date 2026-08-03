@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Image from 'next/image'
 import { motion } from 'motion/react'
 import { getDomain } from '@/lib/get-domain'
 
@@ -53,7 +54,7 @@ export function DesignCard({ design, index, isSelected, onClick, onHover, onTagC
   }
 
   return (
-    <motion.article
+    <motion.div
       variants={cardVariants}
       initial={hasAnimated ? false : 'hidden'}
       animate="show"
@@ -81,15 +82,20 @@ export function DesignCard({ design, index, isSelected, onClick, onHover, onTagC
           <div className="absolute inset-0 bg-muted animate-pulse" />
         )}
         {imgSrc && (
-          <img
+          <Image
             src={imgSrc}
             alt={design.title || domain}
-            referrerPolicy="no-referrer"
-            loading={index < 6 ? 'eager' : 'lazy'}
-            fetchPriority={index < 3 ? 'high' : 'auto'}
-            onLoad={e => (e.currentTarget.naturalWidth > 0 ? setImgStatus('loaded') : handleImgError())}
+            fill
+            sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 33vw"
+            priority={index < 3}
+            loading={index < 3 ? undefined : index < 6 ? 'eager' : 'lazy'}
+            onLoad={e => {
+              const img = e.currentTarget as HTMLImageElement
+              img.naturalWidth > 0 ? setImgStatus('loaded') : handleImgError()
+            }}
             onError={handleImgError}
-            className={"w-full h-full object-cover object-top transition-[opacity,transform] duration-300 group-hover:scale-[1.03] " + (imgStatus === 'loaded' ? 'opacity-100' : 'opacity-0')}
+            className={"object-cover object-top transition-[opacity,transform] duration-300 group-hover:scale-[1.03] " + (imgStatus === 'loaded' ? 'opacity-100' : 'opacity-0')}
+            unoptimized={!imgSrc.includes('vercel-storage.com')}
           />
         )}
         {imgStatus === 'error' && (
@@ -106,6 +112,7 @@ export function DesignCard({ design, index, isSelected, onClick, onHover, onTagC
           target="_blank"
           rel="noopener noreferrer"
           onClick={e => e.stopPropagation()}
+          aria-label={`Visit ${design.title || domain}`}
           className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center gap-1 bg-background/90 backdrop-blur-sm border border-border/50 rounded-[3px] px-2 py-1 text-[10px] font-mono text-foreground hover:border-foreground/50 hover:bg-background"
         >
           ↗
@@ -147,6 +154,6 @@ export function DesignCard({ design, index, isSelected, onClick, onHover, onTagC
           ) : null}
         </div>
       </div>
-    </motion.article>
+    </motion.div>
   )
 }
