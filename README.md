@@ -19,8 +19,9 @@ When you add a URL, the app:
 
 ## Features
 
-- **Card grid** — Browse all sites with spring-animated cards, filter by category
-- **Detail panel** — Click any site to see preview, colors, type, and assets with smooth tab transitions
+- **Card grid** — Browse all sites with staggered card entrances, filter by category
+- **Detail panel** — Click any site to see preview, colors, type, and assets in a wide inspector with a sliding tab underline
+- **Keyboard** — `/` focuses search, `P` opens presentation mode, arrow keys cycle tabs and slides
 - **Full-page preview** — Scrollable screenshot in a bounded panel with back-to-top button; Desktop/Mobile toggle when mobile screenshot is available
 - **Color extraction** — HEX and OKLCH values, copy-paste ready, sorted by lightness
 - **Typography** — Font family, role, weight, and Google Fonts link
@@ -34,6 +35,20 @@ When you add a URL, the app:
 - **Changelog** — `/changelog` feed showing all additions, re-extractions, and deletions
 - **Color export** — Copy palette as CSS custom properties or Tailwind config snippet
 - **Admin CMS** — Passcode-protected admin at `/admin` to add, search, and delete sites; bulk duplicate removal
+
+---
+
+## Design system
+
+The UI runs on a small token system defined in `app/globals.css`:
+
+- **Type scale** — micro 10px / meta 11px / ui 12px / body 13px / title 14px; nothing in the UI renders below 10px
+- **Ink levels** — foreground at 100 / 62 / 40 / 24 percent, replacing ad-hoc text opacities
+- **Edges** — border at 70 / 50 / 30 percent for structural, default, and faint hairlines
+- **Radius** — 4px for boxes, full for pills and swatches
+- **Motion** — one easing (`cubic-bezier(0.22, 1, 0.36, 1)`) with tokenized durations (120 / 200 / 300 / 450 ms), mirrored in `lib/motion.ts` for motion/react
+
+Shared primitives live in `components/ui` (Spinner, SectionLabel) and `lib/use-copied.ts` (copy feedback).
 
 ---
 
