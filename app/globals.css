@@ -57,6 +57,24 @@
   --color-success: #16a34a;
   --color-error:   #dc2626;
   --color-running: #2563eb;
+
+  /* Ink levels — all muted text derives from these */
+  --ink: var(--foreground);
+  --ink-2: oklch(from var(--foreground) l c h / 0.62);
+  --ink-3: oklch(from var(--foreground) l c h / 0.4);
+  --ink-4: oklch(from var(--foreground) l c h / 0.24);
+
+  /* Edge weights — all borders derive from these */
+  --edge-strong: oklch(from var(--border) l c h / 0.7);
+  --edge: oklch(from var(--border) l c h / 0.5);
+  --edge-faint: oklch(from var(--border) l c h / 0.3);
+
+  /* Motion */
+  --ease-sig: cubic-bezier(0.22, 1, 0.36, 1);
+  --dur-1: 120ms;
+  --dur-2: 200ms;
+  --dur-3: 300ms;
+  --dur-4: 450ms;
 }
 
 .dark {
@@ -149,6 +167,13 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-ink-4: var(--ink-4);
+  --color-edge-strong: var(--edge-strong);
+  --color-edge: var(--edge);
+  --color-edge-faint: var(--edge-faint);
 }
 
 /* ============================================================================
@@ -255,6 +280,42 @@ button, a, [role="button"] {
 }
 
 /* ============================================================================
+   TYPE SCALE — the only UI text sizes. Content (specimens, changelog h1) exempt.
+   ============================================================================ */
+
+@utility text-micro {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  line-height: 1;
+}
+
+@utility text-meta {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0;
+}
+
+@utility text-ui {
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+@utility text-bodytext {
+  font-family: var(--font-sans);
+  font-size: 13px;
+  letter-spacing: -0.01em;
+}
+
+@utility text-titletext {
+  font-family: var(--font-sans);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+/* ============================================================================
    UTILITIES
    ============================================================================ */
 
@@ -277,6 +338,12 @@ button, a, [role="button"] {
 /* ============================================================================
    KEYFRAMES — only what's actually used
    ============================================================================ */
+
+/* Used inline in type-specimen-card.tsx */
+@keyframes fade-in-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
 
 /* Used inline in assets-tab.tsx: animation: 'scale-in 0.3s ...' */
 @keyframes scale-in {
