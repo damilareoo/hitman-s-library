@@ -23,7 +23,7 @@ const TYPE_LABEL: Record<ChangeItem['type'], string> = {
 const TYPE_TEXT: Record<ChangeItem['type'], string> = {
   new:      'text-[var(--color-success)]/70',
   improved: 'text-[var(--color-running)]/70',
-  fixed:    'text-muted-foreground/35',
+  fixed:    'text-ink-4',
 }
 
 function formatDate(iso: string) {
@@ -37,16 +37,16 @@ export default function ChangelogPage() {
     <div className="min-h-screen bg-background text-foreground">
 
       {/* Nav */}
-      <nav className="sticky top-0 z-50 border-b border-border/40 bg-background/90 backdrop-blur-md">
+      <nav className="sticky top-0 z-50 border-b border-edge bg-background/90 backdrop-blur-md">
         <div className="max-w-[640px] mx-auto px-6 h-12 flex items-center justify-between">
           <Link
             href="/"
-            className="flex items-center gap-1.5 text-[11px] font-mono text-muted-foreground/60 hover:text-foreground transition-colors"
+            className="flex items-center gap-1.5 text-meta text-ink-3 hover:text-ink transition-colors"
           >
             <ArrowLeft className="w-3 h-3" weight="regular" />
             Gallery
           </Link>
-          <span className="text-[11px] font-mono text-muted-foreground/30 tracking-wide">Changelog</span>
+          <span className="text-meta text-ink-4">Changelog</span>
         </div>
       </nav>
 
@@ -57,7 +57,7 @@ export default function ChangelogPage() {
           <h1 className="text-[28px] font-semibold tracking-[-0.03em] text-foreground leading-none mb-2">
             Changelog
           </h1>
-          <p className="text-[13px] text-muted-foreground/50">
+          <p className="text-bodytext text-ink-3">
             What's new in Hitman's Library
           </p>
         </div>
@@ -69,7 +69,7 @@ export default function ChangelogPage() {
 
               {/* Timeline line */}
               {i < changelog.length - 1 && (
-                <div className="absolute left-[5px] top-[11px] bottom-0 w-px bg-border/40" />
+                <div className="absolute left-[5px] top-[11px] bottom-0 w-px bg-edge" />
               )}
 
               {/* Timeline dot */}
@@ -87,11 +87,11 @@ export default function ChangelogPage() {
 
                 {/* Date + latest badge */}
                 <div className="flex items-center gap-2 mb-1">
-                  <time className="text-[11px] font-mono text-muted-foreground/50 tracking-wide">
+                  <time className="text-meta text-ink-3">
                     {formatDate(release.date)}
                   </time>
                   {i === 0 && (
-                    <span className="text-[8px] font-mono uppercase tracking-[0.12em] px-1.5 py-0.5 rounded-[2px] bg-foreground text-background">
+                    <span className="text-micro px-1.5 py-0.5 rounded-[4px] bg-foreground text-background">
                       Latest
                     </span>
                   )}
@@ -104,7 +104,7 @@ export default function ChangelogPage() {
 
                 {/* Optional description */}
                 {release.description && (
-                  <p className="text-[12.5px] text-muted-foreground/55 leading-relaxed mb-4">
+                  <p className="text-bodytext text-ink-2 leading-relaxed mb-4">
                     {release.description}
                   </p>
                 )}
@@ -117,11 +117,11 @@ export default function ChangelogPage() {
                         <div className={`w-1.5 h-1.5 rounded-full ${DOT_COLOR[item.type]}`} />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-[12.5px] text-foreground/70 leading-relaxed">
+                        <p className="text-bodytext text-ink-2 leading-relaxed">
                           {item.text}
                         </p>
                       </div>
-                      <span className={`shrink-0 text-[9px] font-mono pt-[3px] ${TYPE_TEXT[item.type]}`}>
+                      <span className={`shrink-0 text-micro pt-[3px] ${TYPE_TEXT[item.type]}`}>
                         {TYPE_LABEL[item.type]}
                       </span>
                     </div>
@@ -132,7 +132,7 @@ export default function ChangelogPage() {
           ))}
         </div>
 
-        <p className="text-[10px] font-mono text-muted-foreground/20 mt-10">
+        <p className="text-meta text-ink-4 mt-10">
           Feb 23, 2026 — first commit
         </p>
       </main>
