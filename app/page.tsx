@@ -52,6 +52,7 @@ export default function DesignLibrary() {
   const [isLoadingMore, setIsLoadingMore] = useState(false)
   const sentinelRef = useRef<HTMLDivElement>(null)
   const sheetRef = useRef<HTMLDivElement>(null)
+  const searchRef = useRef<HTMLInputElement>(null)
   const isThemeTransitioning = useRef(false)
   const sheetDragControls = useDragControls()
 
@@ -194,6 +195,7 @@ export default function DesignLibrary() {
       const tag = (e.target as HTMLElement).tagName
       if (tag === 'INPUT' || tag === 'TEXTAREA') return
       if (e.key === 'p' || e.key === 'P') openPresentation(selectedDesign ? designs.findIndex(d => d.id === selectedDesign.id) : 0)
+      if (e.key === '/') { e.preventDefault(); searchRef.current?.focus() }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
@@ -233,7 +235,7 @@ export default function DesignLibrary() {
     <div className="min-h-screen bg-background text-foreground">
 
       {/* Header */}
-      <header className="sticky top-0 z-50 border-b border-border/60 bg-background/95 backdrop-blur-sm">
+      <header className="sticky top-0 z-50 border-b border-edge-strong bg-background/95 backdrop-blur-sm">
         <div className="h-14 px-5 md:px-7 flex items-center gap-4">
 
           <h1 className="text-[15px] font-semibold tracking-[-0.04em] text-foreground select-none shrink-0">
@@ -242,30 +244,36 @@ export default function DesignLibrary() {
 
           {/* Search */}
           <div className="flex-1 max-w-xs hidden sm:flex items-center relative">
-            <MagnifyingGlass className="absolute left-2.5 w-3 h-3 text-muted-foreground/50 pointer-events-none" weight="regular" />
+            <MagnifyingGlass className="absolute left-2.5 w-3 h-3 text-ink-3 pointer-events-none" weight="regular" />
             <input
+              ref={searchRef}
               type="text"
               placeholder="Search sites…"
               aria-label="Search sites"
               value={activeFilters.search}
               onChange={e => setActiveFilters(prev => ({ ...prev, search: e.target.value }))}
-              className="w-full h-7 pl-7 pr-6 text-[12px] font-mono bg-muted/60 border border-border/50 rounded-[3px] text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:border-foreground/30 focus:bg-muted transition-colors"
+              onKeyDown={e => { if (e.key === 'Escape') e.currentTarget.blur() }}
+              className="w-full h-7 pl-7 pr-6 text-ui bg-muted/60 border border-edge rounded-[4px] text-foreground placeholder:text-ink-4 focus:outline-none focus:border-foreground/30 focus:bg-muted transition-colors"
             />
-            {activeFilters.search && (
+            {activeFilters.search ? (
               <button
                 onClick={() => setActiveFilters(prev => ({ ...prev, search: '' }))}
-                className="absolute right-2 text-muted-foreground/40 hover:text-muted-foreground transition-colors"
+                className="absolute right-2 text-ink-4 hover:text-ink-2 transition-colors"
                 aria-label="Clear search"
               >
                 <X className="w-3 h-3" weight="bold" />
               </button>
+            ) : (
+              <kbd className="absolute right-2 flex items-center justify-center h-[16px] min-w-[16px] px-1 rounded-[4px] border border-edge text-micro text-ink-4 pointer-events-none">
+                /
+              </kbd>
             )}
           </div>
 
           <div className="flex items-center gap-1.5 ml-auto">
             <Link
               href="/changelog"
-              className="hidden sm:flex items-center text-[11px] font-mono text-muted-foreground hover:text-foreground transition-colors mr-1"
+              className="hidden sm:flex items-center text-meta text-ink-3 hover:text-ink transition-colors mr-1"
             >
               Changelog
             </Link>
@@ -278,10 +286,10 @@ export default function DesignLibrary() {
                   onClick={() => setActiveFilters(prev => ({ ...prev, sortBy: value }))}
                   aria-pressed={activeFilters.sortBy === value}
                   className={[
-                    'px-2 py-0.5 rounded-[3px] text-[10px] font-mono transition-colors border',
+                    'px-2 py-0.5 rounded-[4px] text-meta transition-colors border',
                     activeFilters.sortBy === value
-                      ? 'bg-muted text-foreground border-border/60'
-                      : 'text-muted-foreground/50 border-transparent hover:text-muted-foreground hover:border-border/40',
+                      ? 'bg-muted text-ink border-edge-strong'
+                      : 'text-ink-4 border-transparent hover:text-ink-2',
                   ].join(' ')}
                 >
                   {label}
@@ -290,7 +298,7 @@ export default function DesignLibrary() {
             </div>
 
             {!isPageLoading && (
-              <span className="hidden sm:inline text-[11px] font-mono text-muted-foreground/50 tabular-nums mr-1">
+              <span className="hidden sm:inline text-meta text-ink-4 tabular-nums mr-1">
                 {pagination.total > 0 ? pagination.total : designs.length}
               </span>
             )}
@@ -298,7 +306,7 @@ export default function DesignLibrary() {
             <button
               onClick={() => openPresentation(selectedDesign ? designs.findIndex(d => d.id === selectedDesign.id) : 0)}
               disabled={designs.length === 0}
-              className="w-9 h-9 flex items-center justify-center rounded-sm border border-border/60 text-muted-foreground hover:text-foreground hover:border-foreground/40 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+              className="w-9 h-9 flex items-center justify-center rounded-[4px] border border-edge-strong text-ink-3 hover:text-ink hover:border-foreground/40 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
               aria-label="Presentation mode"
               title="Presentation mode (P)"
             >
@@ -307,7 +315,7 @@ export default function DesignLibrary() {
 
             <button
               onClick={() => sounds.setEnabled(p => !p)}
-              className="w-9 h-9 flex items-center justify-center rounded-sm border border-border/60 text-muted-foreground hover:text-foreground hover:border-foreground/40 transition-colors"
+              className="w-9 h-9 flex items-center justify-center rounded-[4px] border border-edge-strong text-ink-3 hover:text-ink hover:border-foreground/40 transition-colors"
               aria-label={sounds.enabled ? 'Mute' : 'Enable sounds'}
             >
               {sounds.enabled ? <SpeakerHigh className="w-4 h-4" weight="regular" /> : <SpeakerSlash className="w-4 h-4" weight="regular" />}
@@ -333,7 +341,7 @@ export default function DesignLibrary() {
                 })
                 t.finished.then(() => { isThemeTransitioning.current = false })
               }}
-              className="w-9 h-9 flex items-center justify-center rounded-sm border border-border/60 text-muted-foreground hover:text-foreground hover:border-foreground/40 transition-colors"
+              className="w-9 h-9 flex items-center justify-center rounded-[4px] border border-edge-strong text-ink-3 hover:text-ink hover:border-foreground/40 transition-colors"
               aria-label={resolvedTheme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
             >
               <motion.span key={resolvedTheme} initial={{ rotate: -20, scale: 0.8 }} animate={{ rotate: 0, scale: 1 }} style={{ display: 'flex' }}>
@@ -381,7 +389,7 @@ export default function DesignLibrary() {
         </aside>
 
         {/* Gallery */}
-        <main className="col-span-1 md:col-span-7 flex flex-col">
+        <main className="col-span-1 md:col-span-6 flex flex-col">
           {/* Mobile filters */}
           <div className="md:hidden sticky top-14 z-20 bg-background border-b border-border/60">
             {/* Mobile search */}
@@ -436,7 +444,7 @@ export default function DesignLibrary() {
 
           <div className="flex-1 p-5 md:p-6">
             <motion.div
-              className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-5"
+              className="grid grid-cols-1 sm:grid-cols-2 2xl:grid-cols-3 gap-4 md:gap-5"
               variants={gridVariants}
               initial={hasAnimated.current ? false : 'hidden'}
               animate="show"
@@ -483,7 +491,7 @@ export default function DesignLibrary() {
         </main>
 
         {/* Detail panel */}
-        <div className="hidden md:flex md:col-span-3 flex-col sticky top-14 h-[calc(100vh-56px)] border-l border-border/60 bg-background">
+        <div className="hidden md:flex md:col-span-4 flex-col sticky top-14 h-[calc(100vh-56px)] border-l border-edge-strong bg-background">
           <AnimatePresence mode="wait">
             {selectedDesign ? (
               <motion.div
