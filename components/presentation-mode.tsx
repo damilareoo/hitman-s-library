@@ -4,6 +4,8 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
 import { X, ArrowSquareOut, CaretLeft, CaretRight } from '@phosphor-icons/react'
 import { getDomain } from '@/lib/get-domain'
+import { Spinner } from './ui/spinner'
+import { EASE, DUR } from '@/lib/motion'
 
 interface Design {
   id: string
@@ -104,7 +106,7 @@ export function PresentationMode({ designs, initialIndex, onClose, onSelect }: P
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      transition={{ duration: 0.18 }}
+      transition={{ duration: DUR.color, ease: EASE }}
       className="fixed inset-0 z-50 bg-[#090909] flex flex-col select-none"
       onTouchStart={e => { touchStartX.current = e.touches[0].clientX }}
       onTouchEnd={e => {
@@ -113,11 +115,11 @@ export function PresentationMode({ designs, initialIndex, onClose, onSelect }: P
       }}
     >
       {/* Progress bar */}
-      <div className="absolute top-0 left-0 right-0 h-px bg-white/[0.06] z-30 pointer-events-none">
+      <div className="absolute top-0 left-0 right-0 h-px bg-white/[0.08] z-30 pointer-events-none">
         <motion.div
-          className="h-full bg-white/20"
+          className="h-full bg-white/24"
           animate={{ width: `${progressPct}%` }}
-          transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+          transition={{ duration: DUR.move, ease: EASE }}
         />
       </div>
 
@@ -133,14 +135,14 @@ export function PresentationMode({ designs, initialIndex, onClose, onSelect }: P
           target="_blank"
           rel="noopener noreferrer"
           onClick={e => e.stopPropagation()}
-          className="w-9 h-9 flex items-center justify-center rounded-md bg-black/60 border border-white/[0.08] text-white/30 hover:text-white/80 hover:bg-black/80 hover:border-white/15 transition-colors backdrop-blur-sm"
+          className="w-9 h-9 flex items-center justify-center rounded-[4px] bg-black/60 border border-white/[0.08] text-white/40 hover:text-white/80 hover:bg-black/80 hover:border-white/[0.12] transition-colors backdrop-blur-sm"
           aria-label="Open in new tab"
         >
           <ArrowSquareOut className="w-3.5 h-3.5" weight="regular" />
         </a>
         <button
           onClick={onClose}
-          className="w-9 h-9 flex items-center justify-center rounded-md bg-black/60 border border-white/[0.08] text-white/30 hover:text-white/80 hover:bg-black/80 hover:border-white/15 transition-colors backdrop-blur-sm"
+          className="w-9 h-9 flex items-center justify-center rounded-[4px] bg-black/60 border border-white/[0.08] text-white/40 hover:text-white/80 hover:bg-black/80 hover:border-white/[0.12] transition-colors backdrop-blur-sm"
           aria-label="Close presentation mode"
         >
           <X className="w-3.5 h-3.5" weight="bold" />
@@ -161,7 +163,7 @@ export function PresentationMode({ designs, initialIndex, onClose, onSelect }: P
         {/* Subtle corner spinner */}
         {!iframeLoaded && !proxyFailed && (
           <div className="absolute bottom-4 right-4 z-10 pointer-events-none">
-            <div className="w-4 h-4 border border-white/[0.08] border-t-white/25 rounded-full animate-spin" />
+            <Spinner className="border-white/[0.08] border-t-white/24" />
           </div>
         )}
 
@@ -172,9 +174,9 @@ export function PresentationMode({ designs, initialIndex, onClose, onSelect }: P
           >
             <div className="flex flex-col items-center gap-6 text-center">
               <div className="space-y-2">
-                <p className="text-[20px] font-mono text-white/35 tracking-tight">{domain}</p>
+                <p className="text-[20px] font-mono text-white/62 tracking-tight">{domain}</p>
                 {current.industry && (
-                  <p className="text-[10px] font-mono text-white/20 uppercase tracking-[0.12em]">{current.industry}</p>
+                  <p className="text-micro text-white/24">{current.industry}</p>
                 )}
               </div>
               {current.colors?.length > 0 && (
@@ -189,7 +191,7 @@ export function PresentationMode({ designs, initialIndex, onClose, onSelect }: P
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={e => e.stopPropagation()}
-                className="text-[11px] font-mono text-white/25 hover:text-white/60 border border-white/[0.07] hover:border-white/15 rounded-[3px] px-4 py-2 transition-colors"
+                className="text-ui text-white/40 hover:text-white/80 border border-white/[0.08] hover:border-white/[0.12] rounded-[4px] px-4 py-2 transition-colors"
               >
                 Visit site ↗
               </a>
@@ -204,7 +206,7 @@ export function PresentationMode({ designs, initialIndex, onClose, onSelect }: P
             onError={() => setProxyFailed(true)}
             sandbox="allow-scripts allow-forms allow-popups allow-top-navigation-by-user-activation"
             className="absolute inset-0 w-full h-full border-0"
-            style={{ opacity: iframeLoaded ? 1 : 0, transition: 'opacity 0.35s ease' }}
+            style={{ opacity: iframeLoaded ? 1 : 0, transition: 'opacity var(--dur-4) var(--ease-sig)' }}
           />
         )}
 
@@ -229,7 +231,7 @@ export function PresentationMode({ designs, initialIndex, onClose, onSelect }: P
 
           <button
             onClick={() => go(-1)}
-            className="w-7 h-7 flex items-center justify-center rounded-[4px] bg-white/10 hover:bg-white/20 text-white/70 hover:text-white transition-colors shrink-0"
+            className="w-7 h-7 flex items-center justify-center rounded-[4px] bg-white/10 hover:bg-white/20 text-white/62 hover:text-white transition-colors shrink-0"
             aria-label="Previous site"
           >
             <CaretLeft className="w-3.5 h-3.5" weight="bold" />
@@ -241,13 +243,13 @@ export function PresentationMode({ designs, initialIndex, onClose, onSelect }: P
               initial={{ opacity: 0, x: direction * 10 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: direction * -5 }}
-              transition={{ duration: 0.14 }}
+              transition={{ duration: DUR.exit, ease: EASE }}
               className="flex items-center gap-4 min-w-0 flex-1"
             >
               <div className="min-w-0 flex-1">
-                <p className="text-[14px] font-mono text-white/65 tracking-[-0.01em] truncate leading-none">{domain}</p>
+                <p className="text-[14px] font-mono text-white/62 tracking-[-0.01em] truncate leading-none">{domain}</p>
                 {current.industry && (
-                  <p className="text-[9px] font-mono text-white/25 uppercase tracking-[0.1em] mt-[5px]">{current.industry}</p>
+                  <p className="text-micro text-white/24 mt-[5px]">{current.industry}</p>
                 )}
               </div>
 
@@ -263,15 +265,23 @@ export function PresentationMode({ designs, initialIndex, onClose, onSelect }: P
                 </div>
               )}
 
-              <span className="text-[10px] font-mono text-white/15 tabular-nums shrink-0">
+              <span className="text-meta text-white/24 tabular-nums shrink-0">
                 {index + 1} / {designs.length}
               </span>
+
+              <div className="hidden [@media(pointer:fine)]:flex items-center gap-1 shrink-0">
+                {['←', '→', 'esc'].map(k => (
+                  <kbd key={k} className="flex items-center justify-center h-[16px] min-w-[16px] px-1 rounded-[4px] border border-white/[0.08] text-micro text-white/24">
+                    {k}
+                  </kbd>
+                ))}
+              </div>
             </motion.div>
           </AnimatePresence>
 
           <button
             onClick={() => go(1)}
-            className="w-7 h-7 flex items-center justify-center rounded-[4px] bg-white/10 hover:bg-white/20 text-white/70 hover:text-white transition-colors shrink-0"
+            className="w-7 h-7 flex items-center justify-center rounded-[4px] bg-white/10 hover:bg-white/20 text-white/62 hover:text-white transition-colors shrink-0"
             aria-label="Next site"
           >
             <CaretRight className="w-3.5 h-3.5" weight="bold" />
