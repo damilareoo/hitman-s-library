@@ -62,8 +62,8 @@ export function TypeSpecimenCard({ typography, index }: { typography: Typography
 
   return (
     <div
-      className="px-5 pt-7 pb-6 border-b border-border/20 last:border-0"
-      style={{ opacity: 0, animation: `fade-in-up 0.35s cubic-bezier(0.22,1,0.36,1) ${index * 70}ms both` }}
+      className="px-5 pt-7 pb-6 border-b border-edge-faint last:border-0"
+      style={{ opacity: 0, animation: `fade-in-up 0.45s var(--ease-sig) ${index * 70}ms both` }}
     >
       {/* Cascade specimen */}
       <div className="space-y-2.5 mb-5">
@@ -92,10 +92,10 @@ export function TypeSpecimenCard({ typography, index }: { typography: Typography
       {/* Footer row */}
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
-          <span className="text-[8px] font-mono uppercase tracking-[0.18em] text-muted-foreground/25">
+          <span className="text-micro text-ink-4">
             {ROLE_LABEL[typography.role] ?? typography.role}
           </span>
-          <span className="text-[8px] font-mono text-muted-foreground/20 tabular-nums">{weight}</span>
+          <span className="text-meta text-ink-4 tabular-nums">{weight}</span>
         </div>
 
         <div className="flex items-center gap-1.5">
@@ -107,28 +107,17 @@ export function TypeSpecimenCard({ typography, index }: { typography: Typography
               className="flex items-center gap-1.5 group/src"
             >
               <span className={[
-                'text-[7.5px] font-mono uppercase tracking-[0.1em] px-1.5 py-[3px] rounded-[2px]',
+                'text-micro px-1.5 py-[3px] rounded-[4px]',
                 source.type === 'free'
                   ? 'bg-[var(--color-success)]/10 text-[var(--color-success)]/60'
-                  : 'bg-muted/60 text-muted-foreground/30',
+                  : 'bg-muted/60 text-ink-4',
               ].join(' ')}>
                 {source.type === 'free' ? 'free' : 'paid'}
               </span>
-              <span className="text-[9px] font-mono text-muted-foreground/25 group-hover/src:text-muted-foreground/60 transition-colors truncate">
+              <span className="text-meta text-ink-4 group-hover/src:text-ink-2 transition-colors truncate">
                 {source.name}
               </span>
-              <ArrowSquareOut className="w-2.5 h-2.5 shrink-0 text-muted-foreground/15 group-hover/src:text-muted-foreground/40 transition-colors" weight="regular" />
-            </a>
-          )}
-          {typography.google_fonts_url && (
-            <a
-              href={typography.google_fonts_url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-muted-foreground/20 hover:text-muted-foreground/50 transition-colors"
-              title="View on Google Fonts"
-            >
-              <ArrowSquareOut className="w-3 h-3" weight="regular" />
+              <ArrowSquareOut className="w-2.5 h-2.5 shrink-0 text-ink-4 group-hover/src:text-ink-3 transition-colors" weight="regular" />
             </a>
           )}
         </div>
