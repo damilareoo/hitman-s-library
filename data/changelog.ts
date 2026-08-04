@@ -17,6 +17,25 @@ export interface ChangelogRelease {
 // Types: "new" (green) | "improved" (blue) | "fixed" (muted)
 const changelog: ChangelogRelease[] = [
   {
+    date: '2026-08-04',
+    title: 'Design Language Refinement',
+    description: 'Same character, sharper execution. The language now runs on a real system: a six-step type scale, four ink levels, three edge weights, one radius, one easing — swept across every surface. Plus a roomier inspector.',
+    items: [
+      { type: 'improved', text: 'Foundation tokens: ink levels (100/62/40/24) replace eleven ad-hoc text opacities; edge weights (70/50/30) replace four border treatments; 4px radius everywhere; one signature easing with four tokenized durations' },
+      { type: 'improved', text: 'Type scale: micro 10px / meta 11px / ui 12px / body 13px / title 14px — nothing in the UI renders below 10px anymore (specimen footers were 7.5px)' },
+      { type: 'new',      text: 'Roomier inspector: desktop split is now sidebar 2 / gallery 6 / panel 4 — specimens, palettes, and asset grids finally breathe; cards are wider at typical desktop widths (2-up, 3-up on very large screens)' },
+      { type: 'new',      text: 'Press / to focus search (keycap hint in the field); panel load failures now offer Retry' },
+      { type: 'improved', text: 'Panel tabs: sliding active underline (shared layout animation), legible 10px labels' },
+      { type: 'improved', text: 'One spinner, one copy-feedback pattern (in-place check morph, no layout shift — export buttons no longer jump), one section-label treatment, one focus ring' },
+      { type: 'improved', text: 'Calmer motion: scale-pop removed from panel content, card hover eased to 1.015 on the signature curve, all durations tokenized' },
+      { type: 'improved', text: 'Skeleton cards now match real card geometry exactly; mobile filter pills returned to library materials (mono, tabular counts); sheet respects safe-area' },
+      { type: 'improved', text: 'Presentation mode: white-alpha steps mirroring the ink system, keycap hints for pointer users, tokenized progress motion' },
+      { type: 'fixed',    text: 'Type specimens: fade-in-up keyframe was never defined in globals — specimens could render invisible; now defined' },
+      { type: 'fixed',    text: 'viewport themeColor now matches the real background tokens (#f7f7f5 / #0e0e0e)' },
+      { type: 'fixed',    text: 'Removed dead components theme-toggle.tsx and typography-display.tsx; duplicate Google Fonts link on specimens' },
+    ],
+  },
+  {
     date: '2026-08-03',
     title: 'Design Language Lift & Figma Tab Removed',
     description: 'Warmer, more refined UI across every surface — same density, better craft. Figma tab removed entirely.',

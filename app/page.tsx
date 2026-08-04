@@ -39,8 +39,8 @@ function SkeletonCard() {
       <div className="aspect-[16/10] bg-muted" />
       <div className="px-3.5 pt-2.5 pb-3 flex flex-col gap-2 border-t border-edge-faint">
         <div className="space-y-1.5">
-          <div className="h-[13px] bg-muted rounded-[3px] w-3/4" />
-          <div className="h-[11px] bg-muted rounded-[3px] w-1/2" />
+          <div className="h-[13px] bg-muted rounded-[4px] w-3/4" />
+          <div className="h-[11px] bg-muted rounded-[4px] w-1/2" />
         </div>
         <div className="flex gap-[3px]">
           {[0, 1, 2, 3].map(i => <div key={i} className="w-4 h-4 rounded-full bg-muted" />)}
@@ -70,6 +70,7 @@ export default function DesignLibrary() {
     sortBy: 'recent',
   })
   const [categories, setCategories] = useState<{ name: string; count: number }[]>([])
+  const [mounted, setMounted] = useState(false)
   const [isPageLoading, setIsPageLoading] = useState(true)
   const [isFiltering, setIsFiltering] = useState(false)
   const hasAnimated = useRef(false)
@@ -85,7 +86,7 @@ export default function DesignLibrary() {
       .then(d => setCategories(d.categories || []))
   }, [])
 
-  useEffect(() => { hasAnimated.current = true }, [])
+  useEffect(() => { hasAnimated.current = true; setMounted(true) }, [])
 
   // Lock body scroll when sheet is open (sheet is only rendered on mobile via md:hidden)
   useEffect(() => {
@@ -348,10 +349,10 @@ export default function DesignLibrary() {
                 t.finished.then(() => { isThemeTransitioning.current = false })
               }}
               className="w-9 h-9 flex items-center justify-center rounded-[4px] border border-edge-strong text-ink-3 hover:text-ink hover:border-foreground/40 transition-colors"
-              aria-label={resolvedTheme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+              aria-label={mounted && resolvedTheme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
             >
-              <motion.span key={resolvedTheme} initial={{ rotate: -20, scale: 0.8 }} animate={{ rotate: 0, scale: 1 }} style={{ display: 'flex' }}>
-                {resolvedTheme === 'dark' ? <Sun className="w-3.5 h-3.5" weight="regular" /> : <Moon className="w-3.5 h-3.5" weight="regular" />}
+              <motion.span key={mounted ? resolvedTheme : 'ssr'} initial={{ rotate: -20, scale: 0.8 }} animate={{ rotate: 0, scale: 1 }} style={{ display: 'flex' }}>
+                {mounted && resolvedTheme === 'dark' ? <Sun className="w-3.5 h-3.5" weight="regular" /> : <Moon className="w-3.5 h-3.5" weight="regular" />}
               </motion.span>
             </button>
           </div>

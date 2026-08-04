@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { motion } from 'motion/react'
+import { EASE } from '@/lib/motion'
 
 export function Preloader() {
   const [count, setCount] = useState(0)
@@ -58,7 +59,7 @@ export function Preloader() {
       animate={exiting ? { y: '-100%' } : { y: 0 }}
       transition={
         exiting
-          ? { duration: 0.52, ease: [0.76, 0, 0.24, 1] }
+          ? { duration: 0.52, ease: EASE }
           : { duration: 0 }
       }
     >
@@ -71,7 +72,7 @@ export function Preloader() {
         </span>
 
         <div
-          className="relative overflow-hidden bg-border/30"
+          className="relative overflow-hidden bg-edge-faint"
           style={{ width: 40, height: 1 }}
         >
           <div

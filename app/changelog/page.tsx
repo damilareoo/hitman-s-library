@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 const DOT_COLOR: Record<ChangeItem['type'], string> = {
   new:      'bg-[var(--color-success)]',
   improved: 'bg-[var(--color-running)]',
-  fixed:    'bg-muted-foreground/30',
+  fixed:    'bg-ink-4',
 }
 
 const TYPE_LABEL: Record<ChangeItem['type'], string> = {
@@ -78,7 +78,7 @@ export default function ChangelogPage() {
                   'w-[11px] h-[11px] rounded-full border-2',
                   i === 0
                     ? 'bg-foreground border-foreground'
-                    : 'bg-background border-border',
+                    : 'bg-background border-edge-strong',
                 ].join(' ')} />
               </div>
 
