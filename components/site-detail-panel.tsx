@@ -1,7 +1,7 @@
 // components/site-detail-panel.tsx
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence, useAnimate } from 'motion/react'
 import { ArrowClockwise, X } from '@phosphor-icons/react'
 import { PanelTabs, type PanelTab } from './panel-tabs'
@@ -10,6 +10,8 @@ import { PreviewTab } from './preview-tab'
 import { ColorsTab } from './colors-tab'
 import { TypeTab } from './type-tab'
 import { AssetsTab } from './assets-tab'
+import { Spinner } from './ui/spinner'
+import { EASE, DUR } from '@/lib/motion'
 interface Asset { id: number; type: 'logo' | 'icon' | 'illustration' | 'image'; content: string; width: number; height: number }
 interface ColorRow { hex_value: string; oklch: string | null }
 interface TypographyRow { font_family: string; role: string; google_fonts_url: string | null; primary_weight: number | null }
@@ -52,9 +54,8 @@ export function SiteDetailPanel({ sourceId, metadata, onClose }: SiteDetailPanel
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  useEffect(() => {
+  const load = useCallback(() => {
     setLoading(true)
-    setActiveTab('preview')
     setData(null)
     fetch(`/api/design/${sourceId}`)
       .then(r => r.json())
@@ -70,6 +71,11 @@ export function SiteDetailPanel({ sourceId, metadata, onClose }: SiteDetailPanel
       .catch(console.error)
       .finally(() => setLoading(false))
   }, [sourceId])
+
+  useEffect(() => {
+    setActiveTab('preview')
+    load()
+  }, [load])
 
   async function handleReextract() {
     if (isReextracting) return
@@ -106,18 +112,18 @@ export function SiteDetailPanel({ sourceId, metadata, onClose }: SiteDetailPanel
   return (
     <div className="flex flex-col h-full bg-background">
       {/* Header */}
-      <div className="flex items-center gap-2 px-4 py-3.5 border-b border-border/60 flex-shrink-0">
+      <div className="flex items-center gap-2 px-4 py-3.5 border-b border-edge-strong flex-shrink-0">
         <div className="min-w-0 flex-1">
           <a
             href={data?.url ?? '#'}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-[13.5px] font-semibold text-foreground truncate tracking-[-0.03em] hover:opacity-70 transition-opacity block"
+            className="text-titletext text-ink truncate hover:opacity-70 transition-opacity block"
           >
             {hostname}
           </a>
           {(metadata?.industry || metadata?.tags?.[0]) && (
-            <p className="text-[9.5px] font-mono text-muted-foreground/40 mt-0.5 truncate uppercase tracking-[0.06em]">
+            <p className="text-micro text-ink-4 mt-0.5 truncate">
               {[metadata.industry, metadata.tags?.[0]].filter(Boolean).join(' · ')}
             </p>
           )}
@@ -128,7 +134,7 @@ export function SiteDetailPanel({ sourceId, metadata, onClose }: SiteDetailPanel
             onClick={handleReextract}
             disabled={isReextracting}
             aria-label="Re-extract design data"
-            className="w-8 h-8 flex items-center justify-center rounded-[4px] text-muted-foreground/50 hover:text-foreground hover:bg-muted transition-colors disabled:opacity-40"
+            className="w-8 h-8 flex items-center justify-center rounded-[4px] text-ink-3 hover:text-ink hover:bg-muted transition-colors disabled:opacity-40"
           >
             <motion.span ref={scope} style={{ display: 'flex' }}>
               <ArrowClockwise className="w-4 h-4" weight="regular" />
@@ -137,7 +143,7 @@ export function SiteDetailPanel({ sourceId, metadata, onClose }: SiteDetailPanel
           {onClose && (
             <button
               onClick={() => { playClose(); onClose() }}
-              className="w-8 h-8 flex items-center justify-center rounded-[4px] text-muted-foreground/50 hover:text-foreground hover:bg-muted transition-colors"
+              className="w-8 h-8 flex items-center justify-center rounded-[4px] text-ink-3 hover:text-ink hover:bg-muted transition-colors"
               aria-label="Close panel"
             >
               <X className="w-4 h-4" weight="bold" />
@@ -161,21 +167,23 @@ export function SiteDetailPanel({ sourceId, metadata, onClose }: SiteDetailPanel
             exit={{ opacity: 0 }}
             className="flex items-center justify-center flex-1"
           >
-            <div className="w-4 h-4 border border-border border-t-foreground rounded-full animate-spin" />
+            <Spinner />
           </motion.div>
         ) : data ? (
           <motion.div
             key={`data-${sourceId}`}
-            initial={{ opacity: 0, scale: 0.98 }}
-            animate={{ opacity: 1, scale: 1 }}
+            initial={{ opacity: 0, y: 4 }}
+            animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
+            transition={{ duration: DUR.move, ease: EASE }}
             className="flex flex-col flex-1 min-h-0"
           >
             <AnimatePresence mode="wait">
               {activeTab === 'preview' && (
                 <motion.div key="preview" className="flex flex-col flex-1 min-h-0"
                   initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -4, transition: { duration: 0.12 } }}>
+                  transition={{ duration: DUR.move, ease: EASE }}
+                  exit={{ opacity: 0, y: -4, transition: { duration: DUR.exit } }}>
                   <PreviewTab
                     siteUrl={data.url}
                     screenshotUrl={data.screenshot_url}
@@ -187,21 +195,24 @@ export function SiteDetailPanel({ sourceId, metadata, onClose }: SiteDetailPanel
               {activeTab === 'colors' && (
                 <motion.div key="colors" className="flex flex-col flex-1 min-h-0"
                   initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -4, transition: { duration: 0.12 } }}>
+                  transition={{ duration: DUR.move, ease: EASE }}
+                  exit={{ opacity: 0, y: -4, transition: { duration: DUR.exit } }}>
                   <ColorsTab colors={data.colors} extractionError={data.extraction_error} />
                 </motion.div>
               )}
               {activeTab === 'type' && (
                 <motion.div key="type" className="flex flex-col flex-1 min-h-0"
                   initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -4, transition: { duration: 0.12 } }}>
+                  transition={{ duration: DUR.move, ease: EASE }}
+                  exit={{ opacity: 0, y: -4, transition: { duration: DUR.exit } }}>
                   <TypeTab typography={data.typography} extractionError={data.extraction_error} />
                 </motion.div>
               )}
               {activeTab === 'assets' && (
                 <motion.div key="assets" className="flex flex-col flex-1 min-h-0"
                   initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -4, transition: { duration: 0.12 } }}>
+                  transition={{ duration: DUR.move, ease: EASE }}
+                  exit={{ opacity: 0, y: -4, transition: { duration: DUR.exit } }}>
                   <AssetsTab assets={data.assets} extractionError={data.extraction_error} />
                 </motion.div>
               )}
@@ -212,9 +223,15 @@ export function SiteDetailPanel({ sourceId, metadata, onClose }: SiteDetailPanel
             key="error"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="flex items-center justify-center flex-1 p-8"
+            className="flex flex-col items-center justify-center flex-1 gap-3 p-8"
           >
-            <p className="text-xs text-muted-foreground">Failed to load</p>
+            <p className="text-meta text-ink-3">Failed to load</p>
+            <button
+              onClick={load}
+              className="text-meta text-ink-4 hover:text-ink underline underline-offset-2 transition-colors"
+            >
+              Retry
+            </button>
           </motion.div>
         )}
       </AnimatePresence>

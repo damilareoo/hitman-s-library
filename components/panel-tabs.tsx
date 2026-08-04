@@ -1,8 +1,10 @@
 'use client'
 
 import React from 'react'
+import { motion } from 'motion/react'
 import { Monitor, Palette, TextT, Images } from '@phosphor-icons/react'
 import { useSoundsContext } from '@/contexts/sounds-context'
+import { EASE, DUR } from '@/lib/motion'
 
 export type PanelTab = 'preview' | 'colors' | 'type' | 'assets'
 
@@ -36,7 +38,7 @@ export function PanelTabs({ active, onChange }: PanelTabsProps) {
     <div
       role="tablist"
       aria-label="Site detail tabs"
-      className="flex border-b border-border"
+      className="flex border-b border-edge-strong"
       onKeyDown={handleKeyDown}
     >
       {TABS.map(({ key, label, Icon }) => {
@@ -50,16 +52,19 @@ export function PanelTabs({ active, onChange }: PanelTabsProps) {
             tabIndex={isActive ? 0 : -1}
             onClick={() => { playTabChange(); onChange(key) }}
             className={[
-              'flex-1 py-3 transition-colors -mb-px border-b-[1.5px] flex flex-col items-center justify-center gap-1.5 min-h-[44px]',
-              isActive
-                ? 'text-foreground border-foreground/70'
-                : 'text-muted-foreground/40 border-transparent hover:text-muted-foreground/70',
+              'relative flex-1 py-3 transition-colors flex flex-col items-center justify-center gap-1.5 min-h-[44px]',
+              isActive ? 'text-ink' : 'text-ink-4 hover:text-ink-3',
             ].join(' ')}
           >
             <Icon className="w-4 h-4 shrink-0" weight={isActive ? 'fill' : 'regular'} />
-            <span className={['text-[9px] font-mono tracking-[0.07em] uppercase leading-none', isActive ? 'opacity-80' : 'opacity-60'].join(' ')}>
-              {label}
-            </span>
+            <span className="text-micro">{label}</span>
+            {isActive && (
+              <motion.div
+                layoutId="panel-tab-underline"
+                transition={{ duration: DUR.move, ease: EASE }}
+                className="absolute -bottom-px left-4 right-4 h-[1.5px] bg-foreground/70"
+              />
+            )}
           </button>
         )
       })}
