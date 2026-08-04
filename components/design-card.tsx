@@ -4,6 +4,7 @@ import { useState } from 'react'
 import Image from 'next/image'
 import { motion } from 'motion/react'
 import { getDomain } from '@/lib/get-domain'
+import { EASE, DUR } from '@/lib/motion'
 
 export interface Design {
   id: string
@@ -25,8 +26,8 @@ export interface Design {
 }
 
 export const cardVariants = {
-  hidden: { opacity: 0, y: 16 },
-  show: { opacity: 1, y: 0, transition: { type: 'spring' as const, stiffness: 300, damping: 28 } },
+  hidden: { opacity: 0, y: 12 },
+  show: { opacity: 1, y: 0, transition: { duration: DUR.move, ease: EASE } },
 }
 
 interface DesignCardProps {
@@ -58,7 +59,7 @@ export function DesignCard({ design, index, isSelected, onClick, onHover, onTagC
       variants={cardVariants}
       initial={hasAnimated ? false : 'hidden'}
       animate="show"
-      exit={{ opacity: 0, transition: { duration: 0.08 } }}
+      exit={{ opacity: 0, transition: { duration: DUR.exit } }}
       onClick={onClick}
       onHoverStart={onHover}
       onKeyDown={(e) => {
@@ -71,12 +72,8 @@ export function DesignCard({ design, index, isSelected, onClick, onHover, onTagC
       role="button"
       aria-label={`View ${design.title || getDomain(design.url)}`}
       style={{ contain: 'layout paint style' }}
-      className={"group relative flex flex-col cursor-pointer rounded-[3px] overflow-hidden border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/40 focus-visible:ring-offset-1 " + (isSelected ? 'border-foreground/40 shadow-[0_0_0_1px_var(--foreground)] shadow-foreground/10' : 'border-border/50 hover:border-foreground/20')}
+      className={"group relative flex flex-col cursor-pointer rounded-[4px] overflow-hidden border transition-colors " + (isSelected ? 'border-foreground/60' : 'border-edge hover:border-edge-strong')}
     >
-      {isSelected && (
-        <div className="absolute top-0 left-0 right-0 h-[2px] bg-foreground/60 z-10 pointer-events-none" />
-      )}
-
       {/* Screenshot */}
       <div className="relative overflow-hidden bg-muted aspect-[16/10]">
         {imgStatus === 'loading' && (
@@ -95,13 +92,13 @@ export function DesignCard({ design, index, isSelected, onClick, onHover, onTagC
               img.naturalWidth > 0 ? setImgStatus('loaded') : handleImgError()
             }}
             onError={handleImgError}
-            className={"object-cover object-top transition-[opacity,transform] duration-500 group-hover:scale-[1.02] " + (imgStatus === 'loaded' ? 'opacity-100' : 'opacity-0')}
+            className={"object-cover object-top transition-[opacity,transform] duration-[450ms] ease-[var(--ease-sig)] group-hover:scale-[1.015] " + (imgStatus === 'loaded' ? 'opacity-100' : 'opacity-0')}
             unoptimized={!imgSrc.includes('vercel-storage.com')}
           />
         )}
         {imgStatus === 'error' && (
           <div className="absolute inset-0 flex items-center justify-center">
-            <span className="text-[11px] font-mono text-muted-foreground/30">{domain}</span>
+            <span className="text-meta text-ink-4">{domain}</span>
           </div>
         )}
 
@@ -115,19 +112,19 @@ export function DesignCard({ design, index, isSelected, onClick, onHover, onTagC
           rel="noopener noreferrer"
           onClick={e => e.stopPropagation()}
           aria-label={`Visit ${design.title || domain}`}
-          className="absolute bottom-2.5 right-2.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center gap-1 bg-background/85 backdrop-blur-[6px] border border-border/60 rounded-[3px] px-2 py-1 text-[10px] font-mono text-foreground/70 hover:text-foreground hover:border-foreground/40 hover:bg-background"
+          className="absolute bottom-2.5 right-2.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center gap-1 bg-background/85 backdrop-blur-[6px] border border-edge-strong rounded-[4px] px-2 py-1 text-meta text-ink-2 hover:text-ink hover:border-foreground/40 hover:bg-background"
         >
           ↗
         </a>
       </div>
 
       {/* Metadata */}
-      <div className="px-3.5 pt-2.5 pb-3 flex flex-col gap-2 border-t border-border/40">
+      <div className="px-3.5 pt-2.5 pb-3 flex flex-col gap-2 border-t border-edge-faint">
         <div className="min-w-0">
-          <p className="text-[13px] font-medium text-foreground leading-snug line-clamp-1 tracking-[-0.025em]">
+          <p className="text-bodytext font-medium text-ink leading-snug line-clamp-1">
             {design.title}
           </p>
-          <p className="text-[11px] font-mono text-muted-foreground/40 mt-0.5 truncate">{domain}</p>
+          <p className="text-meta text-ink-4 mt-0.5 truncate">{domain}</p>
         </div>
 
         <div className="flex items-center justify-between gap-2">
@@ -145,11 +142,11 @@ export function DesignCard({ design, index, isSelected, onClick, onHover, onTagC
             </div>
           ) : <span />}
           {design.industry ? (
-            <span className="text-[9.5px] font-mono text-muted-foreground/30 truncate shrink-0 uppercase tracking-[0.06em]">{design.industry}</span>
+            <span className="text-micro text-ink-4 truncate shrink-0">{design.industry}</span>
           ) : design.tags[0] ? (
             <button
               onClick={e => { e.stopPropagation(); onTagClick(design.tags[0]) }}
-              className="text-[9.5px] font-mono text-muted-foreground/30 hover:text-muted-foreground truncate shrink-0 transition-colors uppercase tracking-[0.06em]"
+              className="text-micro text-ink-4 hover:text-ink-3 truncate shrink-0 transition-colors"
             >
               {design.tags[0]}
             </button>
