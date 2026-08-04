@@ -3,6 +3,7 @@
 **Date:** 2026-08-04
 **Direction:** Same character, sharper execution. Keep the warm-paper/ink monochrome, Geist sans + mono, hairline borders, grain, restrained motion. Nothing new is added — every change is the existing idea executed at a higher standard.
 **Scope:** Every surface — grid + filters, header, sidebar, detail panel and all four tabs, mobile sheet + mobile filters, presentation mode, changelog, empty/loading/error states, system details.
+**Layout:** One approved structural change — a roomier inspector (below). All other layouts stay, refined in place.
 **Motion:** Calmer and more precise. Fewer moves, one signature curve, tokenized durations.
 **Typography:** Geist-only, better used. No new faces.
 
@@ -92,6 +93,12 @@ Calmer specifically means: remove the scale-pop (`scale: 0.98`) on panel content
 - Visit chip: 4px radius, meta type, ink-3 → ink hover; backdrop kept.
 - Skeleton card matches real card metrics exactly (same paddings, same 16/10 image, title/domain bars at their real heights).
 - Entrance: y+fade with `--dur-3`/signature curve, stagger kept at 30ms; exit fade `--dur-1`.
+
+### Layout: roomier inspector (`app/page.tsx`)
+- Desktop column split changes from sidebar 2 / gallery 7 / panel 3 to **sidebar 2 / gallery 6 / panel 4**. The panel is always present (stable layout, no card reflow on open/close); empty state fills it when nothing is selected.
+- Gallery grid inside the 6 columns: 1-col base, 2-col from `sm`, **2-col at `xl`, 3-col at `2xl`** — cards get wider than today on typical desktop widths, so screenshots gain legibility rather than lose it.
+- The wider panel is what makes the tab content work: 52px specimens fit, color rows breathe, asset grids go one column wider (icons 5-col, illustrations/images 3-col at panel width).
+- Mobile is unaffected (sheet remains the inspector).
 
 ### Detail panel (`components/site-detail-panel.tsx`, `components/panel-tabs.tsx`)
 - Header: hostname at title token; meta line micro/ink-4; icon buttons 32px, 4px radius, ink-3 → ink hover.
