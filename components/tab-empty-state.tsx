@@ -16,7 +16,7 @@ export function TabEmptyState({ message, extractionError }: Props) {
   if (!extractionError) {
     return (
       <div className="flex flex-col items-center justify-center flex-1 gap-2 p-8 text-center">
-        <p className="text-xs text-muted-foreground">{message}</p>
+        <p className="text-meta text-ink-3">{message}</p>
       </div>
     )
   }
@@ -24,16 +24,16 @@ export function TabEmptyState({ message, extractionError }: Props) {
   const Icon = ICONS[info.icon]
   return (
     <div className="flex flex-col items-center justify-center flex-1 gap-3 p-8 text-center">
-      <div className="flex items-center gap-2 text-muted-foreground/60">
+      <div className="flex items-center gap-2 text-ink-3">
         <Icon className="w-3.5 h-3.5" aria-hidden />
-        <span className="text-[10px] uppercase tracking-widest font-mono">{info.label}</span>
+        <span className="text-micro">{info.label}</span>
       </div>
-      <p className="text-xs text-muted-foreground max-w-[220px] leading-relaxed">{info.explanation}</p>
+      <p className="text-bodytext text-ink-2 max-w-[220px] leading-relaxed">{info.explanation}</p>
       <details className="text-left w-full max-w-[240px]">
-        <summary className="text-[10px] font-mono text-muted-foreground/40 cursor-pointer hover:text-muted-foreground/60">
+        <summary className="text-micro text-ink-4 cursor-pointer hover:text-ink-3 transition-colors">
           Show technical details
         </summary>
-        <p className="font-mono text-[9px] text-muted-foreground/40 mt-1 break-all">{extractionError}</p>
+        <p className="text-meta text-ink-4 mt-1 break-all">{extractionError}</p>
       </details>
     </div>
   )
