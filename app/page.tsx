@@ -7,6 +7,7 @@ import { Sun, Moon, SpeakerHigh, SpeakerSlash, MagnifyingGlass, X, Presentation 
 import { SiteDetailPanel } from '@/components/site-detail-panel'
 import { PresentationMode } from '@/components/presentation-mode'
 import { DesignCard, type Design } from '@/components/design-card'
+import { Spinner } from '@/components/ui/spinner'
 import { motion, AnimatePresence } from 'motion/react'
 import { useSoundsContext } from '@/contexts/sounds-context'
 import Link from 'next/link'
@@ -34,11 +35,16 @@ const SORT_OPTIONS: { value: ActiveFilters['sortBy']; label: string }[] = [
 
 function SkeletonCard() {
   return (
-    <div className="flex flex-col border border-border/40 rounded-[4px] overflow-hidden animate-pulse">
+    <div className="flex flex-col border border-edge rounded-[4px] overflow-hidden animate-pulse">
       <div className="aspect-[16/10] bg-muted" />
-      <div className="px-3.5 py-3 space-y-2">
-        <div className="h-3 bg-muted rounded w-3/4" />
-        <div className="h-3 bg-muted rounded w-1/2" />
+      <div className="px-3.5 pt-2.5 pb-3 flex flex-col gap-2 border-t border-edge-faint">
+        <div className="space-y-1.5">
+          <div className="h-[13px] bg-muted rounded-[3px] w-3/4" />
+          <div className="h-[11px] bg-muted rounded-[3px] w-1/2" />
+        </div>
+        <div className="flex gap-[3px]">
+          {[0, 1, 2, 3].map(i => <div key={i} className="w-4 h-4 rounded-full bg-muted" />)}
+        </div>
       </div>
     </div>
   )
@@ -356,17 +362,17 @@ export default function DesignLibrary() {
       <div className="grid grid-cols-1 md:grid-cols-12 min-h-[calc(100vh-56px)]">
 
         {/* Sidebar */}
-        <aside className="hidden md:flex md:col-span-2 flex-col sticky top-14 h-[calc(100vh-56px)] border-r border-border/60 bg-background overflow-y-auto">
+        <aside className="hidden md:flex md:col-span-2 flex-col sticky top-14 h-[calc(100vh-56px)] border-r border-edge-strong bg-background overflow-y-auto">
           <nav className="flex-1 py-4 px-3" aria-label="Category filters">
             <ul className="space-y-0.5" role="list">
               <li>
                 <button
                   onClick={() => handleFilterChange('All')}
                   aria-pressed={activeFilters.industries.length === 0}
-                  className={"w-full flex items-center justify-between rounded-[3px] text-[12.5px] transition-colors px-2.5 py-[7px] " + (activeFilters.industries.length === 0 ? 'text-foreground font-medium bg-muted/70' : 'text-muted-foreground/70 hover:text-foreground hover:bg-muted/40 font-normal')}
+                  className={"w-full flex items-center justify-between rounded-[4px] text-bodytext transition-colors px-2.5 py-[7px] " + (activeFilters.industries.length === 0 ? 'text-ink font-medium bg-muted/70' : 'text-ink-3 hover:text-ink-2 hover:bg-muted/40 font-normal')}
                 >
                   <span>All</span>
-                  <span className="text-[10.5px] tabular-nums font-mono opacity-35">{pagination.total || designs.length}</span>
+                  <span className="text-meta text-ink-4 tabular-nums">{pagination.total || designs.length}</span>
                 </button>
               </li>
               {categories.map(({ name, count }) => {
@@ -376,10 +382,10 @@ export default function DesignLibrary() {
                     <button
                       onClick={() => handleFilterChange(name)}
                       aria-pressed={isActive}
-                      className={"w-full flex items-center justify-between rounded-[3px] text-[12.5px] transition-colors px-2.5 py-[7px] " + (isActive ? 'text-foreground font-medium bg-muted/70' : 'text-muted-foreground/70 hover:text-foreground hover:bg-muted/40 font-normal')}
+                      className={"w-full flex items-center justify-between rounded-[4px] text-bodytext transition-colors px-2.5 py-[7px] " + (isActive ? 'text-ink font-medium bg-muted/70' : 'text-ink-3 hover:text-ink-2 hover:bg-muted/40 font-normal')}
                     >
                       <span>{name}</span>
-                      <span className="text-[10.5px] tabular-nums font-mono opacity-35">{count}</span>
+                      <span className="text-meta text-ink-4 tabular-nums">{count}</span>
                     </button>
                   </li>
                 )
@@ -391,22 +397,22 @@ export default function DesignLibrary() {
         {/* Gallery */}
         <main className="col-span-1 md:col-span-6 flex flex-col">
           {/* Mobile filters */}
-          <div className="md:hidden sticky top-14 z-20 bg-background border-b border-border/60">
+          <div className="md:hidden sticky top-14 z-20 bg-background border-b border-edge-strong">
             {/* Mobile search */}
             <div className="px-4 pt-3 pb-2 relative">
-              <MagnifyingGlass className="absolute left-7 top-1/2 -translate-y-[2px] w-3 h-3 text-muted-foreground/50 pointer-events-none" weight="regular" />
+              <MagnifyingGlass className="absolute left-7 top-1/2 -translate-y-[2px] w-3 h-3 text-ink-3 pointer-events-none" weight="regular" />
               <input
                 type="text"
                 placeholder="Search sites…"
                 aria-label="Search sites"
                 value={activeFilters.search}
                 onChange={e => setActiveFilters(prev => ({ ...prev, search: e.target.value }))}
-                className="w-full h-8 pl-8 pr-7 text-[12px] font-mono bg-muted/60 border border-border/50 rounded-[3px] text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:border-foreground/30 focus:bg-muted transition-colors"
+                className="w-full h-8 pl-8 pr-7 text-ui bg-muted/60 border border-edge rounded-[4px] text-foreground placeholder:text-ink-4 focus:outline-none focus:border-foreground/30 focus:bg-muted transition-colors"
               />
               {activeFilters.search && (
                 <button
                   onClick={() => setActiveFilters(prev => ({ ...prev, search: '' }))}
-                  className="absolute right-7 top-1/2 -translate-y-[2px] text-muted-foreground/40 hover:text-muted-foreground transition-colors"
+                  className="absolute right-7 top-1/2 -translate-y-[2px] text-ink-4 hover:text-ink-2 transition-colors"
                   aria-label="Clear search"
                 >
                   <X className="w-3 h-3" weight="bold" />
@@ -422,19 +428,19 @@ export default function DesignLibrary() {
                     key={name}
                     onClick={() => handleFilterChange(name)}
                     aria-pressed={isActive}
-                    className={"shrink-0 px-3.5 py-2 rounded-full text-[12px] font-medium transition-colors whitespace-nowrap " + (isActive ? 'bg-foreground text-background' : 'bg-muted text-muted-foreground hover:text-foreground')}
+                    className={"shrink-0 px-3.5 py-2 rounded-full text-meta transition-colors whitespace-nowrap border " + (isActive ? 'bg-foreground text-background border-foreground' : 'bg-muted text-ink-3 border-edge hover:text-ink')}
                   >
-                    {name} <span className="opacity-50 font-mono text-[10px]">{count}</span>
+                    {name} <span className="tabular-nums opacity-50">{count}</span>
                   </button>
                 )
               })}
-              <div className="w-px bg-border/60 shrink-0 my-1" aria-hidden="true" />
+              <div className="w-px bg-edge-strong shrink-0 my-1" aria-hidden="true" />
               {SORT_OPTIONS.map(({ value, label }) => (
                 <button
                   key={value}
                   onClick={() => setActiveFilters(prev => ({ ...prev, sortBy: value }))}
                   aria-pressed={activeFilters.sortBy === value}
-                  className={"shrink-0 px-3.5 py-2 rounded-full text-[12px] font-medium transition-colors whitespace-nowrap " + (activeFilters.sortBy === value ? 'bg-foreground text-background' : 'bg-muted text-muted-foreground hover:text-foreground')}
+                  className={"shrink-0 px-3.5 py-2 rounded-full text-meta transition-colors whitespace-nowrap border " + (activeFilters.sortBy === value ? 'bg-foreground text-background border-foreground' : 'bg-muted text-ink-3 border-edge hover:text-ink')}
                 >
                   {label}
                 </button>
@@ -455,10 +461,10 @@ export default function DesignLibrary() {
                   : designs.length === 0
                     ? (
                       <div className="col-span-full flex flex-col items-center justify-center py-24 gap-3">
-                        <p className="text-[13px] text-muted-foreground/50">No sites found</p>
+                        <p className="text-bodytext text-ink-3">No sites found</p>
                         <button
                           onClick={() => setActiveFilters({ industries: [], tags: [], search: '', sortBy: 'recent' })}
-                          className="text-[11px] font-mono text-muted-foreground/40 hover:text-foreground underline underline-offset-2 transition-colors"
+                          className="text-meta text-ink-4 hover:text-ink underline underline-offset-2 transition-colors"
                         >
                           Clear filters
                         </button>
@@ -484,7 +490,7 @@ export default function DesignLibrary() {
             <div ref={sentinelRef} className="h-1 mt-4" />
             {isLoadingMore && (
               <div className="flex justify-center py-6">
-                <div className="w-4 h-4 border border-border border-t-foreground/50 rounded-full animate-spin" />
+                <Spinner />
               </div>
             )}
           </div>
@@ -522,8 +528,8 @@ export default function DesignLibrary() {
                 className="flex items-center justify-center h-full"
               >
                 <div className="flex flex-col items-center gap-2 text-center px-6">
-                  <p className="text-[12px] font-mono text-muted-foreground/30 tracking-[0.01em]">Select a site</p>
-                  <p className="text-[9.5px] font-mono text-muted-foreground/18 tracking-[0.08em] uppercase">
+                  <p className="text-meta text-ink-4">Select a site</p>
+                  <p className="text-micro text-ink-4">
                     preview · colors · type · assets
                   </p>
                 </div>
@@ -580,11 +586,11 @@ export default function DesignLibrary() {
                 className="flex justify-center pt-3 pb-1 shrink-0 cursor-grab active:cursor-grabbing select-none"
                 onPointerDown={e => sheetDragControls.start(e)}
               >
-                <div className="w-10 h-[5px] rounded-full bg-foreground/12" />
+                <div className="w-10 h-[5px] rounded-full bg-ink-4" />
               </div>
 
               {/* Content */}
-              <div className="flex flex-col flex-1 min-h-0" style={{ touchAction: 'pan-y' }}>
+              <div className="flex flex-col flex-1 min-h-0" style={{ touchAction: 'pan-y', paddingBottom: 'var(--safe-bottom)' }}>
                 <SiteDetailPanel
                   sourceId={Number(selectedDesign.id)}
                   metadata={{
