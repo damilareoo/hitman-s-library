@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from 'react'
 import { ShieldWarning, LockSimple, Clock, FileDashed, Warning } from '@phosphor-icons/react'
 import { classifyExtractionError } from '@/lib/classify-extraction-error'
 import { getDomain } from '@/lib/get-domain'
+import { Spinner } from './ui/spinner'
 
 const ICONS = { ShieldWarning, LockSimple, Clock, FileDashed, Warning }
 
@@ -52,12 +53,12 @@ export function PreviewTab({ siteUrl, extractionError }: PreviewTabProps) {
     const Icon = ICONS[info.icon]
     return (
       <div className="flex flex-col items-center justify-center flex-1 gap-3 p-8">
-        <div className="w-full rounded-md border border-border p-6 text-center space-y-3">
-          <div className="flex items-center justify-center gap-2 text-muted-foreground/60">
+        <div className="w-full rounded-[4px] border border-edge p-6 text-center space-y-3">
+          <div className="flex items-center justify-center gap-2 text-ink-3">
             <Icon className="w-3.5 h-3.5" />
-            <span className="text-[10px] uppercase tracking-widest font-mono">{info.label}</span>
+            <span className="text-micro">{info.label}</span>
           </div>
-          <p className="text-xs text-muted-foreground leading-relaxed">{info.explanation}</p>
+          <p className="text-bodytext text-ink-2 leading-relaxed">{info.explanation}</p>
         </div>
       </div>
     )
@@ -67,8 +68,8 @@ export function PreviewTab({ siteUrl, extractionError }: PreviewTabProps) {
     return (
       <div className="flex flex-col items-center justify-center flex-1 gap-5">
         <div className="text-center space-y-1.5">
-          <p className="text-[14px] font-mono text-foreground/45 tracking-tight">{domain}</p>
-          <p className="text-[10px] font-mono uppercase tracking-[0.1em] text-muted-foreground/30">
+          <p className="text-meta text-ink-2">{domain}</p>
+          <p className="text-micro text-ink-4">
             Live preview unavailable
           </p>
         </div>
@@ -76,7 +77,7 @@ export function PreviewTab({ siteUrl, extractionError }: PreviewTabProps) {
           href={siteUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-[11px] font-mono text-muted-foreground/40 hover:text-foreground border border-border/40 hover:border-foreground/25 rounded-[3px] px-3 py-1.5 transition-colors"
+          className="text-ui text-ink-3 hover:text-ink border border-edge hover:border-foreground/25 rounded-[4px] px-3 py-1.5 transition-colors"
         >
           Open site ↗
         </a>
@@ -88,16 +89,8 @@ export function PreviewTab({ siteUrl, extractionError }: PreviewTabProps) {
     <div className="relative flex-1 overflow-hidden min-h-0">
       {!loaded && (
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 pointer-events-none">
-          <span className="text-[12px] font-mono text-muted-foreground/30 tracking-tight">{domain}</span>
-          <div className="flex gap-1.5">
-            {[0, 150, 300].map(delay => (
-              <div
-                key={delay}
-                className="w-1 h-1 rounded-full bg-muted-foreground/25 animate-pulse"
-                style={{ animationDelay: `${delay}ms` }}
-              />
-            ))}
-          </div>
+          <span className="text-meta text-ink-3">{domain}</span>
+          <Spinner />
         </div>
       )}
       <iframe
@@ -108,7 +101,7 @@ export function PreviewTab({ siteUrl, extractionError }: PreviewTabProps) {
         onError={() => setProxyFailed(true)}
         sandbox="allow-scripts allow-forms allow-popups allow-top-navigation-by-user-activation"
         className="w-full h-full border-none"
-        style={{ opacity: loaded ? 1 : 0, transition: 'opacity 0.35s ease' }}
+        style={{ opacity: loaded ? 1 : 0, transition: 'opacity var(--dur-4) var(--ease-sig)' }}
       />
     </div>
   )

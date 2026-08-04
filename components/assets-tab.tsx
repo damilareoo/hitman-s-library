@@ -1,9 +1,10 @@
 // components/assets-tab.tsx
 'use client'
 
-import { useState } from 'react'
-import { Copy } from '@phosphor-icons/react'
+import { Copy, Check, ArrowSquareOut } from '@phosphor-icons/react'
 import { TabEmptyState } from './tab-empty-state'
+import { SectionLabel } from './ui/section-label'
+import { useCopied } from '@/lib/use-copied'
 
 interface Asset {
   id: number
@@ -26,28 +27,30 @@ function sanitizeSvg(svg: string): string {
     .replace(/javascript:[^"']*/gi, '')
 }
 
-function useClipboard() {
-  const [copiedId, setCopiedId] = useState<number | string | null>(null)
-  async function copy(id: number | string, value: string) {
+async function copyToClipboard(value: string, id: number | string, markCopied: (id: number | string) => void) {
+  try {
     await navigator.clipboard.writeText(value)
-    setCopiedId(id)
-    setTimeout(() => setCopiedId(null), 1500)
-  }
-  return { copiedId, copy }
+    markCopied(id)
+  } catch { /* clipboard unavailable */ }
 }
 
-
-function SectionLabel({ label, count }: { label: string; count: number }) {
+function FeedbackChip({ copied, Idle }: { copied: boolean; Idle: typeof Copy }) {
   return (
-    <div className="flex items-center gap-2">
-      <span className="text-[9px] uppercase tracking-widest text-muted-foreground/60">{label}</span>
-      <span className="text-[9px] text-muted-foreground/40 bg-secondary border border-border rounded-full px-2 py-0.5">{count}</span>
+    <div className={[
+      'absolute bottom-1 right-1 transition-opacity',
+      copied ? 'opacity-100' : 'opacity-0 group-hover:opacity-100',
+    ].join(' ')}>
+      <div className="bg-background border border-edge rounded-[4px] p-0.5">
+        {copied
+          ? <Check className="w-2.5 h-2.5 text-ink" weight="bold" />
+          : <Idle className="w-2.5 h-2.5 text-ink-3" weight="regular" />}
+      </div>
     </div>
   )
 }
 
 function LogoSection({ logos }: { logos: Asset[] }) {
-  const { copiedId, copy } = useClipboard()
+  const { copiedId, markCopied } = useCopied()
   return (
     <div>
       <SectionLabel label="Logo" count={logos.length} />
@@ -55,8 +58,8 @@ function LogoSection({ logos }: { logos: Asset[] }) {
         {logos.map(logo => (
           <button
             key={logo.id}
-            onClick={() => copy(logo.id, logo.content)}
-            className="checkerboard relative group border border-border rounded-md p-3 hover:border-foreground/30 transition-colors"
+            onClick={() => copyToClipboard(logo.content, logo.id, markCopied)}
+            className="checkerboard relative group border border-edge rounded-[4px] p-3 hover:border-edge-strong transition-colors"
             aria-label={isSvg(logo.content) ? 'Copy SVG' : 'Copy URL'}
           >
             {isSvg(logo.content) ? (
@@ -68,11 +71,7 @@ function LogoSection({ logos }: { logos: Asset[] }) {
               // eslint-disable-next-line @next/next/no-img-element
               <img src={logo.content} alt="Logo" className="h-10 max-w-[140px] object-contain" />
             )}
-            {copiedId === logo.id && (
-              <div className="absolute inset-0 bg-background/80 flex items-center justify-center rounded-md">
-                <span className="font-mono text-[9px] text-foreground">copied</span>
-              </div>
-            )}
+            <FeedbackChip copied={copiedId === logo.id} Idle={Copy} />
           </button>
         ))}
       </div>
@@ -81,18 +80,18 @@ function LogoSection({ logos }: { logos: Asset[] }) {
 }
 
 function AssetItem({ asset, size, index }: { asset: Asset; size: 'sm' | 'md'; index: number }) {
-  const { copiedId, copy } = useClipboard()
+  const { copiedId, markCopied } = useCopied()
   const animDelay = Math.min(index, 11) * 30
 
   function handleClick() {
     if (asset.type === 'image') window.open(asset.content, '_blank')
-    else copy(asset.id, asset.content)
+    else copyToClipboard(asset.content, asset.id, markCopied)
   }
 
   return (
     <div
-      className="group relative border border-border rounded-md overflow-hidden bg-secondary/30 cursor-pointer hover:border-foreground/30 transition-colors"
-      style={{ animationDelay: `${animDelay}ms`, animation: 'scale-in 0.3s cubic-bezier(0.22, 1, 0.36, 1) both' }}
+      className="group relative border border-edge rounded-[4px] overflow-hidden bg-secondary/30 cursor-pointer hover:border-edge-strong transition-colors"
+      style={{ animationDelay: `${animDelay}ms`, animation: 'scale-in 0.3s var(--ease-sig) both' }}
       onClick={handleClick}
     >
       <div className={`${size === 'sm' ? 'h-11' : 'h-20'} flex items-center justify-center p-1`}>
@@ -106,17 +105,10 @@ function AssetItem({ asset, size, index }: { asset: Asset; size: 'sm' | 'md'; in
           <img src={asset.content} alt="" className="w-full h-full object-cover" loading="lazy" />
         )}
       </div>
-      {asset.type !== 'image' && (
-        <div className="absolute bottom-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
-          <div className="bg-background border border-border rounded p-0.5">
-            <Copy className="w-2.5 h-2.5 text-muted-foreground" weight="regular" />
-          </div>
-        </div>
-      )}
-      {copiedId === asset.id && (
-        <div className="absolute inset-0 bg-background/80 flex items-center justify-center">
-          <span className="font-mono text-[9px] text-foreground">copied</span>
-        </div>
+      {asset.type !== 'image' ? (
+        <FeedbackChip copied={copiedId === asset.id} Idle={Copy} />
+      ) : (
+        <FeedbackChip copied={false} Idle={ArrowSquareOut} />
       )}
     </div>
   )
@@ -155,9 +147,9 @@ export function AssetsTab({ assets, extractionError }: { assets: Asset[]; extrac
   return (
     <div className="flex flex-col gap-5 p-4 overflow-y-auto">
       {logos.length > 0 && <LogoSection logos={logos} />}
-      <AssetSection label="Icons" assets={assets} type="icon" cols="grid-cols-5 sm:grid-cols-4" size="sm" />
-      <AssetSection label="Illustrations" assets={assets} type="illustration" cols="grid-cols-3 sm:grid-cols-2" size="md" />
-      <AssetSection label="Images" assets={assets} type="image" cols="grid-cols-3 sm:grid-cols-2" size="md" />
+      <AssetSection label="Icons" assets={assets} type="icon" cols="grid-cols-5" size="sm" />
+      <AssetSection label="Illustrations" assets={assets} type="illustration" cols="grid-cols-3" size="md" />
+      <AssetSection label="Images" assets={assets} type="image" cols="grid-cols-3" size="md" />
     </div>
   )
 }
