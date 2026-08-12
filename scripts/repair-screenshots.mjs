@@ -101,10 +101,15 @@ if (SALVAGE) {
         continue
       }
     }
-    console.log(`  #${b.id} no usable fallback — card will show the domain`)
+    // No screenshot and no usable fallback: clearing it is honest. The gallery
+    // shows sites that are ready to preview, and a zero-byte file is not one —
+    // leaving it set costs a 502 on every page load for a grey placeholder.
+    // Re-running extraction later will bring the site back.
+    await sql`UPDATE design_sources SET screenshot_url = NULL WHERE id = ${b.id}`
+    console.log(`  #${b.id} no usable fallback — cleared, dropped from the gallery`)
     stranded++
   }
-  console.log(`\n${salvaged} salvaged, ${stranded} left showing the domain.`)
+  console.log(`\n${salvaged} salvaged, ${stranded} cleared.`)
   process.exit(0)
 }
 
