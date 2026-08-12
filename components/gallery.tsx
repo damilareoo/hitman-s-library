@@ -104,6 +104,14 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories }
   // layered on only when we happen to have it.
   const isPanelOpen = Boolean(selectedId) && Number.isFinite(Number(selectedId))
 
+  // pagination.total is how many match the current filters, so it cannot label
+  // the "All" row — that would read "All 13" while Finance is selected. The
+  // category counts are unfiltered, so their sum is the size of the library.
+  const libraryTotal = useMemo(
+    () => categories.reduce((sum, c) => sum + c.count, 0),
+    [categories],
+  )
+
   useEffect(() => { hasAnimated.current = true; setMounted(true) }, [])
 
   /** Rewrites the query string; every filter interaction goes through here. */
@@ -454,7 +462,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories }
                   className={"w-full flex items-center justify-between rounded-[4px] text-bodytext transition-colors px-2.5 py-[7px] " + (industries.length === 0 ? 'text-ink font-medium bg-muted/70' : 'text-ink-3 hover:text-ink-2 hover:bg-muted/40 font-normal')}
                 >
                   <span>All</span>
-                  <span className="text-meta text-ink-4 tabular-nums">{pagination.total}</span>
+                  <span className="text-meta text-ink-4 tabular-nums">{libraryTotal}</span>
                 </button>
               </li>
               {categories.map(({ name, count }) => {
@@ -523,7 +531,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories }
 
             {/* Categories */}
             <div className="flex gap-2 overflow-x-auto px-4 pb-2 no-scrollbar" role="group" aria-label="Filter by category">
-              {[{ name: 'All', count: pagination.total }, ...categories].map(({ name, count }) => {
+              {[{ name: 'All', count: libraryTotal }, ...categories].map(({ name, count }) => {
                 const isActive = name === 'All' ? industries.length === 0 : industries.includes(name)
                 return (
                   <button
