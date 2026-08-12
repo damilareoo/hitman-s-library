@@ -442,6 +442,29 @@ export async function extractBrandColors(page: Page): Promise<string[]> {
   })
 }
 
+// Chrome cannot encode a screenshot taller than roughly 16k pixels; past that it
+// hands back an empty buffer rather than an error. Pages like linear.app scroll
+// well beyond it, so clamp the capture instead of asking for the impossible.
+const MAX_CAPTURE_HEIGHT = 12000
+
+async function captureClamped(page: Page, quality: number): Promise<Buffer> {
+  const { width, height } = await page.evaluate(() => ({
+    width: document.documentElement.scrollWidth,
+    height: document.documentElement.scrollHeight,
+  }))
+
+  if (height <= MAX_CAPTURE_HEIGHT) {
+    return await page.screenshot({ fullPage: true, type: 'webp', quality }) as Buffer
+  }
+
+  return await page.screenshot({
+    type: 'webp',
+    quality,
+    captureBeyondViewport: true,
+    clip: { x: 0, y: 0, width, height: MAX_CAPTURE_HEIGHT, scale: 1 },
+  }) as Buffer
+}
+
 export async function captureFullPageScreenshot(
   page: Page,
   siteUrl: string
@@ -466,11 +489,15 @@ export async function captureFullPageScreenshot(
     })
     await new Promise(r => setTimeout(r, 800))
 
-    const buffer = await page.screenshot({
-      fullPage: true,
-      type: 'webp',
-      quality: 92,
-    }) as Buffer
+    const buffer = await captureClamped(page, 92)
+
+    // Chrome silently returns an empty buffer when a page is too tall to encode.
+    // Uploading that produces a blob that serves 200 with no body, which the
+    // image optimizer answers with a 502 and a broken card.
+    if (!buffer || buffer.length === 0) {
+      console.error(`[screenshot] empty buffer for ${siteUrl} — not uploading`)
+      return null
+    }
 
     const hostname = new URL(siteUrl).hostname.replace(/\./g, '-')
     const filename = `screenshots/${hostname}-${Date.now()}.webp`
@@ -515,11 +542,13 @@ export async function captureMobileScreenshot(
     })
     await new Promise(r => setTimeout(r, 600))
 
-    const buffer = await page.screenshot({
-      fullPage: true,
-      type: 'webp',
-      quality: 92,
-    }) as Buffer
+    const buffer = await captureClamped(page, 92)
+
+    if (!buffer || buffer.length === 0) {
+      console.error(`[screenshot] empty mobile buffer for ${siteUrl} — not uploading`)
+      await page.setViewport({ width: 1440, height: 900 })
+      return null
+    }
 
     const hostname = new URL(siteUrl).hostname.replace(/\./g, '-')
     const filename = `screenshots/${hostname}-${Date.now()}-mobile.webp`
