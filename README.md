@@ -140,7 +140,13 @@ to plain text. To find and repair those:
 node scripts/repair-screenshots.mjs              # report only
 node scripts/repair-screenshots.mjs --fix        # re-extract the broken ones
 node scripts/repair-screenshots.mjs --fix --limit 5
+node scripts/repair-screenshots.mjs --salvage    # fall back to the site OG image
 ```
 
 `--fix` calls the live re-extract endpoint, so it needs `ADMIN_PASSWORD` and
 `BASE_URL` (defaults to production).
+
+A few sites resist capture entirely — heavy client-rendered apps and bot
+protection. `--salvage` promotes their stored OG thumbnail into `screenshot_url`
+so the card shows something real. Where there is no usable fallback the card
+degrades to the domain name, which is the intended behaviour.

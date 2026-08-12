@@ -10,6 +10,11 @@
 //   node scripts/repair-screenshots.mjs                  # report only
 //   node scripts/repair-screenshots.mjs --fix            # re-extract broken ones
 //   node scripts/repair-screenshots.mjs --fix --limit 5  # cap the work
+//   node scripts/repair-screenshots.mjs --salvage        # fall back to the OG image
+//
+// Some sites cannot be captured at all (heavy client apps, bot protection).
+// --salvage promotes their stored OG thumbnail into screenshot_url so the card
+// renders something real instead of a broken image.
 //
 // Needs DATABASE_URL, and for --fix also BASE_URL and ADMIN_PASSWORD.
 import { neon } from '@neondatabase/serverless'
@@ -25,6 +30,7 @@ try {
 
 const args = process.argv.slice(2)
 const FIX = args.includes('--fix')
+const SALVAGE = args.includes('--salvage')
 const LIMIT = Number(args[args.indexOf('--limit') + 1]) || Infinity
 const BASE_URL = process.env.BASE_URL || 'https://www.hitmanslibrary.xyz'
 const CONCURRENCY = 12
@@ -57,7 +63,7 @@ async function mapLimit(items, limit, fn) {
 }
 
 const rows = await sql`
-  SELECT id, source_name, source_url, screenshot_url
+  SELECT id, source_name, source_url, screenshot_url, thumbnail_url
   FROM design_sources
   WHERE screenshot_url IS NOT NULL
   ORDER BY id
@@ -81,8 +87,29 @@ for (const b of broken) {
 
 if (!broken.length) process.exit(0)
 
+if (SALVAGE) {
+  let salvaged = 0
+  let stranded = 0
+  console.log('\nSalvaging with stored OG thumbnails…\n')
+  for (const b of broken) {
+    if (b.thumbnail_url) {
+      const check = await byteLength(b.thumbnail_url)
+      if (check.ok) {
+        await sql`UPDATE design_sources SET screenshot_url = ${b.thumbnail_url} WHERE id = ${b.id}`
+        console.log(`  #${b.id} → OG image (${check.bytes} bytes)`)
+        salvaged++
+        continue
+      }
+    }
+    console.log(`  #${b.id} no usable fallback — card will show the domain`)
+    stranded++
+  }
+  console.log(`\n${salvaged} salvaged, ${stranded} left showing the domain.`)
+  process.exit(0)
+}
+
 if (!FIX) {
-  console.log('\nRe-run with --fix to re-extract these.')
+  console.log('\nRe-run with --fix to re-extract these, or --salvage to fall back to the OG image.')
   process.exit(0)
 }
 
