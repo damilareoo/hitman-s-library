@@ -114,12 +114,21 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories }
 
   useEffect(() => { hasAnimated.current = true; setMounted(true) }, [])
 
+  // Router navigation is async, so two quick clicks would both read the same
+  // useSearchParams snapshot and the second would overwrite the first — picking
+  // one category dropped the other. This holds the pending query string so
+  // consecutive edits compose.
+  const pendingParams = useRef<string | null>(null)
+  useEffect(() => { pendingParams.current = null }, [searchParams])
+
   /** Rewrites the query string; every filter interaction goes through here. */
   const updateParams = useCallback(
     (mutate: (p: URLSearchParams) => void, opts: { replace?: boolean } = {}) => {
-      const params = new URLSearchParams(searchParams.toString())
+      const base = pendingParams.current ?? searchParams.toString()
+      const params = new URLSearchParams(base)
       mutate(params)
       const qs = params.toString()
+      pendingParams.current = qs
       const url = qs ? `${pathname}?${qs}` : pathname
       if (opts.replace) router.replace(url, { scroll: false })
       else router.push(url, { scroll: false })
@@ -179,6 +188,17 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories }
   useEffect(() => {
     if (lastFilterKey.current === filterKey) return
     lastFilterKey.current = filterKey
+
+    // Navigation is scroll:false so opening a site doesn't jump the page, but a
+    // new filter is a new result set — staying halfway down it reads as though
+    // nothing changed.
+    if (window.scrollY > 0) {
+      window.scrollTo({
+        top: 0,
+        behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+      })
+    }
+
     setIsRefetching(true)
     loadDesigns(0, false).finally(() => setIsRefetching(false))
   }, [filterKey, loadDesigns])

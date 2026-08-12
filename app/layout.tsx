@@ -29,9 +29,9 @@ export const metadata: Metadata = {
     "design catalog",
     "design management",
   ],
-  authors: [{ name: "v0" }],
-  creator: "v0",
-  publisher: "v0",
+  authors: [{ name: "Damilare Osofisan" }],
+  creator: "Damilare Osofisan",
+  publisher: "Hitman's Library",
   formatDetection: {
     email: false,
     address: false,
@@ -87,7 +87,6 @@ export const metadata: Metadata = {
       "max-snippet": -1,
     },
   },
-  generator: "v0.app",
 }
 
 export const viewport: Viewport = {
