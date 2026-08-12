@@ -80,7 +80,7 @@ function PasscodeGate({ onAuth }: { onAuth: () => void }) {
         body: JSON.stringify({ passcode: value }),
       })
       if (res.ok) {
-        sessionStorage.setItem('admin_auth', '1')
+        // Session lives in an httpOnly cookie set by the server.
         onAuth()
       } else {
         setError('Incorrect passcode.')
@@ -158,9 +158,13 @@ export default function AdminPage() {
   const ITEMS = 20
 
   useEffect(() => {
-    const ok = sessionStorage.getItem('admin_auth') === '1'
-    setAuthed(ok)
-    setAuthChecked(true)
+    // The gate is enforced server-side; this only restores UI state from the
+    // signed session cookie, which the client cannot forge.
+    fetch('/api/admin/auth')
+      .then(r => r.json())
+      .then(d => setAuthed(Boolean(d.authed)))
+      .catch(() => setAuthed(false))
+      .finally(() => setAuthChecked(true))
   }, [])
 
   const filtered = allSites.filter(s =>

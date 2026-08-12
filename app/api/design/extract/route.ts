@@ -4,10 +4,15 @@ import { detectIndustry } from './detectIndustry'
 import { extractTypographyEnhanced } from '@/lib/typography-extraction'
 import { extractTypographyFromRenderedPage, extractAllDesignDataFromRenderedPage, extractBrandColors, getBrowser, extractFullDesignData } from '@/lib/browser-extraction'
 import { toColorFormats, deduplicateColors } from '@/lib/color-utils'
+import { requireAdmin } from '@/lib/admin-auth'
+import { assertPublicUrl, BlockedUrlError } from '@/lib/safe-url'
 
 const sql = neon(process.env.DATABASE_URL!)
 
 export async function POST(req: NextRequest) {
+  const denied = await requireAdmin(req)
+  if (denied) return denied
+
   try {
     let { url, industry, notes } = await req.json()
 
@@ -21,13 +26,15 @@ export async function POST(req: NextRequest) {
       url = 'https://' + url
     }
 
-    // Validate URL format
+    // Validate URL format, and refuse anything that resolves somewhere private —
+    // this route drives both a fetch and a headless browser.
     let validUrl: URL
     try {
-      validUrl = new URL(url)
-    } catch {
+      validUrl = await assertPublicUrl(url)
+    } catch (err) {
+      const reason = err instanceof BlockedUrlError ? err.message : 'Invalid URL format'
       return NextResponse.json({
-        error: 'Invalid URL format',
+        error: reason,
         url,
         colors: [],
         typography: [],
@@ -35,7 +42,7 @@ export async function POST(req: NextRequest) {
         architecture: 'Invalid URL',
         quality: 0,
         tags: [],
-        warning: 'Please enter a valid URL (e.g., stripe.com or https://stripe.com)'
+        warning: `${reason}. Enter a public site address (e.g. stripe.com or https://stripe.com).`
       }, { status: 200 })
     }
 

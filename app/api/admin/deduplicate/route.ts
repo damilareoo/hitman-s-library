@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { neon } from '@neondatabase/serverless'
+import { requireAdmin } from '@/lib/admin-auth'
 
 const sql = neon(process.env.DATABASE_URL!)
 
@@ -19,7 +20,10 @@ function normalizeUrl(url: string): string {
   }
 }
 
-export async function POST() {
+export async function POST(req: Request) {
+  const denied = await requireAdmin(req)
+  if (denied) return denied
+
   try {
     const rows = await sql`
       SELECT id, source_url, screenshot_url, created_at

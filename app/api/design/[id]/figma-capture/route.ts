@@ -4,15 +4,19 @@
 import { NextResponse } from 'next/server'
 import { neon } from '@neondatabase/serverless'
 import { getBrowser, captureFigmaLayers } from '@/lib/browser-extraction'
+import { requireAdmin } from '@/lib/admin-auth'
 
 export const maxDuration = 60
 
 const sql = neon(process.env.DATABASE_URL!)
 
 export async function POST(
-  _req: Request,
+  req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const denied = await requireAdmin(req)
+  if (denied) return denied
+
   const { id: rawId } = await params
   const id = parseInt(rawId, 10)
   if (isNaN(id)) return NextResponse.json({ error: 'Invalid id' }, { status: 400 })

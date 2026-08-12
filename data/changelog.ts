@@ -17,6 +17,26 @@ export interface ChangelogRelease {
 // Types: "new" (green) | "improved" (blue) | "fixed" (muted)
 const changelog: ChangelogRelease[] = [
   {
+    date: '2026-08-12',
+    title: 'Locked Down, Server-Rendered, Linkable',
+    description: 'A full audit pass. Every write endpoint now has real authentication, the proxy can no longer be pointed at internal hosts, the gallery ships as HTML instead of an empty shell, and every view you can reach has a URL you can send someone.',
+    items: [
+      { type: 'fixed',    text: 'Admin was a client-side illusion: the gate was a sessionStorage flag, so every write route — delete, extract, re-extract, bulk import, deduplicate, Figma backfill, mobile capture, element capture — was callable by anyone with curl. All of them now verify an HMAC-signed httpOnly session cookie server-side, with a bearer-token path for scripts' },
+      { type: 'fixed',    text: 'The link proxy validated only that a URL started with http — it would happily fetch cloud metadata endpoints and internal hosts and hand back the response. It now resolves DNS and rejects loopback, link-local, private, CGNAT and multicast ranges, re-checking on every redirect hop' },
+      { type: 'new',      text: 'The gallery is server-rendered: the grid, categories and counts arrive as HTML. Crawlers previously saw 141 characters of text on a library of 199 sites' },
+      { type: 'new',      text: 'Every view has a URL — category, tag, search, sort and the open site all live in the query string, so views are shareable and the back button works. A ?site= link opens that site even when it sits outside the first page of results' },
+      { type: 'new',      text: 'robots.txt, sitemap.xml and a web manifest, none of which existed; SVG favicon instead of a 28KB JPEG; filtered views are marked noindex so they stop competing with the index' },
+      { type: 'fixed',    text: 'Tag filtering never worked — clicking a tag refetched with the tag silently dropped, so nothing changed. Tags now filter properly, stack with categories, and show as removable chips' },
+      { type: 'fixed',    text: 'Titles were raw <title> tags: HTML entities rendered literally ("International Tax &amp; Legal") and brands repeated the domain right below them. Entities are decoded and echoed brand suffixes trimmed, but only when what remains still describes the page' },
+      { type: 'fixed',    text: 'Broken thumbnails: some stored URLs kept their HTML entities and 404d; those are decoded on read. A new scripts/repair-screenshots.mjs finds sites whose screenshot uploaded as zero bytes (5 of 199) and re-extracts them' },
+      { type: 'improved', text: 'Search no longer replaces the grid with 32 skeletons on every keystroke — results stay put and dim while refetching, and out-of-order responses can no longer overwrite newer ones' },
+      { type: 'improved', text: 'The preloader was a flat 2.1s block unrelated to loading, and it server-rendered on every route, so /changelog shipped a blank overlay reading 000. It now races the page with a 900ms ceiling, is client-only, and sits out entirely for reduced-motion visitors' },
+      { type: 'improved', text: 'Cards: the visit link was invisible until hover, so touch users could never reach it — now always visible. Removed a link nested inside a role="button", and the five colour swatches announce as one palette instead of five hex codes' },
+      { type: 'improved', text: 'List and category responses are cached at the edge instead of no-store on every request; sort is its own labelled row on mobile rather than sharing a scroll strip with categories' },
+      { type: 'fixed',    text: 'Escape now closes the detail panel at every breakpoint, and the mobile focus trap no longer runs against a hidden sheet on desktop' },
+    ],
+  },
+  {
     date: '2026-08-04',
     title: 'Design Language Refinement',
     description: 'Same character, sharper execution. The language now runs on a real system: a six-step type scale, four ink levels, three edge weights, one radius, one easing — swept across every surface. Plus a roomier inspector.',

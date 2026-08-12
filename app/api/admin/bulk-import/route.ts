@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { neon } from '@neondatabase/serverless'
+import { requireAdmin } from '@/lib/admin-auth'
 
 const sql = neon(process.env.DATABASE_URL!)
 
@@ -74,6 +75,9 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  const denied = await requireAdmin(req)
+  if (denied) return denied
+
   const body = await req.json().catch(() => ({}))
   const dryRun = Boolean(body.dryRun)
 

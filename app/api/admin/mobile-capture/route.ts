@@ -1,12 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { neon } from '@neondatabase/serverless'
 import { getBrowser, captureMobileScreenshot } from '@/lib/browser-extraction'
+import { requireAdmin } from '@/lib/admin-auth'
 
 export const maxDuration = 60
 
 const sql = neon(process.env.DATABASE_URL!)
 
 export async function POST(req: NextRequest) {
+  const denied = await requireAdmin(req)
+  if (denied) return denied
+
   const { id } = await req.json()
   if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 })
 

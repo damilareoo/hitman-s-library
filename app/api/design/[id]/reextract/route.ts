@@ -4,13 +4,17 @@ import { NextResponse } from 'next/server'
 import { neon, Client } from '@neondatabase/serverless'
 import { extractFullDesignData } from '@/lib/browser-extraction'
 import { toColorFormats, deduplicateColors } from '@/lib/color-utils'
+import { requireAdmin } from '@/lib/admin-auth'
 
 const sql = neon(process.env.DATABASE_URL!)
 
 export async function POST(
-  _req: Request,
+  req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const denied = await requireAdmin(req)
+  if (denied) return denied
+
   const { id: rawId } = await params
   const id = parseInt(rawId, 10)
   if (isNaN(id)) {

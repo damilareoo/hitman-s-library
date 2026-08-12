@@ -4,10 +4,14 @@
 import { NextResponse } from 'next/server'
 import { put } from '@vercel/blob'
 import { getBrowser } from '@/lib/browser-extraction'
+import { requireAdmin } from '@/lib/admin-auth'
 
 export const maxDuration = 60
 
 export async function POST(req: Request) {
+  const denied = await requireAdmin(req)
+  if (denied) return denied
+
   let body: { html: string; siteUrl: string }
   try {
     body = await req.json()

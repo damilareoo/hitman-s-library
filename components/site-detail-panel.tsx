@@ -12,6 +12,7 @@ import { TypeTab } from './type-tab'
 import { AssetsTab } from './assets-tab'
 import { Spinner } from './ui/spinner'
 import { EASE, DUR } from '@/lib/motion'
+import { useIsAdmin } from '@/lib/use-is-admin'
 interface Asset { id: number; type: 'logo' | 'icon' | 'illustration' | 'image'; content: string; width: number; height: number }
 interface ColorRow { hex_value: string; oklch: string | null }
 interface TypographyRow { font_family: string; role: string; google_fonts_url: string | null; primary_weight: number | null }
@@ -48,6 +49,7 @@ export function SiteDetailPanel({ sourceId, metadata, onClose }: SiteDetailPanel
   const [isReextracting, setIsReextracting] = useState(false)
   const [scope, animate] = useAnimate()
   const { playPanelOpen, playClose } = useSoundsContext()
+  const isAdmin = useIsAdmin()
 
   useEffect(() => {
     playPanelOpen()
@@ -129,17 +131,20 @@ export function SiteDetailPanel({ sourceId, metadata, onClose }: SiteDetailPanel
           )}
         </div>
         <div className="flex items-center gap-1 shrink-0">
-          <button
-            type="button"
-            onClick={handleReextract}
-            disabled={isReextracting}
-            aria-label="Re-extract design data"
-            className="w-8 h-8 flex items-center justify-center rounded-[4px] text-ink-3 hover:text-ink hover:bg-muted transition-colors disabled:opacity-40"
-          >
-            <motion.span ref={scope} style={{ display: 'flex' }}>
-              <ArrowClockwise className="w-4 h-4" weight="regular" />
-            </motion.span>
-          </button>
+          {/* Re-extraction is an owner action — the route rejects everyone else. */}
+          {isAdmin && (
+            <button
+              type="button"
+              onClick={handleReextract}
+              disabled={isReextracting}
+              aria-label="Re-extract design data"
+              className="w-8 h-8 flex items-center justify-center rounded-[4px] text-ink-3 hover:text-ink hover:bg-muted transition-colors disabled:opacity-40"
+            >
+              <motion.span ref={scope} style={{ display: 'flex' }}>
+                <ArrowClockwise className="w-4 h-4" weight="regular" />
+              </motion.span>
+            </button>
+          )}
           {onClose && (
             <button
               onClick={() => { playClose(); onClose() }}

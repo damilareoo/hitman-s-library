@@ -39,15 +39,16 @@ export const metadata: Metadata = {
   },
   metadataBase: new URL("https://hitmanslibrary.xyz"),
   icons: {
+    // SVG first — it stays sharp at every size and both themes; the JPEG is
+    // the fallback for clients that don't take SVG favicons.
     icon: [
-      { url: "/icon.jpg", type: "image/jpeg" },
+      { url: "/icon.svg", type: "image/svg+xml" },
       { url: "/icon.jpg", sizes: "32x32", type: "image/jpeg" },
-      { url: "/icon.jpg", sizes: "16x16", type: "image/jpeg" },
     ],
     apple: [
       { url: "/icon.jpg", sizes: "180x180", type: "image/jpeg" },
     ],
-    shortcut: "/icon.jpg",
+    shortcut: "/icon.svg",
   },
   openGraph: {
     type: "website",

@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { detectIndustry } from '../extract/detectIndustry'
+import { requireAdmin } from '@/lib/admin-auth'
 
 export async function POST(req: NextRequest) {
+  const denied = await requireAdmin(req)
+  if (denied) return denied
+
   try {
     const formData = await req.formData()
     const file = formData.get('file') as File

@@ -4,64 +4,69 @@ import { useEffect, useRef, useState } from 'react'
 import { motion } from 'motion/react'
 import { EASE } from '@/lib/motion'
 
+// Ceiling, not a target: the counter races the page and gets out of the way as
+// soon as it can. It never renders on the server, so no route ships a blank
+// full-screen overlay in its HTML.
+const MAX_DURATION = 900
+
 export function Preloader() {
+  const [phase, setPhase] = useState<'idle' | 'running' | 'exiting'>('idle')
   const [count, setCount] = useState(0)
-  const [exiting, setExiting] = useState(false)
-  const [done, setDone] = useState(false)
   const rafRef = useRef<number>(0)
   const timerRef = useRef<ReturnType<typeof setTimeout>>(undefined)
 
   useEffect(() => {
-    // Only show on gallery page, once per session
+    // Gallery only, once per session, and never for reduced-motion visitors.
     if (
       window.location.pathname !== '/' ||
-      sessionStorage.getItem('preloader_shown')
+      sessionStorage.getItem('preloader_shown') ||
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches
     ) {
-      setDone(true)
       return
     }
     sessionStorage.setItem('preloader_shown', '1')
+    setPhase('running')
 
-    const duration = 1400
     const start = performance.now()
 
-    const tick = (now: number) => {
-      const elapsed = now - start
-      const t = Math.min(elapsed / duration, 1)
-      // Ease out expo — fast start, tense finish
-      const eased = t === 1 ? 1 : 1 - Math.pow(2, -10 * t)
-      setCount(Math.floor(eased * 100))
-
-      if (t < 1) {
-        rafRef.current = requestAnimationFrame(tick)
-      } else {
-        setCount(100)
-        timerRef.current = setTimeout(() => {
-          setExiting(true)
-          timerRef.current = setTimeout(() => setDone(true), 550)
-        }, 180)
-      }
+    const finish = () => {
+      cancelAnimationFrame(rafRef.current)
+      setCount(100)
+      setPhase('exiting')
+      timerRef.current = setTimeout(() => setPhase('idle'), 520)
     }
 
+    const tick = (now: number) => {
+      const t = Math.min((now - start) / MAX_DURATION, 1)
+      const eased = t === 1 ? 1 : 1 - Math.pow(2, -10 * t)
+      setCount(Math.floor(eased * 100))
+      if (t < 1) rafRef.current = requestAnimationFrame(tick)
+      else finish()
+    }
     rafRef.current = requestAnimationFrame(tick)
+
+    // Whichever comes first: the page being ready, or the ceiling above.
+    if (document.readyState === 'complete') {
+      timerRef.current = setTimeout(finish, 250)
+    } else {
+      window.addEventListener('load', finish, { once: true })
+    }
+
     return () => {
       cancelAnimationFrame(rafRef.current)
       clearTimeout(timerRef.current)
+      window.removeEventListener('load', finish)
     }
   }, [])
 
-  if (done) return null
+  if (phase === 'idle') return null
 
   return (
     <motion.div
       aria-hidden="true"
       className="fixed inset-0 z-[9999] bg-background flex items-center justify-center pointer-events-none"
-      animate={exiting ? { y: '-100%' } : { y: 0 }}
-      transition={
-        exiting
-          ? { duration: 0.52, ease: EASE }
-          : { duration: 0 }
-      }
+      animate={phase === 'exiting' ? { y: '-100%' } : { y: 0 }}
+      transition={phase === 'exiting' ? { duration: 0.5, ease: EASE } : { duration: 0 }}
     >
       <div className="flex flex-col items-center gap-3">
         <span
