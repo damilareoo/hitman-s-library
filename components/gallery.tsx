@@ -11,6 +11,7 @@ import { DesignCard, type Design } from '@/components/design-card'
 import { Spinner } from '@/components/ui/spinner'
 import { motion, AnimatePresence } from 'motion/react'
 import { useSoundsContext } from '@/contexts/sounds-context'
+import { FilterBar, type AppliedFilter } from '@/components/filter-bar'
 import Link from 'next/link'
 
 const gridVariants = {
@@ -42,6 +43,26 @@ interface GalleryProps {
   initialDesigns: Design[]
   initialPagination: Pagination
   initialCategories: { name: string; count: number }[]
+}
+
+// Selected rows carry a 2px rule on the leading edge and go to full ink; the
+// rest sit at ink-62 with no rule. The rule occupies its slot whether or not it
+// is visible, so nothing shifts when selection changes.
+function sidebarRow(isActive: boolean): string {
+  return [
+    'group w-full flex items-center gap-2 rounded-[4px] text-bodytext pr-2.5 py-[7px]',
+    'transition-colors duration-[var(--dur-2)] ease-[var(--ease-sig)]',
+    isActive
+      ? 'text-ink font-medium bg-muted/50'
+      : 'text-ink-2 font-normal hover:text-ink hover:bg-muted/30',
+  ].join(' ')
+}
+
+function rowRule(isActive: boolean): string {
+  return [
+    'w-[2px] h-[15px] rounded-full shrink-0 transition-colors duration-[var(--dur-2)] ease-[var(--ease-sig)]',
+    isActive ? 'bg-foreground' : 'bg-transparent group-hover:bg-edge-strong',
+  ].join(' ')
 }
 
 function SkeletonCard() {
@@ -82,6 +103,8 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories }
   const [isRefetching, setIsRefetching] = useState(false)
   const [searchInput, setSearchInput] = useState(search)
 
+  const [minGridHeight, setMinGridHeight] = useState<number | null>(null)
+  const gridRef = useRef<HTMLDivElement>(null)
   const sentinelRef = useRef<HTMLDivElement>(null)
   const sheetRef = useRef<HTMLDivElement>(null)
   const searchRef = useRef<HTMLInputElement>(null)
@@ -199,8 +222,17 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories }
       })
     }
 
+    // Pin the current height so the outgoing and incoming sets can crossfade
+    // without the page collapsing and rebounding underneath them.
+    const height = gridRef.current?.offsetHeight ?? 0
+    if (height > 0) setMinGridHeight(height)
+
     setIsRefetching(true)
-    loadDesigns(0, false).finally(() => setIsRefetching(false))
+    loadDesigns(0, false).finally(() => {
+      setIsRefetching(false)
+      // Release after the new cards have painted.
+      requestAnimationFrame(() => requestAnimationFrame(() => setMinGridHeight(null)))
+    })
   }, [filterKey, loadDesigns])
 
   // Infinite scroll
@@ -328,6 +360,30 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories }
 
   const hasFilters = industries.length > 0 || tags.length > 0 || search.length > 0
   const showSkeletons = isRefetching && designs.length === 0
+
+  // Everything narrowing the grid, in one list the filter bar can render.
+  const appliedFilters: AppliedFilter[] = useMemo(() => {
+    const out: AppliedFilter[] = []
+    industries.forEach(name => out.push({
+      key: `category:${name}`,
+      label: name,
+      kind: 'category',
+      onRemove: () => handleFilterChange(name),
+    }))
+    tags.forEach(tag => out.push({
+      key: `tag:${tag}`,
+      label: tag,
+      kind: 'tag',
+      onRemove: () => handleTagClick(tag),
+    }))
+    if (search) out.push({
+      key: 'search',
+      label: search,
+      kind: 'search',
+      onRemove: () => setSearchInput(''),
+    })
+    return out
+  }, [industries, tags, search, handleFilterChange, handleTagClick])
 
   const detailPanel = isPanelOpen && (
     <SiteDetailPanel
@@ -474,14 +530,16 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories }
         {/* Sidebar */}
         <aside className="hidden md:flex md:col-span-2 flex-col sticky top-14 h-[calc(100vh-56px)] border-r border-edge-strong bg-background overflow-y-auto">
           <nav className="flex-1 py-4 px-3" aria-label="Category filters">
+            <p className="px-2.5 pb-2 text-micro text-ink-4 select-none">Categories</p>
             <ul className="space-y-0.5" role="list">
               <li>
                 <button
                   onClick={() => handleFilterChange('All')}
                   aria-pressed={industries.length === 0}
-                  className={"w-full flex items-center justify-between rounded-[4px] text-bodytext transition-colors px-2.5 py-[7px] " + (industries.length === 0 ? 'text-ink font-medium bg-muted/70' : 'text-ink-3 hover:text-ink-2 hover:bg-muted/40 font-normal')}
+                  className={sidebarRow(industries.length === 0)}
                 >
-                  <span>All</span>
+                  <span className={rowRule(industries.length === 0)} aria-hidden="true" />
+                  <span className="flex-1 text-left">All</span>
                   <span className="text-meta text-ink-4 tabular-nums">{libraryTotal}</span>
                 </button>
               </li>
@@ -492,9 +550,10 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories }
                     <button
                       onClick={() => handleFilterChange(name)}
                       aria-pressed={isActive}
-                      className={"w-full flex items-center justify-between rounded-[4px] text-bodytext transition-colors px-2.5 py-[7px] " + (isActive ? 'text-ink font-medium bg-muted/70' : 'text-ink-3 hover:text-ink-2 hover:bg-muted/40 font-normal')}
+                      className={sidebarRow(isActive)}
                     >
-                      <span>{name}</span>
+                      <span className={rowRule(isActive)} aria-hidden="true" />
+                      <span className="flex-1 text-left truncate">{name}</span>
                       <span className="text-meta text-ink-4 tabular-nums">{count}</span>
                     </button>
                   </li>
@@ -502,25 +561,8 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories }
               })}
             </ul>
 
-            {tags.length > 0 && (
-              <div className="mt-4 pt-4 border-t border-edge-faint">
-                <p className="px-2.5 text-micro text-ink-4 mb-1.5">Tags</p>
-                <ul className="space-y-0.5" role="list">
-                  {tags.map(tag => (
-                    <li key={tag}>
-                      <button
-                        onClick={() => handleTagClick(tag)}
-                        className="w-full flex items-center justify-between rounded-[4px] text-bodytext px-2.5 py-[7px] text-ink font-medium bg-muted/70 hover:bg-muted transition-colors"
-                        aria-label={`Remove tag filter ${tag}`}
-                      >
-                        <span className="truncate">{tag}</span>
-                        <X className="w-3 h-3 shrink-0 text-ink-4" weight="bold" />
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
+            {/* Active tags live in the filter bar above the grid, alongside
+                categories and search, rather than in a second list here. */}
           </nav>
         </aside>
 
@@ -558,9 +600,15 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories }
                     key={name}
                     onClick={() => handleFilterChange(name)}
                     aria-pressed={isActive}
-                    className={"shrink-0 px-3.5 py-2 rounded-full text-meta transition-colors whitespace-nowrap border " + (isActive ? 'bg-foreground text-background border-foreground' : 'bg-muted text-ink-3 border-edge hover:text-ink')}
+                    className={
+                      'shrink-0 h-8 px-3 rounded-[4px] text-meta whitespace-nowrap border ' +
+                      'transition-colors duration-[var(--dur-2)] ease-[var(--ease-sig)] ' +
+                      (isActive
+                        ? 'bg-muted text-ink border-foreground/40 font-medium'
+                        : 'bg-transparent text-ink-2 border-edge hover:text-ink hover:border-edge-strong')
+                    }
                   >
-                    {name} <span className="tabular-nums opacity-50">{count}</span>
+                    {name} <span className={'tabular-nums ' + (isActive ? 'text-ink-3' : 'text-ink-4')}>{count}</span>
                   </button>
                 )
               })}
@@ -585,29 +633,23 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories }
           </div>
 
           <div className="flex-1 p-5 md:p-6">
-            {/* Active tag filters (mobile + desktop) */}
-            {tags.length > 0 && (
-              <div className="md:hidden flex flex-wrap gap-1.5 mb-4">
-                {tags.map(tag => (
-                  <button
-                    key={tag}
-                    onClick={() => handleTagClick(tag)}
-                    className="flex items-center gap-1 px-2.5 py-1 rounded-full text-meta bg-muted border border-edge-strong text-ink"
-                    aria-label={`Remove tag filter ${tag}`}
-                  >
-                    {tag}
-                    <X className="w-2.5 h-2.5" weight="bold" />
-                  </button>
-                ))}
-              </div>
-            )}
+            <FilterBar
+              filters={appliedFilters}
+              total={pagination.total}
+              isLoading={isRefetching}
+              onClearAll={clearAll}
+            />
 
+            {/* Height is held during a swap so the page doesn't collapse and
+                rebound between result sets. */}
             <motion.div
-              className={"grid grid-cols-1 sm:grid-cols-2 2xl:grid-cols-3 gap-4 md:gap-5 transition-opacity duration-200 " + (isRefetching && designs.length > 0 ? 'opacity-40' : 'opacity-100')}
+              className="grid grid-cols-1 sm:grid-cols-2 2xl:grid-cols-3 gap-4 md:gap-5"
               variants={gridVariants}
               initial={hasAnimated.current ? false : 'hidden'}
               animate="show"
               aria-busy={isRefetching}
+              style={minGridHeight ? { minHeight: minGridHeight } : undefined}
+              ref={gridRef}
             >
               <AnimatePresence mode="sync">
                 {showSkeletons

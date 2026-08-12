@@ -58,9 +58,13 @@ export function DesignCard({ design, index, isSelected, onClick, onHover, onTagC
 
   return (
     <motion.article
+      // First paint uses the parent's staggered reveal. After that a card is
+      // only ever new because the result set changed, so it crossfades in on
+      // its own rather than queueing behind 31 others.
       variants={cardVariants}
-      initial={hasAnimated ? false : 'hidden'}
-      animate="show"
+      initial={hasAnimated ? { opacity: 0, y: 6 } : 'hidden'}
+      animate={hasAnimated ? { opacity: 1, y: 0 } : 'show'}
+      transition={hasAnimated ? { duration: DUR.color, ease: EASE } : undefined}
       exit={{ opacity: 0, transition: { duration: DUR.exit } }}
       onHoverStart={onHover}
       style={{ contain: 'layout paint style' }}

@@ -18,6 +18,20 @@ export interface ChangelogRelease {
 const changelog: ChangelogRelease[] = [
   {
     date: '2026-08-12',
+    title: 'Filtering, Rebuilt',
+    description: 'Filtering worked but did not feel like it. Two real bugs, and a pass on the language around them.',
+    items: [
+      { type: 'fixed',    text: 'Two quick category clicks both branched from the same URL snapshot, so the second silently dropped the first — picking SaaS then Finance left you with only Finance. Consecutive edits now compose' },
+      { type: 'fixed',    text: 'Filtering left you where you were scrolled, so a new result set opened halfway down and read as though nothing had changed. Changing a filter returns you to the top; opening a site still does not move the page' },
+      { type: 'fixed',    text: 'The sidebar All row was counting the filtered results, so selecting Finance made it read "All 13"' },
+      { type: 'improved', text: 'Selected categories now carry a rule on the leading edge and go to full ink, instead of a background wash you had to look for. The rule holds its slot when inactive, so nothing shifts' },
+      { type: 'new',      text: 'A filter bar above the grid shows everything currently applied — categories, tags and the search term as removable chips, with a result count and Clear all. Applied state used to be split between the sidebar, the header and a separate tag list' },
+      { type: 'improved', text: 'Result sets crossfade with the grid height held, rather than the whole grid dropping to 40% opacity and the page collapsing between sets' },
+      { type: 'fixed',    text: 'The favicon was v0\'s logo — the SVG shipped in the template was theirs, not ours. Rebuilt as the library\'s own hash mark, legible at 16px. Also dropped leftover v0 authorship metadata' },
+    ],
+  },
+  {
+    date: '2026-08-12',
     title: 'Locked Down, Server-Rendered, Linkable',
     description: 'A full audit pass. Every write endpoint now has real authentication, the proxy can no longer be pointed at internal hosts, the gallery ships as HTML instead of an empty shell, and every view you can reach has a URL you can send someone.',
     items: [
