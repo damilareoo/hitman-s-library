@@ -741,7 +741,7 @@ export default function AdminPage() {
                 <button
                   onClick={() => handleDelete(site.id)}
                   disabled={deletingId === site.id}
-                  className="w-7 h-7 flex items-center justify-center rounded-[4px] border border-transparent opacity-0 group-hover:opacity-100 hover:border-destructive/40 hover:bg-destructive/5 text-ink-3 hover:text-destructive transition-all disabled:opacity-50 shrink-0"
+                  className="w-7 h-7 flex items-center justify-center rounded-[4px] border border-transparent opacity-0 group-hover:opacity-100 hover:border-destructive/40 hover:bg-destructive/5 text-ink-3 hover:text-destructive transition-[color,background-color,border-color,opacity] disabled:opacity-50 shrink-0"
                   title="Remove"
                 >
                   {deletingId === site.id

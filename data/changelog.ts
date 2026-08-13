@@ -17,6 +17,21 @@ export interface ChangelogRelease {
 // Types: "new" (green) | "improved" (blue) | "fixed" (muted)
 const changelog: ChangelogRelease[] = [
   {
+    date: '2026-08-13',
+    title: 'Every Interaction',
+    description: 'A craft pass over every control in the app, against Emil Kowalski\'s design engineering principles. Most of this is meant to be felt rather than noticed.',
+    items: [
+      { type: 'new',      text: 'Nothing in the app confirmed a press. All 27 controls now scale to 0.97 on press over 140ms — the single biggest reason the interface read as unresponsive, no matter how fast it actually was' },
+      { type: 'improved', text: 'Cards are too large to scale without looking cheap, so pressing one lights its border instead. The press registers through the whole card, wherever you hit it' },
+      { type: 'fixed',    text: 'No hover state was gated to fine pointers, so tapping on a phone left cards zoomed and buttons lit long after you had moved on. Movement-bearing hover is now pointer-gated' },
+      { type: 'improved', text: 'One easing curve was doing every job. Split into three: the signature curve for entering and leaving, symmetric acceleration for movement across the screen, and a plainer curve for hover and press that never overshoots' },
+      { type: 'fixed',    text: 'Reduced motion was flattening every transition to 0.01ms, including the colour and opacity changes that tell you something responded. It now neutralises movement only, and keeps the feedback' },
+      { type: 'improved', text: 'Keyboard-driven actions no longer animate: arrow keys through presentation mode and the detail tabs are repeated constantly, and animating them made every step feel like it lagged the key. Pointer and swipe navigation keep the motion' },
+      { type: 'improved', text: 'The detail tab underline moved from 300ms to 200ms on a movement curve — it is clicked often enough that the old timing read as drag' },
+      { type: 'fixed',    text: 'Two places used transition-all, animating layout properties off the GPU' },
+    ],
+  },
+  {
     date: '2026-08-12',
     title: 'Filtering, Rebuilt',
     description: 'Filtering worked but did not feel like it. Two real bugs, and a pass on the language around them.',

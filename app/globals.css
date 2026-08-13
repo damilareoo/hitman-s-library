@@ -69,12 +69,22 @@
   --edge: oklch(from var(--border) l c h / 0.5);
   --edge-faint: oklch(from var(--border) l c h / 0.3);
 
-  /* Motion */
-  --ease-sig: cubic-bezier(0.22, 1, 0.36, 1);
+  /* Motion
+     One curve cannot serve every job. --ease-sig stays the signature curve for
+     things entering and leaving; movement across the screen wants symmetric
+     acceleration, and hover/colour wants something plainer that never overshoots. */
+  --ease-sig: cubic-bezier(0.22, 1, 0.36, 1);   /* enter / exit */
+  --ease-move: cubic-bezier(0.65, 0, 0.35, 1);  /* on-screen movement */
+  --ease-hover: cubic-bezier(0.4, 0, 0.2, 1);   /* hover, colour, press */
+
   --dur-1: 120ms;
   --dur-2: 200ms;
   --dur-3: 300ms;
   --dur-4: 450ms;
+
+  /* Press feedback — deliberately fast; the release should never feel owed. */
+  --dur-press: 140ms;
+  --press-scale: 0.97;
 }
 
 .dark {
@@ -217,6 +227,18 @@ body::before {
   mix-blend-mode: normal;
 }
 
+/* Hover effects that move or scale are gated to fine pointers. On touch the
+   browser fires hover on tap and leaves it applied, so a card stays zoomed
+   after you have already moved on. */
+@media (hover: hover) and (pointer: fine) {
+  .group:hover .hover-zoom {
+    transform: scale(1.015);
+  }
+}
+
+/* Reduced motion means less movement, not no feedback. Killing every
+   transition also removes the colour and opacity cues that tell people
+   something responded, so only motion-bearing properties are neutralised. */
 @media (prefers-reduced-motion: reduce) {
   ::view-transition-old(root),
   ::view-transition-new(root) {
@@ -228,13 +250,42 @@ body::before {
   *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
+    transition-property: color, background-color, border-color, opacity, fill, stroke !important;
+    transition-duration: var(--dur-1) !important;
   }
 }
 
 /* Only transition color-related properties to avoid layout jank */
 button, a, [role="button"] {
-  @apply transition-colors duration-200 ease-out;
+  transition:
+    color var(--dur-2) var(--ease-hover),
+    background-color var(--dur-2) var(--ease-hover),
+    border-color var(--dur-2) var(--ease-hover),
+    opacity var(--dur-2) var(--ease-hover),
+    transform var(--dur-press) var(--ease-hover);
+}
+
+/* Press feedback. Every pressable surface confirms it heard the press —
+   without this the interface reads as unresponsive no matter how fast it is.
+   Scoped to fine pointers: on touch, the browser's own tap delay makes the
+   scale read as lag rather than acknowledgement. */
+@media (hover: hover) and (pointer: fine) {
+  button:not(:disabled):active,
+  [role="button"]:not([aria-disabled="true"]):active,
+  a:active {
+    transform: scale(var(--press-scale));
+  }
+
+  /* Controls that own their own transform (cards, drag handles) opt out. */
+  [data-no-press]:active {
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  button:active, [role="button"]:active, a:active {
+    transform: none;
+  }
 }
 
 :focus-visible {

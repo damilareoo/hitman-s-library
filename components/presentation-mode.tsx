@@ -36,7 +36,13 @@ export function PresentationMode({ designs, initialIndex, onClose, onSelect }: P
   const proxyUrl = `/api/proxy?url=${encodeURIComponent(current.url)}&picker=0`
   const progressPct = ((index + 1) / designs.length) * 100
 
-  const go = useCallback((dir: number) => {
+  // Arrow keys are how this mode is actually driven, and animating a
+  // keyboard-repeated action makes every step feel like it lags the key.
+  // Pointer and swipe navigation keep the directional slide.
+  const viaKeyboard = useRef(false)
+
+  const go = useCallback((dir: number, fromKeyboard = false) => {
+    viaKeyboard.current = fromKeyboard
     setDirection(dir)
     setIndex(i => (i + dir + designs.length) % designs.length)
   }, [designs.length])
@@ -56,8 +62,8 @@ export function PresentationMode({ designs, initialIndex, onClose, onSelect }: P
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'ArrowLeft') go(-1)
-      else if (e.key === 'ArrowRight') go(1)
+      if (e.key === 'ArrowLeft') go(-1, true)
+      else if (e.key === 'ArrowRight') go(1, true)
       else if (e.key === 'Escape') onClose()
       else if (e.key === 'Enter') { onSelect(current); onClose() }
     }
@@ -240,10 +246,10 @@ export function PresentationMode({ designs, initialIndex, onClose, onSelect }: P
           <AnimatePresence mode="wait">
             <motion.div
               key={current.id + '-hud'}
-              initial={{ opacity: 0, x: direction * 10 }}
+              initial={viaKeyboard.current ? false : { opacity: 0, x: direction * 10 }}
               animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: direction * -5 }}
-              transition={{ duration: DUR.exit, ease: EASE }}
+              exit={viaKeyboard.current ? { opacity: 1 } : { opacity: 0, x: direction * -5 }}
+              transition={{ duration: viaKeyboard.current ? 0 : DUR.exit, ease: EASE }}
               className="flex items-center gap-4 min-w-0 flex-1"
             >
               <div className="min-w-0 flex-1">

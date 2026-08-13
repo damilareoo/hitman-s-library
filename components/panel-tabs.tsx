@@ -4,7 +4,7 @@ import React from 'react'
 import { motion } from 'motion/react'
 import { Monitor, Palette, TextT, Images } from '@phosphor-icons/react'
 import { useSoundsContext } from '@/contexts/sounds-context'
-import { EASE, DUR } from '@/lib/motion'
+import { MOVE_EASE, DUR } from '@/lib/motion'
 
 export type PanelTab = 'preview' | 'colors' | 'type' | 'assets'
 
@@ -24,12 +24,18 @@ export function PanelTabs({ active, onChange }: PanelTabsProps) {
   const { playTabChange } = useSoundsContext()
   const activeIndex = TABS.findIndex(t => t.key === active)
 
+  // Arrow-key tab changes are repeated far more than clicks, and animating a
+  // keyboard action makes the whole panel feel like it lags behind the key.
+  const viaKeyboard = React.useRef(false)
+
   function handleKeyDown(e: React.KeyboardEvent) {
     if (e.key === 'ArrowLeft') {
       const prev = TABS[(activeIndex - 1 + TABS.length) % TABS.length]
+      viaKeyboard.current = true
       playTabChange(); onChange(prev.key)
     } else if (e.key === 'ArrowRight') {
       const next = TABS[(activeIndex + 1) % TABS.length]
+      viaKeyboard.current = true
       playTabChange(); onChange(next.key)
     }
   }
@@ -50,7 +56,7 @@ export function PanelTabs({ active, onChange }: PanelTabsProps) {
             aria-selected={isActive}
             aria-label={label}
             tabIndex={isActive ? 0 : -1}
-            onClick={() => { playTabChange(); onChange(key) }}
+            onClick={() => { viaKeyboard.current = false; playTabChange(); onChange(key) }}
             className={[
               'relative flex-1 py-3 transition-colors flex flex-col items-center justify-center gap-1.5 min-h-[44px]',
               isActive ? 'text-ink' : 'text-ink-4 hover:text-ink-3',
@@ -61,7 +67,11 @@ export function PanelTabs({ active, onChange }: PanelTabsProps) {
             {isActive && (
               <motion.div
                 layoutId="panel-tab-underline"
-                transition={{ duration: DUR.move, ease: EASE }}
+                transition={
+                  viaKeyboard.current
+                    ? { duration: 0 }
+                    : { duration: DUR.color, ease: MOVE_EASE }
+                }
                 className="absolute -bottom-px left-4 right-4 h-[1.5px] bg-foreground/70"
               />
             )}

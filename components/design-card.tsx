@@ -68,7 +68,16 @@ export function DesignCard({ design, index, isSelected, onClick, onHover, onTagC
       exit={{ opacity: 0, transition: { duration: DUR.exit } }}
       onHoverStart={onHover}
       style={{ contain: 'layout paint style' }}
-      className={"group relative flex flex-col rounded-[4px] overflow-hidden border transition-colors " + (isSelected ? 'border-foreground/60' : 'border-edge hover:border-edge-strong')}
+      // :active propagates from the title button, so pressing anywhere in the
+      // card lights the border. A card is too large to scale — that reads as
+      // cheap — so the press registers in the card's own language instead.
+      className={
+        'group relative flex flex-col rounded-[4px] overflow-hidden border ' +
+        'transition-colors duration-[var(--dur-2)] ease-[var(--ease-hover)] ' +
+        (isSelected
+          ? 'border-foreground/60'
+          : 'border-edge hover:border-edge-strong active:border-foreground/40')
+      }
     >
       {/* Screenshot */}
       <div className="relative overflow-hidden bg-muted aspect-[16/10]">
@@ -89,7 +98,7 @@ export function DesignCard({ design, index, isSelected, onClick, onHover, onTagC
               img.naturalWidth > 0 ? setImgStatus('loaded') : handleImgError()
             }}
             onError={handleImgError}
-            className={"object-cover object-top transition-[opacity,transform] duration-[450ms] ease-[var(--ease-sig)] group-hover:scale-[1.015] " + (imgStatus === 'loaded' ? 'opacity-100' : 'opacity-0')}
+            className={"hover-zoom object-cover object-top transition-[opacity,transform] duration-[450ms] ease-[var(--ease-sig)] " + (imgStatus === 'loaded' ? 'opacity-100' : 'opacity-0')}
           />
         )}
         {imgStatus === 'error' && (
@@ -112,6 +121,9 @@ export function DesignCard({ design, index, isSelected, onClick, onHover, onTagC
               type="button"
               onClick={onClick}
               title={label}
+              // Its hit area is the whole card, so scaling it would scale
+              // nothing visible. The card border carries the press instead.
+              data-no-press
               className="text-left w-full focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-foreground/40 rounded-[2px] after:absolute after:inset-0 after:content-['']"
             >
               <span className="block text-bodytext font-medium text-ink leading-snug line-clamp-1">
