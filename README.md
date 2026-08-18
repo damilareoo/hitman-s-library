@@ -93,7 +93,7 @@ Shared primitives live in `components/ui` (Spinner, SectionLabel) and `lib/use-c
 
 The three-pane split (categories / grid / detail) opens at `lg`, not `md`. Below that, phones and tablets share one layout: horizontal category chips, a sort row, a full-width grid, and the detail view as a bottom sheet. A tablet is treated as a wide phone rather than a narrow desktop — the earlier `md` split left cards 158px wide at 768px.
 
-The detail panel's column is driven by CSS custom properties on the body grid (`--col-nav` / `--col-main` / `--col-panel`) and collapses to `0fr` when nothing is selected, so the grid reclaims the space. Card columns follow: two by default, three at `xl`, four at `2xl` with no panel; two with the panel open.
+The detail panel holds its column at all times — `2 / 6 / 4` of a 12-column grid. The empty state is deliberate: it names what the panel contains (preview, colors, type, assets), which is how the tabs are discovered in the first place. Do not reclaim that space for the grid.
 
 Touch targets are expanded with pseudo-element overlays rather than padding, so controls hit 44px without changing how they are drawn. Note that `overflow-x-auto` clips these overlays vertically — the compact sort row compensates with padding and a matching negative margin.
 

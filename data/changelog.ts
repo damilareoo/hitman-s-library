@@ -18,11 +18,11 @@ export interface ChangelogRelease {
 const changelog: ChangelogRelease[] = [
   {
     date: '2026-08-18',
-    title: 'Every Screen Size',
-    description: 'An audit across seven widths, from a 375px phone to a 1920px display. The library had been designed at desktop and left to cope everywhere else; this is the pass that gives every width a layout of its own.',
+    title: 'Clicking Anywhere',
+    description: 'Only the title text of a card was clickable — everywhere else, including the screenshot, did nothing. That, and an audit across seven widths from a 375px phone to a 1920px display.',
     items: [
+      { type: 'fixed',    text: 'Clicking a card did nothing unless you hit the title text exactly. The whole card is meant to be one target, carried by an invisible layer stretched across it — but pressing any control scaled it slightly, and that scale made the title button the anchor for its own overlay, shrinking the target to the size of the title mid-press. The mouse then lifted somewhere the target no longer was, so the click dissolved. The opt-out meant to prevent this had been written as a weaker rule than the one it was overriding, so it never applied' },
       { type: 'fixed',    text: 'A tablet was the worst place to browse the library. The three-pane split opened at 768px, which left the grid 384px to work with and cut cards to 158px wide — titles ran six lines and no two cards were the same height. The split now waits for 1024px, so a tablet gets the mobile layout with more room rather than the desktop one crushed into it' },
-      { type: 'improved', text: 'The detail panel used to hold its column open at all times, showing nothing but "Select a site" until you clicked something — 480px of dead space on a 1440px screen. It now collapses when nothing is selected and the grid spreads into it: three columns instead of two, four on a wide display' },
       { type: 'fixed',    text: 'Card titles carried two instructions that both set how the element displays, and the wrong one won, so the one-line clamp never applied at all. Every title now truncates as intended, which is what finally made card heights uniform across a row' },
       { type: 'fixed',    text: 'The industry label was told to truncate and also told it could not shrink, which are contradictory — so instead of an ellipsis it overflowed and got sliced mid-word at the card edge. It reads "FINANCE", not "FINANC"' },
       { type: 'improved', text: 'Every control in the header was smaller than a fingertip: sort buttons 23px tall, the changelog link 17px. All of them now carry a 44px touch target while looking exactly as they did — the target grew, the design did not' },

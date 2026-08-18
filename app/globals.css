@@ -270,15 +270,19 @@ button, a, [role="button"] {
    Scoped to fine pointers: on touch, the browser's own tap delay makes the
    scale read as lag rather than acknowledgement. */
 @media (hover: hover) and (pointer: fine) {
-  button:not(:disabled):active,
-  [role="button"]:not([aria-disabled="true"]):active,
-  a:active {
+  /* Controls that own their own transform (cards, drag handles) opt out via
+     data-no-press. The exclusion has to live in these selectors rather than in
+     a later override: a standalone [data-no-press]:active rule is specificity
+     (0,2,0) and loses to button:not(:disabled):active at (0,2,1), so the opt-out
+     silently did nothing. That mattered — scaling a card's title button made it
+     the containing block for the ::after that serves as the whole card's click
+     target, collapsing it to the title text mid-press. Mouseup then landed on a
+     different element and the click retargeted to the article, so anywhere on a
+     card except the title was dead. */
+  button:not(:disabled):not([data-no-press]):active,
+  [role="button"]:not([aria-disabled="true"]):not([data-no-press]):active,
+  a:not([data-no-press]):active {
     transform: scale(var(--press-scale));
-  }
-
-  /* Controls that own their own transform (cards, drag handles) opt out. */
-  [data-no-press]:active {
-    transform: none;
   }
 }
 

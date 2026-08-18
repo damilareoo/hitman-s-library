@@ -375,9 +375,9 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories }
   // panel is open. Each step is placed where the card would otherwise fall
   // under ~290px, the width below which titles start wrapping and the row
   // heights go ragged.
-  const cardColumns = isPanelOpen
-    ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2'
-    : 'grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4'
+  // The panel holds its column whether or not a site is selected, so the grid
+  // has the same room either way and the count does not shift under you.
+  const cardColumns = 'grid-cols-1 sm:grid-cols-2 2xl:grid-cols-3'
 
   // Everything narrowing the grid, in one list the filter bar can render.
   const appliedFilters: AppliedFilter[] = useMemo(() => {
@@ -559,20 +559,13 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories }
       </header>
 
       {/* Body — the 3-pane split waits for lg. A tablet gets the mobile
-          treatment with more room, not the desktop one squeezed into it.
-          The panel track is 0fr until a site is selected, and the whole row
-          reflows on the same curve the panel enters on. */}
-      <div
-        className="grid grid-cols-1 lg:grid-cols-[var(--col-nav)_var(--col-main)_var(--col-panel)] min-h-[calc(100vh-56px)] transition-[grid-template-columns] duration-[var(--dur-3)] ease-[var(--ease-move)]"
-        style={{
-          '--col-nav': 'minmax(0,2fr)',
-          '--col-main': isPanelOpen ? 'minmax(0,6fr)' : 'minmax(0,10fr)',
-          '--col-panel': isPanelOpen ? 'minmax(0,4fr)' : 'minmax(0,0fr)',
-        } as React.CSSProperties}
-      >
+          treatment with more room, not the desktop one squeezed into it. The
+          three tracks are fixed: the panel is part of the layout, not something
+          the grid borrows from while you are not looking. */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 min-h-[calc(100vh-56px)]">
 
         {/* Sidebar */}
-        <aside className="hidden lg:flex flex-col sticky top-14 h-[calc(100vh-56px)] border-r border-edge-strong bg-background overflow-y-auto">
+        <aside className="hidden lg:flex lg:col-span-2 flex-col sticky top-14 h-[calc(100vh-56px)] border-r border-edge-strong bg-background overflow-y-auto">
           <nav className="flex-1 py-4 px-3" aria-label="Category filters">
             <p className="px-2.5 pb-2 text-micro text-ink-4 select-none">Categories</p>
             <ul className="space-y-0.5" role="list">
@@ -613,7 +606,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories }
         {/* Gallery */}
         {/* tabIndex -1 so the skip link moves focus here and not just the
             scroll position; without it the next Tab returns to the header. */}
-        <main id="gallery" tabIndex={-1} className="flex flex-col min-w-0 focus:outline-none">
+        <main id="gallery" tabIndex={-1} className="lg:col-span-6 flex flex-col min-w-0 focus:outline-none">
           {/* Compact filters — mobile and tablet */}
           <div className="lg:hidden sticky top-14 z-20 bg-background border-b border-edge-strong">
             <div className="px-4 pt-3 pb-2 relative">
@@ -749,37 +742,38 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories }
           </div>
         </main>
 
-        {/* Detail panel — mounted only when a site is selected. A placeholder
-            held a third of the width open for nothing. */}
-        <AnimatePresence>
-          {isPanelOpen && (
-            <motion.div
-              key="panel"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: DUR.move, ease: EASE }}
-              className="hidden lg:flex flex-col sticky top-14 h-[calc(100vh-56px)] border-l border-edge-strong bg-background overflow-hidden"
-            >
-              {/* Held at a floor width so the contents slide behind the edge as
-                  the track closes rather than reflowing on the way out. */}
-              <div className="flex flex-col h-full w-full min-w-[320px]">
-                <AnimatePresence mode="wait">
-                  <motion.div
-                    key={selectedId}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 0.15 }}
-                    className="flex flex-col h-full"
-                  >
-                    {detailPanel}
-                  </motion.div>
-                </AnimatePresence>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        {/* Detail panel — the column is always here. The empty state names
+            what the panel holds, which is how you learn the tabs exist. */}
+        <div className="hidden lg:flex lg:col-span-4 flex-col sticky top-14 h-[calc(100vh-56px)] border-l border-edge-strong bg-background">
+          <AnimatePresence mode="wait">
+            {isPanelOpen ? (
+              <motion.div
+                key={selectedId}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.15 }}
+                className="flex flex-col h-full"
+              >
+                {detailPanel}
+              </motion.div>
+            ) : (
+              <motion.div
+                key="empty"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="flex items-center justify-center h-full"
+              >
+                <div className="flex flex-col items-center gap-2 text-center px-6">
+                  <p className="text-meta text-ink-4">Select a site</p>
+                  <p className="text-micro text-ink-4">
+                    preview · colors · type · assets
+                  </p>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
 
       </div>
 
