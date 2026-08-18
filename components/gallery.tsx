@@ -12,6 +12,7 @@ import { Spinner } from '@/components/ui/spinner'
 import { motion, AnimatePresence } from 'motion/react'
 import { useSoundsContext } from '@/contexts/sounds-context'
 import { FilterBar, type AppliedFilter } from '@/components/filter-bar'
+import { EASE, DUR } from '@/lib/motion'
 import Link from 'next/link'
 
 const gridVariants = {
@@ -259,17 +260,17 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories }
     })
   }, [updateParams])
 
-  // Lock body scroll only for the mobile sheet.
+  // Lock body scroll only for the sheet, which runs up to the 3-pane split.
   useEffect(() => {
     if (!isPanelOpen) return
-    const mobile = window.matchMedia('(max-width: 767px)')
+    const mobile = window.matchMedia('(max-width: 1023px)')
     if (!mobile.matches) return
     document.body.style.overflow = 'hidden'
     return () => { document.body.style.overflow = '' }
   }, [isPanelOpen])
 
-  // Escape closes the panel at any breakpoint; the focus trap is mobile-only,
-  // where the sheet is genuinely modal.
+  // Escape closes the panel at any breakpoint; the focus trap only runs where
+  // the sheet does, since that is where the panel is genuinely modal.
   useEffect(() => {
     if (!isPanelOpen) return
 
@@ -361,6 +362,14 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories }
   const hasFilters = industries.length > 0 || tags.length > 0 || search.length > 0
   const showSkeletons = isRefetching && designs.length === 0
 
+  // Two column tracks, because the grid gets the whole row back whenever no
+  // panel is open. Each step is placed where the card would otherwise fall
+  // under ~290px, the width below which titles start wrapping and the row
+  // heights go ragged.
+  const cardColumns = isPanelOpen
+    ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2'
+    : 'grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4'
+
   // Everything narrowing the grid, in one list the filter bar can render.
   const appliedFilters: AppliedFilter[] = useMemo(() => {
     const out: AppliedFilter[] = []
@@ -404,14 +413,16 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories }
 
       {/* Header */}
       <header className="sticky top-0 z-50 border-b border-edge-strong bg-background/95 backdrop-blur-sm">
-        <div className="h-14 px-5 md:px-7 flex items-center gap-4">
+        <div className="h-14 px-5 lg:px-7 flex items-center gap-4">
 
           <h1 className="text-[15px] font-semibold tracking-[-0.04em] text-foreground select-none shrink-0">
             Hitman<span className="font-light opacity-50">&apos;s</span> Library
           </h1>
 
-          {/* Search */}
-          <div className="flex-1 max-w-xs hidden sm:flex items-center relative">
+          {/* Search — the header controls belong to the 3-pane layout. Below
+              it the filter block above the grid owns search and sort, and two
+              live copies of each would be on screen at once. */}
+          <div className="flex-1 max-w-xs hidden lg:flex items-center relative">
             <MagnifyingGlass className="absolute left-2.5 w-3 h-3 text-ink-3 pointer-events-none" weight="regular" />
             <input
               ref={searchRef}
@@ -448,7 +459,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories }
 
             {/* Sort */}
             <div
-              className="hidden sm:flex items-center gap-1 mr-1"
+              className="hidden lg:flex items-center gap-1 mr-1"
               role="group"
               aria-label="Sort sites"
             >
@@ -469,7 +480,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories }
               ))}
             </div>
 
-            <span className="hidden sm:inline text-meta text-ink-4 tabular-nums mr-1">
+            <span className="hidden lg:inline text-meta text-ink-4 tabular-nums mr-1">
               {pagination.total} <span className="sr-only">sites</span>
             </span>
 
@@ -524,11 +535,21 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories }
         </div>
       </header>
 
-      {/* Body */}
-      <div className="grid grid-cols-1 md:grid-cols-12 min-h-[calc(100vh-56px)]">
+      {/* Body — the 3-pane split waits for lg. A tablet gets the mobile
+          treatment with more room, not the desktop one squeezed into it.
+          The panel track is 0fr until a site is selected, and the whole row
+          reflows on the same curve the panel enters on. */}
+      <div
+        className="grid grid-cols-1 lg:grid-cols-[var(--col-nav)_var(--col-main)_var(--col-panel)] min-h-[calc(100vh-56px)] transition-[grid-template-columns] duration-[var(--dur-3)] ease-[var(--ease-move)]"
+        style={{
+          '--col-nav': 'minmax(0,2fr)',
+          '--col-main': isPanelOpen ? 'minmax(0,6fr)' : 'minmax(0,10fr)',
+          '--col-panel': isPanelOpen ? 'minmax(0,4fr)' : 'minmax(0,0fr)',
+        } as React.CSSProperties}
+      >
 
         {/* Sidebar */}
-        <aside className="hidden md:flex md:col-span-2 flex-col sticky top-14 h-[calc(100vh-56px)] border-r border-edge-strong bg-background overflow-y-auto">
+        <aside className="hidden lg:flex flex-col sticky top-14 h-[calc(100vh-56px)] border-r border-edge-strong bg-background overflow-y-auto">
           <nav className="flex-1 py-4 px-3" aria-label="Category filters">
             <p className="px-2.5 pb-2 text-micro text-ink-4 select-none">Categories</p>
             <ul className="space-y-0.5" role="list">
@@ -567,9 +588,9 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories }
         </aside>
 
         {/* Gallery */}
-        <main className="col-span-1 md:col-span-6 flex flex-col">
-          {/* Mobile filters */}
-          <div className="md:hidden sticky top-14 z-20 bg-background border-b border-edge-strong">
+        <main className="flex flex-col min-w-0">
+          {/* Compact filters — mobile and tablet */}
+          <div className="lg:hidden sticky top-14 z-20 bg-background border-b border-edge-strong">
             <div className="px-4 pt-3 pb-2 relative">
               <MagnifyingGlass className="absolute left-7 top-1/2 -translate-y-[2px] w-3 h-3 text-ink-3 pointer-events-none" weight="regular" />
               <input
@@ -632,7 +653,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories }
             </div>
           </div>
 
-          <div className="flex-1 p-5 md:p-6">
+          <div className="flex-1 p-5 lg:p-6">
             <FilterBar
               filters={appliedFilters}
               total={pagination.total}
@@ -643,7 +664,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories }
             {/* Height is held during a swap so the page doesn't collapse and
                 rebound between result sets. */}
             <motion.div
-              className="grid grid-cols-1 sm:grid-cols-2 2xl:grid-cols-3 gap-4 md:gap-5"
+              className={`grid ${cardColumns} gap-4 lg:gap-5`}
               variants={gridVariants}
               initial={hasAnimated.current ? false : 'hidden'}
               animate="show"
@@ -700,37 +721,37 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories }
           </div>
         </main>
 
-        {/* Detail panel */}
-        <div className="hidden md:flex md:col-span-4 flex-col sticky top-14 h-[calc(100vh-56px)] border-l border-edge-strong bg-background">
-          <AnimatePresence mode="wait">
-            {isPanelOpen ? (
-              <motion.div
-                key={selectedId}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.15 }}
-                className="flex flex-col h-full"
-              >
-                {detailPanel}
-              </motion.div>
-            ) : (
-              <motion.div
-                key="empty"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="flex items-center justify-center h-full"
-              >
-                <div className="flex flex-col items-center gap-2 text-center px-6">
-                  <p className="text-meta text-ink-4">Select a site</p>
-                  <p className="text-micro text-ink-4">
-                    preview · colors · type · assets
-                  </p>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
+        {/* Detail panel — mounted only when a site is selected. A placeholder
+            held a third of the width open for nothing. */}
+        <AnimatePresence>
+          {isPanelOpen && (
+            <motion.div
+              key="panel"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: DUR.move, ease: EASE }}
+              className="hidden lg:flex flex-col sticky top-14 h-[calc(100vh-56px)] border-l border-edge-strong bg-background overflow-hidden"
+            >
+              {/* Held at a floor width so the contents slide behind the edge as
+                  the track closes rather than reflowing on the way out. */}
+              <div className="flex flex-col h-full w-full min-w-[320px]">
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={selectedId}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.15 }}
+                    className="flex flex-col h-full"
+                  >
+                    {detailPanel}
+                  </motion.div>
+                </AnimatePresence>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
       </div>
 
@@ -744,7 +765,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories }
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.22 }}
-              className="md:hidden fixed inset-0 z-40 bg-black/40 backdrop-blur-[3px]"
+              className="lg:hidden fixed inset-0 z-40 bg-black/40 backdrop-blur-[3px]"
               onClick={() => selectDesign(null)}
             />
 
@@ -766,7 +787,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories }
               onDragEnd={(_, info) => {
                 if (info.offset.y > 80 || info.velocity.y > 500) selectDesign(null)
               }}
-              className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-background flex flex-col"
+              className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-background flex flex-col"
               style={{
                 height: '82svh',
                 borderRadius: '20px 20px 0 0',

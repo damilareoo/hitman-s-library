@@ -126,7 +126,10 @@ export function DesignCard({ design, index, isSelected, onClick, onHover, onTagC
               data-no-press
               className="text-left w-full focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-foreground/40 rounded-[2px] after:absolute after:inset-0 after:content-['']"
             >
-              <span className="block text-bodytext font-medium text-ink leading-snug line-clamp-1">
+              {/* No `block` here — it and line-clamp-1 both set display, and
+                  block won, so the clamp never applied and titles ran to 2+
+                  lines. The full title stays on the button's title attribute. */}
+              <span className="text-bodytext font-medium text-ink leading-snug line-clamp-1">
                 {label}
               </span>
               <span className="sr-only">— open details</span>
@@ -142,7 +145,11 @@ export function DesignCard({ design, index, isSelected, onClick, onHover, onTagC
             onClick={e => e.stopPropagation()}
             aria-label={`Visit ${label} (opens in a new tab)`}
             title={`Visit ${domain}`}
-            className="relative z-10 shrink-0 -mt-0.5 -mr-1 w-7 h-7 flex items-center justify-center rounded-[4px] text-ink-4 hover:text-ink hover:bg-muted transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-foreground/40"
+            // 28px is the visible target; the ::before takes the hit area out to
+            // 44px without growing the hover fill or the focus ring. It stops
+            // short of the screenshot above and the palette row below, so the
+            // card's own click target loses nothing but the 8px gutter.
+            className="relative z-10 shrink-0 -mt-0.5 -mr-1 w-7 h-7 flex items-center justify-center rounded-[4px] text-ink-4 hover:text-ink hover:bg-muted transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-foreground/40 before:absolute before:-inset-2 before:content-['']"
           >
             <ArrowUpRight className="w-3.5 h-3.5" weight="bold" />
           </a>
@@ -153,7 +160,9 @@ export function DesignCard({ design, index, isSelected, onClick, onHover, onTagC
             // One label for the row — five separate hex announcements per card
             // made the grid unusable with a screen reader.
             <div
-              className="flex gap-[3px]"
+              // The palette is the stronger signal, so it holds its width and
+              // the label beside it gives way.
+              className="flex gap-[3px] shrink-0"
               role="img"
               aria-label={`Palette: ${design.colors.slice(0, 5).join(', ')}`}
             >
@@ -166,14 +175,24 @@ export function DesignCard({ design, index, isSelected, onClick, onHover, onTagC
                 />
               ))}
             </div>
-          ) : <span />}
+          ) : (
+            // Holds the swatch row's height so a card with no palette is not
+            // 6px shorter than the cards beside it.
+            <span className="h-4" />
+          )}
+          {/* min-w-0, not shrink-0: a flex item that cannot shrink never
+              reaches the width where truncate fires, so the label used to spill
+              past the card and get sliced mid-word by overflow-hidden. */}
           {design.industry ? (
-            <span className="text-micro text-ink-4 truncate shrink-0">{design.industry}</span>
+            <span className="text-micro text-ink-4 truncate min-w-0">{design.industry}</span>
           ) : design.tags[0] ? (
             <button
               onClick={e => { e.stopPropagation(); onTagClick(design.tags[0]) }}
               aria-label={`Filter by tag ${design.tags[0]}`}
-              className="relative z-10 text-micro text-ink-4 hover:text-ink-3 truncate shrink-0 transition-colors"
+              // Padding grows the target, the matching negative margin gives
+              // the space back to the layout, so nothing moves. A ::before
+              // would be clipped here — truncate sets overflow: hidden.
+              className="relative z-10 text-micro text-ink-4 hover:text-ink-3 truncate min-w-0 transition-colors px-2 -mx-2 py-4 -my-4"
             >
               {design.tags[0]}
             </button>
