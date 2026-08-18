@@ -89,10 +89,15 @@ export function DesignCard({ design, index, isSelected, onClick, onHover, onTagC
             src={imgSrc}
             alt=""
             fill
-            sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 33vw"
-            // Four cards sit above the fold in the two-column grid.
-            priority={index < 4}
-            loading={index < 4 ? undefined : 'lazy'}
+            sizes="(max-width: 640px) 100vw, (max-width: 1279px) 50vw, (max-width: 1535px) 33vw, 25vw"
+            // The grid runs one to four columns, so six covers the first row at
+            // every width and reaches into the second where the columns are
+            // narrow enough for two rows to sit above the fold — that second
+            // row is where the LCP image actually lands on a wide screen.
+            // Beyond six the browser fetched images it then reported as unused,
+            // so the rest load eagerly without the preload.
+            priority={index < 6}
+            loading={index < 12 ? undefined : 'lazy'}
             onLoad={e => {
               const img = e.currentTarget as HTMLImageElement
               img.naturalWidth > 0 ? setImgStatus('loaded') : handleImgError()
@@ -170,7 +175,10 @@ export function DesignCard({ design, index, isSelected, onClick, onHover, onTagC
                 <div
                   key={i}
                   aria-hidden="true"
-                  className="w-4 h-4 rounded-full border border-black/[0.06] dark:border-white/[0.08]"
+                  // A near-black swatch on the dark background needs a real
+                  // ring to read as a swatch at all, so dark mode carries more
+                  // than the hairline light mode wants.
+                  className="w-4 h-4 rounded-full border border-black/[0.06] dark:border-white/[0.22]"
                   style={{ backgroundColor: color }}
                 />
               ))}

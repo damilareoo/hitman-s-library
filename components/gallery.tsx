@@ -59,6 +59,15 @@ function sidebarRow(isActive: boolean): string {
   ].join(' ')
 }
 
+// Drawn at 36px, which is comfortable with a mouse and small under a thumb.
+// The overlay takes the target to 44 tall and 42 wide — 42 rather than 44
+// because the buttons sit 6px apart, and a 44th pixel would reach into the
+// neighbour and steal its edge.
+const ICON_BUTTON =
+  'relative w-9 h-9 flex items-center justify-center rounded-[4px] border border-edge-strong ' +
+  'text-ink-3 hover:text-ink hover:border-foreground/40 transition-colors ' +
+  "after:absolute after:left-1/2 after:top-1/2 after:h-11 after:w-[42px] after:-translate-x-1/2 after:-translate-y-1/2 after:content-['']"
+
 function rowRule(isActive: boolean): string {
   return [
     'w-[2px] h-[15px] rounded-full shrink-0 transition-colors duration-[var(--dur-2)] ease-[var(--ease-sig)]',
@@ -411,6 +420,15 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories }
   return (
     <div className="min-h-screen bg-background text-foreground">
 
+      {/* The grid is up to 128 cards deep with two stops each, so tabbing past
+          the header and nine categories to reach it is a long trip. */}
+      <a
+        href="#gallery"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[60] focus:px-3 focus:py-2 focus:rounded-[4px] focus:border focus:border-edge-strong focus:bg-background focus:text-bodytext focus:text-ink focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-foreground/40"
+      >
+        Skip to sites
+      </a>
+
       {/* Header */}
       <header className="sticky top-0 z-50 border-b border-edge-strong bg-background/95 backdrop-blur-sm">
         <div className="h-14 px-5 lg:px-7 flex items-center gap-4">
@@ -452,7 +470,9 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories }
           <div className="flex items-center gap-1.5 ml-auto">
             <Link
               href="/changelog"
-              className="hidden sm:flex items-center text-meta text-ink-3 hover:text-ink transition-colors mr-1"
+              // 17px tall as drawn. The overlay carries the touch target so the
+              // link keeps its weight in the header.
+              className="relative hidden sm:flex items-center text-meta text-ink-3 hover:text-ink transition-colors mr-1 after:absolute after:inset-x-0 after:top-1/2 after:h-11 after:-translate-y-1/2 after:content-['']"
             >
               Changelog
             </Link>
@@ -469,7 +489,10 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories }
                   onClick={() => setSort(value)}
                   aria-pressed={sortBy === value}
                   className={[
-                    'px-2 py-0.5 rounded-[4px] text-meta transition-colors border',
+                    'relative px-2 py-0.5 rounded-[4px] text-meta transition-colors border',
+                    // The pill is 23px tall; the overlay reaches full height.
+                    // Nothing sits above or below it inside the 56px header.
+                    "after:absolute after:inset-x-0 after:top-1/2 after:h-11 after:-translate-y-1/2 after:content-['']",
                     sortBy === value
                       ? 'bg-muted text-ink border-edge-strong'
                       : 'text-ink-4 border-transparent hover:text-ink-2',
@@ -487,7 +510,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories }
             <button
               onClick={() => openPresentation(selectedDesign ? designs.findIndex(d => d.id === selectedDesign.id) : 0)}
               disabled={designs.length === 0}
-              className="w-9 h-9 flex items-center justify-center rounded-[4px] border border-edge-strong text-ink-3 hover:text-ink hover:border-foreground/40 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+              className={ICON_BUTTON + ' disabled:opacity-30 disabled:cursor-not-allowed'}
               aria-label="Presentation mode"
               title="Presentation mode (P)"
             >
@@ -496,7 +519,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories }
 
             <button
               onClick={() => sounds.setEnabled(p => !p)}
-              className="w-9 h-9 flex items-center justify-center rounded-[4px] border border-edge-strong text-ink-3 hover:text-ink hover:border-foreground/40 transition-colors"
+              className={ICON_BUTTON}
               aria-label={sounds.enabled ? 'Mute sounds' : 'Enable sounds'}
               aria-pressed={sounds.enabled}
             >
@@ -524,7 +547,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories }
                 })
                 t.finished.then(() => { isThemeTransitioning.current = false })
               }}
-              className="w-9 h-9 flex items-center justify-center rounded-[4px] border border-edge-strong text-ink-3 hover:text-ink hover:border-foreground/40 transition-colors"
+              className={ICON_BUTTON}
               aria-label={mounted && resolvedTheme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
             >
               <motion.span key={mounted ? resolvedTheme : 'ssr'} initial={{ rotate: -20, scale: 0.8 }} animate={{ rotate: 0, scale: 1 }} style={{ display: 'flex' }}>
@@ -588,7 +611,9 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories }
         </aside>
 
         {/* Gallery */}
-        <main className="flex flex-col min-w-0">
+        {/* tabIndex -1 so the skip link moves focus here and not just the
+            scroll position; without it the next Tab returns to the header. */}
+        <main id="gallery" tabIndex={-1} className="flex flex-col min-w-0 focus:outline-none">
           {/* Compact filters — mobile and tablet */}
           <div className="lg:hidden sticky top-14 z-20 bg-background border-b border-edge-strong">
             <div className="px-4 pt-3 pb-2 relative">
@@ -638,13 +663,16 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories }
             {/* Sort — kept on its own row so it can't be mistaken for a category */}
             <div className="flex items-center gap-2 px-4 pb-3">
               <span className="text-micro text-ink-4 shrink-0">Sort</span>
-              <div className="flex gap-1.5 overflow-x-auto no-scrollbar" role="group" aria-label="Sort sites">
+              {/* overflow-x-auto also clips vertically, which would cut the
+                  buttons' touch overlays off. The padding gives them room and
+                  the negative margin gives the space back to the layout. */}
+              <div className="flex gap-1.5 overflow-x-auto no-scrollbar py-3 -my-3" role="group" aria-label="Sort sites">
                 {SORT_OPTIONS.map(({ value, label }) => (
                   <button
                     key={value}
                     onClick={() => setSort(value)}
                     aria-pressed={sortBy === value}
-                    className={"shrink-0 px-3 py-1 rounded-[4px] text-meta transition-colors whitespace-nowrap border " + (sortBy === value ? 'bg-muted text-ink border-edge-strong' : 'text-ink-4 border-transparent hover:text-ink-2')}
+                    className={"relative shrink-0 px-3 py-1 rounded-[4px] text-meta transition-colors whitespace-nowrap border after:absolute after:inset-x-0 after:top-1/2 after:h-11 after:-translate-y-1/2 after:content-[''] " + (sortBy === value ? 'bg-muted text-ink border-edge-strong' : 'text-ink-4 border-transparent hover:text-ink-2')}
                   >
                     {label}
                   </button>

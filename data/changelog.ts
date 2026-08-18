@@ -17,6 +17,21 @@ export interface ChangelogRelease {
 // Types: "new" (green) | "improved" (blue) | "fixed" (muted)
 const changelog: ChangelogRelease[] = [
   {
+    date: '2026-08-18',
+    title: 'Every Screen Size',
+    description: 'An audit across seven widths, from a 375px phone to a 1920px display. The library had been designed at desktop and left to cope everywhere else; this is the pass that gives every width a layout of its own.',
+    items: [
+      { type: 'fixed',    text: 'A tablet was the worst place to browse the library. The three-pane split opened at 768px, which left the grid 384px to work with and cut cards to 158px wide — titles ran six lines and no two cards were the same height. The split now waits for 1024px, so a tablet gets the mobile layout with more room rather than the desktop one crushed into it' },
+      { type: 'improved', text: 'The detail panel used to hold its column open at all times, showing nothing but "Select a site" until you clicked something — 480px of dead space on a 1440px screen. It now collapses when nothing is selected and the grid spreads into it: three columns instead of two, four on a wide display' },
+      { type: 'fixed',    text: 'Card titles carried two instructions that both set how the element displays, and the wrong one won, so the one-line clamp never applied at all. Every title now truncates as intended, which is what finally made card heights uniform across a row' },
+      { type: 'fixed',    text: 'The industry label was told to truncate and also told it could not shrink, which are contradictory — so instead of an ellipsis it overflowed and got sliced mid-word at the card edge. It reads "FINANCE", not "FINANC"' },
+      { type: 'improved', text: 'Every control in the header was smaller than a fingertip: sort buttons 23px tall, the changelog link 17px. All of them now carry a 44px touch target while looking exactly as they did — the target grew, the design did not' },
+      { type: 'new',      text: 'A skip link. With up to 128 cards loaded and two stops on each, reaching the grid by keyboard meant tabbing past everything else first' },
+      { type: 'fixed',    text: 'Near-black colour swatches were invisible in dark mode, sitting on an almost-black background behind a hairline too faint to separate them. They have a real ring now' },
+      { type: 'improved', text: 'The preloader was tuned for a two-column grid that no longer exists — it was fetching images the browser then reported as unused, while missing the one that actually anchored the page load. It now follows the layout it really has' },
+    ],
+  },
+  {
     date: '2026-08-13',
     title: 'Every Interaction',
     description: 'A craft pass over every control in the app, against Emil Kowalski\'s design engineering principles. Most of this is meant to be felt rather than noticed.',
