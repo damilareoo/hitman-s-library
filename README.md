@@ -91,7 +91,7 @@ Shared primitives live in `components/ui` (Spinner, SectionLabel) and `lib/use-c
 
 ### Layout
 
-The three-pane split (categories / grid / detail) opens at `lg`, not `md`. Below that, phones and tablets share one layout: horizontal category chips, a sort row, a full-width grid, and the detail view as a bottom sheet. A tablet is treated as a wide phone rather than a narrow desktop — the earlier `md` split left cards 158px wide at 768px.
+The three-pane split (categories / grid / detail) opens at `xl`, not `md`. Below that, phones and tablets share one layout: horizontal category chips, a sort row, a full-width grid, and the detail view as a bottom sheet. A tablet is treated as a wide phone rather than a narrow desktop. The two earlier positions both failed: `md` left cards 158px wide at 768px, and `lg` left them 222px at 1024 — narrower than the phone's 335px, because the panes fit but leave the grid half the window.
 
 The detail panel holds its column at all times — `2 / 6 / 4` of a 12-column grid. The empty state is deliberate: it names what the panel contains (preview, colors, type, assets), which is how the tabs are discovered in the first place. Do not reclaim that space for the grid.
 

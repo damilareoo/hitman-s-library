@@ -272,7 +272,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories }
   // Lock body scroll only for the sheet, which runs up to the 3-pane split.
   useEffect(() => {
     if (!isPanelOpen) return
-    const mobile = window.matchMedia('(max-width: 1023px)')
+    const mobile = window.matchMedia('(max-width: 1279px)')
     if (!mobile.matches) return
     document.body.style.overflow = 'hidden'
     return () => { document.body.style.overflow = '' }
@@ -431,7 +431,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories }
 
       {/* Header */}
       <header className="sticky top-0 z-50 border-b border-edge-strong bg-background/95 backdrop-blur-sm">
-        <div className="h-14 px-5 lg:px-7 flex items-center gap-4">
+        <div className="h-14 px-5 xl:px-7 flex items-center gap-4">
 
           <h1 className="text-[15px] font-semibold tracking-[-0.04em] text-foreground select-none shrink-0">
             Hitman<span className="font-light opacity-50">&apos;s</span> Library
@@ -440,7 +440,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories }
           {/* Search — the header controls belong to the 3-pane layout. Below
               it the filter block above the grid owns search and sort, and two
               live copies of each would be on screen at once. */}
-          <div className="flex-1 max-w-xs hidden lg:flex items-center relative">
+          <div className="flex-1 max-w-xs hidden xl:flex items-center relative">
             <MagnifyingGlass className="absolute left-2.5 w-3 h-3 text-ink-3 pointer-events-none" weight="regular" />
             <input
               ref={searchRef}
@@ -479,7 +479,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories }
 
             {/* Sort */}
             <div
-              className="hidden lg:flex items-center gap-1 mr-1"
+              className="hidden xl:flex items-center gap-1 mr-1"
               role="group"
               aria-label="Sort sites"
             >
@@ -503,7 +503,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories }
               ))}
             </div>
 
-            <span className="hidden lg:inline text-meta text-ink-4 tabular-nums mr-1">
+            <span className="hidden xl:inline text-meta text-ink-4 tabular-nums mr-1">
               {pagination.total} <span className="sr-only">sites</span>
             </span>
 
@@ -558,14 +558,16 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories }
         </div>
       </header>
 
-      {/* Body — the 3-pane split waits for lg. A tablet gets the mobile
-          treatment with more room, not the desktop one squeezed into it. The
-          three tracks are fixed: the panel is part of the layout, not something
-          the grid borrows from while you are not looking. */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 min-h-[calc(100vh-56px)]">
+      {/* Body — the 3-pane split waits for xl. Below it, phones and tablets
+          share one layout: a tablet gets the mobile treatment with more room,
+          not the desktop one squeezed into it. At lg the panes technically fit
+          but leave the grid half the window, which meant 222px cards — narrower
+          than the phone gets. The three tracks are fixed: the panel is part of
+          the layout, not something the grid borrows while you are not looking. */}
+      <div className="grid grid-cols-1 xl:grid-cols-12 min-h-[calc(100vh-56px)]">
 
         {/* Sidebar */}
-        <aside className="hidden lg:flex lg:col-span-2 flex-col sticky top-14 h-[calc(100vh-56px)] border-r border-edge-strong bg-background overflow-y-auto">
+        <aside className="hidden xl:flex xl:col-span-2 flex-col sticky top-14 h-[calc(100vh-56px)] border-r border-edge-strong bg-background overflow-y-auto">
           <nav className="flex-1 py-4 px-3" aria-label="Category filters">
             <p className="px-2.5 pb-2 text-micro text-ink-4 select-none">Categories</p>
             <ul className="space-y-0.5" role="list">
@@ -606,9 +608,9 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories }
         {/* Gallery */}
         {/* tabIndex -1 so the skip link moves focus here and not just the
             scroll position; without it the next Tab returns to the header. */}
-        <main id="gallery" tabIndex={-1} className="lg:col-span-6 flex flex-col min-w-0 focus:outline-none">
+        <main id="gallery" tabIndex={-1} className="xl:col-span-6 flex flex-col min-w-0 focus:outline-none">
           {/* Compact filters — mobile and tablet */}
-          <div className="lg:hidden sticky top-14 z-20 bg-background border-b border-edge-strong">
+          <div className="xl:hidden sticky top-14 z-20 bg-background border-b border-edge-strong">
             <div className="px-4 pt-3 pb-2 relative">
               <MagnifyingGlass className="absolute left-7 top-1/2 -translate-y-[2px] w-3 h-3 text-ink-3 pointer-events-none" weight="regular" />
               <input
@@ -674,7 +676,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories }
             </div>
           </div>
 
-          <div className="flex-1 p-5 lg:p-6">
+          <div className="flex-1 p-5 xl:p-6">
             <FilterBar
               filters={appliedFilters}
               total={pagination.total}
@@ -685,7 +687,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories }
             {/* Height is held during a swap so the page doesn't collapse and
                 rebound between result sets. */}
             <motion.div
-              className={`grid ${cardColumns} gap-4 lg:gap-5`}
+              className={`grid ${cardColumns} gap-4 xl:gap-5`}
               variants={gridVariants}
               initial={hasAnimated.current ? false : 'hidden'}
               animate="show"
@@ -744,7 +746,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories }
 
         {/* Detail panel — the column is always here. The empty state names
             what the panel holds, which is how you learn the tabs exist. */}
-        <div className="hidden lg:flex lg:col-span-4 flex-col sticky top-14 h-[calc(100vh-56px)] border-l border-edge-strong bg-background">
+        <div className="hidden xl:flex xl:col-span-4 flex-col sticky top-14 h-[calc(100vh-56px)] border-l border-edge-strong bg-background">
           <AnimatePresence mode="wait">
             {isPanelOpen ? (
               <motion.div
@@ -787,7 +789,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories }
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.22 }}
-              className="lg:hidden fixed inset-0 z-40 bg-black/40 backdrop-blur-[3px]"
+              className="xl:hidden fixed inset-0 z-40 bg-black/40 backdrop-blur-[3px]"
               onClick={() => selectDesign(null)}
             />
 
@@ -809,7 +811,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories }
               onDragEnd={(_, info) => {
                 if (info.offset.y > 80 || info.velocity.y > 500) selectDesign(null)
               }}
-              className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-background flex flex-col"
+              className="xl:hidden fixed bottom-0 left-0 right-0 z-50 bg-background flex flex-col"
               style={{
                 height: '82svh',
                 borderRadius: '20px 20px 0 0',
