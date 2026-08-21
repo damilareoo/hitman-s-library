@@ -322,6 +322,41 @@ const CAPTURE_SCRIPT = `<script>
 })();
 </script>`
 
+const PREVIEW_SCRIPT = `<script>
+(function () {
+  'use strict';
+  var reported = false;
+
+  function report(reason) {
+    if (reported) return;
+    reported = true;
+    window.parent.postMessage({ type: 'proxy-failed', reason: reason || 'client-side preview error' }, '*');
+  }
+
+  window.addEventListener('error', function (event) {
+    report(event && event.message ? event.message : 'client-side preview error');
+  }, true);
+
+  window.addEventListener('unhandledrejection', function (event) {
+    report(event && event.reason ? String(event.reason) : 'unhandled preview rejection');
+  }, true);
+
+  function checkRenderedError() {
+    try {
+      var text = document.body ? document.body.innerText || '' : '';
+      if (text.indexOf('Application error: a client-side exception has occurred') !== -1) {
+        report('client-side exception');
+      }
+    } catch (err) {}
+  }
+
+  window.addEventListener('load', function () {
+    setTimeout(checkRenderedError, 750);
+    setTimeout(checkRenderedError, 2000);
+  });
+})();
+</script>`
+
 export async function GET(req: NextRequest) {
   const url = req.nextUrl.searchParams.get('url')
   const picker = req.nextUrl.searchParams.get('picker') !== '0'
@@ -373,7 +408,7 @@ export async function GET(req: NextRequest) {
   html = html.replace(/<meta\b[^>]+\bhttp-equiv\s*=\s*["']?content-security-policy["']?[^>]*>/gi, '')
   html = html.replace(/<meta\b[^>]+\bhttp-equiv\s*=\s*["']?x-frame-options["']?[^>]*>/gi, '')
 
-  const script = capture ? CAPTURE_SCRIPT : picker ? PICKER_SCRIPT : ''
+  const script = capture ? CAPTURE_SCRIPT : picker ? PICKER_SCRIPT : PREVIEW_SCRIPT
   const injected = html
     .replace(/<head([^>]*)>/i, `<head$1>${baseTag}`)
     .replace(/<\/body>/i, `${script}</body>`)
