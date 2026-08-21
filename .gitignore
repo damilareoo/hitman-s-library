@@ -22,6 +22,7 @@ build/
 .env.production
 .env.development
 .env.*.sh
+hitmans-library-setup.md
 
 # IDE and OS
 .DS_Store
