@@ -148,8 +148,11 @@ bun run scripts/backfill-extraction.ts --all       # every source
 
 "Degraded" is judged the way the UI judges it — a source counts as broken if any
 of the three panels would render empty, which is stricter than asking whether
-rows exist. Sources that still cannot be extracted get a written
-`metadata.extraction_error` explaining which part failed.
+rows exist. A missing screenshot counts too: the gallery query filters on
+`screenshot_url IS NOT NULL`, so a source without one is not merely missing a
+picture, it is absent from the gallery altogether. Sources that still cannot be
+extracted get a written `metadata.extraction_error` explaining which part
+failed.
 
 ```bash
 bun run scripts/test-extraction.ts                 # pipeline check, no writes

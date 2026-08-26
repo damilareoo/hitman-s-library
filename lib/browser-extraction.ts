@@ -295,15 +295,32 @@ export async function extractBrandColors(page: Page): Promise<string[]> {
 const MAX_CAPTURE_DEVICE_PIXELS = 15000
 
 async function captureClamped(page: Page, quality: number): Promise<Buffer> {
-  const { width, height, dpr } = await page.evaluate(() => ({
-    width: document.documentElement.scrollWidth,
-    height: document.documentElement.scrollHeight,
+  const { scrollWidth, scrollHeight, viewportWidth, dpr } = await page.evaluate(() => ({
+    scrollWidth: document.documentElement.scrollWidth,
+    scrollHeight: document.documentElement.scrollHeight,
+    viewportWidth: window.innerWidth,
     dpr: window.devicePixelRatio || 1,
   }))
 
-  const maxHeight = Math.floor(MAX_CAPTURE_DEVICE_PIXELS / Math.max(dpr, 1))
+  const budget = Math.floor(MAX_CAPTURE_DEVICE_PIXELS / Math.max(dpr, 1))
 
-  if (height <= maxHeight) {
+  // Width has to be clamped as well as height. Chrome's ceiling applies to both
+  // dimensions, and only the height was ever checked — so a page reporting a
+  // scrollWidth of 11520 blew the budget at 23040 device pixels no matter how
+  // short the clip was, and came back empty every time.
+  //
+  // A document much wider than its own viewport is overflow, not layout: a
+  // rogue absolutely-positioned element, or a horizontal carousel measured at
+  // full length. Capturing that is not what the page looks like, so fall back
+  // to the viewport width, which is what a visitor actually sees.
+  const width = scrollWidth > viewportWidth * 1.5
+    ? viewportWidth
+    : Math.min(scrollWidth, budget)
+
+  const height = Math.min(scrollHeight, budget)
+
+  const withinBudget = scrollWidth <= budget && scrollHeight <= budget
+  if (withinBudget && width === scrollWidth) {
     return await page.screenshot({ fullPage: true, type: 'webp', quality }) as Buffer
   }
 
@@ -311,7 +328,7 @@ async function captureClamped(page: Page, quality: number): Promise<Buffer> {
     type: 'webp',
     quality,
     captureBeyondViewport: true,
-    clip: { x: 0, y: 0, width, height: maxHeight, scale: 1 },
+    clip: { x: 0, y: 0, width, height, scale: 1 },
   }) as Buffer
 }
 
@@ -662,6 +679,52 @@ export interface FullExtractionResult {
   }>
 }
 
+/**
+ * Read assets out of same-origin child frames.
+ *
+ * Cross-origin frames are skipped: their document is unreachable by design, and
+ * what they contain is almost always somebody else's advertising rather than
+ * this site's design language.
+ */
+async function extractFromChildFrames(
+  page: Page,
+  siteUrl: string,
+): Promise<import('./asset-extraction').ExtractedAsset[]> {
+  const origin = new URL(siteUrl).origin
+  const collected: import('./asset-extraction').ExtractedAsset[] = []
+
+  for (const frame of page.frames()) {
+    if (frame === page.mainFrame()) continue
+
+    const frameUrl = frame.url()
+
+    // An about:blank child frame inherits its parent's origin and is fully
+    // reachable — script writes into it after load. Skipping those was wrong:
+    // cameronsworld.net is exactly this shape, an <iframe src=""> that the page
+    // then fills, and it read as a site with no imagery at all.
+    const inheritsOrigin = !frameUrl || frameUrl === 'about:blank'
+    if (!inheritsOrigin) {
+      try {
+        if (new URL(frameUrl).origin !== origin) continue
+      } catch {
+        continue
+      }
+    }
+
+    try {
+      // extractAssets takes a Page, but only ever calls evaluate on it — and a
+      // Frame carries the same method with the same signature.
+      const framed = await extractAssets(frame as unknown as Page, siteUrl)
+      collected.push(...framed)
+      if (collected.length >= 40) break
+    } catch (err) {
+      console.warn(`[extract] frame ${frameUrl} failed:`, err)
+    }
+  }
+
+  return collected
+}
+
 export async function extractFullDesignData(url: string): Promise<FullExtractionResult> {
   const browser = await getBrowser()
   if (!browser) {
@@ -697,6 +760,19 @@ export async function extractFullDesignData(url: string): Promise<FullExtraction
         return [] as Awaited<ReturnType<typeof extractTypographyWithRoles>>
       }),
     ])
+
+    // Some sites put their whole document inside a frame — cameronsworld.net is
+    // nothing but one — and everything above reads the top document only. Going
+    // looking is reserved for the case where the main document came up thin, so
+    // the sites that already work keep exactly the behaviour they have, and ad
+    // and analytics frames on ordinary pages are never trawled for "assets".
+    if (assets.length < 3) {
+      const framed = await extractFromChildFrames(page, url)
+      if (framed.length > 0) {
+        console.log(`[extract] ${url}: recovered ${framed.length} assets from child frames`)
+        assets.push(...framed)
+      }
+    }
 
     // Captures scroll and resize the viewport, so they come after every read.
     const screenshotUrl = await captureFullPageScreenshot(page, url, { scroll: false })

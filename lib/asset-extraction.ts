@@ -213,10 +213,15 @@ export async function extractAssets(
     // Whole categories of site — anything built on hero sections and CSS-driven
     // art direction — carry no <img> tags worth having. Those pages read as
     // having no imagery at all.
-    for (const el of queryDeep('[style*="background"], section, header, div[class*="hero" i], div[class*="banner" i]', 400)) {
+    // Walk the document rather than a guess at which tags carry art. The
+    // previous selector list only ever matched inline style attributes and a
+    // handful of tag names, so a site whose imagery comes from a stylesheet —
+    // which is most sites that art-direct properly — read as having none.
+    // cameronsworld.net is built from 335 CSS backgrounds and reported zero.
+    for (const el of queryDeep('body *', 2500)) {
       if (imageCount >= 20) break
       const bg = getComputedStyle(el).backgroundImage
-      if (!bg || bg === 'none') continue
+      if (!bg || bg === 'none' || !bg.includes('url(')) continue
 
       const match = bg.match(/url\((['"]?)(.*?)\1\)/)
       if (!match?.[2]) continue

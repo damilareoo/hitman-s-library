@@ -18,6 +18,17 @@ export interface ChangelogRelease {
 const changelog: ChangelogRelease[] = [
   {
     date: '2026-08-26',
+    title: 'The Wrong Document',
+    description: 'Four faults with one shape: the extractor was reading somewhere other than where the site actually was. The wrong elements, the wrong frame, the wrong dimension, and — for three sites — a gallery query that hid them completely while every check reported them healthy.',
+    items: [
+      { type: 'fixed',    text: 'Background images were only ever looked for on a guessed list of tags — sections, headers, anything with class="hero". That list matches inline style attributes and little else, so a site that art-directs properly, with its imagery in a stylesheet, read as having no imagery at all. The document is now walked. cameronsworld.net is built from 335 CSS backgrounds and had been reporting zero' },
+      { type: 'fixed',    text: 'Some sites keep their entire document inside a frame, and everything the extractor does was reading the top document only. Same-origin child frames are now read as well — including the about:blank kind, which inherits its parent origin and gets filled by script after load, and which had been skipped on the assumption it was empty. Going looking only happens when the main document comes up thin, so ordinary pages are never trawled and nobody else’s advertising ends up filed as a site’s design language' },
+      { type: 'fixed',    text: 'Screenshots clamped their height against Chrome’s pixel ceiling but never their width, and the ceiling applies to both. A page measuring 11520 wide blew the budget no matter how short the clip was, and came back empty every time. Width is now clamped too — and a document much wider than its own viewport is treated as overflow rather than layout, because a rogue absolutely-positioned element or a carousel measured at full length is not what the page looks like to a visitor' },
+      { type: 'fixed',    text: 'Three sites with complete colour, typography and asset data were missing from the gallery entirely. The gallery only shows sources that have a screenshot, but the check for damaged sites only counted the three panels — so a site with everything except a picture passed every test while being invisible. The screenshot is now part of what counts as complete, which is what it always was to anyone looking' },
+    ],
+  },
+  {
+    date: '2026-08-26',
     title: 'Asking For Things',
     description: 'Anyone can now ask for a site to be added. The interesting part is what happens before you submit: with 280-odd sites already here, the likeliest answer to "please add this" is that it is already in the library — so the form tries to give you that answer instead of taking your request.',
     items: [

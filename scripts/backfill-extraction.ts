@@ -36,9 +36,18 @@ const all = args.includes('--all')
 const limitArg = args.indexOf('--limit')
 const limit = limitArg !== -1 ? parseInt(args[limitArg + 1], 10) : Infinity
 
-/** Sources missing at least one of the three panels, as the UI counts them. */
+/**
+ * Sources the gallery cannot show properly.
+ *
+ * The screenshot clause matters as much as the three panels: queryDesigns
+ * filters on `screenshot_url IS NOT NULL`, so a source without one is not
+ * merely missing a picture — it is absent from the gallery altogether. Three
+ * sites with complete colour, type and asset data were invisible for exactly
+ * this reason, and went unnoticed because they passed every panel check.
+ */
 const DEGRADED_PREDICATE = `
-  (select count(*) from design_colors c where c.source_id = s.id and c.hex_value is not null) = 0
+  s.screenshot_url IS NULL OR s.screenshot_url = ''
+  or (select count(*) from design_colors c where c.source_id = s.id and c.hex_value is not null) = 0
   or (select count(*) from design_typography t where t.source_id = s.id and t.role is not null and t.role <> 'legacy') = 0
   or (select count(*) from design_assets a where a.source_id = s.id) = 0
 `
@@ -145,7 +154,8 @@ async function main() {
         `
       }
 
-      const complete = colorCount > 0 && typeCount > 0 && assetCount > 0
+      const hasShot = Boolean(result.screenshotUrl)
+      const complete = hasShot && colorCount > 0 && typeCount > 0 && assetCount > 0
 
       if (complete) {
         await sql`
@@ -159,6 +169,7 @@ async function main() {
         // Say which part is missing. A row that is merely empty looks the same
         // whether nothing was found or nothing was attempted.
         const missing = [
+          !hasShot && 'screenshot',
           colorCount === 0 && 'colors',
           typeCount === 0 && 'typography',
           assetCount === 0 && 'assets',
