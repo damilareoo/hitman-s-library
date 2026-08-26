@@ -40,12 +40,25 @@ const diff = differenceEuclidean('oklch')
 export function deduplicateColors(colors: string[]): string[] {
   const result: string[] = []
   for (const color of colors) {
-    const parsed = parse(color)
+    // culori does not merely return undefined for input it dislikes — it can
+    // throw from inside its tokenizer. One unparseable value out of a hundred
+    // took the entire palette down with it, which is how a site with 136
+    // extracted colours ended up recorded as having none.
+    let parsed
+    try {
+      parsed = parse(color)
+    } catch {
+      continue
+    }
     if (!parsed) continue
     const isTooSimilar = result.some(existing => {
-      const existingParsed = parse(existing)
-      if (!existingParsed) return false
-      try { return diff(parsed, existingParsed) < 0.05 } catch { return false }
+      try {
+        const existingParsed = parse(existing)
+        if (!existingParsed) return false
+        return diff(parsed, existingParsed) < 0.05
+      } catch {
+        return false
+      }
     })
     if (!isTooSimilar) result.push(color)
   }

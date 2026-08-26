@@ -6,7 +6,6 @@ import { Analytics } from "@vercel/analytics/next"
 import { MotionProvider } from "@/components/motion-provider"
 import { ThemeProvider } from '@/components/theme-provider'
 import { SoundsProvider } from '@/contexts/sounds-context'
-import { Preloader } from '@/components/preloader'
 import "./globals.css"
 
 
@@ -149,7 +148,6 @@ export default function RootLayout({
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem storageKey="theme">
           <MotionProvider>
             <SoundsProvider>
-              <Preloader />
               {children}
             </SoundsProvider>
           </MotionProvider>

@@ -46,16 +46,19 @@ interface GalleryProps {
   initialCategories: { name: string; count: number }[]
 }
 
-// Selected rows carry a 2px rule on the leading edge and go to full ink; the
-// rest sit at ink-62 with no rule. The rule occupies its slot whether or not it
-// is visible, so nothing shifts when selection changes.
+// The selected row fills. It used to point instead — a 2px rule on the leading
+// edge over a half-strength tint — which read as a list with a marker beside it
+// rather than a row that is on. Filling to a solid surface, at full ink and one
+// weight up, is what makes the state legible at a glance; it also frees the
+// leading edge, so the label starts where the padding says it does instead of
+// after a rule reserving its slot.
 function sidebarRow(isActive: boolean): string {
   return [
-    'group w-full flex items-center gap-2 rounded-[4px] text-bodytext pr-2.5 py-[7px]',
-    'transition-colors duration-[var(--dur-2)] ease-[var(--ease-sig)]',
+    'group w-full flex items-baseline gap-2 rounded-[6px] px-2.5 py-[9px]',
+    'transition-colors duration-[var(--dur-2)] ease-[var(--ease-hover)]',
     isActive
-      ? 'text-ink font-medium bg-muted/50'
-      : 'text-ink-2 font-normal hover:text-ink hover:bg-muted/30',
+      ? 'bg-muted text-ink font-medium'
+      : 'text-ink-2 font-normal hover:bg-muted/40 hover:text-ink',
   ].join(' ')
 }
 
@@ -68,10 +71,12 @@ const ICON_BUTTON =
   'text-ink-3 hover:text-ink hover:border-foreground/40 transition-colors ' +
   "after:absolute after:left-1/2 after:top-1/2 after:h-11 after:w-[42px] after:-translate-x-1/2 after:-translate-y-1/2 after:content-['']"
 
-function rowRule(isActive: boolean): string {
+// Counts share a fixed column and sit right-aligned, so the digits line up down
+// the list instead of ending wherever each label happens to leave them.
+function sidebarCount(isActive: boolean): string {
   return [
-    'w-[2px] h-[15px] rounded-full shrink-0 transition-colors duration-[var(--dur-2)] ease-[var(--ease-sig)]',
-    isActive ? 'bg-foreground' : 'bg-transparent group-hover:bg-edge-strong',
+    'text-meta tabular-nums shrink-0 w-7 text-right transition-colors',
+    isActive ? 'text-ink-3' : 'text-ink-4',
   ].join(' ')
 }
 
@@ -568,18 +573,21 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories }
 
         {/* Sidebar */}
         <aside className="hidden xl:flex xl:col-span-2 flex-col sticky top-14 h-[calc(100vh-56px)] border-r border-edge-strong bg-background overflow-y-auto">
-          <nav className="flex-1 py-4 px-3" aria-label="Category filters">
-            <p className="px-2.5 pb-2 text-micro text-ink-4 select-none">Categories</p>
-            <ul className="space-y-0.5" role="list">
+          <nav className="flex-1 py-5 px-2.5" aria-label="Category filters">
+            <p className="px-2.5 pb-2.5 text-micro text-ink-4 select-none">Library</p>
+
+            {/* space-y-px rather than 0.5: once rows fill when selected, the gap
+                between them is reading as part of the shape, and 4px of it made
+                the list look like stacked buttons instead of one column. */}
+            <ul className="space-y-px" role="list">
               <li>
                 <button
                   onClick={() => handleFilterChange('All')}
                   aria-pressed={industries.length === 0}
                   className={sidebarRow(industries.length === 0)}
                 >
-                  <span className={rowRule(industries.length === 0)} aria-hidden="true" />
-                  <span className="flex-1 text-left">All</span>
-                  <span className="text-meta text-ink-4 tabular-nums">{libraryTotal}</span>
+                  <span className="flex-1 text-left text-bodytext">All</span>
+                  <span className={sidebarCount(industries.length === 0)}>{libraryTotal}</span>
                 </button>
               </li>
               {categories.map(({ name, count }) => {
@@ -591,9 +599,8 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories }
                       aria-pressed={isActive}
                       className={sidebarRow(isActive)}
                     >
-                      <span className={rowRule(isActive)} aria-hidden="true" />
-                      <span className="flex-1 text-left truncate">{name}</span>
-                      <span className="text-meta text-ink-4 tabular-nums">{count}</span>
+                      <span className="flex-1 text-left truncate text-bodytext">{name}</span>
+                      <span className={sidebarCount(isActive)}>{count}</span>
                     </button>
                   </li>
                 )

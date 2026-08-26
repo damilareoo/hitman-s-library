@@ -103,7 +103,10 @@ export async function POST(
       try {
         await typClient.query('BEGIN')
         await typClient.query(
-          "DELETE FROM design_typography WHERE source_id = $1 AND role != 'legacy'",
+          // `role != 'legacy'` is NULL for the legacy rows, whose role is NULL,
+          // so it never matched them and they outlived every re-extraction.
+          // Nothing reads them — clear the source outright and rewrite.
+          'DELETE FROM design_typography WHERE source_id = $1',
           [id]
         )
         for (const t of extractionResult.typography) {
@@ -140,7 +143,11 @@ export async function POST(
     // Store the error reason so the UI can explain why data is unavailable
     await sql`
       UPDATE design_sources
-      SET metadata = COALESCE(metadata, '{}') || jsonb_build_object('extraction_error', ${err.message ?? 'Unknown error'})
+      -- ::text matters. jsonb_build_object takes "any", so without a cast
+      -- Postgres cannot infer the parameter's type and raises "could not
+      -- determine data type of parameter $1". The .catch below then swallowed
+      -- it, which is why no extraction error has ever actually been recorded.
+      SET metadata = COALESCE(metadata, '{}') || jsonb_build_object('extraction_error', ${err.message ?? 'Unknown error'}::text)
       WHERE id = ${id}
     `.catch(() => null)
     return NextResponse.json({ success: false, error: err.message }, { status: 500 })

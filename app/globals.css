@@ -335,8 +335,43 @@ button, a, [role="button"] {
 }
 
 /* ============================================================================
-   TYPE SCALE — the only UI text sizes. Content (specimens, changelog h1) exempt.
+   TYPE SCALE — the only UI text sizes. Content (specimens) exempt.
+
+   Seven tiers from 10px to 32px. The five that existed before all sat between
+   10px and 14px, which is a range narrow enough that a card title and a
+   category label read as the same voice: the interface was uniformly dense
+   with no way to say that one thing mattered more than another. The three
+   mono tiers still carry data and labels — that character is the point — but
+   headings and prose now have somewhere to go.
    ============================================================================ */
+
+/* Identity moments: the changelog masthead, empty states, anywhere the library
+   introduces itself. */
+@utility text-display {
+  font-family: var(--font-sans);
+  font-size: clamp(26px, 3.2vw, 32px);
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  line-height: 1.02;
+}
+
+/* Section and panel headings — the tier that was missing entirely. */
+@utility text-heading {
+  font-family: var(--font-sans);
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  line-height: 1.15;
+}
+
+/* Prose. 13px is a label size, not a reading size, and release notes and site
+   descriptions were being set in it. */
+@utility text-reading {
+  font-family: var(--font-sans);
+  font-size: 15px;
+  letter-spacing: -0.005em;
+  line-height: 1.55;
+}
 
 @utility text-micro {
   font-family: var(--font-mono);

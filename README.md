@@ -77,11 +77,61 @@ HTML rather than being fetched after hydration.
 
 ---
 
+## Extraction pipeline
+
+`lib/browser-extraction.ts` owns the browser. The order of operations is the
+load-bearing part:
+
+1. **`gotoResilient()`** — `domcontentloaded` with a 20s ceiling, then a *soft*
+   wait for network idle that resolves rather than throws. A page that rendered
+   but never went quiet is a page worth extracting from. Only a navigation that
+   never committed is treated as a failure.
+2. **`settlePage()`** — force lazy images eager, one full autoscroll and back,
+   then `document.fonts.ready`. Everything downstream reads a stationary,
+   fully-loaded page.
+3. **Reads** — colours, assets and typography in parallel, each caught
+   individually so one failure cannot zero the other two.
+4. **Captures** — desktop then mobile, last, because they scroll and resize.
+
+Screenshot height is capped in *device* pixels, derived from the device pixel
+ratio in force (2× desktop, 3× mobile). Chrome returns an empty buffer rather
+than an error past roughly 16k device pixels.
+
+Typography roles are inferred, not looked up: heading is the largest visible
+text on the page whatever tag carries it, body is the family covering the most
+rendered text area, and mono must prove itself by measuring `iiii` against
+`WWWW` in its own face.
+
+Everything writes `hex_value`/`oklch` for colours and role-tagged rows for
+typography, because those are the only shapes the detail API reads. Do not add
+a fallback that writes some other shape — that is precisely how a third of the
+library ended up holding data nothing would ever render.
+
+### Backfill
+
+```bash
+bun run scripts/backfill-extraction.ts --dry-run   # list degraded sources
+bun run scripts/backfill-extraction.ts             # re-extract them
+bun run scripts/backfill-extraction.ts --limit 10
+bun run scripts/backfill-extraction.ts --all       # every source
+```
+
+"Degraded" is judged the way the UI judges it — a source counts as broken if any
+of the three panels would render empty, which is stricter than asking whether
+rows exist. Sources that still cannot be extracted get a written
+`metadata.extraction_error` explaining which part failed.
+
+```bash
+bun run scripts/test-extraction.ts                 # pipeline check, no writes
+```
+
+---
+
 ## Design system
 
 The UI runs on a small token system defined in `app/globals.css`:
 
-- **Type scale** — micro 10px / meta 11px / ui 12px / body 13px / title 14px; nothing in the UI renders below 10px
+- **Type scale** — micro 10px / meta 11px / ui 12px / body 13px / title 14px / reading 15px / heading 20px / display 26–32px. The first five are mono-led and carry labels, data and dense UI; the last three are sans and carry prose, sections and identity. Nothing in the UI renders below 10px
 - **Ink levels** — foreground at 100 / 62 / 40 / 24 percent, replacing ad-hoc text opacities
 - **Edges** — border at 70 / 50 / 30 percent for structural, default, and faint hairlines
 - **Radius** — 4px for boxes, full for pills and swatches

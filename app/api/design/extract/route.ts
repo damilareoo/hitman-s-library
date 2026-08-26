@@ -1,13 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { revalidateTag } from 'next/cache'
 import { neon, Client } from '@neondatabase/serverless'
 import { detectIndustry } from './detectIndustry'
 import { extractTypographyEnhanced } from '@/lib/typography-extraction'
-import { extractTypographyFromRenderedPage, extractAllDesignDataFromRenderedPage, extractBrandColors, getBrowser, extractFullDesignData } from '@/lib/browser-extraction'
+import { extractFullDesignData } from '@/lib/browser-extraction'
 import { toColorFormats, deduplicateColors } from '@/lib/color-utils'
 import { requireAdmin } from '@/lib/admin-auth'
 import { assertPublicUrl, BlockedUrlError } from '@/lib/safe-url'
 
 const sql = neon(process.env.DATABASE_URL!)
+
+// This route drives a headless browser, same as every other capture route.
+// Without it the function inherits the platform default while doing the
+// heaviest work in the app.
+export const maxDuration = 60
 
 export async function POST(req: NextRequest) {
   const denied = await requireAdmin(req)
@@ -102,76 +108,30 @@ export async function POST(req: NextRequest) {
 
       finalUrl = currentUrl
 
-      // Rate limit or blocked
-      if (response?.status === 429 || response?.status === 403) {
-        return NextResponse.json({
-          success: false,
-          error: 'Website blocked automated access (rate limited)',
-          url,
-          title: hostname,
-          colors: [],
-          typography: [],
-          layout: 'Blocked by website',
-          architecture: 'Unable to extract',
-          quality: 0,
-          tags: ['rate-limited'],
-          warning: 'Try a different website or add it manually'
-        }, { status: 200 })
+      if (response?.ok) {
+        html = await response.text()
+      } else {
+        // This fetch supplies the title, description and og:image — nothing
+        // more. It used to end the request on a 403 or 429, which meant every
+        // Cloudflare-fronted site was written off without the browser being
+        // asked, even though a real browser renders them fine.
+        console.warn(`[extract] metadata fetch returned ${response?.status} for ${url} — continuing to the browser`)
       }
-
-      // Check if we got a valid response
-      if (!response || !response.ok) {
-        return NextResponse.json({
-          success: false,
-          error: `Website returned error: ${response?.status}`,
-          url,
-          title: hostname,
-          colors: [],
-          typography: [],
-          layout: 'Unable to extract',
-          architecture: 'Unable to extract',
-          quality: 0,
-          tags: [],
-          warning: 'Website did not respond with valid HTML'
-        }, { status: 200 })
-      }
-
-      html = await response.text()
     } catch (fetchError: any) {
-      // Network error or timeout
-      return NextResponse.json({
-        success: false,
-        error: `Failed to fetch: ${fetchError.message}`,
-        url,
-        title: hostname,
-        colors: [],
-        typography: [],
-        layout: 'Network error',
-        architecture: 'Unable to extract',
-        quality: 0,
-        tags: [],
-        warning: 'Could not connect to website. Check URL and try again.'
-      }, { status: 200 })
+      console.warn(`[extract] metadata fetch failed for ${url}: ${fetchError.message} — continuing to the browser`)
     }
 
-    // Check if we got valid HTML (not a security checkpoint or error page)
-    if (!html || html.length < 500 || html.includes('Security Checkpoint') || html.includes('blocked')) {
-      return NextResponse.json({
-        success: false,
-        error: 'Website security or invalid response',
-        url,
-        title: new URL(url).hostname,
-        colors: [],
-        typography: [],
-        layout: 'Blocked or invalid',
-        architecture: 'Unable to extract',
-        quality: 0,
-        tags: [],
-        warning: 'Website blocked the request or returned invalid content'
-      }, { status: 200 })
+    // A challenge page is real HTML, so length alone cannot identify it. The
+    // previous test rejected any document containing the word "blocked"
+    // anywhere in its source — a CSS class, a variable name, a sentence of
+    // marketing copy — and took perfectly good sites out with it.
+    if (html && looksLikeChallengePage(html)) {
+      console.warn(`[extract] ${url} served a challenge page — continuing to the browser`)
+      html = ''
     }
 
-    // Extract meta information
+    // Extract meta information. `html` is empty whenever the metadata fetch was
+    // refused or served a challenge — the browser is still the real source.
     const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/)
     const title = titleMatch?.[1] || new URL(url).hostname
     const descMatch = html.match(/<meta name="description" content="([^"]+)/)
@@ -181,6 +141,7 @@ export async function POST(req: NextRequest) {
     let colorFormats: { hex: string; oklch: string }[] = []
     let colors: string[] = []
     let extractionResult: Awaited<ReturnType<typeof extractFullDesignData>> | null = null
+    let extractionError: string | null = null
     try {
       extractionResult = await extractFullDesignData(url)
       colorFormats = deduplicateColors(extractionResult.colors)
@@ -190,7 +151,15 @@ export async function POST(req: NextRequest) {
       colors = colorFormats.map(c => c.hex)
     } catch (colorErr) {
       console.warn('[v0] Full design extraction failed, falling back to regex:', colorErr)
+      extractionError = colorErr instanceof Error ? colorErr.message : String(colorErr)
       colors = extractColors(html)
+    }
+
+    // Extraction can also return without throwing and still have captured
+    // nothing — an empty screenshot buffer is dropped rather than uploaded.
+    // That used to pass silently and land a source with no image.
+    if (!extractionError && !extractionResult?.screenshotUrl) {
+      extractionError = 'Screenshot capture returned an empty image'
     }
     const typographyData = extractTypographyEnhanced(html)
     let typography = typographyData.allFonts
@@ -250,6 +219,15 @@ export async function POST(req: NextRequest) {
       console.warn('[v0] Failed to extract OG image:', err)
     }
 
+    // A capture is best, the site's own og:image is an acceptable stand-in, and
+    // only with neither is the source genuinely unusable. Recording which one we
+    // got is what lets the admin distinguish "fine" from "salvaged" from "broken"
+    // instead of leaving every failure looking identical.
+    const capturedScreenshot = extractionResult?.screenshotUrl || null
+    const effectiveScreenshot = capturedScreenshot || thumbnailUrl || null
+    const screenshotSource = capturedScreenshot ? 'capture' : (thumbnailUrl ? 'og' : null)
+    const unrecoverableError = effectiveScreenshot ? null : (extractionError ?? 'Extraction produced no image')
+
     // Save to database
     try {
       const result = await sql`
@@ -268,7 +246,13 @@ export async function POST(req: NextRequest) {
           ${title},
           ${'website'},
           ${industry || 'Uncategorized'},
-          ${JSON.stringify({ description, quality, layout, architecture })},
+          ${JSON.stringify({
+            description, quality, layout, architecture,
+            // Recorded so the admin can say what happened rather than showing a
+            // row that is neither finished nor failed.
+            ...(screenshotSource ? { screenshot_source: screenshotSource } : {}),
+            ...(unrecoverableError ? { extraction_error: unrecoverableError } : {}),
+          })},
           ${tags},
           ${thumbnailUrl},
           NOW(),
@@ -287,61 +271,57 @@ export async function POST(req: NextRequest) {
         `.catch(() => null)
       }
 
-      // Save screenshot URL if captured
-      if (sourceId && extractionResult?.screenshotUrl) {
-        await sql`UPDATE design_sources SET screenshot_url = ${extractionResult.screenshotUrl}, mobile_screenshot_url = ${extractionResult.mobileScreenshotUrl}, figma_capture_url = ${extractionResult.figmaCaptureUrl} WHERE id = ${sourceId}`
+      // Save whichever image we ended up with. Falling back to the og:image
+      // keeps the card showing something real instead of a bare domain name.
+      if (sourceId && effectiveScreenshot) {
+        await sql`UPDATE design_sources SET screenshot_url = ${effectiveScreenshot}, mobile_screenshot_url = ${extractionResult?.mobileScreenshotUrl ?? null}, figma_capture_url = ${extractionResult?.figmaCaptureUrl ?? null} WHERE id = ${sourceId}`
       }
 
-      // Save colors if extracted
-      if (sourceId) {
-        if (colorFormats.length > 0) {
-          // New brand-signal extraction: save each color with hex_value and oklch
-          for (const color of colorFormats) {
-            await sql`
-              INSERT INTO design_colors (source_id, hex_value, oklch)
-              VALUES (${sourceId}, ${color.hex}, ${color.oklch})
-              ON CONFLICT DO NOTHING
-            `.catch(() => null)
-          }
-        } else if (colors.length > 0) {
-          // Fallback: legacy insert with primary_color/secondary_color/all_colors
+      // Save colors. Every path writes hex_value/oklch, because that is the only
+      // shape anything reads — the detail API selects those two columns and the
+      // gallery query filters on `hex_value IS NOT NULL`. The old fallback wrote
+      // primary_color/all_colors instead, so 55 sites hold colours that have
+      // never once been rendered.
+      if (sourceId && colorFormats.length > 0) {
+        for (const color of colorFormats) {
           await sql`
-            INSERT INTO design_colors (
-              source_id,
-              primary_color,
-              secondary_color,
-              all_colors,
-              created_at
-            ) VALUES (
-              ${sourceId},
-              ${colors[0] || ''},
-              ${colors[1] || ''},
-              ${JSON.stringify(colors)},
-              NOW()
-            )
-          `.catch(() => null)
+            INSERT INTO design_colors (source_id, hex_value, oklch)
+            VALUES (${sourceId}, ${color.hex}, ${color.oklch})
+            ON CONFLICT DO NOTHING
+          `.catch(err => {
+            console.error(`[extract] color insert failed for ${url}:`, err)
+            return null
+          })
         }
       }
 
-      // Save typography if extracted
-      if (typography.length > 0 && sourceId) {
-        await sql`
-          INSERT INTO design_typography (
-            source_id,
-            heading_font,
-            body_font,
-            mono_font,
-            all_fonts,
-            created_at
-          ) VALUES (
-            ${sourceId},
-            ${typographyData.headingFonts[0]?.name || ''},
-            ${typographyData.bodyFonts[0]?.name || ''},
-            ${typographyData.monoFonts[0]?.name || ''},
-            ${JSON.stringify(typography)},
-            NOW()
-          )
-        `.catch(() => null)
+      // Typography from the rendered page is authoritative. Where it found
+      // nothing, fall back to what the HTML declared — but write it as
+      // role-tagged rows, which is the only form the detail API will return.
+      //
+      // What stood here inserted into an `all_fonts` column that does not exist
+      // on this table. Postgres raised, `.catch(() => null)` swallowed it, and
+      // typography was silently dropped for every site that reached this path.
+      // That is 78 of 281 sources with no type at all.
+      const browserRoles = extractionResult?.typography ?? []
+      if (sourceId && browserRoles.length === 0) {
+        const htmlRoles: Array<[string, string | undefined]> = [
+          ['heading', typographyData.headingFonts[0]?.name],
+          ['body', typographyData.bodyFonts[0]?.name],
+          ['mono', typographyData.monoFonts[0]?.name],
+        ]
+
+        for (const [role, family] of htmlRoles) {
+          if (!family) continue
+          await sql`
+            INSERT INTO design_typography (source_id, font_family, role, primary_weight)
+            VALUES (${sourceId}, ${family}, ${role}, ${400})
+            ON CONFLICT (source_id, role) DO UPDATE SET font_family = EXCLUDED.font_family
+          `.catch(err => {
+            console.error(`[extract] typography fallback insert failed for ${url}:`, err)
+            return null
+          })
+        }
       }
 
       // Save assets transactionally
@@ -376,7 +356,10 @@ export async function POST(req: NextRequest) {
         try {
           await typClient.query('BEGIN')
           await typClient.query(
-            "DELETE FROM design_typography WHERE source_id = $1 AND role != 'legacy'",
+            // `role != 'legacy'` is NULL for the legacy rows, whose role is NULL,
+          // so it never matched them and they outlived every re-extraction.
+          // Nothing reads them — clear the source outright and rewrite.
+          'DELETE FROM design_typography WHERE source_id = $1',
             [sourceId]
           )
           for (const t of typographyRoles) {
@@ -398,6 +381,10 @@ export async function POST(req: NextRequest) {
           await typClient.end()
         }
       }
+
+      // The category counts and the crawlable index are cached; a site nobody
+      // can see until the cache expires has not really been added.
+      revalidateTag('designs', 'max')
 
       // Auto-categorize based on extracted design data
       const autoCategory = detectIndustry(title, url, {
@@ -424,7 +411,12 @@ export async function POST(req: NextRequest) {
       }
 
       return NextResponse.json({
-        success: true,
+        // A source with no image is not a success, however far the rest of the
+        // extraction got. Reporting it as one is what filled the admin with
+        // rows that were neither done nor failed.
+        success: !unrecoverableError,
+        error: unrecoverableError ?? undefined,
+        screenshotSource,
         id: sourceId,
         title,
         url,
@@ -461,6 +453,34 @@ export async function POST(req: NextRequest) {
       error: 'Failed to extract design details'
     }, { status: 500 })
   }
+}
+
+/**
+ * Identify an interstitial served in place of the real page.
+ *
+ * These are short documents whose whole job is to run a script and redirect, so
+ * they are recognised by their machinery rather than by their prose. The test
+ * this replaces was `html.includes('blocked')`, which fired on any page that
+ * used the word anywhere — including sites merely describing what they block.
+ */
+function looksLikeChallengePage(html: string): boolean {
+  if (html.length < 500) return true
+
+  const markers = [
+    'cf-browser-verification',
+    'cf_chl_opt',
+    '__cf_chl',
+    'Checking your browser before accessing',
+    'Just a moment...',
+    'Security Checkpoint',
+    'Please enable JS and disable any ad blocker',
+    'Attention Required! | Cloudflare',
+    'ddos-guard',
+    'Access denied | ',
+    '/_Incapsula_Resource',
+  ]
+
+  return markers.some(marker => html.includes(marker))
 }
 
 function extractColors(html: string): string[] {
