@@ -159,7 +159,12 @@ export async function POST(req: NextRequest) {
     // nothing — an empty screenshot buffer is dropped rather than uploaded.
     // That used to pass silently and land a source with no image.
     if (!extractionError && !extractionResult?.screenshotUrl) {
-      extractionError = 'Screenshot capture returned an empty image'
+      // Distinguish the two ways this happens. A page that rendered nothing
+      // never got as far as a capture, and saying the picture came back empty
+      // sends whoever reads it looking at the wrong end of the pipeline.
+      extractionError = extractionResult?.renderedNothing
+        ? 'The page rendered nothing readable — the site may be down or serving a challenge'
+        : 'Screenshot capture returned an empty image'
     }
     const typographyData = extractTypographyEnhanced(html)
     let typography = typographyData.allFonts

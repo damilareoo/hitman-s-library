@@ -146,13 +146,23 @@ bun run scripts/backfill-extraction.ts --limit 10
 bun run scripts/backfill-extraction.ts --all       # every source
 ```
 
-"Degraded" is judged the way the UI judges it — a source counts as broken if any
-of the three panels would render empty, which is stricter than asking whether
-rows exist. A missing screenshot counts too: the gallery query filters on
+"Degraded" is judged the way the UI judges it — a source counts as broken if it
+cannot be seen, read for colour, or read for type, which is stricter than asking
+whether rows exist. A missing screenshot counts: the gallery query filters on
 `screenshot_url IS NOT NULL`, so a source without one is not merely missing a
-picture, it is absent from the gallery altogether. Sources that still cannot be
-extracted get a written `metadata.extraction_error` explaining which part
-failed.
+picture, it is absent from the gallery altogether. Assets deliberately do not
+count. A canvas game has nothing in the document to extract and would otherwise
+be re-attempted nightly forever; its empty panel is recorded as a note instead.
+Sources that still cannot be extracted get a written `metadata.extraction_error`
+explaining which part failed.
+
+Extraction refuses to write when a page renders nothing readable — no
+typography, no assets, and almost no colour. A site that has gone down often
+still answers 200 with an outage notice, and that notice extracts perfectly
+well: `newterritory.studio` fell over behind a Kirby PHP error and a backfill
+run filed a screenshot of it as the studio's card. The existing capture is kept
+and the reason recorded, because a stale picture of the real site beats a fresh
+picture of somebody's stack trace.
 
 ```bash
 bun run scripts/test-extraction.ts                 # pipeline check, no writes

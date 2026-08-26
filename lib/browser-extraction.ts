@@ -665,11 +665,26 @@ export async function extractTypographyWithRoles(page: Page): Promise<Array<{
   return results
 }
 
+/**
+ * Above this many colours, a page that yielded no type and no assets is treated
+ * as an extraction failure rather than an empty document — the colours prove
+ * there was something there to read.
+ */
+const EMPTY_PAGE_MAX_COLORS = 6
+
 export interface FullExtractionResult {
   colors: string[]
   screenshotUrl: string | null
   mobileScreenshotUrl: string | null
   figmaCaptureUrl: string | null
+  /**
+   * The page loaded, but there was nothing on it to read — no type, no assets,
+   * and at most one colour. Callers must not write this result over what they
+   * already hold: an outage page that answers 200 is indistinguishable from a
+   * site until you look at what came back, and the picture of one is a picture
+   * of somebody's PHP error, filed as their design.
+   */
+  renderedNothing?: boolean
   assets: import('./asset-extraction').ExtractedAsset[]
   typography: Array<{
     fontFamily: string
@@ -771,6 +786,30 @@ export async function extractFullDesignData(url: string): Promise<FullExtraction
       if (framed.length > 0) {
         console.log(`[extract] ${url}: recovered ${framed.length} assets from child frames`)
         assets.push(...framed)
+      }
+    }
+
+    // Nothing to read means nothing to photograph. Three empty extractors is
+    // not a site with an unusual design — it is a page that did not render:
+    // an outage notice served with a 200, a challenge wall, a domain that has
+    // lapsed into a parking page. newterritory.studio went down behind a Kirby
+    // PHP error and a backfill run captured that error as the studio's card.
+    // Returning early keeps the previous capture, and saves the two captures.
+    // No text worth reading and no images at all. Type is the load-bearing half:
+    // anything with words on it yields a family, and even the canvas games in the
+    // library — which legitimately have no assets — still report their type. The
+    // colour bound only separates "the page was empty" from "both extractors
+    // threw"; an outage notice yields a handful, a rendered page yields dozens.
+    if (typography.length === 0 && assets.length === 0 && colors.length <= EMPTY_PAGE_MAX_COLORS) {
+      console.warn(`[extract] ${url}: page rendered nothing readable — leaving existing data alone`)
+      return {
+        colors: [],
+        screenshotUrl: null,
+        mobileScreenshotUrl: null,
+        figmaCaptureUrl: null,
+        assets: [],
+        typography: [],
+        renderedNothing: true,
       }
     }
 

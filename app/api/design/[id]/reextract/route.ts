@@ -33,6 +33,19 @@ export async function POST(
   try {
     const extractionResult = await extractFullDesignData(url)
 
+    // Nothing rendered: the site is down, parked, or challenging us. Clearing
+    // the error and writing empty results over a site that was fine yesterday
+    // is the worse outcome, so this returns the reason and touches nothing.
+    if (extractionResult.renderedNothing) {
+      const reason = 'The page rendered nothing readable — the site may be down or serving a challenge'
+      await sql`
+        UPDATE design_sources
+        SET metadata = COALESCE(metadata, '{}') || jsonb_build_object('extraction_error', ${reason}::text)
+        WHERE id = ${id}
+      `.catch(() => null)
+      return NextResponse.json({ error: reason, unchanged: true }, { status: 422 })
+    }
+
     const colorFormats = deduplicateColors(extractionResult.colors)
       .map(c => toColorFormats(c))
       .filter((c): c is { hex: string; oklch: string } => c !== null)

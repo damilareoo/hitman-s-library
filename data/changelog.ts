@@ -18,6 +18,17 @@ export interface ChangelogRelease {
 const changelog: ChangelogRelease[] = [
   {
     date: '2026-08-26',
+    title: 'A Picture of an Outage',
+    description: 'A site that has gone down often still answers 200, and an outage notice extracts perfectly well — a background colour, a line of type, no images. The library had one studio’s card replaced with a photograph of their PHP error, and nothing in the pipeline could tell the difference.',
+    items: [
+      { type: 'fixed',    text: 'Extraction now refuses to write when a page renders nothing readable. newterritory.studio fell over behind a Kirby error page served with a 200, and a backfill run captured that error page and filed it as the studio’s design — because from the pipeline’s point of view it was a page, and it loaded. No typography, no assets and almost no colour is not a site with an unusual design; it is a page that did not render. The previous capture is kept and the reason recorded, since a stale picture of the real site beats a fresh picture of somebody’s stack trace. New Territory’s card has been put back' },
+      { type: 'fixed',    text: 'Spotify Design was filed under design.spotify.com, which does not resolve and never has. The entry had no screenshot, which meant it was not in the gallery at all — it existed only as a row. Repointed at spotify.design, where it extracts 12 colours, both typefaces and 43 assets' },
+      { type: 'improved', text: 'Assets no longer decide whether a site counts as broken. A canvas game and a WebGL studio site have nothing in the document to extract, and no number of re-attempts changes that — three of them were being queued nightly forever on the strength of a panel they can never fill. A site is complete when it can be seen, read for colour and read for type; an empty assets tab now explains itself rather than being treated as a failure' },
+      { type: 'fixed',    text: 'Four sites added this morning, before the extraction fixes landed, were still holding what the old pipeline gave them. Re-running the backfill recovered Raycast (16 colours, 82 assets), Aside (14 colours, 72 assets), illoca (6 colours, 26 assets) and Sleep Well Creatives, whose screenshot had never been captured. 283 of the 284 sites in the library now render every panel they can' },
+    ],
+  },
+  {
+    date: '2026-08-26',
     title: 'The Wrong Document',
     description: 'Four faults with one shape: the extractor was reading somewhere other than where the site actually was. The wrong elements, the wrong frame, the wrong dimension, and — for three sites — a gallery query that hid them completely while every check reported them healthy.',
     items: [

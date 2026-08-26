@@ -6,11 +6,11 @@
  *   bun run scripts/backfill-extraction.ts --limit 10  # run the first 10
  *   bun run scripts/backfill-extraction.ts --all       # every source, not just broken ones
  *
- * "Degraded" means the site does not render all three panels — which is a
- * stricter test than whether rows exist, because the legacy rows the old
- * fallback wrote are invisible to the UI. Anything that still cannot be
- * extracted gets an honest `extraction_error` rather than being left looking
- * merely empty.
+ * "Degraded" means the site cannot be seen, read for colour, or read for type
+ * — a stricter test than whether rows exist, because the legacy rows the old
+ * fallback wrote are invisible to the UI. Assets are excluded from the test on
+ * purpose; see DEGRADED_PREDICATE. Anything that still cannot be extracted gets
+ * an honest `extraction_error` rather than being left looking merely empty.
  */
 import { readFileSync } from 'fs'
 import { neon, Client } from '@neondatabase/serverless'
@@ -39,17 +39,24 @@ const limit = limitArg !== -1 ? parseInt(args[limitArg + 1], 10) : Infinity
 /**
  * Sources the gallery cannot show properly.
  *
- * The screenshot clause matters as much as the three panels: queryDesigns
- * filters on `screenshot_url IS NOT NULL`, so a source without one is not
- * merely missing a picture — it is absent from the gallery altogether. Three
- * sites with complete colour, type and asset data were invisible for exactly
- * this reason, and went unnoticed because they passed every panel check.
+ * The screenshot clause matters as much as the panels: queryDesigns filters on
+ * `screenshot_url IS NOT NULL`, so a source without one is not merely missing a
+ * picture — it is absent from the gallery altogether. Three sites with complete
+ * colour, type and asset data were invisible for exactly this reason, and went
+ * unnoticed because they passed every panel check.
+ *
+ * Assets are deliberately not part of this test. A canvas game or a WebGL site
+ * has nothing in the document to extract, and no number of re-attempts changes
+ * that — a page drawn into a single <canvas> would have been queued nightly
+ * forever on the strength of a panel it can never fill. A site is degraded when
+ * it cannot be seen, cannot be read for colour, or cannot be read for type;
+ * assets are what a site happens to have, and their absence is recorded as a
+ * note rather than treated as a failure.
  */
 const DEGRADED_PREDICATE = `
   s.screenshot_url IS NULL OR s.screenshot_url = ''
   or (select count(*) from design_colors c where c.source_id = s.id and c.hex_value is not null) = 0
   or (select count(*) from design_typography t where t.source_id = s.id and t.role is not null and t.role <> 'legacy') = 0
-  or (select count(*) from design_assets a where a.source_id = s.id) = 0
 `
 
 async function replaceColors(id: number, colors: string[]): Promise<number> {
@@ -140,6 +147,20 @@ async function main() {
     try {
       const result = await extractFullDesignData(url)
 
+      // A page that rendered nothing is a page we cannot judge. Recording the
+      // reason and moving on leaves whatever the site last gave us intact.
+      if (result.renderedNothing) {
+        const reason = 'The page rendered nothing readable — the site may be down or serving a challenge'
+        await sql`
+          UPDATE design_sources
+          SET metadata = COALESCE(metadata, '{}') || jsonb_build_object('extraction_error', ${reason}::text)
+          WHERE id = ${id}
+        `.catch(() => null)
+        stillBroken++
+        console.log(`${label}\n  EMPTY nothing rendered — existing data left as it was`)
+        continue
+      }
+
       const colorCount = await replaceColors(id, result.colors)
       const typeCount = await replaceRows(id, 'design_typography', result.typography)
       const assetCount = await replaceRows(id, 'design_assets', result.assets)
@@ -155,16 +176,32 @@ async function main() {
       }
 
       const hasShot = Boolean(result.screenshotUrl)
-      const complete = hasShot && colorCount > 0 && typeCount > 0 && assetCount > 0
+      // Matches DEGRADED_PREDICATE: assets do not decide whether a source is
+      // whole, or the next run picks straight back up the sites this one just
+      // finished with.
+      const complete = hasShot && colorCount > 0 && typeCount > 0
 
       if (complete) {
-        await sql`
-          UPDATE design_sources
-          SET metadata = COALESCE(metadata, '{}') - 'extraction_error'
-          WHERE id = ${id}
-        `
+        // Still say so when a page yielded no assets. The site is complete as
+        // far as the queue is concerned, but the assets tab is going to be
+        // empty and the empty state is the one place that can explain why.
+        if (assetCount === 0) {
+          await sql`
+            UPDATE design_sources
+            SET metadata = COALESCE(metadata, '{}') || jsonb_build_object('extraction_error', 'No assets could be extracted from this page'::text)
+            WHERE id = ${id}
+          `
+        } else {
+          await sql`
+            UPDATE design_sources
+            SET metadata = COALESCE(metadata, '{}') - 'extraction_error'
+            WHERE id = ${id}
+          `
+        }
         recovered++
-        console.log(`${label}\n  OK    colors=${colorCount} type=${typeCount} assets=${assetCount}`)
+        console.log(
+          `${label}\n  OK    colors=${colorCount} type=${typeCount} assets=${assetCount}${assetCount === 0 ? ' (no assets in the document)' : ''}`,
+        )
       } else {
         // Say which part is missing. A row that is merely empty looks the same
         // whether nothing was found or nothing was attempted.
@@ -172,7 +209,6 @@ async function main() {
           !hasShot && 'screenshot',
           colorCount === 0 && 'colors',
           typeCount === 0 && 'typography',
-          assetCount === 0 && 'assets',
         ].filter(Boolean).join(', ')
 
         await sql`
