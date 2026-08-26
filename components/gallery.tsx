@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import { useDragControls } from 'motion/react'
 import { useTheme } from 'next-themes'
-import { Sun, Moon, SpeakerHigh, SpeakerSlash, MagnifyingGlass, X, Presentation } from '@phosphor-icons/react'
+import { Sun, Moon, SpeakerHigh, SpeakerSlash, MagnifyingGlass, X, Presentation, ArrowRight, Plus } from '@phosphor-icons/react'
 import { SiteDetailPanel } from '@/components/site-detail-panel'
 import { PresentationMode } from '@/components/presentation-mode'
 import { DesignCard, type Design } from '@/components/design-card'
@@ -12,6 +12,7 @@ import { Spinner } from '@/components/ui/spinner'
 import { motion, AnimatePresence } from 'motion/react'
 import { useSoundsContext } from '@/contexts/sounds-context'
 import { FilterBar, type AppliedFilter } from '@/components/filter-bar'
+import { RequestSiteDialog } from '@/components/request-site-dialog'
 import { EASE, DUR } from '@/lib/motion'
 import Link from 'next/link'
 
@@ -117,6 +118,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories }
   const [isLoadingMore, setIsLoadingMore] = useState(false)
   const [isRefetching, setIsRefetching] = useState(false)
   const [searchInput, setSearchInput] = useState(search)
+  const [requestOpen, setRequestOpen] = useState(false)
 
   const [minGridHeight, setMinGridHeight] = useState<number | null>(null)
   const gridRef = useRef<HTMLDivElement>(null)
@@ -266,6 +268,11 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories }
     obs.observe(sentinel)
     return () => obs.disconnect()
   }, [pagination.hasMore, pagination.offset, isLoadingMore, isRefetching, loadDesigns])
+
+  /** Open the panel for an id we may not have a loaded card for. */
+  const selectDesignById = useCallback((id: string) => {
+    updateParams(p => p.set('site', id))
+  }, [updateParams])
 
   const selectDesign = useCallback((design: Design | null) => {
     updateParams(p => {
@@ -473,6 +480,18 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories }
           </div>
 
           <div className="flex items-center gap-1.5 ml-auto">
+            {/* Deliberately in the same quiet register as Changelog rather
+                than styled as a call to action. The loud version of this
+                belongs in the zero-results state, where it is an answer to
+                something the person just asked for. */}
+            <button
+              onClick={() => setRequestOpen(true)}
+              className="relative hidden sm:flex items-center gap-1 text-meta text-ink-3 hover:text-ink transition-colors mr-1 after:absolute after:inset-x-0 after:top-1/2 after:h-11 after:-translate-y-1/2 after:content-['']"
+            >
+              <Plus className="w-3 h-3" weight="bold" />
+              Request a site
+            </button>
+
             <Link
               href="/changelog"
               // 17px tall as drawn. The overlay carries the touch target so the
@@ -707,10 +726,30 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories }
                   ? Array.from({ length: 8 }).map((_, i) => <SkeletonCard key={`s${i}`} />)
                   : designs.length === 0
                     ? (
-                      <div className="col-span-full flex flex-col items-center justify-center py-24 gap-3">
+                      <div className="col-span-full flex flex-col items-center justify-center py-24 gap-3 text-center">
                         <p className="text-bodytext text-ink-3">
-                          {hasFilters ? 'No sites match these filters' : 'No sites yet'}
+                          {hasFilters ? 'Nothing here yet' : 'No sites yet'}
                         </p>
+
+                        {/* Searching and finding nothing is the moment someone
+                            most wants a site added, and the search term is
+                            already the thing they want. Offering it anywhere
+                            else means asking them to type it twice. */}
+                        {search.trim() && (
+                          <>
+                            <p className="text-reading text-ink-2 max-w-[280px]">
+                              Want <span className="text-ink">{search.trim()}</span> in the library?
+                            </p>
+                            <button
+                              onClick={() => setRequestOpen(true)}
+                              className="mt-1 h-9 px-4 inline-flex items-center gap-2 rounded-[6px] bg-foreground text-background text-bodytext font-medium hover:opacity-90 transition-opacity"
+                            >
+                              Request it
+                              <ArrowRight className="w-3.5 h-3.5" weight="bold" />
+                            </button>
+                          </>
+                        )}
+
                         {hasFilters && (
                           <button
                             onClick={clearAll}
@@ -751,7 +790,14 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories }
           </div>
         </main>
 
-        {/* Detail panel — the column is always here. The empty state names
+        <RequestSiteDialog
+        open={requestOpen}
+        onClose={() => setRequestOpen(false)}
+        initialUrl={search.trim()}
+        onOpenSite={selectDesignById}
+      />
+
+      {/* Detail panel — the column is always here. The empty state names
             what the panel holds, which is how you learn the tabs exist. */}
         <div className="hidden xl:flex xl:col-span-4 flex-col sticky top-14 h-[calc(100vh-56px)] border-l border-edge-strong bg-background">
           <AnimatePresence mode="wait">

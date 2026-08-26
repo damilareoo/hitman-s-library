@@ -18,6 +18,19 @@ export interface ChangelogRelease {
 const changelog: ChangelogRelease[] = [
   {
     date: '2026-08-26',
+    title: 'Asking For Things',
+    description: 'Anyone can now ask for a site to be added. The interesting part is what happens before you submit: with 280-odd sites already here, the likeliest answer to "please add this" is that it is already in the library — so the form tries to give you that answer instead of taking your request.',
+    items: [
+      { type: 'new',      text: 'Request a site from the header, or from the moment it actually occurs to you — search for something that is not here, and the empty result offers to request the thing you just searched for, rather than making you type it a second time somewhere else' },
+      { type: 'new',      text: 'The address resolves as you type it. If the site is already in the library the form stops being a form and becomes a link to it. If somebody has already asked, it says how many. If it is genuinely new, it shows you the site — name, preview image, favicon — so you can confirm it is the one you meant before asking' },
+      { type: 'new',      text: 'stripe.com, https://www.Stripe.com/, and stripe.com/?utm_source=twitter are one site, not three. Addresses are reduced to a common form before anything is compared, so the duplicate check works on what people actually type and two people asking for the same site increments a count instead of filing a second request' },
+      { type: 'new',      text: 'Your browser remembers what you asked for and checks back on it. There are no accounts, so without this the flow would end at "thanks" and you would never learn whether it worked. Reopen the form later and your requests are listed as pending, passed, or added — and if it was added, there is a link straight to it' },
+      { type: 'new',      text: 'A review queue in admin, ordered by how many people asked. Approving runs the same extraction the manual add form uses — one path into the library rather than two that drift apart. A failed approval leaves the request pending, because that is something to retry rather than something to lose. Passing on a site remembers the decision, but a fresh request revives it' },
+      { type: 'improved', text: 'Rate limiting, which the site had none of anywhere. It lives in the database rather than in memory, because each serverless instance has its own memory and loses it on every cold start — a counter held there would reset constantly and be trivially outrun. It also runs before an address is resolved rather than after, so a stream of invalid addresses cannot spend DNS lookups without spending quota. If the check itself fails it lets the request through: a limiter that takes the whole feature down with a database hiccup is the worse failure' },
+    ],
+  },
+  {
+    date: '2026-08-26',
     title: 'The Third That Never Worked',
     description: 'Eighty-eight of the 281 sites in the library showed no colours, no typography, or no assets — and because the gallery sorts newest first, almost every one of them was on the first screen. Eight separate faults, none of which announced itself. Plus a rebuilt sidebar, a type scale with somewhere to go, and a good deal less weight to carry.',
     items: [

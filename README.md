@@ -32,6 +32,7 @@ When you add a URL, the app:
 - **Failure messaging** — Categorised error states (bot protection, login required, timeout, 404) with plain-language explanations
 - **Extraction progress** — Animated stage labels while a URL is being processed
 - **Bulk add** — Paste multiple URLs in admin and process them sequentially with live per-item status
+- **Site requests** — anyone can ask for a site to be added. The form resolves the URL as it is typed: already in the library, already requested, or new with a live preview. Requests queue for review in `/admin`; approving one runs the normal extraction
 - **Changelog** — `/changelog` feed showing all additions, re-extractions, and deletions
 - **Color export** — Copy palette as CSS custom properties or Tailwind config snippet
 - **Admin CMS** — Passcode-protected admin at `/admin` to add, search, and delete sites; bulk duplicate removal
@@ -41,8 +42,9 @@ When you add a URL, the app:
 
 ## Security model
 
-The gallery is public and read-only. Everything that writes, deletes, or drives a
-headless browser is behind an admin session.
+The gallery is read-only, and everything that **deletes or drives a headless
+browser** stays behind an admin session. Site requests are the single exception
+to public writes, and are fenced accordingly.
 
 - `POST /api/admin/auth` exchanges `ADMIN_PASSWORD` for an HMAC-signed, httpOnly
   session cookie (12 hour TTL). The passcode is compared in constant time.
@@ -59,6 +61,34 @@ headless browser is behind an admin session.
 
 Client-side admin state (`lib/use-is-admin.ts`) only decides what to render.
 It is never the thing that grants access.
+
+### Public writes: site requests
+
+`POST /api/request` is the only unauthenticated endpoint that writes. It inserts
+a row into `design_requests` and does nothing else — no extraction, no browser,
+no blob storage. Approving a request is what starts real work, and that is
+behind `requireAdmin()`.
+
+Four things fence it:
+
+- **`assertPublicUrl`** on every submitted address, so a request cannot point at
+  anything internal.
+- **`checkRateLimit`** (`lib/rate-limit.ts`), 5 submissions and 40 previews per
+  IP per 10 minutes. Backed by Postgres rather than process memory, because
+  serverless instances share none and an in-process counter resets on every cold
+  start. It runs *before* the URL is resolved, so invalid addresses cannot spend
+  DNS lookups without spending quota. It fails **open** — a limiter that took the
+  feature down with a database hiccup would be the worse failure.
+- **A honeypot field**, off-screen and out of the tab order, answered with the
+  same response a success gets so there is nothing to learn from the difference.
+- **Hashed IPs only.** `ip_hash` is salted with the admin session secret; the raw
+  address is never stored.
+
+`POST /api/request/preview` makes an outbound fetch on a caller-supplied URL, so
+it goes through `safeFetch`, which re-validates every redirect hop.
+
+`POST /api/request/status` is public but only answers about URLs the caller
+already named — it discloses nothing they could not learn from the request form.
 
 ---
 

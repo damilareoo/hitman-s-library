@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, useRef } from 'react'
+import { AdminRequests } from '@/components/admin-requests'
 import Link from 'next/link'
 import { ArrowLeft, MagnifyingGlass, Trash, CircleNotch, ArrowCounterClockwise } from '@phosphor-icons/react'
 import { motion, AnimatePresence } from 'motion/react'
@@ -441,6 +442,11 @@ export default function AdminPage() {
       </header>
 
       <div className="max-w-4xl mx-auto px-5 md:px-7 py-8 space-y-8">
+
+        {/* Requests — public submissions waiting on a decision. Above bulk add
+            because reviewing what people asked for is the thing with someone
+            on the other end of it. */}
+        <AdminRequests />
 
         {/* Bulk add */}
         <div className="space-y-3">
