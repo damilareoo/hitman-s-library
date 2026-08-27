@@ -168,6 +168,30 @@ picture of somebody's stack trace.
 bun run scripts/test-extraction.ts                 # pipeline check, no writes
 ```
 
+### Captures
+
+```bash
+bun run scripts/recapture-flat.ts --dry-run        # list captures of nothing much
+bun run scripts/recapture-flat.ts                  # retake them
+bun run scripts/recapture-flat.ts --ids 4,73,188   # retake named sources
+```
+
+Capture waits for the page to finish painting, not merely to finish loading —
+`waitForPaint` samples the viewport as a low-quality JPEG and watches whether the
+buffer is still growing. Content arriving pushes it up; a preloader holds it flat
+and low. This is measured through the encoder rather than by decoding the image,
+which is what makes it cheap enough to run several times a second inside a
+function.
+
+Sites with intro animations had been photographed mid-preloader while extracting
+their colour, type and assets perfectly — the document was there the whole time,
+underneath a splash. A capture that still comes back nearly empty is retaken once
+and the busier of the two frames kept, so a genuinely sparse page keeps its
+picture. `recapture-flat.ts` applies the same judgement to captures already
+stored, on two measures: bytes per megapixel across the whole frame, and how much
+of the first screenful is one flat colour. The second is what catches a hero
+caught mid-transition, which the first scores as healthy.
+
 ---
 
 ## Design system

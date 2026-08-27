@@ -17,6 +17,18 @@ export interface ChangelogRelease {
 // Types: "new" (green) | "improved" (blue) | "fixed" (muted)
 const changelog: ChangelogRelease[] = [
   {
+    date: '2026-08-27',
+    title: 'Photographed Too Early',
+    description: 'A dozen cards in the library were pictures of preloaders. The sites behind them had extracted perfectly — full palettes, both typefaces, dozens of assets — because the document was there the whole time, sitting underneath a splash screen. Nothing that reads the page could have caught it. Only the pixels showed it.',
+    items: [
+      { type: 'fixed',    text: 'Capture now waits for a page to finish painting itself rather than to finish loading. joyco.studio was a flat blue panel with a logo on it, therawmaterials.com a cream rectangle and one hairline, datum.xyz an empty white page with a nav bar — all three had complete data behind them. The test is whether the frame is still getting busier: content arriving pushes it up, a preloader holds it flat and low, and two samples without a rise means the page has arrived. therawmaterials climbs through three stages over four seconds before it settles' },
+      { type: 'improved', text: 'How busy a frame is gets measured by asking the JPEG encoder, not by decoding the image. A flat colour costs almost nothing to store and a painted page costs a great deal, so the length of the buffer is the answer already — which is what makes this affordable to do four or five times a second inside a serverless function' },
+      { type: 'fixed',    text: 'A capture that comes back nearly empty is now retaken once. Walking a page can restart an intro, and a scroll-triggered reveal may not have run at all, so the second attempt is compared against the first and the busier frame wins. A site that really is that sparse keeps the picture it had' },
+      { type: 'new',      text: 'A tool that re-photographs the sources whose stored capture is a picture of nothing much, judging a replacement on two measures: how much is in the frame overall, and how much of the first screenful is given over to a single flat colour. The second is what catches a hero caught mid-transition — busy further down the page, blank across the top, which the first measure scores as perfectly healthy' },
+      { type: 'improved', text: 'Fourteen cards replaced. joyco.studio, datum.xyz, shuttle.zip, therawmaterials.com, eandco, naotofukasawa and lyannetonk were blank or splash frames; variant.ai, payjustnow and waabi.ai were caught mid-transition. One site, occupied.unadsgn.tw, has stopped answering altogether — its host resolves and then never responds, which is now recorded rather than left looking like a capture that failed' },
+    ],
+  },
+  {
     date: '2026-08-26',
     title: 'A Picture of an Outage',
     description: 'A site that has gone down often still answers 200, and an outage notice extracts perfectly well — a background colour, a line of type, no images. The library had one studio’s card replaced with a photograph of their PHP error, and nothing in the pipeline could tell the difference.',

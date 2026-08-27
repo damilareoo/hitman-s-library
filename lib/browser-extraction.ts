@@ -158,6 +158,12 @@ async function autoScroll(page: Page, step = 400): Promise<void> {
  * makes the reads deterministic.
  */
 export async function settlePage(page: Page): Promise<void> {
+  // Before anything reads or photographs the page, let it finish arriving. A
+  // preloader is a real page as far as the DOM is concerned, and everything
+  // downstream — assets, the logo heuristic, the capture — would otherwise be
+  // reading a splash screen.
+  await waitForPaint(page)
+
   // Commit lazy images before the scroll rather than relying on it, so one pass
   // is enough even where the observer never fires.
   await page
@@ -294,7 +300,89 @@ export async function extractBrandColors(page: Page): Promise<string[]> {
 // the ceiling from the ratio actually in force.
 const MAX_CAPTURE_DEVICE_PIXELS = 15000
 
-async function captureClamped(page: Page, quality: number): Promise<Buffer> {
+/**
+ * How much is going on in a frame, in bytes of JPEG per megapixel.
+ *
+ * The encoder has already done the work: a flat colour costs almost nothing to
+ * store, a painted page costs a great deal. Reading the buffer length is enough
+ * to tell one from the other, and it needs no image decoding in a serverless
+ * function — which is the whole reason for measuring it this way.
+ */
+async function frameComplexity(page: Page): Promise<number> {
+  const buf = (await page.screenshot({ type: 'jpeg', quality: PAINT_SAMPLE_QUALITY })) as Buffer
+  const { width, height, dpr } = await page.evaluate(() => ({
+    width: window.innerWidth,
+    height: window.innerHeight,
+    dpr: window.devicePixelRatio || 1,
+  }))
+  const megapixels = (width * height * dpr * dpr) / 1e6
+  return megapixels > 0 ? buf.length / megapixels : 0
+}
+
+const PAINT_SAMPLE_QUALITY = 35
+const PAINT_SAMPLE_INTERVAL_MS = 500
+/**
+ * Adds run inside a 60s function and already take 30–50s, so this is a budget
+ * rather than a target. Measured against the sites that needed it: the slowest
+ * preloader in the library settles about three seconds after the first sample.
+ */
+const PAINT_MAX_WAIT_MS = 6000
+/** A sample this much larger than the best so far means content is still arriving. */
+const PAINT_RISE = 1.15
+/** Two settled samples end the wait — but only above this, or a preloader qualifies. */
+const PAINT_SETTLED_SAMPLES = 2
+/** Below this the frame is a splash screen or an empty page, whatever it claims. */
+const PAINT_FLOOR = 8000
+
+/**
+ * Wait for the page to finish painting itself, not merely to finish loading.
+ *
+ * Sites with intro animations were being photographed mid-preloader: joyco.studio
+ * was a flat blue panel with a logo on it, therawmaterials.com a cream rectangle
+ * and one hairline. Both had full colour, type and asset data in the database —
+ * the DOM was there the whole time, sitting underneath a splash — so nothing that
+ * reads the document could have caught this. Only the pixels show it.
+ *
+ * The test is whether the frame is still getting busier. Content arriving pushes
+ * complexity up; a preloader holds it flat and low. Two samples without a rise,
+ * above a floor, means the page has arrived. therawmaterials climbs 6k → 12k →
+ * 20k over four seconds and settles; a static page is settled on arrival and
+ * costs two samples to confirm.
+ */
+export async function waitForPaint(page: Page, budgetMs = PAINT_MAX_WAIT_MS): Promise<void> {
+  const deadline = Date.now() + budgetMs
+  let best = 0
+  let settled = 0
+
+  while (Date.now() < deadline) {
+    let complexity: number
+    try {
+      complexity = await frameComplexity(page)
+    } catch {
+      return // A page we cannot photograph is not one to wait on.
+    }
+
+    if (complexity > best * PAINT_RISE) {
+      best = complexity
+      settled = 0
+    } else {
+      settled++
+      if (complexity > best) best = complexity
+    }
+
+    if (settled >= PAINT_SETTLED_SAMPLES && best >= PAINT_FLOOR) return
+
+    await new Promise(r => setTimeout(r, PAINT_SAMPLE_INTERVAL_MS))
+  }
+}
+
+interface ClampedCapture {
+  buffer: Buffer
+  /** Device pixels actually captured, for judging how much is in the frame. */
+  megapixels: number
+}
+
+async function captureClamped(page: Page, quality: number): Promise<ClampedCapture> {
   const { scrollWidth, scrollHeight, viewportWidth, dpr } = await page.evaluate(() => ({
     scrollWidth: document.documentElement.scrollWidth,
     scrollHeight: document.documentElement.scrollHeight,
@@ -320,16 +408,40 @@ async function captureClamped(page: Page, quality: number): Promise<Buffer> {
   const height = Math.min(scrollHeight, budget)
 
   const withinBudget = scrollWidth <= budget && scrollHeight <= budget
+  const megapixels = (width * height * dpr * dpr) / 1e6
+
   if (withinBudget && width === scrollWidth) {
-    return await page.screenshot({ fullPage: true, type: 'webp', quality }) as Buffer
+    const buffer = await page.screenshot({ fullPage: true, type: 'webp', quality }) as Buffer
+    return { buffer, megapixels: (scrollWidth * scrollHeight * dpr * dpr) / 1e6 }
   }
 
-  return await page.screenshot({
+  const buffer = await page.screenshot({
     type: 'webp',
     quality,
     captureBeyondViewport: true,
     clip: { x: 0, y: 0, width, height, scale: 1 },
   }) as Buffer
+  return { buffer, megapixels }
+}
+
+/**
+ * Bytes of WebP per megapixel — the same measure `waitForPaint` uses, applied to
+ * the finished capture.
+ */
+function density(capture: ClampedCapture): number {
+  return capture.megapixels > 0 ? capture.buffer.length / capture.megapixels : 0
+}
+
+/**
+ * Under this, a full-page capture is a picture of nothing much. Measured across
+ * the library: the captures that turned out to be preloaders and blank frames
+ * sat between 2,500 and 3,300, while the sparsest real page that belongs here —
+ * a plain text site — came in at 7,800.
+ */
+const FLAT_FRAME_DENSITY = 5000
+
+function flatFrame(capture: ClampedCapture): boolean {
+  return density(capture) < FLAT_FRAME_DENSITY
 }
 
 export async function captureFullPageScreenshot(
@@ -344,7 +456,22 @@ export async function captureFullPageScreenshot(
     if (opts.scroll !== false) await autoScroll(page)
     await new Promise(r => setTimeout(r, 800))
 
-    const buffer = await captureClamped(page, 92)
+    let capture = await captureClamped(page, 92)
+
+    // A capture with almost nothing in it means the page was not ready, whatever
+    // it said. Walking a page can restart an intro, and a scroll-triggered
+    // reveal may not have run at all — so give it a moment and take one more,
+    // keeping whichever frame has more in it. One retry: past that, the site
+    // genuinely is this sparse.
+    if (capture.buffer?.length && flatFrame(capture)) {
+      console.warn(`[screenshot] ${siteUrl}: frame looks unpainted — one more attempt`)
+      // Half the budget: the page has already had the full one before this.
+      await waitForPaint(page, PAINT_MAX_WAIT_MS / 2)
+      const second = await captureClamped(page, 92)
+      if (second.buffer?.length && density(second) > density(capture)) capture = second
+    }
+
+    const buffer = capture.buffer
 
     // Chrome silently returns an empty buffer when a page is too tall to encode.
     // Uploading that produces a blob that serves 200 with no body, which the
@@ -384,7 +511,7 @@ export async function captureMobileScreenshot(
     await autoScroll(page, 300)
     await new Promise(r => setTimeout(r, 600))
 
-    const buffer = await captureClamped(page, 92)
+    const { buffer } = await captureClamped(page, 92)
 
     if (!buffer || buffer.length === 0) {
       console.error(`[screenshot] empty mobile buffer for ${siteUrl} — not uploading`)
