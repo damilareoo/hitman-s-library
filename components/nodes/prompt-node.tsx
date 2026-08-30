@@ -2,7 +2,7 @@
 
 import type React from "react"
 import { memo } from "react"
-import { Handle, Position, type NodeProps } from "@xyflow/react"
+import { Handle, Position, type Node, type NodeProps } from "@xyflow/react"
 import { FileText } from "@phosphor-icons/react"
 import { getStatusColor } from "@/lib/node-utils"
 import { Textarea } from "@/components/ui/textarea"
@@ -16,7 +16,7 @@ export type PromptNodeData = {
   onUpdate?: (data: any) => void
 }
 
-function PromptNode({ data, selected }: NodeProps<PromptNodeData>) {
+function PromptNode({ data, selected }: NodeProps<Node<PromptNodeData & Record<string, unknown>>>) {
   const status = data.status || "idle"
   const isExpanded = data.isExpanded || false
 
@@ -27,7 +27,7 @@ function PromptNode({ data, selected }: NodeProps<PromptNodeData>) {
     }
   }
 
-  const stopPropagation = (e: React.MouseEvent) => {
+  const stopPropagation = (e: React.SyntheticEvent) => {
     e.stopPropagation()
   }
 

@@ -3,7 +3,7 @@
 import React from "react"
 
 import { memo, useState } from "react"
-import { Handle, Position, type NodeProps } from "@xyflow/react"
+import { Handle, Position, type Node, type NodeProps } from "@xyflow/react"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -23,8 +23,7 @@ export interface ImageAnalyzerNodeData extends BaseNodeData {
   extractPatterns?: boolean
 }
 
-function ImageAnalyzerNode({ data, selected }: NodeProps) {
-  const nodeData = data as ImageAnalyzerNodeData
+function ImageAnalyzerNode({ data: nodeData, selected }: NodeProps<Node<ImageAnalyzerNodeData & Record<string, unknown>>>) {
   const status = nodeData.status || "idle"
   const [dragOver, setDragOver] = useState(false)
 
@@ -178,7 +177,7 @@ function ImageAnalyzerNode({ data, selected }: NodeProps) {
           </div>
         </div>
 
-        {nodeData.output && (
+        {nodeData.output != null && (
           <div className="rounded-md bg-muted/50 p-2 text-xs max-h-32 overflow-auto">
             <pre className="whitespace-pre-wrap">{JSON.stringify(nodeData.output, null, 2)}</pre>
           </div>

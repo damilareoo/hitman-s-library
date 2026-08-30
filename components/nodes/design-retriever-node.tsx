@@ -1,7 +1,7 @@
 "use client"
 
 import { memo } from "react"
-import { Handle, Position, type NodeProps } from "@xyflow/react"
+import { Handle, Position, type Node, type NodeProps } from "@xyflow/react"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -24,8 +24,7 @@ export interface DesignRetrieverNodeData extends BaseNodeData {
   retrieveLayouts?: boolean
 }
 
-function DesignRetrieverNode({ data, selected }: NodeProps) {
-  const nodeData = data as DesignRetrieverNodeData
+function DesignRetrieverNode({ data: nodeData, selected }: NodeProps<Node<DesignRetrieverNodeData & Record<string, unknown>>>) {
   const status = nodeData.status || "idle"
 
   const handleChange = (field: string, value: unknown) => {
@@ -185,7 +184,7 @@ function DesignRetrieverNode({ data, selected }: NodeProps) {
           </div>
         </div>
 
-        {nodeData.output && (
+        {nodeData.output != null && (
           <div className="rounded-md bg-muted/50 p-2 text-xs max-h-32 overflow-auto">
             <pre className="whitespace-pre-wrap">{JSON.stringify(nodeData.output, null, 2)}</pre>
           </div>

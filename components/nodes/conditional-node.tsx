@@ -2,7 +2,7 @@
 
 import type React from "react"
 import { memo } from "react"
-import { Handle, Position, type NodeProps } from "@xyflow/react"
+import { Handle, Position, type Node, type NodeProps } from "@xyflow/react"
 import { GitBranch } from "@phosphor-icons/react"
 import { getStatusColor } from "@/lib/node-utils"
 import { Textarea } from "@/components/ui/textarea"
@@ -16,7 +16,7 @@ export type ConditionalNodeData = {
   onUpdate?: (data: any) => void
 }
 
-function ConditionalNode({ data, selected }: NodeProps<ConditionalNodeData>) {
+function ConditionalNode({ data, selected }: NodeProps<Node<ConditionalNodeData & Record<string, unknown>>>) {
   const status = data.status || "idle"
   const isExpanded = data.isExpanded || false
 

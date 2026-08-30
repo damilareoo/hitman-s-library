@@ -2,7 +2,7 @@
 
 import type React from "react"
 import { memo } from "react"
-import { Handle, Position, type NodeProps } from "@xyflow/react"
+import { Handle, Position, type Node, type NodeProps } from "@xyflow/react"
 import { ChatCircle } from "@phosphor-icons/react"
 import { getStatusColor } from "@/lib/node-utils"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -25,7 +25,7 @@ export type TextModelNodeData = {
   onUpdate?: (data: any) => void
 }
 
-function TextModelNode({ data, selected }: NodeProps<TextModelNodeData>) {
+function TextModelNode({ data, selected }: NodeProps<Node<TextModelNodeData & Record<string, unknown>>>) {
   const status = data.status || "idle"
   const isExpanded = data.isExpanded || false
 
@@ -129,7 +129,7 @@ function TextModelNode({ data, selected }: NodeProps<TextModelNodeData>) {
           </div>
         )}
 
-        {data.output && (
+        {data.output != null && (
           <div className="mt-2 max-h-20 overflow-y-auto rounded bg-secondary/50 p-2">
             <p className="text-xs text-muted-foreground line-clamp-3 font-mono">
               {typeof data.output === "string" ? data.output : JSON.stringify(data.output, null, 2)}

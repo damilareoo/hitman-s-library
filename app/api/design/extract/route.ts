@@ -9,6 +9,18 @@ import { assertPublicUrl, BlockedUrlError } from '@/lib/safe-url'
 
 const sql = neon(process.env.DATABASE_URL!)
 
+function normalizeSourceUrl(raw: string): string {
+  try {
+    const u = new URL(raw)
+    u.hash = ''
+    u.hostname = u.hostname.replace(/^www\./, '')
+    const normalized = u.toString()
+    return normalized.endsWith('/') ? normalized.slice(0, -1) : normalized
+  } catch {
+    return raw.replace(/\/$/, '').replace(/^https?:\/\/www\./, match => match.replace('www.', ''))
+  }
+}
+
 export async function POST(req: NextRequest) {
   const denied = await requireAdmin(req)
   if (denied) return denied
@@ -47,6 +59,7 @@ export async function POST(req: NextRequest) {
     }
 
     const hostname = validUrl.hostname
+    const normalizedUrl = normalizeSourceUrl(url)
 
     // Fetch the webpage with robust redirect handling
     let html = ''
@@ -181,6 +194,7 @@ export async function POST(req: NextRequest) {
     let colorFormats: { hex: string; oklch: string }[] = []
     let colors: string[] = []
     let extractionResult: Awaited<ReturnType<typeof extractFullDesignData>> | null = null
+    let extractionError: string | null = null
     try {
       extractionResult = await extractFullDesignData(url)
       colorFormats = deduplicateColors(extractionResult.colors)
@@ -188,8 +202,12 @@ export async function POST(req: NextRequest) {
         .filter((c): c is { hex: string; oklch: string } => c !== null)
         .slice(0, 16)
       colors = colorFormats.map(c => c.hex)
-    } catch (colorErr) {
+      if (!extractionResult.screenshotUrl) {
+        extractionError = 'Screenshot capture failed'
+      }
+    } catch (colorErr: any) {
       console.warn('[v0] Full design extraction failed, falling back to regex:', colorErr)
+      extractionError = colorErr?.message ? String(colorErr.message) : 'Screenshot capture failed'
       colors = extractColors(html)
     }
     const typographyData = extractTypographyEnhanced(html)
@@ -221,7 +239,11 @@ export async function POST(req: NextRequest) {
 
     // Check if URL already exists
     const existing = await sql`
-      SELECT id FROM design_sources WHERE source_url = ${url} LIMIT 1
+      SELECT id FROM design_sources
+      WHERE source_url = ${normalizedUrl}
+         OR source_url = ${normalizedUrl + '/'}
+         OR regexp_replace(regexp_replace(source_url, '^https?://www\\.', 'https://'), '/$', '') = ${normalizedUrl}
+      LIMIT 1
     `
     if (existing.length > 0) {
       return NextResponse.json({
@@ -268,7 +290,13 @@ export async function POST(req: NextRequest) {
           ${title},
           ${'website'},
           ${industry || 'Uncategorized'},
-          ${JSON.stringify({ description, quality, layout, architecture })},
+          ${JSON.stringify({
+            description,
+            quality,
+            layout,
+            architecture,
+            ...(extractionError ? { extraction_error: extractionError } : {}),
+          })},
           ${tags},
           ${thumbnailUrl},
           NOW(),

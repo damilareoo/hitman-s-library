@@ -2,7 +2,7 @@
 
 import type React from "react"
 import { memo } from "react"
-import { Handle, Position, type NodeProps } from "@xyflow/react"
+import { Handle, Position, type Node, type NodeProps } from "@xyflow/react"
 import { Image } from "@phosphor-icons/react"
 import { getStatusColor } from "@/lib/node-utils"
 import { Label } from "@/components/ui/label"
@@ -20,7 +20,7 @@ export type ImageGenerationNodeData = {
   connectedHandles?: string[]
 }
 
-function ImageGenerationNode({ data, selected }: NodeProps<ImageGenerationNodeData>) {
+function ImageGenerationNode({ data, selected }: NodeProps<Node<ImageGenerationNodeData & Record<string, unknown>>>) {
   const status = data.status || "idle"
   const isExpanded = data.isExpanded || false
 

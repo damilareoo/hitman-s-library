@@ -1,7 +1,7 @@
 "use client"
 
 import { memo, useState } from "react"
-import { Handle, Position, type NodeProps } from "@xyflow/react"
+import { Handle, Position, type Node, type NodeProps } from "@xyflow/react"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -23,8 +23,7 @@ export interface DesignStoreNodeData extends BaseNodeData {
   layoutNotes?: string
 }
 
-function DesignStoreNode({ data, selected }: NodeProps) {
-  const nodeData = data as DesignStoreNodeData
+function DesignStoreNode({ data: nodeData, selected }: NodeProps<Node<DesignStoreNodeData & Record<string, unknown>>>) {
   const [sourceUrl, setSourceUrl] = useState(nodeData.sourceUrl || "")
   const [industry, setIndustry] = useState(nodeData.industry || "")
   const [styleCategory, setStyleCategory] = useState(nodeData.styleCategory || "")
@@ -166,7 +165,7 @@ function DesignStoreNode({ data, selected }: NodeProps) {
           Store Design Reference
         </Button>
 
-        {nodeData.output && (
+        {nodeData.output != null && (
           <div className="rounded-md bg-[var(--color-success)]/10 border border-[var(--color-success)]/20 p-2 text-xs">
             <div className="flex items-center gap-1 text-[var(--color-success)]">
               <CheckCircle className="h-3 w-3" weight="regular"  />

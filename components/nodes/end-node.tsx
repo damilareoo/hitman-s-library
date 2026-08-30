@@ -1,7 +1,7 @@
 "use client"
 
 import { memo } from "react"
-import { Handle, Position, type NodeProps } from "@xyflow/react"
+import { Handle, Position, type Node, type NodeProps } from "@xyflow/react"
 import { Flag, DownloadSimple } from "@phosphor-icons/react"
 import { getStatusColor } from "@/lib/node-utils"
 
@@ -10,7 +10,7 @@ export type EndNodeData = {
   output?: any
 }
 
-function EndNode({ data, selected }: NodeProps<EndNodeData>) {
+function EndNode({ data, selected }: NodeProps<Node<EndNodeData & Record<string, unknown>>>) {
   const status = data.status || "idle"
 
   const hasImages = () => {
@@ -51,7 +51,7 @@ function EndNode({ data, selected }: NodeProps<EndNodeData>) {
         <span className="text-xs font-medium text-foreground">End</span>
       </div>
 
-      {data.output && (
+      {data.output != null && (
         <div className="mt-2">
           {hasImages() ? (
             <div className="space-y-2">

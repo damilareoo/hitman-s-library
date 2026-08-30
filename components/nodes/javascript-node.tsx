@@ -2,7 +2,7 @@
 
 import type React from "react"
 import { memo } from "react"
-import { Handle, Position, type NodeProps } from "@xyflow/react"
+import { Handle, Position, type Node, type NodeProps } from "@xyflow/react"
 import { Code } from "@phosphor-icons/react"
 import { getStatusColor } from "@/lib/node-utils"
 import { Textarea } from "@/components/ui/textarea"
@@ -16,7 +16,7 @@ export type JavaScriptNodeData = {
   onUpdate?: (data: any) => void
 }
 
-function JavaScriptNode({ data, selected }: NodeProps<JavaScriptNodeData>) {
+function JavaScriptNode({ data, selected }: NodeProps<Node<JavaScriptNodeData & Record<string, unknown>>>) {
   const status = data.status || "idle"
   const isExpanded = data.isExpanded || false
 
@@ -72,7 +72,7 @@ function JavaScriptNode({ data, selected }: NodeProps<JavaScriptNodeData>) {
           </div>
         )}
 
-        {data.output && !isExpanded && (
+        {data.output != null && !isExpanded && (
           <div className="mt-2 max-h-20 overflow-y-auto rounded bg-secondary p-2">
             <p className="text-xs text-foreground line-clamp-2">
               {typeof data.output === "string" ? data.output : JSON.stringify(data.output)}

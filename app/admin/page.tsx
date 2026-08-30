@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
-import { ArrowLeft, MagnifyingGlass, Trash, CircleNotch, ArrowCounterClockwise } from '@phosphor-icons/react'
+import { ArrowLeft, MagnifyingGlass, Trash, CircleNotch, ArrowCounterClockwise, ImageSquare } from '@phosphor-icons/react'
 import { motion, AnimatePresence } from 'motion/react'
 import { classifyExtractionError } from '@/lib/classify-extraction-error'
 import { useSoundsContext } from '@/contexts/sounds-context'
@@ -58,8 +58,8 @@ function SiteStatus({ site }: { site: Site }) {
   }
   return (
     <span className="inline-flex items-center gap-1.5 text-[11px] font-mono text-ink-3">
-      <span className="w-1.5 h-1.5 rounded-full bg-ink-4 shrink-0" aria-label="Status: Pending" />
-      Pending
+      <span className="w-1.5 h-1.5 rounded-full bg-ink-4 shrink-0" aria-label="Status: No preview" />
+      No preview
     </span>
   )
 }
@@ -142,8 +142,8 @@ export default function AdminPage() {
   const [dedupResult, setDedupResult] = useState<string | null>(null)
   const [isBackfilling, setIsBackfilling] = useState(false)
   const [backfillProgress, setBackfillProgress] = useState<{ done: number; total: number } | null>(null)
-  const [isFigmaBackfilling, setIsFigmaBackfilling] = useState(false)
-  const [figmaBackfillProgress, setFigmaBackfillProgress] = useState<{ done: number; total: number } | null>(null)
+  const [isPreviewBackfilling, setIsPreviewBackfilling] = useState(false)
+  const [previewBackfillProgress, setPreviewBackfillProgress] = useState<{ done: number; total: number } | null>(null)
   const [isMobbinImporting, setIsMobbinImporting] = useState(false)
   const [mobbinResult, setMobbinResult] = useState<{ added: number; skipped: number; errors: number } | null>(null)
   const [mobbinSites, setMobbinSites] = useState<{ url: string; name: string; industry: string }[]>([])
@@ -380,27 +380,27 @@ export default function AdminPage() {
     await loadSites()
   }
 
-  const handleFigmaBackfill = async () => {
-    const missing = allSites.filter(s => s.screenshot_url && !s.figma_capture_url)
-    if (!missing.length) return alert('All sites already have Figma capture data.')
-    if (!confirm(`Capture Figma layers for ${missing.length} sites? Each takes ~15s.`)) return
+  const handleBackfillPreviews = async () => {
+    const missing = allSites.filter(s => !s.screenshot_url)
+    if (!missing.length) return alert('All sites already have previews.')
+    if (!confirm(`Capture previews for ${missing.length} sites? This can take a while.`)) return
 
-    setIsFigmaBackfilling(true)
-    setFigmaBackfillProgress({ done: 0, total: missing.length })
+    setIsPreviewBackfilling(true)
+    setPreviewBackfillProgress({ done: 0, total: missing.length })
 
     for (let i = 0; i < missing.length; i++) {
       try {
-        await fetch('/api/admin/figma-backfill', {
+        await fetch('/api/admin/preview-capture', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ id: missing[i].id }),
         })
-      } catch { /* continue on failures */ }
-      setFigmaBackfillProgress({ done: i + 1, total: missing.length })
+      } catch { /* continue on individual failures */ }
+      setPreviewBackfillProgress({ done: i + 1, total: missing.length })
     }
 
-    setIsFigmaBackfilling(false)
-    setFigmaBackfillProgress(null)
+    setIsPreviewBackfilling(false)
+    setPreviewBackfillProgress(null)
     await loadSites()
   }
 
@@ -556,22 +556,24 @@ export default function AdminPage() {
         </div>
 
         {/* Stats row */}
-        <div className="flex items-center gap-6 py-3 border-y border-edge">
-          <div>
-            <p className="text-[22px] font-medium tabular-nums tracking-[-0.02em]">{allSites.length}</p>
-            <p className="text-[11px] font-mono text-ink-3 mt-0.5">Total sites</p>
+        <div className="space-y-3 py-3 border-y border-edge">
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
+            <div>
+              <p className="text-[22px] font-medium tabular-nums tracking-[-0.02em]">{allSites.length}</p>
+              <p className="text-[11px] font-mono text-ink-3 mt-0.5">Total sites</p>
+            </div>
+            <div className="w-px h-8 bg-border/40" />
+            <div>
+              <p className="text-[22px] font-medium tabular-nums tracking-[-0.02em] text-emerald-600 dark:text-emerald-400">{inGallery}</p>
+              <p className="text-[11px] font-mono text-ink-3 mt-0.5">In gallery</p>
+            </div>
+            <div className="w-px h-8 bg-border/40" />
+            <div>
+              <p className="text-[22px] font-medium tabular-nums tracking-[-0.02em] text-amber-600 dark:text-amber-400">{failed}</p>
+              <p className="text-[11px] font-mono text-ink-3 mt-0.5">Failed</p>
+            </div>
           </div>
-          <div className="w-px h-8 bg-border/40" />
-          <div>
-            <p className="text-[22px] font-medium tabular-nums tracking-[-0.02em] text-emerald-600 dark:text-emerald-400">{inGallery}</p>
-            <p className="text-[11px] font-mono text-ink-3 mt-0.5">In gallery</p>
-          </div>
-          <div className="w-px h-8 bg-border/40" />
-          <div>
-            <p className="text-[22px] font-medium tabular-nums tracking-[-0.02em] text-amber-600 dark:text-amber-400">{failed}</p>
-            <p className="text-[11px] font-mono text-ink-3 mt-0.5">Failed</p>
-          </div>
-          <div className="ml-auto flex items-center gap-3">
+          <div className="flex min-w-0 flex-wrap items-center gap-2">
             {dedupResult && (
               <span className="text-[12px] font-mono text-ink-3">{dedupResult}</span>
             )}
@@ -586,6 +588,16 @@ export default function AdminPage() {
               }
             </button>
             <button
+              onClick={handleBackfillPreviews}
+              disabled={isPreviewBackfilling}
+              className="h-8 px-3 text-[12px] font-mono border border-edge-strong rounded-[4px] disabled:opacity-40 hover:bg-muted transition-colors flex items-center gap-1.5 whitespace-nowrap"
+            >
+              {isPreviewBackfilling
+                ? <><CircleNotch className="w-3 h-3 animate-spin" weight="bold" /> {previewBackfillProgress?.done}/{previewBackfillProgress?.total}</>
+                : <><ImageSquare className="w-3 h-3" weight="regular" /> Backfill previews</>
+              }
+            </button>
+            <button
               onClick={handleBackfillMobile}
               disabled={isBackfilling}
               className="h-8 px-3 text-[12px] font-mono border border-edge-strong rounded-[4px] disabled:opacity-40 hover:bg-muted transition-colors flex items-center gap-1.5 whitespace-nowrap"
@@ -595,30 +607,20 @@ export default function AdminPage() {
                 : 'Backfill mobile'
               }
             </button>
-            <button
-              onClick={handleFigmaBackfill}
-              disabled={isFigmaBackfilling}
-              className="h-8 px-3 text-[12px] font-mono border border-edge-strong rounded-[4px] disabled:opacity-40 hover:bg-muted transition-colors flex items-center gap-1.5 whitespace-nowrap"
-            >
-              {isFigmaBackfilling
-                ? <><CircleNotch className="w-3 h-3 animate-spin" weight="bold" /> {figmaBackfillProgress?.done}/{figmaBackfillProgress?.total}</>
-                : 'Backfill Figma'
-              }
-            </button>
           </div>
         </div>
 
         {/* Mobbin import */}
         {mobbinSites.length > 0 && (
           <div className="border border-edge rounded-[4px] p-4 space-y-3">
-            <div className="flex items-center justify-between gap-4">
-              <div>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="min-w-0">
                 <p className="text-[13px] font-medium tracking-[-0.01em]">Mobbin curated sites</p>
                 <p className="text-[11px] font-mono text-ink-3 mt-0.5">
                   {mobbinSites.length} sites · SaaS, Fintech, Design, Dev Tools — duplicates skipped automatically
                 </p>
               </div>
-              <div className="flex items-center gap-3 shrink-0">
+              <div className="flex min-w-0 flex-wrap items-center gap-2">
                 {mobbinResult && (
                   <span className="text-[11px] font-mono text-ink-3">
                     +{mobbinResult.added} added · {mobbinResult.skipped} skipped{mobbinResult.errors > 0 ? ` · ${mobbinResult.errors} errors` : ''}

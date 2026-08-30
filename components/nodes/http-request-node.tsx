@@ -2,7 +2,7 @@
 
 import type React from "react"
 import { memo } from "react"
-import { Handle, Position, type NodeProps } from "@xyflow/react"
+import { Handle, Position, type Node, type NodeProps } from "@xyflow/react"
 import { Globe } from "@phosphor-icons/react"
 import { getStatusColor } from "@/lib/node-utils"
 import { Input } from "@/components/ui/input"
@@ -21,7 +21,7 @@ export type HttpRequestNodeData = {
   onUpdate?: (data: any) => void
 }
 
-function HttpRequestNode({ data, selected }: NodeProps<HttpRequestNodeData>) {
+function HttpRequestNode({ data, selected }: NodeProps<Node<HttpRequestNodeData & Record<string, unknown>>>) {
   const status = data.status || "idle"
   const isExpanded = data.isExpanded || false
 
@@ -111,7 +111,7 @@ function HttpRequestNode({ data, selected }: NodeProps<HttpRequestNodeData>) {
           </div>
         )}
 
-        {data.output && !isExpanded && (
+        {data.output != null && !isExpanded && (
           <div className="mt-2 max-h-20 overflow-y-auto rounded bg-secondary p-2">
             <p className="text-xs text-foreground line-clamp-2">
               {typeof data.output === "string" ? data.output : JSON.stringify(data.output)}

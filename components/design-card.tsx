@@ -72,11 +72,11 @@ export function DesignCard({ design, index, isSelected, onClick, onHover, onTagC
       // card lights the border. A card is too large to scale — that reads as
       // cheap — so the press registers in the card's own language instead.
       className={
-        'group relative flex flex-col rounded-[4px] overflow-hidden border ' +
-        'transition-colors duration-[var(--dur-2)] ease-[var(--ease-hover)] ' +
+        'group relative flex flex-col rounded-[4px] overflow-hidden border cursor-pointer ' +
+        'transition-[background-color,border-color] duration-[var(--dur-1)] ease-[var(--ease-hover)] ' +
         (isSelected
           ? 'border-foreground/60'
-          : 'border-edge hover:border-edge-strong active:border-foreground/40')
+          : 'border-edge hover:border-foreground/20 hover:bg-muted/20 active:border-foreground/40')
       }
     >
       {/* Screenshot */}
@@ -113,7 +113,7 @@ export function DesignCard({ design, index, isSelected, onClick, onHover, onTagC
         )}
 
         {/* Hover scrim — subtle, not harsh */}
-        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/[0.07] dark:group-hover:bg-black/[0.14] transition-colors duration-300 pointer-events-none" />
+        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/[0.04] dark:group-hover:bg-black/[0.1] transition-colors duration-300 pointer-events-none" />
       </div>
 
       {/* Metadata */}
@@ -154,7 +154,7 @@ export function DesignCard({ design, index, isSelected, onClick, onHover, onTagC
             // 44px without growing the hover fill or the focus ring. It stops
             // short of the screenshot above and the palette row below, so the
             // card's own click target loses nothing but the 8px gutter.
-            className="relative z-10 shrink-0 -mt-0.5 -mr-1 w-7 h-7 flex items-center justify-center rounded-[4px] text-ink-4 hover:text-ink hover:bg-muted transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-foreground/40 before:absolute before:-inset-2 before:content-['']"
+            className="relative z-10 shrink-0 -mt-0.5 -mr-1 w-7 h-7 flex items-center justify-center rounded-[4px] text-ink-4 hover:text-ink hover:bg-muted/40 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-foreground/40 before:absolute before:-inset-2 before:content-['']"
           >
             <ArrowUpRight className="w-3.5 h-3.5" weight="bold" />
           </a>

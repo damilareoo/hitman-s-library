@@ -327,6 +327,33 @@ const PREVIEW_SCRIPT = `<script>
   'use strict';
   var reported = false;
 
+  var style = document.createElement('style');
+  style.textContent = [
+    '*,*::before,*::after{cursor:auto!important}',
+    'a[href],a[href] *,button,button *,[role="button"],[role="button"] *,summary,summary *,label,label *,select,input[type="button"],input[type="submit"],input[type="checkbox"],input[type="radio"],[onclick],[onclick] *,[tabindex]:not([tabindex="-1"]),[tabindex]:not([tabindex="-1"]) *{cursor:pointer!important}',
+    'input:not([type="button"]):not([type="submit"]):not([type="checkbox"]):not([type="radio"]),textarea{cursor:text!important}',
+  ].join('');
+  document.head.appendChild(style);
+
+  function hideCustomCursorElements() {
+    try {
+      var els = document.querySelectorAll('[class*="cursor" i],[id*="cursor" i]');
+      for (var i = 0; i < els.length; i++) {
+        var el = els[i];
+        if (!(el instanceof HTMLElement)) continue;
+        var cs = window.getComputedStyle(el);
+        var rect = el.getBoundingClientRect();
+        var looksOverlay = cs.position === 'fixed' || cs.position === 'absolute';
+        var looksSmall = rect.width <= 180 && rect.height <= 180;
+        var floatsAbovePage = cs.pointerEvents === 'none' || Number(cs.zIndex) > 100;
+        if (looksOverlay && looksSmall && floatsAbovePage) {
+          el.style.setProperty('display', 'none', 'important');
+          el.style.setProperty('visibility', 'hidden', 'important');
+        }
+      }
+    } catch (err) {}
+  }
+
   function report(reason) {
     if (reported) return;
     reported = true;
@@ -351,9 +378,15 @@ const PREVIEW_SCRIPT = `<script>
   }
 
   window.addEventListener('load', function () {
+    hideCustomCursorElements();
+    setTimeout(hideCustomCursorElements, 500);
+    setTimeout(hideCustomCursorElements, 1500);
     setTimeout(checkRenderedError, 750);
     setTimeout(checkRenderedError, 2000);
   });
+
+  if (document.readyState !== 'loading') hideCustomCursorElements();
+  else document.addEventListener('DOMContentLoaded', hideCustomCursorElements, { once: true });
 })();
 </script>`
 

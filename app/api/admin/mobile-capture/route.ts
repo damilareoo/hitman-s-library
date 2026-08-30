@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { neon } from '@neondatabase/serverless'
+import type { Page } from 'puppeteer'
 import { getBrowser, captureMobileScreenshot } from '@/lib/browser-extraction'
 import { requireAdmin } from '@/lib/admin-auth'
 
@@ -21,13 +22,20 @@ export async function POST(req: NextRequest) {
   const browser = await getBrowser()
   if (!browser) return NextResponse.json({ error: 'Browser unavailable' }, { status: 500 })
 
-  const page = await browser.newPage()
+  let page: Page | null = null
   try {
-    await page.setViewport({ width: 1440, height: 900 })
-    await page.goto(source_url, { waitUntil: 'networkidle2', timeout: 15000 })
+    const activePage = await browser.newPage()
+    page = activePage
+    await activePage.setViewport({ width: 1440, height: 900 })
+    try {
+      await activePage.goto(source_url, { waitUntil: 'domcontentloaded', timeout: 15000 })
+    } catch (navigationError) {
+      console.warn('[mobile-capture] navigation incomplete, attempting screenshot:', navigationError)
+      if (activePage.url() === 'about:blank') throw navigationError
+    }
     await new Promise(r => setTimeout(r, 2000))
 
-    const mobileUrl = await captureMobileScreenshot(page, source_url)
+    const mobileUrl = await captureMobileScreenshot(activePage, source_url)
     if (mobileUrl) {
       await sql`UPDATE design_sources SET mobile_screenshot_url = ${mobileUrl} WHERE id = ${id}`
     }
@@ -36,6 +44,6 @@ export async function POST(req: NextRequest) {
     console.error('[mobile-capture]', err)
     return NextResponse.json({ error: String(err) }, { status: 500 })
   } finally {
-    await page.close()
+    await page?.close().catch(() => null)
   }
 }

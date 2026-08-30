@@ -1,7 +1,7 @@
 "use client"
 
 import { memo, useState } from "react"
-import { Handle, Position, type NodeProps } from "@xyflow/react"
+import { Handle, Position, type Node, type NodeProps } from "@xyflow/react"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -23,8 +23,7 @@ export interface LinkAnalyzerNodeData extends BaseNodeData {
   qualityScore?: number
 }
 
-function LinkAnalyzerNode({ data, selected }: NodeProps) {
-  const nodeData = data as LinkAnalyzerNodeData
+function LinkAnalyzerNode({ data: nodeData, selected }: NodeProps<Node<LinkAnalyzerNodeData & Record<string, unknown>>>) {
   const [url, setUrl] = useState(nodeData.url || "")
   const [industry, setIndustry] = useState(nodeData.industry || "")
   const [description, setDescription] = useState(nodeData.description || "")

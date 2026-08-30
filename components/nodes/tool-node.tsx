@@ -2,7 +2,7 @@
 
 import type React from "react"
 import { memo } from "react"
-import { Handle, Position, type NodeProps } from "@xyflow/react"
+import { Handle, Position, type Node, type NodeProps } from "@xyflow/react"
 import { Wrench } from "@phosphor-icons/react"
 import { getStatusColor } from "@/lib/node-utils"
 import { Label } from "@/components/ui/label"
@@ -20,7 +20,7 @@ export type ToolNodeData = {
   onUpdate?: (data: any) => void
 }
 
-function ToolNode({ data, selected }: NodeProps<ToolNodeData>) {
+function ToolNode({ data, selected }: NodeProps<Node<ToolNodeData & Record<string, unknown>>>) {
   const status = data.status || "idle"
   const isExpanded = data.isExpanded || false
 

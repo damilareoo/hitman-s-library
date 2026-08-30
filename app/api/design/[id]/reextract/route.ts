@@ -140,7 +140,7 @@ export async function POST(
     // Store the error reason so the UI can explain why data is unavailable
     await sql`
       UPDATE design_sources
-      SET metadata = COALESCE(metadata, '{}') || jsonb_build_object('extraction_error', ${err.message ?? 'Unknown error'})
+      SET metadata = COALESCE(metadata, '{}') || jsonb_build_object('extraction_error', ${err.message ?? 'Unknown error'}::text)
       WHERE id = ${id}
     `.catch(() => null)
     return NextResponse.json({ success: false, error: err.message }, { status: 500 })

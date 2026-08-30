@@ -3,14 +3,14 @@
 import React from "react"
 
 import { memo, useState, useCallback } from "react"
-import { Handle, Position, type NodeProps } from "@xyflow/react"
+import { Handle, Position, type Node, type NodeProps } from "@xyflow/react"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Table, UploadSimple, FileCsv, Link } from "@phosphor-icons/react"
+import { Table, UploadSimple, FileCsv, Link, CheckCircle } from "@phosphor-icons/react"
 import { NodeStatus } from "@/components/nodes/node-status"
 import type { BaseNodeData } from "@/lib/types"
 
@@ -26,8 +26,7 @@ export interface ExcelParserNodeData extends BaseNodeData {
   parsedCount?: number
 }
 
-function ExcelParserNode({ data, selected }: NodeProps) {
-  const nodeData = data as ExcelParserNodeData
+function ExcelParserNode({ data: nodeData, selected }: NodeProps<Node<ExcelParserNodeData & Record<string, unknown>>>) {
   const status = nodeData.status || "idle"
   const [dragOver, setDragOver] = useState(false)
   const [previewData, setPreviewData] = useState<string[] | null>(null)
@@ -231,7 +230,7 @@ function ExcelParserNode({ data, selected }: NodeProps) {
           </div>
         )}
 
-        {nodeData.output && (
+        {nodeData.output != null && (
           <div className="rounded-md bg-muted/50 p-2 text-xs max-h-24 overflow-auto">
             <pre className="whitespace-pre-wrap">{JSON.stringify(nodeData.output, null, 2)}</pre>
           </div>

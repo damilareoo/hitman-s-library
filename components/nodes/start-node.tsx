@@ -1,7 +1,7 @@
 "use client"
 
 import { memo } from "react"
-import { Handle, Position, type NodeProps } from "@xyflow/react"
+import { Handle, Position, type Node, type NodeProps } from "@xyflow/react"
 import { Play } from "@phosphor-icons/react"
 import { getStatusColor } from "@/lib/node-utils"
 
@@ -10,7 +10,7 @@ export type StartNodeData = {
   output?: any
 }
 
-function StartNode({ data, selected }: NodeProps<StartNodeData>) {
+function StartNode({ data, selected }: NodeProps<Node<StartNodeData & Record<string, unknown>>>) {
   const status = data.status || "idle"
 
   return (

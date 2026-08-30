@@ -13,6 +13,7 @@ interface SoundsContextValue {
   playCopy: () => void
   playClose: () => void
   playPanelOpen: () => void
+  playThemeToggle: (force?: boolean) => void
 }
 
 const SoundsContext = createContext<SoundsContextValue | null>(null)
@@ -28,7 +29,7 @@ const NOTE = {
 
 export function SoundsProvider({ children }: { children: React.ReactNode }) {
   const ctxRef = useRef<AudioContext | null>(null)
-  const [enabled, setEnabled] = useState(false)
+  const [enabled, setEnabled] = useState(true)
 
   function ac(): AudioContext | null {
     if (typeof window === 'undefined') return null
@@ -116,6 +117,13 @@ export function SoundsProvider({ children }: { children: React.ReactNode }) {
     })
   }, [enabled])
 
+  // Small chime — bright but shorter than success, suited to theme changes
+  const playThemeToggle = useCallback((force = false) => {
+    if (!enabled && !force) return
+    tone(NOTE.E5, NOTE.E5, 0.13, 0.04, 'sine', 0, 0.004)
+    tone(NOTE.A5, NOTE.A5, 0.19, 0.032, 'sine', 0.06, 0.006)
+  }, [enabled])
+
   // Major triad arpeggio — C5 E5 G5, warm triangle, musical resolve
   const playSuccess = useCallback(() => {
     if (!enabled) return
@@ -134,6 +142,7 @@ export function SoundsProvider({ children }: { children: React.ReactNode }) {
       enabled, setEnabled,
       playHover, playSelect, playSuccess, playFilterClick,
       playTabChange, playCopy, playClose, playPanelOpen,
+      playThemeToggle,
     }}>
       {children}
     </SoundsContext.Provider>
