@@ -2,7 +2,7 @@
 
 A personal design library for collecting, analyzing, and browsing websites — extracting colors, typography, assets, and full-page screenshots automatically.
 
-**Live:** https://mars-hitman-library.vercel.app
+**Live:** (https://www.hitmanslibrary.xyz/)
 
 ---
 
