@@ -97,7 +97,7 @@ export function SiteDetailPanel({ sourceId, metadata, onClose }: SiteDetailPanel
               rel="noopener noreferrer"
               aria-label={`Open ${hostname}`}
               title={`Open ${hostname}`}
-              className="h-8 rounded-[6px] border border-transparent px-2.5 text-ink-2 hover:text-ink hover:bg-[#F4F4F5] active:scale-[0.98] inline-flex items-center gap-1.5 transition-[background-color,color,transform] duration-[var(--dur-2)] ease-[var(--ease-sig)]"
+              className="h-8 rounded-[6px] border border-transparent px-2.5 text-ink-2 hover:text-ink hover:bg-muted active:scale-[0.98] inline-flex items-center gap-1.5 transition-[background-color,color,transform] duration-[var(--dur-2)] ease-[var(--ease-sig)]"
             >
               <span className="text-micro">Live link</span>
               <ArrowUpRight className="w-3.5 h-3.5" weight="bold" />

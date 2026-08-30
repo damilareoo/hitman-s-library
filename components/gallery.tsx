@@ -63,8 +63,8 @@ function sortButton(isActive: boolean): string {
     // Nothing sits above or below it inside the 56px header.
     "after:absolute after:inset-x-0 after:top-1/2 after:h-11 after:-translate-y-1/2 after:content-['']",
     isActive
-      ? 'bg-[#E8E8E8] text-ink border-edge-strong'
-      : 'text-ink-4 border-transparent bg-transparent hover:text-ink-3 hover:bg-[#F4F4F5]',
+      ? 'bg-muted text-ink border-edge-strong'
+      : 'text-ink-4 border-transparent bg-transparent hover:text-ink-3 hover:bg-foreground/[0.055]',
   ].join(' ')
 }
 

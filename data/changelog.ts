@@ -1,8 +1,16 @@
 export type ChangeType = 'new' | 'improved' | 'fixed'
 
+export type Author = 'damilare' | 'florence'
+
+export const AUTHORS: Record<Author, string> = {
+  damilare: 'Damilare',
+  florence: 'Florence',
+}
+
 export interface ChangeItem {
   type: ChangeType
   text: string
+  author?: Author
 }
 
 export interface ChangelogRelease {
@@ -12,10 +20,38 @@ export interface ChangelogRelease {
   items: ChangeItem[]
 }
 
+/** Everyone who has a line in this release, in the order they first appear. */
+export function releaseAuthors(release: ChangelogRelease): Author[] {
+  const seen: Author[] = []
+  for (const item of release.items) {
+    if (item.author && !seen.includes(item.author)) seen.push(item.author)
+  }
+  return seen
+}
+
 // To add a new release: prepend an entry to this array.
 // Dates are displayed as "Apr 2, 2026".
 // Types: "new" (green) | "improved" (blue) | "fixed" (muted)
+// Set `author` on an item to say who made it. A release where everyone's
+// lines belong to one person says so once, beside the date; a release with
+// more than one hand in it names each line instead, because that is the
+// only case where the question is actually being asked.
 const changelog: ChangelogRelease[] = [
+  {
+    date: '2026-08-30',
+    title: 'Fewer Things, Better Placed',
+    description: 'The panel had grown a floating toolbar that sat on top of the very thing it was there to show, and the gallery had two places telling you what was filtered and two more telling you how it was sorted. Most of this release is subtraction. The two faults at the end were found reviewing it — one of them invisible in the light, which is the only reason it survived being built.',
+    items: [
+      { type: 'improved', author: 'florence', text: 'The detail panel reads Preview, Mobile, Colors, Type. Mobile used to be a mode you switched into from a toolbar floating over the preview, which meant the control obscured the page it was describing and nobody found it — a device is a tab now, the same as everything else you might want to look at' },
+      { type: 'improved', author: 'florence', text: 'Live link moved into the panel header, beside the domain. It had been a button hovering in the top-right of the preview itself, drawn over whatever the site happened to put there, and the header is where a link off the page belongs' },
+      { type: 'improved', author: 'florence', text: 'Sort moved down beside the result count, where the thing it reorders actually is, and the header row now names what you are looking at — All sites, or the category, or Search results — with one Clear beside it. Categories select one at a time. Stacking them was possible and nobody did it; what it cost was a row of chips explaining a state that the sidebar was already showing' },
+      { type: 'improved', author: 'florence', text: 'Presentation mode is gone, along with the P shortcut. Filters and hover states are rounder and fill rather than outline, so an active row reads as on rather than as marked' },
+      { type: 'fixed',    author: 'florence', text: 'A capture that comes back empty now retries at viewport size before giving up, and the shared browser checks it is still connected before handing itself out — a disconnected instance was being reused for the rest of the process, so one crash took every capture after it' },
+      { type: 'improved', author: 'florence', text: 'Duplicate detection compares addresses in their reduced form rather than character for character, so a trailing slash or a utm parameter no longer files a second copy of a site already here' },
+      { type: 'fixed',    author: 'damilare', text: 'The selected sort was unreadable in the dark. The pill had been given a fixed light grey, which is the correct colour exactly once — in the light theme — and in the dark it put near-white text on a near-white ground at about 1.02 to 1, a difference no eye resolves. The label was there the whole time. Both that and the panel header hover now use the theme surface, which is the same grey in the light and the right one in the dark' },
+      { type: 'fixed',    author: 'damilare', text: 'Live previews were giving up on healthy pages. The preview watches for a script error and falls back to the stored screenshot when it sees one, but it was listening in the capture phase, where a failed image or a blocked font arrives looking exactly like a crash — and a page proxied out of its own origin fails a subresource nearly every time. One 404 on a decorative image was enough to replace a working preview with a photograph of one. It now reports only errors raised by the page itself' },
+    ],
+  },
   {
     date: '2026-08-27',
     title: 'Photographed Too Early',

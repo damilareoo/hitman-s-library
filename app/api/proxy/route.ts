@@ -360,8 +360,14 @@ const PREVIEW_SCRIPT = `<script>
     window.parent.postMessage({ type: 'proxy-failed', reason: reason || 'client-side preview error' }, '*');
   }
 
+  // Capture phase also catches subresource load failures (a 404 image, a
+  // blocked font, an analytics beacon). Those are routine on a proxied
+  // third-party page and say nothing about whether the page rendered, so
+  // only a genuine uncaught script error counts as a failed preview.
   window.addEventListener('error', function (event) {
-    report(event && event.message ? event.message : 'client-side preview error');
+    if (!event || event.target !== window) return;
+    if (!event.error && !event.message) return;
+    report(event.message || 'client-side preview error');
   }, true);
 
   window.addEventListener('unhandledrejection', function (event) {

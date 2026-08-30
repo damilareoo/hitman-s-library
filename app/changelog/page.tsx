@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { ArrowLeft } from '@phosphor-icons/react/dist/ssr'
-import changelog, { type ChangeItem } from '@/data/changelog'
+import changelog, { AUTHORS, releaseAuthors, type ChangeItem } from '@/data/changelog'
 
 export const metadata: Metadata = {
   title: 'Changelog',
@@ -64,7 +64,12 @@ export default function ChangelogPage() {
 
         {/* Releases */}
         <div className="space-y-0">
-          {changelog.map((release, i) => (
+          {changelog.map((release, i) => {
+            const authors = releaseAuthors(release)
+            // One person's release says so once, beside the date. Only a
+            // release with more than one hand in it needs each line named.
+            const attributeItems = authors.length > 1
+            return (
             <div key={i} className="relative flex gap-8 pb-14 last:pb-0">
 
               {/* Timeline line */}
@@ -85,11 +90,17 @@ export default function ChangelogPage() {
               {/* Content */}
               <div className="flex-1 min-w-0">
 
-                {/* Date + latest badge */}
+                {/* Date + byline + latest badge */}
                 <div className="flex items-center gap-2 mb-1">
                   <time className="text-meta text-ink-3">
                     {formatDate(release.date)}
                   </time>
+                  {authors.length > 0 && (
+                    <span className="text-meta text-ink-4">
+                      <span aria-hidden="true" className="mr-2">·</span>
+                      {authors.map(a => AUTHORS[a]).join(' & ')}
+                    </span>
+                  )}
                   {i === 0 && (
                     <span className="text-micro px-1.5 py-0.5 rounded-[4px] bg-foreground text-background">
                       Latest
@@ -121,15 +132,23 @@ export default function ChangelogPage() {
                           {item.text}
                         </p>
                       </div>
-                      <span className={`shrink-0 text-micro pt-[3px] ${TYPE_TEXT[item.type]}`}>
-                        {TYPE_LABEL[item.type]}
+                      <span className="shrink-0 flex flex-col items-end gap-0.5 pt-[3px]">
+                        <span className={`text-micro ${TYPE_TEXT[item.type]}`}>
+                          {TYPE_LABEL[item.type]}
+                        </span>
+                        {attributeItems && item.author && (
+                          <span className="text-micro text-ink-4">
+                            {AUTHORS[item.author]}
+                          </span>
+                        )}
                       </span>
                     </div>
                   ))}
                 </div>
               </div>
             </div>
-          ))}
+            )
+          })}
         </div>
 
         <p className="text-meta text-ink-4 mt-10">
