@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, useRef } from 'react'
+import { AdminRequests } from '@/components/admin-requests'
 import Link from 'next/link'
 import { ArrowLeft, MagnifyingGlass, Trash, CircleNotch, ArrowCounterClockwise, ImageSquare } from '@phosphor-icons/react'
 import { motion, AnimatePresence } from 'motion/react'
@@ -41,7 +42,7 @@ function getDomain(url: string) {
 function SiteStatus({ site }: { site: Site }) {
   if (site.screenshot_url) {
     return (
-      <span className="inline-flex items-center gap-1.5 text-[11px] font-mono text-emerald-600 dark:text-emerald-400">
+      <span className="inline-flex items-center gap-1.5 text-meta text-emerald-600 dark:text-emerald-400">
         <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" aria-label="Status: In gallery" />
         In gallery
       </span>
@@ -50,14 +51,14 @@ function SiteStatus({ site }: { site: Site }) {
   if (site.extraction_error) {
     const info = classifyExtractionError(site.extraction_error)
     return (
-      <span className="inline-flex items-center gap-1.5 text-[11px] font-mono text-amber-600 dark:text-amber-400" title={info.explanation}>
+      <span className="inline-flex items-center gap-1.5 text-meta text-amber-600 dark:text-amber-400" title={info.explanation}>
         <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" aria-label={`Status: ${info.label}`} />
         {info.label}
       </span>
     )
   }
   return (
-    <span className="inline-flex items-center gap-1.5 text-[11px] font-mono text-ink-3">
+    <span className="inline-flex items-center gap-1.5 text-meta text-ink-3">
       <span className="w-1.5 h-1.5 rounded-full bg-ink-4 shrink-0" aria-label="Status: No preview" />
       No preview
     </span>
@@ -97,8 +98,8 @@ function PasscodeGate({ onAuth }: { onAuth: () => void }) {
     <div className="fixed inset-0 bg-background flex items-center justify-center z-50">
       <div className="w-full max-w-xs space-y-4 px-6">
         <div className="space-y-1">
-          <h1 className="text-[15px] font-medium tracking-[-0.01em]">Admin</h1>
-          <p className="text-[12px] font-mono text-ink-3">Enter passcode to continue.</p>
+          <h1 className="text-titletext">Admin</h1>
+          <p className="text-ui text-ink-3">Enter passcode to continue.</p>
         </div>
         <div className="flex gap-2">
           <input
@@ -108,18 +109,18 @@ function PasscodeGate({ onAuth }: { onAuth: () => void }) {
             onChange={e => { setValue(e.target.value); setError(null) }}
             onKeyDown={e => e.key === 'Enter' && submit()}
             autoFocus
-            className="flex-1 h-9 px-3 text-[13px] font-mono bg-muted border border-edge-strong rounded-[4px] outline-none focus:border-foreground/40 transition-colors placeholder:text-ink-3"
+            className="flex-1 h-9 px-3 text-ui bg-muted border border-edge-strong rounded-[4px] outline-none focus:border-foreground/40 transition-colors placeholder:text-ink-3"
           />
           <button
             onClick={submit}
             disabled={loading || !value.trim()}
-            className="h-9 px-4 text-[12px] font-medium bg-foreground text-background rounded-[4px] disabled:opacity-40 hover:opacity-85 transition-opacity whitespace-nowrap shrink-0"
+            className="h-9 px-4 text-bodytext font-medium bg-foreground text-background rounded-[4px] disabled:opacity-40 hover:opacity-85 transition-opacity whitespace-nowrap shrink-0"
           >
             {loading ? '···' : 'Enter →'}
           </button>
         </div>
         {error && (
-          <p className="text-[12px] font-mono text-destructive">{error}</p>
+          <p className="text-ui text-destructive">{error}</p>
         )}
       </div>
     </div>
@@ -417,21 +418,21 @@ export default function AdminPage() {
       <header className="sticky top-0 z-50 border-b border-edge-strong bg-background/95 backdrop-blur-sm">
         <div className="h-14 px-5 md:px-7 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <h1 className="text-[15px] font-medium tracking-[-0.01em]">Hitman's Library</h1>
-            <span className="text-[10px] font-mono uppercase tracking-[0.12em] text-ink-3 border border-edge-strong px-1.5 py-0.5 rounded-[4px]">
+            <h1 className="text-titletext">Hitman's Library</h1>
+            <span className="text-micro text-ink-3 border border-edge-strong px-1.5 py-0.5 rounded-[4px]">
               Admin
             </span>
           </div>
           <div className="flex items-center gap-4">
             <Link
               href="/changelog"
-              className="flex items-center gap-1.5 text-[12px] font-mono text-ink-3 hover:text-foreground transition-colors"
+              className="flex items-center gap-1.5 text-ui text-ink-3 hover:text-foreground transition-colors"
             >
               Changelog
             </Link>
             <Link
               href="/"
-              className="flex items-center gap-1.5 text-[12px] font-mono text-ink-3 hover:text-foreground transition-colors"
+              className="flex items-center gap-1.5 text-ui text-ink-3 hover:text-foreground transition-colors"
             >
               <ArrowLeft className="w-3.5 h-3.5" weight="regular" />
               Gallery
@@ -442,11 +443,16 @@ export default function AdminPage() {
 
       <div className="max-w-4xl mx-auto px-5 md:px-7 py-8 space-y-8">
 
+        {/* Requests — public submissions waiting on a decision. Above bulk add
+            because reviewing what people asked for is the thing with someone
+            on the other end of it. */}
+        <AdminRequests />
+
         {/* Bulk add */}
         <div className="space-y-3">
           <button
             onClick={() => setBulkOpen(p => !p)}
-            className="flex items-center gap-1.5 text-[10px] uppercase tracking-[0.12em] font-medium text-ink-3 hover:text-foreground transition-colors"
+            className="flex items-center gap-1.5 text-micro font-medium text-ink-3 hover:text-foreground transition-colors"
           >
             <span>{bulkOpen ? '▾' : '▸'}</span> Bulk Add
           </button>
@@ -459,12 +465,12 @@ export default function AdminPage() {
                 onChange={e => setBulkInput(e.target.value)}
                 disabled={isRunningQueue}
                 rows={4}
-                className="w-full px-3 py-2 text-[12px] font-mono bg-muted border border-edge-strong rounded-[4px] outline-none focus:border-foreground/40 transition-colors placeholder:text-ink-3 disabled:opacity-60 resize-none"
+                className="w-full px-3 py-2 text-ui bg-muted border border-edge-strong rounded-[4px] outline-none focus:border-foreground/40 transition-colors placeholder:text-ink-3 disabled:opacity-60 resize-none"
               />
               <button
                 onClick={handleBulkSubmit}
                 disabled={isRunningQueue || !bulkInput.trim()}
-                className="h-9 px-4 text-[12px] font-medium bg-foreground text-background rounded-[4px] disabled:opacity-40 hover:opacity-85 transition-opacity"
+                className="h-9 px-4 text-bodytext font-medium bg-foreground text-background rounded-[4px] disabled:opacity-40 hover:opacity-85 transition-opacity"
               >
                 {isRunningQueue ? 'Processing…' : `Add ${bulkInput.split('\n').filter(u => u.trim()).length} URLs →`}
               </button>
@@ -481,9 +487,9 @@ export default function AdminPage() {
                     {item.status === 'done' && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />}
                     {item.status === 'error' && <span className="w-1.5 h-1.5 rounded-full bg-amber-500 inline-block" />}
                   </span>
-                  <span className="text-[12px] font-mono text-ink-3 truncate flex-1">{getDomain(item.url)}</span>
+                  <span className="text-ui text-ink-3 truncate flex-1">{getDomain(item.url)}</span>
                   {item.message && (
-                    <span className="text-[11px] font-mono text-ink-3 shrink-0">{item.message}</span>
+                    <span className="text-meta text-ink-3 shrink-0">{item.message}</span>
                   )}
                 </div>
               ))}
@@ -493,7 +499,7 @@ export default function AdminPage() {
 
         {/* Add site */}
         <div className="space-y-3">
-          <p className="text-[10px] uppercase tracking-[0.12em] font-medium text-ink-3">
+          <p className="text-micro font-medium text-ink-3">
             Add Site
           </p>
           <div className="flex gap-2">
@@ -505,12 +511,12 @@ export default function AdminPage() {
               onChange={e => { setLinkInput(e.target.value); setAddError(null) }}
               onKeyDown={e => e.key === 'Enter' && !isAdding && handleAdd()}
               disabled={isAdding}
-              className="flex-1 h-9 px-3 text-[13px] font-mono bg-muted border border-edge-strong rounded-[4px] outline-none focus:border-foreground/40 transition-colors placeholder:text-ink-3 disabled:opacity-60"
+              className="flex-1 h-9 px-3 text-ui bg-muted border border-edge-strong rounded-[4px] outline-none focus:border-foreground/40 transition-colors placeholder:text-ink-3 disabled:opacity-60"
             />
             <button
               onClick={handleAdd}
               disabled={isAdding || !linkInput.trim()}
-              className="h-9 px-4 text-[12px] font-medium bg-foreground text-background rounded-[4px] disabled:opacity-40 hover:opacity-85 transition-opacity whitespace-nowrap shrink-0"
+              className="h-9 px-4 text-bodytext font-medium bg-foreground text-background rounded-[4px] disabled:opacity-40 hover:opacity-85 transition-opacity whitespace-nowrap shrink-0"
             >
               {isAdding ? '···' : 'Add →'}
             </button>
@@ -527,7 +533,7 @@ export default function AdminPage() {
                 className="flex items-center gap-2"
               >
                 <span className="w-3.5 h-3.5 border border-current border-t-transparent rounded-full animate-spin text-ink-3 flex-shrink-0" />
-                <span className="text-[12px] font-mono text-ink-3">{addStage}</span>
+                <span className="text-ui text-ink-3">{addStage}</span>
               </motion.div>
             )}
             {addError && (
@@ -536,7 +542,7 @@ export default function AdminPage() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="text-[12px] font-mono text-destructive"
+                className="text-ui text-destructive"
               >
                 {addError}
               </motion.p>
@@ -547,7 +553,7 @@ export default function AdminPage() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="text-[12px] font-mono text-emerald-600 dark:text-emerald-400"
+                className="text-ui text-emerald-600 dark:text-emerald-400"
               >
                 ✓ Site added successfully
               </motion.p>
@@ -559,28 +565,28 @@ export default function AdminPage() {
         <div className="space-y-3 py-3 border-y border-edge">
           <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
             <div>
-              <p className="text-[22px] font-medium tabular-nums tracking-[-0.02em]">{allSites.length}</p>
-              <p className="text-[11px] font-mono text-ink-3 mt-0.5">Total sites</p>
+              <p className="text-heading tabular-nums">{allSites.length}</p>
+              <p className="text-meta text-ink-3 mt-0.5">Total sites</p>
             </div>
             <div className="w-px h-8 bg-border/40" />
             <div>
-              <p className="text-[22px] font-medium tabular-nums tracking-[-0.02em] text-emerald-600 dark:text-emerald-400">{inGallery}</p>
-              <p className="text-[11px] font-mono text-ink-3 mt-0.5">In gallery</p>
+              <p className="text-heading tabular-nums text-emerald-600 dark:text-emerald-400">{inGallery}</p>
+              <p className="text-meta text-ink-3 mt-0.5">In gallery</p>
             </div>
             <div className="w-px h-8 bg-border/40" />
             <div>
-              <p className="text-[22px] font-medium tabular-nums tracking-[-0.02em] text-amber-600 dark:text-amber-400">{failed}</p>
-              <p className="text-[11px] font-mono text-ink-3 mt-0.5">Failed</p>
+              <p className="text-heading tabular-nums text-amber-600 dark:text-amber-400">{failed}</p>
+              <p className="text-meta text-ink-3 mt-0.5">Failed</p>
             </div>
           </div>
           <div className="flex min-w-0 flex-wrap items-center gap-2">
             {dedupResult && (
-              <span className="text-[12px] font-mono text-ink-3">{dedupResult}</span>
+              <span className="text-ui text-ink-3">{dedupResult}</span>
             )}
             <button
               onClick={handleDeduplicate}
               disabled={isDeduping}
-              className="h-8 px-3 text-[12px] font-mono border border-edge-strong rounded-[4px] disabled:opacity-40 hover:bg-muted transition-colors flex items-center gap-1.5 whitespace-nowrap"
+              className="h-8 px-3 text-ui border border-edge-strong rounded-[4px] disabled:opacity-40 hover:bg-muted transition-colors flex items-center gap-1.5 whitespace-nowrap"
             >
               {isDeduping
                 ? <><CircleNotch className="w-3 h-3 animate-spin" weight="bold" /> Deduplicating…</>
@@ -600,7 +606,7 @@ export default function AdminPage() {
             <button
               onClick={handleBackfillMobile}
               disabled={isBackfilling}
-              className="h-8 px-3 text-[12px] font-mono border border-edge-strong rounded-[4px] disabled:opacity-40 hover:bg-muted transition-colors flex items-center gap-1.5 whitespace-nowrap"
+              className="h-8 px-3 text-ui border border-edge-strong rounded-[4px] disabled:opacity-40 hover:bg-muted transition-colors flex items-center gap-1.5 whitespace-nowrap"
             >
               {isBackfilling
                 ? <><CircleNotch className="w-3 h-3 animate-spin" weight="bold" /> {backfillProgress?.done}/{backfillProgress?.total}</>
@@ -615,21 +621,21 @@ export default function AdminPage() {
           <div className="border border-edge rounded-[4px] p-4 space-y-3">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="min-w-0">
-                <p className="text-[13px] font-medium tracking-[-0.01em]">Mobbin curated sites</p>
-                <p className="text-[11px] font-mono text-ink-3 mt-0.5">
+                <p className="text-bodytext font-medium">Mobbin curated sites</p>
+                <p className="text-meta text-ink-3 mt-0.5">
                   {mobbinSites.length} sites · SaaS, Fintech, Design, Dev Tools — duplicates skipped automatically
                 </p>
               </div>
               <div className="flex min-w-0 flex-wrap items-center gap-2">
                 {mobbinResult && (
-                  <span className="text-[11px] font-mono text-ink-3">
+                  <span className="text-meta text-ink-3">
                     +{mobbinResult.added} added · {mobbinResult.skipped} skipped{mobbinResult.errors > 0 ? ` · ${mobbinResult.errors} errors` : ''}
                   </span>
                 )}
                 <button
                   onClick={handleMobbinImport}
                   disabled={isMobbinImporting}
-                  className="h-8 px-3 text-[12px] font-mono border border-foreground/20 bg-foreground/[0.04] rounded-[4px] disabled:opacity-40 hover:bg-foreground/[0.08] hover:border-foreground/40 transition-colors flex items-center gap-1.5 whitespace-nowrap"
+                  className="h-8 px-3 text-ui border border-foreground/20 bg-foreground/[0.04] rounded-[4px] disabled:opacity-40 hover:bg-foreground/[0.08] hover:border-foreground/40 transition-colors flex items-center gap-1.5 whitespace-nowrap"
                 >
                   {isMobbinImporting
                     ? <><CircleNotch className="w-3 h-3 animate-spin" weight="bold" /> Importing…</>
@@ -672,10 +678,10 @@ export default function AdminPage() {
               placeholder="Search sites…"
               value={searchInput}
               onChange={e => setSearchInput(e.target.value)}
-              className="w-full h-8 pl-8 pr-3 text-[13px] font-mono bg-muted border border-edge-strong rounded-[4px] outline-none focus:border-foreground/40 transition-colors placeholder:text-ink-3"
+              className="w-full h-8 pl-8 pr-3 text-ui bg-muted border border-edge-strong rounded-[4px] outline-none focus:border-foreground/40 transition-colors placeholder:text-ink-3"
             />
           </div>
-          <span className="text-[12px] font-mono text-ink-3">
+          <span className="text-ui text-ink-3">
             {isLoadingSites ? '…' : `${filtered.length} sites`}
           </span>
         </div>
@@ -687,7 +693,7 @@ export default function AdminPage() {
           </div>
         ) : paginated.length === 0 ? (
           <div className="flex items-center justify-center py-16">
-            <p className="text-[13px] font-mono text-ink-3">No sites found.</p>
+            <p className="text-ui text-ink-3">No sites found.</p>
           </div>
         ) : (
           <div className="space-y-px">
@@ -717,14 +723,14 @@ export default function AdminPage() {
                 {/* Info */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <p className="text-[13px] font-medium truncate tracking-[-0.01em]">
+                    <p className="text-bodytext font-medium truncate">
                       {site.source_name}
                     </p>
                     <span className="text-[10px] font-mono text-ink-3 border border-edge px-1.5 py-0.5 rounded-[4px] shrink-0">
                       {site.industry}
                     </span>
                   </div>
-                  <p className="text-[11px] font-mono text-ink-3 truncate mt-0.5">
+                  <p className="text-meta text-ink-3 truncate mt-0.5">
                     {getDomain(site.source_url)}
                   </p>
                 </div>
@@ -735,7 +741,7 @@ export default function AdminPage() {
                 </div>
 
                 {/* Date */}
-                <p className="text-[11px] font-mono text-ink-3 shrink-0 hidden md:block">
+                <p className="text-meta text-ink-3 shrink-0 hidden md:block">
                   {site.created_at ? new Date(site.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '—'}
                 </p>
 
@@ -761,17 +767,17 @@ export default function AdminPage() {
             <button
               onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
               disabled={currentPage === 1}
-              className="h-8 px-3 text-[12px] font-mono border border-edge-strong rounded-[4px] disabled:opacity-40 hover:bg-muted transition-colors"
+              className="h-8 px-3 text-ui border border-edge-strong rounded-[4px] disabled:opacity-40 hover:bg-muted transition-colors"
             >
               ←
             </button>
-            <span className="text-[12px] font-mono text-ink-3 tabular-nums">
+            <span className="text-ui text-ink-3 tabular-nums">
               {currentPage} / {totalPages}
             </span>
             <button
               onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
               disabled={currentPage === totalPages}
-              className="h-8 px-3 text-[12px] font-mono border border-edge-strong rounded-[4px] disabled:opacity-40 hover:bg-muted transition-colors"
+              className="h-8 px-3 text-ui border border-edge-strong rounded-[4px] disabled:opacity-40 hover:bg-muted transition-colors"
             >
               →
             </button>

@@ -3,6 +3,7 @@
 //
 // Both the server-rendered gallery and /api/design/filter-advanced call these,
 // so the first paint and every subsequent fetch cannot drift apart.
+import { unstable_cache } from 'next/cache'
 import { neon } from '@neondatabase/serverless'
 import { cleanTitle, decodeEntities } from './clean-title'
 
@@ -241,3 +242,40 @@ export async function queryCategories(): Promise<{ name: string; count: number }
       return b.count - a.count
     })
 }
+
+/**
+ * The crawlable index of the whole collection.
+ *
+ * The gallery paginates as you scroll, so this list is what guarantees every
+ * site is reachable from the HTML. It is also completely identical between
+ * requests, and it was being recomputed — 100 full rows, joins and all — on
+ * every single page view, purely to render links nobody sees. Cache it.
+ */
+export const queryAllSitesIndex = unstable_cache(
+  async () => {
+    const rows = await sql`
+      SELECT id, source_url, source_name
+      FROM design_sources
+      WHERE screenshot_url IS NOT NULL
+      ORDER BY created_at DESC
+      LIMIT 200
+    `
+    return rows.map(row => ({
+      id: String(row.id),
+      url: row.source_url as string,
+      title: cleanTitle(row.source_name, row.source_url),
+    }))
+  },
+  ['all-sites-index'],
+  { revalidate: 3600, tags: ['designs'] },
+)
+
+/**
+ * Category counts change only when a site is added or removed, so serving them
+ * a few minutes stale costs nothing and takes a query off the render path.
+ */
+export const queryCategoriesCached = unstable_cache(
+  queryCategories,
+  ['categories'],
+  { revalidate: 300, tags: ['designs'] },
+)

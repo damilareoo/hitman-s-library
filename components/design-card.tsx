@@ -47,6 +47,12 @@ export function DesignCard({ design, index, isSelected, onClick, onHover, onTagC
   const domain = getDomain(design.url)
   const label = design.title || domain
 
+  // Screenshots live in our own blob storage and are safe to run through the
+  // image optimizer. A fallback og:image comes from whatever host the site is
+  // on, and allowing those meant configuring the optimizer for every hostname
+  // on the internet. Serve them as-is instead.
+  const isOptimizable = Boolean(imgSrc && imgSrc.includes('.public.blob.vercel-storage.com'))
+
   function handleImgError() {
     if (design.fallback_thumbnail && imgSrc !== design.fallback_thumbnail) {
       setImgSrc(design.fallback_thumbnail)
@@ -103,6 +109,7 @@ export function DesignCard({ design, index, isSelected, onClick, onHover, onTagC
               img.naturalWidth > 0 ? setImgStatus('loaded') : handleImgError()
             }}
             onError={handleImgError}
+            unoptimized={!isOptimizable}
             className={"hover-zoom object-cover object-top transition-[opacity,transform] duration-[450ms] ease-[var(--ease-sig)] " + (imgStatus === 'loaded' ? 'opacity-100' : 'opacity-0')}
           />
         )}

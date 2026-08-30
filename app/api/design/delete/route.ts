@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { revalidateTag } from 'next/cache'
 import { neon } from '@neondatabase/serverless'
 import { requireAdmin } from '@/lib/admin-auth'
 
@@ -29,6 +30,10 @@ export async function DELETE(req: NextRequest) {
         VALUES (NULL, ${source.source_url}, ${source.source_name}, 'deleted')
       `.catch(() => null)
     }
+
+    // Category counts and the crawlable index are cached — drop a deleted site
+    // out of both rather than leaving it listed for the rest of the window.
+    revalidateTag('designs', 'max')
 
     return NextResponse.json({ success: true })
   } catch (error) {

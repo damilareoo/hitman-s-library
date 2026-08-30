@@ -33,6 +33,19 @@ export async function POST(
   try {
     const extractionResult = await extractFullDesignData(url)
 
+    // Nothing rendered: the site is down, parked, or challenging us. Clearing
+    // the error and writing empty results over a site that was fine yesterday
+    // is the worse outcome, so this returns the reason and touches nothing.
+    if (extractionResult.renderedNothing) {
+      const reason = 'The page rendered nothing readable — the site may be down or serving a challenge'
+      await sql`
+        UPDATE design_sources
+        SET metadata = COALESCE(metadata, '{}') || jsonb_build_object('extraction_error', ${reason}::text)
+        WHERE id = ${id}
+      `.catch(() => null)
+      return NextResponse.json({ error: reason, unchanged: true }, { status: 422 })
+    }
+
     const colorFormats = deduplicateColors(extractionResult.colors)
       .map(c => toColorFormats(c))
       .filter((c): c is { hex: string; oklch: string } => c !== null)
@@ -103,7 +116,10 @@ export async function POST(
       try {
         await typClient.query('BEGIN')
         await typClient.query(
-          "DELETE FROM design_typography WHERE source_id = $1 AND role != 'legacy'",
+          // `role != 'legacy'` is NULL for the legacy rows, whose role is NULL,
+          // so it never matched them and they outlived every re-extraction.
+          // Nothing reads them — clear the source outright and rewrite.
+          'DELETE FROM design_typography WHERE source_id = $1',
           [id]
         )
         for (const t of extractionResult.typography) {
@@ -140,6 +156,10 @@ export async function POST(
     // Store the error reason so the UI can explain why data is unavailable
     await sql`
       UPDATE design_sources
+      -- ::text matters. jsonb_build_object takes "any", so without a cast
+      -- Postgres cannot infer the parameter's type and raises "could not
+      -- determine data type of parameter $1". The .catch below then swallowed
+      -- it, which is why no extraction error has ever actually been recorded.
       SET metadata = COALESCE(metadata, '{}') || jsonb_build_object('extraction_error', ${err.message ?? 'Unknown error'}::text)
       WHERE id = ${id}
     `.catch(() => null)

@@ -54,7 +54,7 @@ export default function ChangelogPage() {
 
         {/* Page header */}
         <div className="mb-14">
-          <h1 className="text-[28px] font-semibold tracking-[-0.03em] text-foreground leading-none mb-2">
+          <h1 className="text-display text-foreground mb-2">
             Changelog
           </h1>
           <p className="text-bodytext text-ink-3">
@@ -98,13 +98,13 @@ export default function ChangelogPage() {
                 </div>
 
                 {/* Release title */}
-                <h2 className="text-[16px] font-semibold tracking-[-0.02em] text-foreground leading-snug mb-1">
+                <h2 className="text-heading text-foreground mb-1.5">
                   {release.title}
                 </h2>
 
                 {/* Optional description */}
                 {release.description && (
-                  <p className="text-bodytext text-ink-2 leading-relaxed mb-4">
+                  <p className="text-reading text-ink-2 mb-4">
                     {release.description}
                   </p>
                 )}
@@ -117,7 +117,7 @@ export default function ChangelogPage() {
                         <div className={`w-1.5 h-1.5 rounded-full ${DOT_COLOR[item.type]}`} />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-bodytext text-ink-2 leading-relaxed">
+                        <p className="text-reading text-ink-2">
                           {item.text}
                         </p>
                       </div>

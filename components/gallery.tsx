@@ -4,12 +4,13 @@ import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import { useDragControls } from 'motion/react'
 import { useTheme } from 'next-themes'
-import { Sun, Moon, SpeakerHigh, SpeakerSlash, MagnifyingGlass, X } from '@phosphor-icons/react'
+import { Sun, Moon, SpeakerHigh, SpeakerSlash, MagnifyingGlass, X, ArrowRight, Plus } from '@phosphor-icons/react'
 import { SiteDetailPanel } from '@/components/site-detail-panel'
 import { DesignCard, type Design } from '@/components/design-card'
 import { Spinner } from '@/components/ui/spinner'
 import { motion, AnimatePresence } from 'motion/react'
 import { useSoundsContext } from '@/contexts/sounds-context'
+import { RequestSiteDialog } from '@/components/request-site-dialog'
 import { EASE, DUR } from '@/lib/motion'
 import Link from 'next/link'
 
@@ -87,8 +88,13 @@ const ICON_BUTTON =
   'text-ink-3 hover:text-ink hover:bg-muted active:scale-[0.98] transition-[background-color,border-color,color,transform] duration-[var(--dur-2)] ease-[var(--ease-sig)] ' +
   "after:absolute after:left-1/2 after:top-1/2 after:h-11 after:w-[42px] after:-translate-x-1/2 after:-translate-y-1/2 after:content-['']"
 
-function rowRule(_isActive: boolean): string {
-  return 'hidden'
+// Counts share a fixed column and sit right-aligned, so the digits line up down
+// the list instead of ending wherever each label happens to leave them.
+function sidebarCount(isActive: boolean): string {
+  return [
+    'text-meta tabular-nums shrink-0 w-7 text-right transition-colors',
+    isActive ? 'text-ink-3' : 'text-ink-4',
+  ].join(' ')
 }
 
 function SkeletonCard() {
@@ -127,6 +133,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories }
   const [isLoadingMore, setIsLoadingMore] = useState(false)
   const [isRefetching, setIsRefetching] = useState(false)
   const [searchInput, setSearchInput] = useState(search)
+  const [requestOpen, setRequestOpen] = useState(false)
 
   const [minGridHeight, setMinGridHeight] = useState<number | null>(null)
   const gridRef = useRef<HTMLDivElement>(null)
@@ -276,6 +283,11 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories }
     obs.observe(sentinel)
     return () => obs.disconnect()
   }, [pagination.hasMore, pagination.offset, isLoadingMore, isRefetching, loadDesigns])
+
+  /** Open the panel for an id we may not have a loaded card for. */
+  const selectDesignById = useCallback((id: string) => {
+    updateParams(p => p.set('site', id))
+  }, [updateParams])
 
   const selectDesign = useCallback((design: Design | null) => {
     updateParams(p => {
@@ -458,6 +470,18 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories }
           </div>
 
           <div className="flex items-center gap-1.5 ml-auto">
+            {/* Deliberately in the same quiet register as Changelog rather
+                than styled as a call to action. The loud version of this
+                belongs in the zero-results state, where it is an answer to
+                something the person just asked for. */}
+            <button
+              onClick={() => setRequestOpen(true)}
+              className="relative hidden sm:flex items-center gap-1 text-meta text-ink-3 hover:text-ink transition-colors mr-1 after:absolute after:inset-x-0 after:top-1/2 after:h-11 after:-translate-y-1/2 after:content-['']"
+            >
+              <Plus className="w-3 h-3" weight="bold" />
+              Request a site
+            </button>
+
             <Link
               href="/changelog"
               // 17px tall as drawn. The overlay carries the touch target so the
@@ -522,18 +546,21 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories }
 
         {/* Sidebar */}
         <aside className="hidden xl:flex xl:col-span-2 flex-col sticky top-14 h-[calc(100vh-56px)] border-r border-edge-strong bg-background overflow-y-auto">
-          <nav className="flex-1 py-4 px-3" aria-label="Category filters">
-            <p className="px-2.5 pb-2 text-micro text-ink-4 select-none">Categories</p>
-            <ul className="space-y-0.5" role="list">
+          <nav className="flex-1 py-5 px-2.5" aria-label="Category filters">
+            <p className="px-2.5 pb-2.5 text-micro text-ink-4 select-none">Library</p>
+
+            {/* space-y-px rather than 0.5: once rows fill when selected, the gap
+                between them is reading as part of the shape, and 4px of it made
+                the list look like stacked buttons instead of one column. */}
+            <ul className="space-y-px" role="list">
               <li>
                 <button
                   onClick={() => handleFilterChange('All')}
                   aria-pressed={industries.length === 0}
                   className={sidebarRow(industries.length === 0)}
                 >
-                  <span className={rowRule(industries.length === 0)} aria-hidden="true" />
-                  <span className="flex-1 text-left">All</span>
-                  <span className="text-meta text-ink-4 tabular-nums">{libraryTotal}</span>
+                  <span className="flex-1 text-left text-bodytext">All</span>
+                  <span className={sidebarCount(industries.length === 0)}>{libraryTotal}</span>
                 </button>
               </li>
               {categories.map(({ name, count }) => {
@@ -545,9 +572,8 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories }
                       aria-pressed={isActive}
                       className={sidebarRow(isActive)}
                     >
-                      <span className={rowRule(isActive)} aria-hidden="true" />
-                      <span className="flex-1 text-left truncate">{name}</span>
-                      <span className="text-meta text-ink-4 tabular-nums">{count}</span>
+                      <span className="flex-1 text-left truncate text-bodytext">{name}</span>
+                      <span className={sidebarCount(isActive)}>{count}</span>
                     </button>
                   </li>
                 )
@@ -677,10 +703,30 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories }
                   ? Array.from({ length: 8 }).map((_, i) => <SkeletonCard key={`s${i}`} />)
                   : designs.length === 0
                     ? (
-                      <div className="col-span-full flex flex-col items-center justify-center py-24 gap-3">
+                      <div className="col-span-full flex flex-col items-center justify-center py-24 gap-3 text-center">
                         <p className="text-bodytext text-ink-3">
-                          {hasFilters ? 'No sites match these filters' : 'No sites yet'}
+                          {hasFilters ? 'Nothing here yet' : 'No sites yet'}
                         </p>
+
+                        {/* Searching and finding nothing is the moment someone
+                            most wants a site added, and the search term is
+                            already the thing they want. Offering it anywhere
+                            else means asking them to type it twice. */}
+                        {search.trim() && (
+                          <>
+                            <p className="text-reading text-ink-2 max-w-[280px]">
+                              Want <span className="text-ink">{search.trim()}</span> in the library?
+                            </p>
+                            <button
+                              onClick={() => setRequestOpen(true)}
+                              className="mt-1 h-9 px-4 inline-flex items-center gap-2 rounded-[6px] bg-foreground text-background text-bodytext font-medium hover:opacity-90 transition-opacity"
+                            >
+                              Request it
+                              <ArrowRight className="w-3.5 h-3.5" weight="bold" />
+                            </button>
+                          </>
+                        )}
+
                         {hasFilters && (
                           <button
                             onClick={clearAll}
@@ -721,7 +767,14 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories }
           </div>
         </main>
 
-        {/* Detail panel — the column is always here. The empty state names
+        <RequestSiteDialog
+        open={requestOpen}
+        onClose={() => setRequestOpen(false)}
+        initialUrl={search.trim()}
+        onOpenSite={selectDesignById}
+      />
+
+      {/* Detail panel — the column is always here. The empty state names
             what the panel holds, which is how you learn the tabs exist. */}
         <div className="hidden xl:flex xl:col-span-4 flex-col sticky top-14 h-[calc(100vh-56px)] border-l border-edge-strong bg-background">
           <AnimatePresence mode="wait">

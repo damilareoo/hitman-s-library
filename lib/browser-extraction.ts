@@ -88,310 +88,118 @@ export async function getBrowser() {
   return browserInitPromise
 }
 
-export async function extractTypographyFromRenderedPage(url: string): Promise<string[]> {
-  const fonts: Set<string> = new Set()
+// Getting the document is what must succeed. Waiting for a quiet network is a
+// courtesy we extend briefly and then withdraw.
+const NAV_TIMEOUT = 20000
+const IDLE_TIMEOUT = 8000
 
+// Headless Chrome announces itself as "HeadlessChrome" in its default UA, which
+// is the cheapest bot signal there is. Sites that would happily render for a
+// browser turned us away on the strength of that string alone.
+const DESKTOP_UA =
+  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 ' +
+  '(KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
+
+/**
+ * Navigate in a way that degrades instead of throwing.
+ *
+ * This used to be `page.goto(url, { waitUntil: 'networkidle2', timeout: 15000 })`
+ * with nothing catching it. `networkidle2` never arrives on a site with
+ * analytics polling or an open websocket, so the timeout fired, the throw
+ * escaped `extractFullDesignData`, and the caller fell all the way back to
+ * reading colours out of raw HTML — one unusable row and no typography at all.
+ * A page that rendered but never went quiet is a page we can extract from.
+ */
+export async function gotoResilient(page: Page, url: string): Promise<'idle' | 'loaded' | 'partial'> {
   try {
-    const browser = await getBrowser()
-    if (!browser) {
-      console.warn('[v0] Browser not available, falling back to HTML parsing')
-      return []
-    }
-
-    const page = await browser.newPage()
-    
-    // Set viewport
-    await page.setViewport({ width: 1440, height: 900 })
-
-    // Navigate to page with timeout
-    try {
-      await page.goto(url, { 
-        waitUntil: 'networkidle2', 
-        timeout: 15000 
-      })
-    } catch (navigationError) {
-      console.warn('[v0] Navigation timeout, proceeding with partial content:', navigationError)
-      // Continue anyway with what we have
-    }
-
-    // Wait for fonts to load and JavaScript to execute
-    await page.waitForTimeout(3000)
-
-    // COMPREHENSIVE EXTRACTION STRATEGY 1: Extract all computed styles
-    const computedFonts = await page.evaluate(() => {
-      const fonts: Set<string> = new Set()
-      
-      // Get ALL elements on page (including shadow DOM if accessible)
-      const elements = document.querySelectorAll('*')
-      console.log('[v0 BROWSER] Total elements:', elements.length)
-      
-      let foundCount = 0
-      elements.forEach((element, idx) => {
-        try {
-          const styles = window.getComputedStyle(element)
-          const fontFamily = styles.fontFamily
-
-          if (fontFamily && fontFamily.trim() && fontFamily !== 'initial') {
-            // Parse all fonts in the stack, don't filter
-            const fontList = fontFamily.split(',').map(f => {
-              let cleaned = f.trim().replace(/^["']|["']$/g, '')
-              return cleaned
-            })
-            
-            fontList.forEach((f: string) => {
-              if (f && f.length > 0 && f.length < 200) {
-                fonts.add(f)
-                foundCount++
-              }
-            })
-          }
-        } catch (e) {
-          // Ignore
-        }
-      })
-      
-      console.log('[v0 BROWSER] Found computed fonts:', fonts.size, 'in', foundCount, 'element references')
-      return Array.from(fonts)
-    })
-
-    computedFonts.forEach((f: string) => {
-      if (f) fonts.add(f)
-    })
-    console.log('[v0] Computed fonts extracted:', fonts.size)
-
-    // EXTRACTION STRATEGY 2: Check ALL stylesheets for @font-face rules
-    const fontFaceRules = await page.evaluate(() => {
-      const fonts: string[] = []
-      
-      try {
-        const sheets = document.styleSheets
-        console.log('[v0 BROWSER] Total stylesheets:', sheets.length)
-        
-        for (let i = 0; i < sheets.length; i++) {
-          try {
-            const rules = sheets[i].cssRules
-            if (!rules) continue
-            
-            for (let j = 0; j < rules.length; j++) {
-              try {
-                const rule = rules[j]
-                // Check for @font-face
-                if (rule.type === 5 || rule instanceof CSSFontFaceRule) {
-                  const fontFamily = (rule as any).style?.fontFamily || (rule as CSSFontFaceRule).style?.fontFamily
-                  if (fontFamily) {
-                    const cleaned = fontFamily.replace(/^["']|["']$/g, '').trim()
-                    if (cleaned) {
-                      fonts.push(cleaned)
-                      console.log('[v0 BROWSER] Found @font-face:', cleaned)
-                    }
-                  }
-                }
-              } catch (e) {
-                // Skip individual rule errors
-              }
-            }
-          } catch (e) {
-            // Skip cross-origin or access errors
-          }
-        }
-      } catch (e) {
-        console.error('[v0 BROWSER] Error checking stylesheets:', e)
-      }
-      
-      return fonts
-    })
-
-    fontFaceRules.forEach((f: string) => {
-      if (f) fonts.add(f)
-    })
-    console.log('[v0] Font-face rules extracted:', fontFaceRules.length)
-
-    // EXTRACTION STRATEGY 3: Check link tags for font imports
-    const linkFonts = await page.evaluate(() => {
-      const fonts: string[] = []
-      const links = document.querySelectorAll('link[href*="font"], link[href*="googleapis"]')
-      
-      links.forEach(link => {
-        const href = link.getAttribute('href') || ''
-        
-        // Google Fonts
-        if (href.includes('fonts.googleapis.com')) {
-          const match = href.match(/family=([^&]+)/)
-          if (match) {
-            try {
-              const families = decodeURIComponent(match[1]).split('|')
-              families.forEach((f: string) => {
-                const name = f.split(':')[0].trim()
-                if (name) fonts.push(name)
-              })
-            } catch (e) {}
-          }
-        }
-      })
-      
-      return fonts
-    })
-
-    linkFonts.forEach((f: string) => {
-      if (f) fonts.add(f)
-    })
-    console.log('[v0] Link fonts extracted:', linkFonts.length)
-
-    // EXTRACTION STRATEGY 4: Check for CSS text with font-family declarations
-    const cssTextFonts = await page.evaluate(() => {
-      const fonts: string[] = []
-      
-      try {
-        // Get all style elements
-        const styles = document.querySelectorAll('style')
-        styles.forEach((style) => {
-          const cssText = style.textContent || ''
-          // Look for all font-family declarations
-          const matches = cssText.match(/font-family\s*:\s*([^;}\n]+)/gi)
-          if (matches) {
-            matches.forEach(match => {
-              const value = match.replace(/font-family\s*:\s*/i, '').trim()
-              const fontList = value.split(',').map(f => f.trim().replace(/^["']|["']$/g, ''))
-              fontList.forEach((f: string) => {
-                if (f && f.length > 0) fonts.push(f)
-              })
-            })
-          }
-        })
-      } catch (e) {
-        console.error('[v0 BROWSER] Error parsing CSS text:', e)
-      }
-      
-      return fonts
-    })
-
-    cssTextFonts.forEach((f: string) => {
-      if (f) fonts.add(f)
-    })
-    console.log('[v0] CSS text fonts extracted:', cssTextFonts.length)
-
-    // EXTRACTION STRATEGY 5: Parse inline styles
-    const inlineFonts = await page.evaluate(() => {
-      const fonts: string[] = []
-      
-      const elements = document.querySelectorAll('[style*="font"]')
-      elements.forEach(el => {
-        const style = el.getAttribute('style') || ''
-        const matches = style.match(/font-family\s*:\s*([^;]+)/i)
-        if (matches) {
-          const value = matches[1].trim()
-          const fontList = value.split(',').map(f => f.trim().replace(/^["']|["']$/g, ''))
-          fontList.forEach((f: string) => {
-            if (f && f.length > 0) fonts.push(f)
-          })
-        }
-      })
-      
-      return fonts
-    })
-
-    inlineFonts.forEach((f: string) => {
-      if (f) fonts.add(f)
-    })
-    console.log('[v0] Inline fonts extracted:', inlineFonts.length)
-
-    await page.close()
-    
-    const result = Array.from(fonts)
-    console.log('[v0] Total unique fonts found:', result.length)
-    console.log('[v0] Fonts:', result.slice(0, 30))
-    
-    return result.slice(0, 50) // Allow up to 50 fonts
-  } catch (error) {
-    console.error('[v0] Error extracting typography from rendered page:', error)
-    return []
+    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: NAV_TIMEOUT })
+  } catch (err) {
+    // A timeout still usually leaves a rendered document behind. Only a
+    // navigation that never committed is genuinely unusable, and that shows up
+    // as a page still sitting on about:blank.
+    const current = page.url()
+    if (!current || current === 'about:blank') throw err
+    console.warn(`[extract] navigation incomplete for ${url} — continuing with what rendered`)
+    return 'partial'
   }
+
+  const idle = await page
+    .waitForNetworkIdle({ idleTime: 500, timeout: IDLE_TIMEOUT })
+    .then(() => 'idle' as const)
+    .catch(() => 'loaded' as const)
+
+  return idle
 }
 
-export async function extractAllDesignDataFromRenderedPage(url: string): Promise<{
-  fonts: string[]
-  colors: string[]
-  computedStyles: Record<string, any>
-}> {
-  try {
-    const browser = await getBrowser()
-    if (!browser) {
-      return { fonts: [], colors: [], computedStyles: {} }
-    }
-
-    const page = await browser.newPage()
-    await page.setViewport({ width: 1440, height: 900 })
-
-    try {
-      await page.goto(url, { 
-        waitUntil: 'networkidle2', 
-        timeout: 15000 
-      })
-    } catch (error) {
-      console.warn('[v0] Navigation timeout, proceeding:', error)
-    }
-
-    await page.waitForTimeout(3000)
-
-    const data = await page.evaluate(() => {
-      const fonts = new Set<string>()
-      const colors = new Set<string>()
-      const computedStyles: Record<string, any> = {}
-
-      // Extract all unique fonts and colors from computed styles
-      document.querySelectorAll('*').forEach((el, index) => {
-        if (index < 500) { // Increased from 200
-          const styles = window.getComputedStyle(el)
-          
-          // Fonts - NO filtering
-          if (styles.fontFamily && styles.fontFamily !== 'initial') {
-            styles.fontFamily.split(',').forEach((f: string) => {
-              const cleaned = f.trim().replace(/^["']|["']$/g, '')
-              if (cleaned && cleaned.length > 0) fonts.add(cleaned)
-            })
+/** One pass to the bottom and back, slow enough for lazy-loading observers to follow. */
+async function autoScroll(page: Page, step = 400): Promise<void> {
+  await page
+    .evaluate(async (step: number) => {
+      await new Promise<void>(resolve => {
+        let y = 0
+        const id = setInterval(() => {
+          // Recomputed each tick: a page that lazy-loads gets taller as we go,
+          // and the original read the height once and stopped short of the new
+          // bottom.
+          const maxY = document.documentElement.scrollHeight
+          y = Math.min(y + step, maxY)
+          window.scrollTo(0, y)
+          if (y >= maxY) {
+            clearInterval(id)
+            window.scrollTo(0, 0)
+            resolve()
           }
-
-          // Colors
-          ['color', 'backgroundColor', 'borderColor', 'outlineColor'].forEach(prop => {
-            const value = styles[prop as any]
-            if (value && value !== 'rgba(0, 0, 0, 0)' && value !== 'transparent') {
-              colors.add(value)
-            }
-          })
-        }
+        }, 80)
       })
+    }, step)
+    .catch(() => {})
+}
 
-      // Check for @font-face rules
-      for (let sheet of document.styleSheets) {
-        try {
-          if (sheet.cssRules) {
-            for (let rule of sheet.cssRules) {
-              if (rule.type === 5 || rule instanceof CSSFontFaceRule) {
-                const fontFamily = (rule as any).style?.fontFamily
-                if (fontFamily) {
-                  fonts.add(fontFamily.replace(/^["']|["']$/g, ''))
-                }
-              }
-            }
-          }
-        } catch (e) {
-          // Skip
-        }
-      }
+/**
+ * Bring the page to the state every extractor should read, once, up front.
+ *
+ * Previously none of this was guaranteed: asset extraction sat inside a
+ * `Promise.all` beside the screenshot capture, which scrolls. Assets were read
+ * from a page moving underneath them — lazy images still at `naturalWidth === 0`
+ * and the logo heuristic measuring `getBoundingClientRect().top <= 100` against
+ * a viewport that had already left the header behind. Settling first is what
+ * makes the reads deterministic.
+ */
+export async function settlePage(page: Page): Promise<void> {
+  // Before anything reads or photographs the page, let it finish arriving. A
+  // preloader is a real page as far as the DOM is concerned, and everything
+  // downstream — assets, the logo heuristic, the capture — would otherwise be
+  // reading a splash screen.
+  await waitForPaint(page)
 
-      return {
-        fonts: Array.from(fonts).slice(0, 50),
-        colors: Array.from(colors).slice(0, 30),
-        computedStyles: {}
-      }
+  // Commit lazy images before the scroll rather than relying on it, so one pass
+  // is enough even where the observer never fires.
+  await page
+    .evaluate(() => {
+      document.querySelectorAll('img').forEach(img => {
+        img.loading = 'eager'
+        const lazySrc = img.dataset.src || img.getAttribute('data-lazy-src')
+        if (lazySrc && !img.src) img.src = lazySrc
+      })
     })
+    .catch(() => {})
 
-    await page.close()
-    return data
-  } catch (error) {
-    console.error('[v0] Error extracting all design data:', error)
-    return { fonts: [], colors: [], computedStyles: {} }
-  }
+  await autoScroll(page)
+
+  // Webfonts routinely land after first paint. Reading computed styles before
+  // they do reports the fallback stack — which is how sites with real
+  // typography were recorded as using Arial.
+  await page
+    .evaluate(
+      () =>
+        Promise.race([
+          document.fonts.ready.then(() => undefined),
+          new Promise<void>(r => setTimeout(r, 3000)),
+        ]),
+    )
+    .catch(() => {})
+
+  await new Promise(r => setTimeout(r, 500))
 }
 
 /**
@@ -422,7 +230,35 @@ export async function extractBrandColors(page: Page): Promise<string[]> {
       }
     } catch { /* getComputedStyle failed */ }
 
-    // --- Pass 2: Structural UI element colors ---
+    // --- Pass 2: the brand's own declaration of its colour ---
+    // A site that ships <meta name="theme-color"> has told us its brand colour
+    // outright. It costs nothing to believe it, and it ranks above anything
+    // inferred from computed styles.
+    for (const meta of Array.from(document.querySelectorAll('meta[name="theme-color"]'))) {
+      const val = (meta as HTMLMetaElement).content?.trim()
+      if (val) rawColors.push(val)
+    }
+
+    // Chrome's own defaults for unstyled links. A site that never styled its
+    // anchors reports these, and they were being filed as brand colours —
+    // #0000EE ended up the single most common "brand" colour in the library.
+    const UA_DEFAULTS = new Set(['rgb(0, 0, 238)', 'rgb(85, 26, 139)', 'rgb(238, 0, 0)', '#0000ee', '#551a8b', '#ee0000'])
+
+    const isUsable = (val: string | undefined): val is string =>
+      Boolean(
+        val &&
+        !UA_DEFAULTS.has(val.toLowerCase()) &&
+        val !== 'transparent' &&
+        val !== 'rgba(0, 0, 0, 0)' &&
+        !val.includes('inherit') &&
+        !val.includes('currentColor') &&
+        !val.includes('initial') &&
+        // Anything this close to invisible is a scrim or a hairline, not a
+        // colour anyone wants to copy out of the palette.
+        !/rgba\([^)]*,\s*0?\.0\d+\)$/.test(val),
+      )
+
+    // --- Pass 3: structural UI element colors ---
     const uiSelectors = ['header', 'nav', 'footer', 'button', '[role="button"]', 'a', 'h1', 'h2', 'body']
     const cssProps = ['color', 'backgroundColor', 'borderColor'] as const
 
@@ -432,72 +268,218 @@ export async function extractBrandColors(page: Page): Promise<string[]> {
         const style = getComputedStyle(el)
         for (const prop of cssProps) {
           const val = style[prop as keyof CSSStyleDeclaration] as string
-          if (
-            val &&
-            val !== 'transparent' &&
-            val !== 'rgba(0, 0, 0, 0)' &&
-            !val.includes('inherit') &&
-            !val.includes('currentColor') &&
-            !val.includes('initial')
-          ) {
-            rawColors.push(val)
-          }
+          if (isUsable(val)) rawColors.push(val)
         }
       }
     }
 
-    return rawColors
+    // --- Pass 4: the colours actually covering the page ---
+    // Ranked by painted area, so a brand colour filling a hero outranks a
+    // one-off border. Without this, a site whose palette lives in section
+    // backgrounds rather than in :root variables read as almost colourless.
+    const areaByColor = new Map<string, number>()
+    for (const el of Array.from(document.querySelectorAll('body *')).slice(0, 1200)) {
+      const style = getComputedStyle(el)
+      const bg = style.backgroundColor
+      if (!isUsable(bg)) continue
+      const r = el.getBoundingClientRect()
+      const area = r.width * r.height
+      if (area < 2500) continue
+      areaByColor.set(bg, (areaByColor.get(bg) ?? 0) + area)
+    }
+
+    const byArea = Array.from(areaByColor.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 12)
+      .map(([color]) => color)
+
+    return [...rawColors, ...byArea]
   })
 }
 
 // Chrome cannot encode a screenshot taller than roughly 16k pixels; past that it
 // hands back an empty buffer rather than an error. Pages like linear.app scroll
 // well beyond it, so clamp the capture instead of asking for the impossible.
-const MAX_CAPTURE_HEIGHT = 12000
+//
+// The limit is in *device* pixels, and these captures run at deviceScaleFactor
+// 2 (desktop) and 3 (mobile). A flat 12000 CSS-pixel clamp therefore asked for
+// 24000 and 36000 device pixels respectively — over the limit on every tall
+// page, which is why sites kept coming back with no screenshot at all. Derive
+// the ceiling from the ratio actually in force.
+const MAX_CAPTURE_DEVICE_PIXELS = 15000
 
-async function captureClamped(page: Page, quality: number): Promise<Buffer> {
-  const { width, height } = await page.evaluate(() => ({
-    width: document.documentElement.scrollWidth,
-    height: document.documentElement.scrollHeight,
+/**
+ * How much is going on in a frame, in bytes of JPEG per megapixel.
+ *
+ * The encoder has already done the work: a flat colour costs almost nothing to
+ * store, a painted page costs a great deal. Reading the buffer length is enough
+ * to tell one from the other, and it needs no image decoding in a serverless
+ * function — which is the whole reason for measuring it this way.
+ */
+async function frameComplexity(page: Page): Promise<number> {
+  const buf = (await page.screenshot({ type: 'jpeg', quality: PAINT_SAMPLE_QUALITY })) as Buffer
+  const { width, height, dpr } = await page.evaluate(() => ({
+    width: window.innerWidth,
+    height: window.innerHeight,
+    dpr: window.devicePixelRatio || 1,
+  }))
+  const megapixels = (width * height * dpr * dpr) / 1e6
+  return megapixels > 0 ? buf.length / megapixels : 0
+}
+
+const PAINT_SAMPLE_QUALITY = 35
+const PAINT_SAMPLE_INTERVAL_MS = 500
+/**
+ * Adds run inside a 60s function and already take 30–50s, so this is a budget
+ * rather than a target. Measured against the sites that needed it: the slowest
+ * preloader in the library settles about three seconds after the first sample.
+ */
+const PAINT_MAX_WAIT_MS = 6000
+/** A sample this much larger than the best so far means content is still arriving. */
+const PAINT_RISE = 1.15
+/** Two settled samples end the wait — but only above this, or a preloader qualifies. */
+const PAINT_SETTLED_SAMPLES = 2
+/** Below this the frame is a splash screen or an empty page, whatever it claims. */
+const PAINT_FLOOR = 8000
+
+/**
+ * Wait for the page to finish painting itself, not merely to finish loading.
+ *
+ * Sites with intro animations were being photographed mid-preloader: joyco.studio
+ * was a flat blue panel with a logo on it, therawmaterials.com a cream rectangle
+ * and one hairline. Both had full colour, type and asset data in the database —
+ * the DOM was there the whole time, sitting underneath a splash — so nothing that
+ * reads the document could have caught this. Only the pixels show it.
+ *
+ * The test is whether the frame is still getting busier. Content arriving pushes
+ * complexity up; a preloader holds it flat and low. Two samples without a rise,
+ * above a floor, means the page has arrived. therawmaterials climbs 6k → 12k →
+ * 20k over four seconds and settles; a static page is settled on arrival and
+ * costs two samples to confirm.
+ */
+export async function waitForPaint(page: Page, budgetMs = PAINT_MAX_WAIT_MS): Promise<void> {
+  const deadline = Date.now() + budgetMs
+  let best = 0
+  let settled = 0
+
+  while (Date.now() < deadline) {
+    let complexity: number
+    try {
+      complexity = await frameComplexity(page)
+    } catch {
+      return // A page we cannot photograph is not one to wait on.
+    }
+
+    if (complexity > best * PAINT_RISE) {
+      best = complexity
+      settled = 0
+    } else {
+      settled++
+      if (complexity > best) best = complexity
+    }
+
+    if (settled >= PAINT_SETTLED_SAMPLES && best >= PAINT_FLOOR) return
+
+    await new Promise(r => setTimeout(r, PAINT_SAMPLE_INTERVAL_MS))
+  }
+}
+
+interface ClampedCapture {
+  buffer: Buffer
+  /** Device pixels actually captured, for judging how much is in the frame. */
+  megapixels: number
+}
+
+async function captureClamped(page: Page, quality: number): Promise<ClampedCapture> {
+  const { scrollWidth, scrollHeight, viewportWidth, dpr } = await page.evaluate(() => ({
+    scrollWidth: document.documentElement.scrollWidth,
+    scrollHeight: document.documentElement.scrollHeight,
+    viewportWidth: window.innerWidth,
+    dpr: window.devicePixelRatio || 1,
   }))
 
-  if (height <= MAX_CAPTURE_HEIGHT) {
-    return await page.screenshot({ fullPage: true, type: 'webp', quality }) as Buffer
+  const budget = Math.floor(MAX_CAPTURE_DEVICE_PIXELS / Math.max(dpr, 1))
+
+  // Width has to be clamped as well as height. Chrome's ceiling applies to both
+  // dimensions, and only the height was ever checked — so a page reporting a
+  // scrollWidth of 11520 blew the budget at 23040 device pixels no matter how
+  // short the clip was, and came back empty every time.
+  //
+  // A document much wider than its own viewport is overflow, not layout: a
+  // rogue absolutely-positioned element, or a horizontal carousel measured at
+  // full length. Capturing that is not what the page looks like, so fall back
+  // to the viewport width, which is what a visitor actually sees.
+  const width = scrollWidth > viewportWidth * 1.5
+    ? viewportWidth
+    : Math.min(scrollWidth, budget)
+
+  const height = Math.min(scrollHeight, budget)
+
+  const withinBudget = scrollWidth <= budget && scrollHeight <= budget
+  const megapixels = (width * height * dpr * dpr) / 1e6
+
+  if (withinBudget && width === scrollWidth) {
+    const buffer = await page.screenshot({ fullPage: true, type: 'webp', quality }) as Buffer
+    return { buffer, megapixels: (scrollWidth * scrollHeight * dpr * dpr) / 1e6 }
   }
 
-  return await page.screenshot({
+  const buffer = await page.screenshot({
     type: 'webp',
     quality,
     captureBeyondViewport: true,
-    clip: { x: 0, y: 0, width, height: MAX_CAPTURE_HEIGHT, scale: 1 },
+    clip: { x: 0, y: 0, width, height, scale: 1 },
   }) as Buffer
+  return { buffer, megapixels }
+}
+
+/**
+ * Bytes of WebP per megapixel — the same measure `waitForPaint` uses, applied to
+ * the finished capture.
+ */
+function density(capture: ClampedCapture): number {
+  return capture.megapixels > 0 ? capture.buffer.length / capture.megapixels : 0
+}
+
+/**
+ * Under this, a full-page capture is a picture of nothing much. Measured across
+ * the library: the captures that turned out to be preloaders and blank frames
+ * sat between 2,500 and 3,300, while the sparsest real page that belongs here —
+ * a plain text site — came in at 7,800.
+ */
+const FLAT_FRAME_DENSITY = 5000
+
+function flatFrame(capture: ClampedCapture): boolean {
+  return density(capture) < FLAT_FRAME_DENSITY
 }
 
 export async function captureFullPageScreenshot(
   page: Page,
-  siteUrl: string
+  siteUrl: string,
+  // `settlePage` has already walked the page when this runs as part of a full
+  // extraction. Walking it a second time costs 80ms per 400px — some 2.5s on a
+  // tall page — to arrive exactly where we already are.
+  opts: { scroll?: boolean } = {},
 ): Promise<string | null> {
   try {
-    // Scroll through the page to trigger lazy-loaded images, then return to top
-    await page.evaluate(async () => {
-      await new Promise<void>((resolve) => {
-        const step = 400
-        let y = 0
-        const maxY = document.documentElement.scrollHeight
-        const id = setInterval(() => {
-          y = Math.min(y + step, maxY)
-          window.scrollTo(0, y)
-          if (y >= maxY) {
-            clearInterval(id)
-            window.scrollTo(0, 0)
-            resolve()
-          }
-        }, 80)
-      })
-    })
+    if (opts.scroll !== false) await autoScroll(page)
     await new Promise(r => setTimeout(r, 800))
 
-    let buffer = await captureClamped(page, 92)
+    let capture = await captureClamped(page, 92)
+
+    // A capture with almost nothing in it means the page was not ready, whatever
+    // it said. Walking a page can restart an intro, and a scroll-triggered
+    // reveal may not have run at all — so give it a moment and take one more,
+    // keeping whichever frame has more in it. One retry: past that, the site
+    // genuinely is this sparse.
+    if (capture.buffer?.length && flatFrame(capture)) {
+      console.warn(`[screenshot] ${siteUrl}: frame looks unpainted — one more attempt`)
+      // Half the budget: the page has already had the full one before this.
+      await waitForPaint(page, PAINT_MAX_WAIT_MS / 2)
+      const second = await captureClamped(page, 92)
+      if (second.buffer?.length && density(second) > density(capture)) capture = second
+    }
+
+    let buffer = capture.buffer
 
     // Chrome silently returns an empty buffer when a page is too tall to encode.
     // Uploading that produces a blob that serves 200 with no body, which the
@@ -535,26 +517,13 @@ export async function captureMobileScreenshot(
     await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 3, isMobile: true, hasTouch: true })
     await new Promise(r => setTimeout(r, 1200))
 
-    // Scroll through to trigger lazy-loaded mobile content
-    await page.evaluate(async () => {
-      await new Promise<void>((resolve) => {
-        const step = 300
-        let y = 0
-        const maxY = document.documentElement.scrollHeight
-        const id = setInterval(() => {
-          y = Math.min(y + step, maxY)
-          window.scrollTo(0, y)
-          if (y >= maxY) {
-            clearInterval(id)
-            window.scrollTo(0, 0)
-            resolve()
-          }
-        }, 80)
-      })
-    })
+    // The mobile layout is a different document in all but name — its own lazy
+    // boundaries, its own breakpoint content — so this pass is not a repeat of
+    // the desktop one.
+    await autoScroll(page, 300)
     await new Promise(r => setTimeout(r, 600))
 
-    const buffer = await captureClamped(page, 92)
+    const { buffer } = await captureClamped(page, 92)
 
     if (!buffer || buffer.length === 0) {
       console.error(`[screenshot] empty mobile buffer for ${siteUrl} — not uploading`)
@@ -676,24 +645,127 @@ export async function extractTypographyWithRoles(page: Page): Promise<Array<{
   primaryWeight: number
 }>> {
   const raw = await page.evaluate(() => {
-    function fontFrom(el: Element | null): { family: string; weight: number } | null {
-      if (!el) return null
+    // A computed family that resolves to one of these tells us the site's own
+    // font never loaded, or never existed. Recording it would put "Arial" in
+    // the library under a site's name.
+    const GENERIC = new Set([
+      'serif', 'sans-serif', 'monospace', 'cursive', 'fantasy', 'system-ui',
+      'ui-sans-serif', 'ui-serif', 'ui-monospace', 'ui-rounded',
+      '-apple-system', 'blinkmacsystemfont', 'inherit', 'initial', 'unset',
+    ])
+
+    function familyOf(el: Element): { family: string; weight: number; size: number } | null {
       const style = getComputedStyle(el)
       const family = style.fontFamily.split(',')[0].trim().replace(/['"]/g, '')
-      const weight = parseInt(style.fontWeight, 10) || 400
-      if (!family || family === 'serif' || family === 'sans-serif' || family === 'monospace') return null
-      return { family, weight }
+      if (!family || GENERIC.has(family.toLowerCase())) return null
+      return {
+        family,
+        weight: parseInt(style.fontWeight, 10) || 400,
+        size: parseFloat(style.fontSize) || 0,
+      }
     }
 
-    const gfLinks = Array.from(document.querySelectorAll('link[href*="fonts.googleapis.com"]'))
-      .map(l => (l as HTMLLinkElement).href)
-
-    return {
-      heading: fontFrom(document.querySelector('h1')),
-      body: fontFrom(document.querySelector('p') ?? document.body),
-      mono: fontFrom(document.querySelector('code, pre')),
-      gfLinks,
+    function isVisible(el: Element): boolean {
+      const r = el.getBoundingClientRect()
+      if (r.width < 1 || r.height < 1) return false
+      const s = getComputedStyle(el)
+      if (s.visibility === 'hidden' || s.display === 'none') return false
+      return parseFloat(s.opacity || '1') > 0.05
     }
+
+    // --- Heading: the largest visible text on the page, whatever tag carries it.
+    // Reading `querySelector('h1')` missed every site that builds headings out
+    // of divs, and every site that keeps a visually-hidden h1 for SEO in a
+    // different font from the one you can actually see.
+    let heading: { family: string; weight: number } | null = null
+    let headingSize = 0
+    const headingCandidates = document.querySelectorAll(
+      'h1, h2, h3, [class*="title" i], [class*="heading" i], [class*="display" i], [class*="hero" i]',
+    )
+    for (const el of Array.from(headingCandidates).slice(0, 250)) {
+      if (!isVisible(el)) continue
+      const f = familyOf(el)
+      if (f && f.size > headingSize) {
+        heading = { family: f.family, weight: f.weight }
+        headingSize = f.size
+      }
+    }
+
+    // --- Body: the family covering the most rendered text area.
+    // "Whatever the first <p> uses" was a guess that failed on any page whose
+    // first paragraph happened to be a caption, a legal line, or absent.
+    const areaByFamily = new Map<string, { area: number; weight: number }>()
+    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT)
+    let node: Node | null
+    let visited = 0
+    while ((node = walker.nextNode()) !== null && visited < 1500) {
+      const text = node.nodeValue?.trim()
+      if (!text || text.length < 3) continue
+      const el = node.parentElement
+      if (!el || !isVisible(el)) continue
+      visited++
+      const f = familyOf(el)
+      // Display sizes are not body text however much of them there is.
+      if (!f || f.size > 32) continue
+      const r = el.getBoundingClientRect()
+      const entry = areaByFamily.get(f.family) ?? { area: 0, weight: f.weight }
+      entry.area += r.width * r.height
+      areaByFamily.set(f.family, entry)
+    }
+
+    let body: { family: string; weight: number } | null = null
+    let bodyArea = 0
+    for (const [family, entry] of areaByFamily) {
+      if (entry.area > bodyArea) {
+        body = { family, weight: entry.weight }
+        bodyArea = entry.area
+      }
+    }
+    if (!body) {
+      const fallback = familyOf(document.body)
+      if (fallback) body = { family: fallback.family, weight: fallback.weight }
+    }
+
+    // --- Mono
+    // Selectors alone are not evidence. A <code> block styled in the body font,
+    // or an element whose class merely contains "code", was enough to record a
+    // proportional face as a site's monospace font — Stripe came back claiming
+    // Söhne. Measure it instead: in a monospace face every glyph is the same
+    // width, so 'iiii' and 'WWWW' render identically.
+    function isMonospaced(family: string): boolean {
+      const probe = document.createElement('span')
+      probe.style.cssText =
+        `position:absolute;visibility:hidden;white-space:pre;font-size:64px;font-family:'${family}',monospace`
+      document.body.appendChild(probe)
+      try {
+        probe.textContent = 'iiiiiiiiii'
+        const narrow = probe.getBoundingClientRect().width
+        probe.textContent = 'WWWWWWWWWW'
+        const wide = probe.getBoundingClientRect().width
+        if (narrow === 0 || wide === 0) return false
+        return Math.abs(wide - narrow) / wide < 0.02
+      } finally {
+        probe.remove()
+      }
+    }
+
+    let mono: { family: string; weight: number } | null = null
+    const monoCandidates = document.querySelectorAll('code, pre, kbd, samp, [class*="mono" i], [class*="code" i]')
+    for (const el of Array.from(monoCandidates).slice(0, 60)) {
+      const f = familyOf(el)
+      if (f && isMonospaced(f.family)) {
+        mono = { family: f.family, weight: f.weight }
+        break
+      }
+    }
+
+    const fontLinks = Array.from(
+      document.querySelectorAll(
+        'link[href*="fonts.googleapis.com"], link[href*="use.typekit"], link[href*="fonts.bunny.net"]',
+      ),
+    ).map(l => (l as HTMLLinkElement).href)
+
+    return { heading, body, mono, fontLinks }
   })
 
   const results: Array<{
@@ -703,20 +775,28 @@ export async function extractTypographyWithRoles(page: Page): Promise<Array<{
     primaryWeight: number
   }> = []
 
+  /** Google encodes a family as "Space+Grotesk" or "Space%20Grotesk" depending on the API version. */
+  function findFontUrl(family: string): string | null {
+    const needle = family.toLowerCase()
+    const variants = [
+      needle.replace(/\s+/g, '+'),
+      needle.replace(/\s+/g, '%20'),
+      needle.replace(/\s+/g, '-'),
+      needle.replace(/\s+/g, ''),
+    ]
+    return raw.fontLinks.find(url => variants.some(v => url.toLowerCase().includes(v))) ?? null
+  }
+
   for (const [role, data] of [
     ['heading', raw.heading],
     ['body', raw.body],
     ['mono', raw.mono],
   ] as const) {
     if (!data) continue
-    const googleFontsUrl = raw.gfLinks.find(url =>
-      url.toLowerCase().includes(data.family.toLowerCase().replace(/\s+/g, '+'))
-    ) ?? null
-
     results.push({
       fontFamily: data.family,
       role,
-      googleFontsUrl,
+      googleFontsUrl: findFontUrl(data.family),
       primaryWeight: data.weight,
     })
   }
@@ -724,11 +804,26 @@ export async function extractTypographyWithRoles(page: Page): Promise<Array<{
   return results
 }
 
+/**
+ * Above this many colours, a page that yielded no type and no assets is treated
+ * as an extraction failure rather than an empty document — the colours prove
+ * there was something there to read.
+ */
+const EMPTY_PAGE_MAX_COLORS = 6
+
 export interface FullExtractionResult {
   colors: string[]
   screenshotUrl: string | null
   mobileScreenshotUrl: string | null
   figmaCaptureUrl: string | null
+  /**
+   * The page loaded, but there was nothing on it to read — no type, no assets,
+   * and at most one colour. Callers must not write this result over what they
+   * already hold: an outage page that answers 200 is indistinguishable from a
+   * site until you look at what came back, and the picture of one is a picture
+   * of somebody's PHP error, filed as their design.
+   */
+  renderedNothing?: boolean
   assets: import('./asset-extraction').ExtractedAsset[]
   typography: Array<{
     fontFamily: string
@@ -736,6 +831,52 @@ export interface FullExtractionResult {
     googleFontsUrl: string | null
     primaryWeight: number
   }>
+}
+
+/**
+ * Read assets out of same-origin child frames.
+ *
+ * Cross-origin frames are skipped: their document is unreachable by design, and
+ * what they contain is almost always somebody else's advertising rather than
+ * this site's design language.
+ */
+async function extractFromChildFrames(
+  page: Page,
+  siteUrl: string,
+): Promise<import('./asset-extraction').ExtractedAsset[]> {
+  const origin = new URL(siteUrl).origin
+  const collected: import('./asset-extraction').ExtractedAsset[] = []
+
+  for (const frame of page.frames()) {
+    if (frame === page.mainFrame()) continue
+
+    const frameUrl = frame.url()
+
+    // An about:blank child frame inherits its parent's origin and is fully
+    // reachable — script writes into it after load. Skipping those was wrong:
+    // cameronsworld.net is exactly this shape, an <iframe src=""> that the page
+    // then fills, and it read as a site with no imagery at all.
+    const inheritsOrigin = !frameUrl || frameUrl === 'about:blank'
+    if (!inheritsOrigin) {
+      try {
+        if (new URL(frameUrl).origin !== origin) continue
+      } catch {
+        continue
+      }
+    }
+
+    try {
+      // extractAssets takes a Page, but only ever calls evaluate on it — and a
+      // Frame carries the same method with the same signature.
+      const framed = await extractAssets(frame as unknown as Page, siteUrl)
+      collected.push(...framed)
+      if (collected.length >= 40) break
+    } catch (err) {
+      console.warn(`[extract] frame ${frameUrl} failed:`, err)
+    }
+  }
+
+  return collected
 }
 
 export async function extractFullDesignData(url: string): Promise<FullExtractionResult> {
@@ -748,23 +889,79 @@ export async function extractFullDesignData(url: string): Promise<FullExtraction
 
   try {
     await page.setBypassCSP(true)
+    await page.setUserAgent(DESKTOP_UA)
     // 2× device pixel ratio — crisp on retina displays, equivalent to ~2880px effective width
     await page.setViewport({ width: 1440, height: 900, deviceScaleFactor: 2 })
-    await page.goto(url, { waitUntil: 'networkidle2', timeout: 15000 })
-    await new Promise(r => setTimeout(r, 3000))
 
-    const [colors, screenshotUrl, assets, typography] = await Promise.all([
-      extractBrandColors(page),
-      captureFullPageScreenshot(page, url),
-      extractAssets(page, url),
-      extractTypographyWithRoles(page),
+    await gotoResilient(page, url)
+    await settlePage(page)
+
+    // Pure reads, so they are safe to run together — but only now that nothing
+    // is scrolling the page underneath them. Each one is caught on its own:
+    // a site whose assets throw should still yield its colours and its type,
+    // where before any single failure took the whole extraction down with it.
+    const [colors, assets, typography] = await Promise.all([
+      extractBrandColors(page).catch(err => {
+        console.warn(`[extract] colors failed for ${url}:`, err)
+        return [] as string[]
+      }),
+      extractAssets(page, url).catch(err => {
+        console.warn(`[extract] assets failed for ${url}:`, err)
+        return [] as import('./asset-extraction').ExtractedAsset[]
+      }),
+      extractTypographyWithRoles(page).catch(err => {
+        console.warn(`[extract] typography failed for ${url}:`, err)
+        return [] as Awaited<ReturnType<typeof extractTypographyWithRoles>>
+      }),
     ])
 
-    const mobileScreenshotUrl = await captureMobileScreenshot(page, url)
-    const figmaCaptureUrl = await captureFigmaLayers(page, url)
+    // Some sites put their whole document inside a frame — cameronsworld.net is
+    // nothing but one — and everything above reads the top document only. Going
+    // looking is reserved for the case where the main document came up thin, so
+    // the sites that already work keep exactly the behaviour they have, and ad
+    // and analytics frames on ordinary pages are never trawled for "assets".
+    if (assets.length < 3) {
+      const framed = await extractFromChildFrames(page, url)
+      if (framed.length > 0) {
+        console.log(`[extract] ${url}: recovered ${framed.length} assets from child frames`)
+        assets.push(...framed)
+      }
+    }
 
-    return { colors, screenshotUrl, mobileScreenshotUrl, figmaCaptureUrl, assets, typography }
+    // Nothing to read means nothing to photograph. Three empty extractors is
+    // not a site with an unusual design — it is a page that did not render:
+    // an outage notice served with a 200, a challenge wall, a domain that has
+    // lapsed into a parking page. newterritory.studio went down behind a Kirby
+    // PHP error and a backfill run captured that error as the studio's card.
+    // Returning early keeps the previous capture, and saves the two captures.
+    // No text worth reading and no images at all. Type is the load-bearing half:
+    // anything with words on it yields a family, and even the canvas games in the
+    // library — which legitimately have no assets — still report their type. The
+    // colour bound only separates "the page was empty" from "both extractors
+    // threw"; an outage notice yields a handful, a rendered page yields dozens.
+    if (typography.length === 0 && assets.length === 0 && colors.length <= EMPTY_PAGE_MAX_COLORS) {
+      console.warn(`[extract] ${url}: page rendered nothing readable — leaving existing data alone`)
+      return {
+        colors: [],
+        screenshotUrl: null,
+        mobileScreenshotUrl: null,
+        figmaCaptureUrl: null,
+        assets: [],
+        typography: [],
+        renderedNothing: true,
+      }
+    }
+
+    // Captures scroll and resize the viewport, so they come after every read.
+    const screenshotUrl = await captureFullPageScreenshot(page, url, { scroll: false })
+    const mobileScreenshotUrl = await captureMobileScreenshot(page, url)
+
+    // Figma layer capture is deliberately not run here. It waits up to 35s and
+    // had produced a capture for 0 of 290 sources — it was the bulk of the ~50s
+    // an add took, spent on something that never landed. It is still available
+    // per-site through /api/design/[id]/figma-capture.
+    return { colors, screenshotUrl, mobileScreenshotUrl, figmaCaptureUrl: null, assets, typography }
   } finally {
-    await page.close()
+    await page.close().catch(() => {})
   }
 }

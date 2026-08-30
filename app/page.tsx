@@ -1,7 +1,12 @@
 import { Suspense } from 'react'
 import type { Metadata } from 'next'
 import { Gallery } from '@/components/gallery'
-import { queryDesigns, queryCategories, type SortBy } from '@/lib/design-queries'
+import {
+  queryDesigns,
+  queryCategoriesCached,
+  queryAllSitesIndex,
+  type SortBy,
+} from '@/lib/design-queries'
 import { getDomain } from '@/lib/get-domain'
 
 // Rendered per request so the grid ships as HTML — crawlers and first paint
@@ -60,7 +65,7 @@ export default async function Page(
       limit: LIMIT,
       offset: 0,
     }),
-    queryCategories(),
+    queryCategoriesCached(),
   ])
 
   return (
@@ -83,16 +88,16 @@ export default async function Page(
 }
 
 async function AllSitesIndex() {
-  const { designs } = await queryDesigns({ limit: 100, offset: 0, sortBy: 'recent' })
+  const sites = await queryAllSitesIndex()
 
   return (
     <nav aria-label="All sites" className="sr-only">
       <h2>Sites in the library</h2>
       <ul>
-        {designs.map(d => (
-          <li key={d.id}>
-            <a href={d.url} rel="noopener noreferrer">
-              {d.title} — {getDomain(d.url)}
+        {sites.map(site => (
+          <li key={site.id}>
+            <a href={site.url} rel="noopener noreferrer">
+              {site.title} — {getDomain(site.url)}
             </a>
           </li>
         ))}
