@@ -322,6 +322,74 @@ const CAPTURE_SCRIPT = `<script>
 })();
 </script>`
 
+const PREVIEW_SCRIPT = `<script>
+(function () {
+  'use strict';
+  var reported = false;
+
+  var style = document.createElement('style');
+  style.textContent = [
+    '*,*::before,*::after{cursor:auto!important}',
+    'a[href],a[href] *,button,button *,[role="button"],[role="button"] *,summary,summary *,label,label *,select,input[type="button"],input[type="submit"],input[type="checkbox"],input[type="radio"],[onclick],[onclick] *,[tabindex]:not([tabindex="-1"]),[tabindex]:not([tabindex="-1"]) *{cursor:pointer!important}',
+    'input:not([type="button"]):not([type="submit"]):not([type="checkbox"]):not([type="radio"]),textarea{cursor:text!important}',
+  ].join('');
+  document.head.appendChild(style);
+
+  function hideCustomCursorElements() {
+    try {
+      var els = document.querySelectorAll('[class*="cursor" i],[id*="cursor" i]');
+      for (var i = 0; i < els.length; i++) {
+        var el = els[i];
+        if (!(el instanceof HTMLElement)) continue;
+        var cs = window.getComputedStyle(el);
+        var rect = el.getBoundingClientRect();
+        var looksOverlay = cs.position === 'fixed' || cs.position === 'absolute';
+        var looksSmall = rect.width <= 180 && rect.height <= 180;
+        var floatsAbovePage = cs.pointerEvents === 'none' || Number(cs.zIndex) > 100;
+        if (looksOverlay && looksSmall && floatsAbovePage) {
+          el.style.setProperty('display', 'none', 'important');
+          el.style.setProperty('visibility', 'hidden', 'important');
+        }
+      }
+    } catch (err) {}
+  }
+
+  function report(reason) {
+    if (reported) return;
+    reported = true;
+    window.parent.postMessage({ type: 'proxy-failed', reason: reason || 'client-side preview error' }, '*');
+  }
+
+  window.addEventListener('error', function (event) {
+    report(event && event.message ? event.message : 'client-side preview error');
+  }, true);
+
+  window.addEventListener('unhandledrejection', function (event) {
+    report(event && event.reason ? String(event.reason) : 'unhandled preview rejection');
+  }, true);
+
+  function checkRenderedError() {
+    try {
+      var text = document.body ? document.body.innerText || '' : '';
+      if (text.indexOf('Application error: a client-side exception has occurred') !== -1) {
+        report('client-side exception');
+      }
+    } catch (err) {}
+  }
+
+  window.addEventListener('load', function () {
+    hideCustomCursorElements();
+    setTimeout(hideCustomCursorElements, 500);
+    setTimeout(hideCustomCursorElements, 1500);
+    setTimeout(checkRenderedError, 750);
+    setTimeout(checkRenderedError, 2000);
+  });
+
+  if (document.readyState !== 'loading') hideCustomCursorElements();
+  else document.addEventListener('DOMContentLoaded', hideCustomCursorElements, { once: true });
+})();
+</script>`
+
 export async function GET(req: NextRequest) {
   const url = req.nextUrl.searchParams.get('url')
   const picker = req.nextUrl.searchParams.get('picker') !== '0'
@@ -373,7 +441,7 @@ export async function GET(req: NextRequest) {
   html = html.replace(/<meta\b[^>]+\bhttp-equiv\s*=\s*["']?content-security-policy["']?[^>]*>/gi, '')
   html = html.replace(/<meta\b[^>]+\bhttp-equiv\s*=\s*["']?x-frame-options["']?[^>]*>/gi, '')
 
-  const script = capture ? CAPTURE_SCRIPT : picker ? PICKER_SCRIPT : ''
+  const script = capture ? CAPTURE_SCRIPT : picker ? PICKER_SCRIPT : PREVIEW_SCRIPT
   const injected = html
     .replace(/<head([^>]*)>/i, `<head$1>${baseTag}`)
     .replace(/<\/body>/i, `${script}</body>`)

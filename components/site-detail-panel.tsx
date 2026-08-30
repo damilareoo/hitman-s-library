@@ -2,18 +2,15 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { motion, AnimatePresence, useAnimate } from 'motion/react'
-import { ArrowClockwise, X } from '@phosphor-icons/react'
+import { motion, AnimatePresence } from 'motion/react'
+import { ArrowUpRight, X } from '@phosphor-icons/react'
 import { PanelTabs, type PanelTab } from './panel-tabs'
 import { useSoundsContext } from '@/contexts/sounds-context'
 import { PreviewTab } from './preview-tab'
 import { ColorsTab } from './colors-tab'
 import { TypeTab } from './type-tab'
-import { AssetsTab } from './assets-tab'
 import { Spinner } from './ui/spinner'
 import { EASE, DUR } from '@/lib/motion'
-import { useIsAdmin } from '@/lib/use-is-admin'
-interface Asset { id: number; type: 'logo' | 'icon' | 'illustration' | 'image'; content: string; width: number; height: number }
 interface ColorRow { hex_value: string; oklch: string | null }
 interface TypographyRow { font_family: string; role: string; google_fonts_url: string | null; primary_weight: number | null }
 
@@ -25,7 +22,6 @@ interface DetailData {
   extraction_error: string | null
   colors: ColorRow[]
   typography: TypographyRow[]
-  assets: Asset[]
 }
 
 interface SiteMetadata {
@@ -46,10 +42,7 @@ export function SiteDetailPanel({ sourceId, metadata, onClose }: SiteDetailPanel
   const [activeTab, setActiveTab] = useState<PanelTab>('preview')
   const [data, setData] = useState<DetailData | null>(null)
   const [loading, setLoading] = useState(true)
-  const [isReextracting, setIsReextracting] = useState(false)
-  const [scope, animate] = useAnimate()
   const { playPanelOpen, playClose } = useSoundsContext()
-  const isAdmin = useIsAdmin()
 
   useEffect(() => {
     playPanelOpen()
@@ -67,7 +60,6 @@ export function SiteDetailPanel({ sourceId, metadata, onClose }: SiteDetailPanel
           ...raw,
           colors: Array.isArray(raw.colors) ? raw.colors : [],
           typography: Array.isArray(raw.typography) ? raw.typography : [],
-          assets: Array.isArray(raw.assets) ? raw.assets : [],
         })
       })
       .catch(console.error)
@@ -79,34 +71,6 @@ export function SiteDetailPanel({ sourceId, metadata, onClose }: SiteDetailPanel
     load()
   }, [load])
 
-  async function handleReextract() {
-    if (isReextracting) return
-    setIsReextracting(true)
-
-    animate(scope.current, { rotate: 360 }, {
-      duration: 0.7, ease: 'linear', repeat: Infinity, repeatType: 'loop'
-    })
-
-    try {
-      await fetch(`/api/design/${sourceId}/reextract`, { method: 'POST' })
-      setLoading(true)
-      setData(null)
-      const updated = await fetch(`/api/design/${sourceId}`).then(r => r.json())
-      setData({
-        ...updated,
-        colors: Array.isArray(updated.colors) ? updated.colors : [],
-        typography: Array.isArray(updated.typography) ? updated.typography : [],
-        assets: Array.isArray(updated.assets) ? updated.assets : [],
-      })
-    } catch (err) {
-      console.error('[reextract]', err)
-    } finally {
-      setIsReextracting(false)
-      setLoading(false)
-      animate(scope.current, { rotate: 0 }, { duration: 0 })
-    }
-  }
-
   const hostname = (() => {
     try { return data?.url ? new URL(data.url).hostname.replace('www.', '') : '…' } catch { return data?.url ?? '…' }
   })()
@@ -116,14 +80,9 @@ export function SiteDetailPanel({ sourceId, metadata, onClose }: SiteDetailPanel
       {/* Header */}
       <div className="flex items-center gap-2 px-4 py-3.5 border-b border-edge-strong flex-shrink-0">
         <div className="min-w-0 flex-1">
-          <a
-            href={data?.url ?? '#'}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-titletext text-ink truncate hover:opacity-70 transition-opacity block"
-          >
+          <p className="text-titletext text-ink truncate">
             {hostname}
-          </a>
+          </p>
           {(metadata?.industry || metadata?.tags?.[0]) && (
             <p className="text-micro text-ink-4 mt-0.5 truncate">
               {[metadata.industry, metadata.tags?.[0]].filter(Boolean).join(' · ')}
@@ -131,19 +90,18 @@ export function SiteDetailPanel({ sourceId, metadata, onClose }: SiteDetailPanel
           )}
         </div>
         <div className="flex items-center gap-1 shrink-0">
-          {/* Re-extraction is an owner action — the route rejects everyone else. */}
-          {isAdmin && (
-            <button
-              type="button"
-              onClick={handleReextract}
-              disabled={isReextracting}
-              aria-label="Re-extract design data"
-              className="w-8 h-8 flex items-center justify-center rounded-[4px] text-ink-3 hover:text-ink hover:bg-muted transition-colors disabled:opacity-40"
+          {data?.url && (
+            <a
+              href={data.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label={`Open ${hostname}`}
+              title={`Open ${hostname}`}
+              className="h-8 rounded-[6px] border border-transparent px-2.5 text-ink-2 hover:text-ink hover:bg-[#F4F4F5] active:scale-[0.98] inline-flex items-center gap-1.5 transition-[background-color,color,transform] duration-[var(--dur-2)] ease-[var(--ease-sig)]"
             >
-              <motion.span ref={scope} style={{ display: 'flex' }}>
-                <ArrowClockwise className="w-4 h-4" weight="regular" />
-              </motion.span>
-            </button>
+              <span className="text-micro">Live link</span>
+              <ArrowUpRight className="w-3.5 h-3.5" weight="bold" />
+            </a>
           )}
           {onClose && (
             <button
@@ -194,6 +152,21 @@ export function SiteDetailPanel({ sourceId, metadata, onClose }: SiteDetailPanel
                     screenshotUrl={data.screenshot_url}
                     mobileScreenshotUrl={data.mobile_screenshot_url}
                     extractionError={data.extraction_error}
+                    displayMode="live"
+                  />
+                </motion.div>
+              )}
+              {activeTab === 'mobile' && (
+                <motion.div key="mobile" className="flex flex-col flex-1 min-h-0"
+                  initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: DUR.move, ease: EASE }}
+                  exit={{ opacity: 0, y: -4, transition: { duration: DUR.exit } }}>
+                  <PreviewTab
+                    siteUrl={data.url}
+                    screenshotUrl={data.screenshot_url}
+                    mobileScreenshotUrl={data.mobile_screenshot_url}
+                    extractionError={data.extraction_error}
+                    displayMode="mobile"
                   />
                 </motion.div>
               )}
@@ -211,14 +184,6 @@ export function SiteDetailPanel({ sourceId, metadata, onClose }: SiteDetailPanel
                   transition={{ duration: DUR.move, ease: EASE }}
                   exit={{ opacity: 0, y: -4, transition: { duration: DUR.exit } }}>
                   <TypeTab typography={data.typography} extractionError={data.extraction_error} />
-                </motion.div>
-              )}
-              {activeTab === 'assets' && (
-                <motion.div key="assets" className="flex flex-col flex-1 min-h-0"
-                  initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: DUR.move, ease: EASE }}
-                  exit={{ opacity: 0, y: -4, transition: { duration: DUR.exit } }}>
-                  <AssetsTab assets={data.assets} extractionError={data.extraction_error} />
                 </motion.div>
               )}
             </AnimatePresence>

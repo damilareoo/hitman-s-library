@@ -10,7 +10,12 @@ let browser: any = null
 let browserInitPromise: Promise<any> | null = null
 
 export async function getBrowser() {
-  if (browser) return browser
+  if (browser) {
+    if (typeof browser.isConnected !== 'function' || browser.isConnected()) {
+      return browser
+    }
+    browser = null
+  }
   if (browserInitPromise) return browserInitPromise
   browserInitPromise = (async () => {
   try {
@@ -69,6 +74,9 @@ export async function getBrowser() {
     }
 
     console.log('[v0] Browser instance created successfully')
+    browser.on?.('disconnected', () => {
+      browser = null
+    })
     return browser
   } catch (error) {
     console.error('[v0] Failed to launch browser:', error)
@@ -471,14 +479,18 @@ export async function captureFullPageScreenshot(
       if (second.buffer?.length && density(second) > density(capture)) capture = second
     }
 
-    const buffer = capture.buffer
+    let buffer = capture.buffer
 
     // Chrome silently returns an empty buffer when a page is too tall to encode.
     // Uploading that produces a blob that serves 200 with no body, which the
     // image optimizer answers with a 502 and a broken card.
     if (!buffer || buffer.length === 0) {
-      console.error(`[screenshot] empty buffer for ${siteUrl} — not uploading`)
-      return null
+      console.warn(`[screenshot] full-page capture empty for ${siteUrl}; retrying viewport capture`)
+      buffer = await page.screenshot({ type: 'webp', quality: 92 }) as Buffer
+      if (!buffer || buffer.length === 0) {
+        console.error(`[screenshot] empty buffer for ${siteUrl} — not uploading`)
+        return null
+      }
     }
 
     const hostname = new URL(siteUrl).hostname.replace(/\./g, '-')

@@ -4,14 +4,12 @@ import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import { useDragControls } from 'motion/react'
 import { useTheme } from 'next-themes'
-import { Sun, Moon, SpeakerHigh, SpeakerSlash, MagnifyingGlass, X, Presentation, ArrowRight, Plus } from '@phosphor-icons/react'
+import { Sun, Moon, SpeakerHigh, SpeakerSlash, MagnifyingGlass, X, ArrowRight, Plus } from '@phosphor-icons/react'
 import { SiteDetailPanel } from '@/components/site-detail-panel'
-import { PresentationMode } from '@/components/presentation-mode'
 import { DesignCard, type Design } from '@/components/design-card'
 import { Spinner } from '@/components/ui/spinner'
 import { motion, AnimatePresence } from 'motion/react'
 import { useSoundsContext } from '@/contexts/sounds-context'
-import { FilterBar, type AppliedFilter } from '@/components/filter-bar'
 import { RequestSiteDialog } from '@/components/request-site-dialog'
 import { EASE, DUR } from '@/lib/motion'
 import Link from 'next/link'
@@ -29,7 +27,6 @@ const SORT_OPTIONS: { value: SortBy; label: string; slug: string }[] = [
   { value: 'recent', label: 'New', slug: 'new' },
   { value: 'oldest', label: 'Old', slug: 'old' },
   { value: 'name', label: 'A–Z', slug: 'az' },
-  { value: 'quality', label: 'Top', slug: 'top' },
 ]
 
 const SLUG_TO_SORT = new Map(SORT_OPTIONS.map(o => [o.slug, o.value]))
@@ -47,19 +44,38 @@ interface GalleryProps {
   initialCategories: { name: string; count: number }[]
 }
 
-// The selected row fills. It used to point instead — a 2px rule on the leading
-// edge over a half-strength tint — which read as a list with a marker beside it
-// rather than a row that is on. Filling to a solid surface, at full ink and one
-// weight up, is what makes the state legible at a glance; it also frees the
-// leading edge, so the label starts where the padding says it does instead of
-// after a rule reserving its slot.
+// Direction H keeps active rows obvious through fill, not a leading rule.
 function sidebarRow(isActive: boolean): string {
   return [
-    'group w-full flex items-baseline gap-2 rounded-[6px] px-2.5 py-[9px]',
-    'transition-colors duration-[var(--dur-2)] ease-[var(--ease-hover)]',
+    'group w-full flex items-center gap-2 rounded-[8px] text-bodytext px-2.5 py-[7px] border',
+    'transition-[background-color,border-color,color] duration-[var(--dur-2)] ease-[var(--ease-sig)]',
+    'focus:outline-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-foreground/20',
     isActive
-      ? 'bg-muted text-ink font-medium'
-      : 'text-ink-2 font-normal hover:bg-muted/40 hover:text-ink',
+      ? 'text-ink font-medium bg-muted border-transparent hover:bg-foreground/[0.09]'
+      : 'text-ink-2 font-normal bg-transparent border-transparent hover:text-ink hover:bg-foreground/[0.055]',
+  ].join(' ')
+}
+
+function sortButton(isActive: boolean): string {
+  return [
+    'relative rounded-[6px] text-meta border transition-[background-color,border-color,color,transform] duration-[var(--dur-2)] ease-[var(--ease-sig)] active:scale-[0.98]',
+    // The pill is 23px tall; the overlay reaches full height.
+    // Nothing sits above or below it inside the 56px header.
+    "after:absolute after:inset-x-0 after:top-1/2 after:h-11 after:-translate-y-1/2 after:content-['']",
+    isActive
+      ? 'bg-[#E8E8E8] text-ink border-edge-strong'
+      : 'text-ink-4 border-transparent bg-transparent hover:text-ink-3 hover:bg-[#F4F4F5]',
+  ].join(' ')
+}
+
+function categoryPill(isActive: boolean): string {
+  return [
+    'shrink-0 h-8 px-3 rounded-[8px] text-meta whitespace-nowrap border',
+    'transition-[background-color,border-color,color,transform] duration-[var(--dur-2)] ease-[var(--ease-sig)] active:scale-[0.98]',
+    'focus:outline-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-foreground/20',
+    isActive
+      ? 'bg-muted text-ink border-transparent font-medium hover:bg-foreground/[0.09]'
+      : 'bg-foreground/[0.055] text-ink-2 border-transparent hover:text-ink hover:bg-foreground/[0.09]',
   ].join(' ')
 }
 
@@ -68,8 +84,8 @@ function sidebarRow(isActive: boolean): string {
 // because the buttons sit 6px apart, and a 44th pixel would reach into the
 // neighbour and steal its edge.
 const ICON_BUTTON =
-  'relative w-9 h-9 flex items-center justify-center rounded-[4px] border border-edge-strong ' +
-  'text-ink-3 hover:text-ink hover:border-foreground/40 transition-colors ' +
+  'relative w-9 h-9 flex items-center justify-center rounded-[10px] border border-transparent bg-muted/60 ' +
+  'text-ink-3 hover:text-ink hover:bg-muted active:scale-[0.98] transition-[background-color,border-color,color,transform] duration-[var(--dur-2)] ease-[var(--ease-sig)] ' +
   "after:absolute after:left-1/2 after:top-1/2 after:h-11 after:w-[42px] after:-translate-x-1/2 after:-translate-y-1/2 after:content-['']"
 
 // Counts share a fixed column and sit right-aligned, so the digits line up down
@@ -114,7 +130,6 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories }
   const [designs, setDesigns] = useState<Design[]>(initialDesigns)
   const [pagination, setPagination] = useState<Pagination>(initialPagination)
   const [categories, setCategories] = useState(initialCategories)
-  const [presentationIndex, setPresentationIndex] = useState<number | null>(null)
   const [isLoadingMore, setIsLoadingMore] = useState(false)
   const [isRefetching, setIsRefetching] = useState(false)
   const [searchInput, setSearchInput] = useState(search)
@@ -316,23 +331,15 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories }
     return () => document.removeEventListener('keydown', onKeyDown)
   }, [isPanelOpen, selectDesign])
 
-  const openPresentation = useCallback((startIndex = 0) => {
-    if (designs.length === 0) return
-    setPresentationIndex(Math.min(Math.max(startIndex, 0), designs.length - 1))
-  }, [designs.length])
-
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       const tag = (e.target as HTMLElement).tagName
       if (tag === 'INPUT' || tag === 'TEXTAREA') return
-      if (e.key === 'p' || e.key === 'P') {
-        openPresentation(selectedDesign ? designs.findIndex(d => d.id === selectedDesign.id) : 0)
-      }
       if (e.key === '/') { e.preventDefault(); searchRef.current?.focus() }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [openPresentation, selectedDesign, designs])
+  }, [])
 
   const handleCardClick = useCallback((design: Design) => {
     sounds.playSelect()
@@ -343,17 +350,13 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories }
     sounds.playFilterClick()
     updateParams(p => {
       p.delete('site')
+      p.delete('category')
+      p.delete('tag')
+      p.delete('q')
       if (industry === 'All') {
-        p.delete('category')
-        p.delete('tag')
         return
       }
-      const current = p.getAll('category')
-      p.delete('category')
-      const next = current.includes(industry)
-        ? current.filter(i => i !== industry)
-        : [...current, industry]
-      next.forEach(i => p.append('category', i))
+      p.set('category', industry)
     })
   }, [sounds, updateParams])
 
@@ -377,11 +380,22 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories }
   }, [updateParams])
 
   const clearAll = useCallback(() => {
-    router.push(pathname, { scroll: false })
-  }, [router, pathname])
+    updateParams(p => {
+      p.delete('category')
+      p.delete('tag')
+      p.delete('q')
+      p.delete('site')
+      p.delete('sort')
+    })
+  }, [updateParams])
 
   const hasFilters = industries.length > 0 || tags.length > 0 || search.length > 0
   const showSkeletons = isRefetching && designs.length === 0
+  const galleryHeading =
+    !hasFilters ? 'All sites' :
+    industries.length === 1 && tags.length === 0 && !search ? industries[0] :
+    search && industries.length === 0 && tags.length === 0 ? 'Search results' :
+    'Filtered sites'
 
   // Two column tracks, because the grid gets the whole row back whenever no
   // panel is open. Each step is placed where the card would otherwise fall
@@ -390,30 +404,6 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories }
   // The panel holds its column whether or not a site is selected, so the grid
   // has the same room either way and the count does not shift under you.
   const cardColumns = 'grid-cols-1 sm:grid-cols-2 2xl:grid-cols-3'
-
-  // Everything narrowing the grid, in one list the filter bar can render.
-  const appliedFilters: AppliedFilter[] = useMemo(() => {
-    const out: AppliedFilter[] = []
-    industries.forEach(name => out.push({
-      key: `category:${name}`,
-      label: name,
-      kind: 'category',
-      onRemove: () => handleFilterChange(name),
-    }))
-    tags.forEach(tag => out.push({
-      key: `tag:${tag}`,
-      label: tag,
-      kind: 'tag',
-      onRemove: () => handleTagClick(tag),
-    }))
-    if (search) out.push({
-      key: 'search',
-      label: search,
-      kind: 'search',
-      onRemove: () => setSearchInput(''),
-    })
-    return out
-  }, [industries, tags, search, handleFilterChange, handleTagClick])
 
   const detailPanel = isPanelOpen && (
     <SiteDetailPanel
@@ -462,7 +452,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories }
               value={searchInput}
               onChange={e => setSearchInput(e.target.value)}
               onKeyDown={e => { if (e.key === 'Escape') e.currentTarget.blur() }}
-              className="w-full h-7 pl-7 pr-6 text-ui bg-muted/60 border border-edge rounded-[4px] text-foreground placeholder:text-ink-4 focus:outline-none focus:border-foreground/30 focus:bg-muted transition-colors [&::-webkit-search-cancel-button]:hidden"
+              className="w-full h-7 pl-7 pr-6 text-ui bg-muted/70 border border-transparent rounded-[10px] text-foreground placeholder:text-ink-4 outline-none hover:bg-muted focus:bg-muted focus:ring-1 focus:ring-foreground/15 focus-visible:outline-none [&:focus-visible]:outline-none transition-[background-color,box-shadow] duration-[var(--dur-2)] ease-[var(--ease-sig)] [&::-webkit-search-cancel-button]:hidden"
             />
             {searchInput ? (
               <button
@@ -501,48 +491,11 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories }
               Changelog
             </Link>
 
-            {/* Sort */}
-            <div
-              className="hidden xl:flex items-center gap-1 mr-1"
-              role="group"
-              aria-label="Sort sites"
-            >
-              {SORT_OPTIONS.map(({ value, label }) => (
-                <button
-                  key={value}
-                  onClick={() => setSort(value)}
-                  aria-pressed={sortBy === value}
-                  className={[
-                    'relative px-2 py-0.5 rounded-[4px] text-meta transition-colors border',
-                    // The pill is 23px tall; the overlay reaches full height.
-                    // Nothing sits above or below it inside the 56px header.
-                    "after:absolute after:inset-x-0 after:top-1/2 after:h-11 after:-translate-y-1/2 after:content-['']",
-                    sortBy === value
-                      ? 'bg-muted text-ink border-edge-strong'
-                      : 'text-ink-4 border-transparent hover:text-ink-2',
-                  ].join(' ')}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-
-            <span className="hidden xl:inline text-meta text-ink-4 tabular-nums mr-1">
-              {pagination.total} <span className="sr-only">sites</span>
-            </span>
-
             <button
-              onClick={() => openPresentation(selectedDesign ? designs.findIndex(d => d.id === selectedDesign.id) : 0)}
-              disabled={designs.length === 0}
-              className={ICON_BUTTON + ' disabled:opacity-30 disabled:cursor-not-allowed'}
-              aria-label="Presentation mode"
-              title="Presentation mode (P)"
-            >
-              <Presentation className="w-4 h-4" weight="regular" />
-            </button>
-
-            <button
-              onClick={() => sounds.setEnabled(p => !p)}
+              onClick={() => {
+                if (!sounds.enabled) sounds.playThemeToggle(true)
+                sounds.setEnabled(p => !p)
+              }}
               className={ICON_BUTTON}
               aria-label={sounds.enabled ? 'Mute sounds' : 'Enable sounds'}
               aria-pressed={sounds.enabled}
@@ -553,6 +506,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories }
             <button
               onClick={(e) => {
                 if (isThemeTransitioning.current) return
+                sounds.playThemeToggle()
                 const next = resolvedTheme === 'dark' ? 'light' : 'dark'
                 const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
                 if (!document.startViewTransition || reduced) { setTheme(next); return }
@@ -645,7 +599,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories }
                 aria-label="Search sites"
                 value={searchInput}
                 onChange={e => setSearchInput(e.target.value)}
-                className="w-full h-8 pl-8 pr-7 text-ui bg-muted/60 border border-edge rounded-[4px] text-foreground placeholder:text-ink-4 focus:outline-none focus:border-foreground/30 focus:bg-muted transition-colors [&::-webkit-search-cancel-button]:hidden"
+                className="w-full h-8 pl-8 pr-7 text-ui bg-muted/70 border border-transparent rounded-[12px] text-foreground placeholder:text-ink-4 outline-none hover:bg-muted focus:bg-muted focus:ring-1 focus:ring-foreground/15 focus-visible:outline-none [&:focus-visible]:outline-none transition-[background-color,box-shadow] duration-[var(--dur-2)] ease-[var(--ease-sig)] [&::-webkit-search-cancel-button]:hidden"
               />
               {searchInput && (
                 <button
@@ -667,15 +621,9 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories }
                     key={name}
                     onClick={() => handleFilterChange(name)}
                     aria-pressed={isActive}
-                    className={
-                      'shrink-0 h-8 px-3 rounded-[4px] text-meta whitespace-nowrap border ' +
-                      'transition-colors duration-[var(--dur-2)] ease-[var(--ease-sig)] ' +
-                      (isActive
-                        ? 'bg-muted text-ink border-foreground/40 font-medium'
-                        : 'bg-transparent text-ink-2 border-edge hover:text-ink hover:border-edge-strong')
-                    }
+                    className={categoryPill(isActive)}
                   >
-                    {name} <span className={'tabular-nums ' + (isActive ? 'text-ink-3' : 'text-ink-4')}>{count}</span>
+                    {name} <span className="tabular-nums text-ink-4">{count}</span>
                   </button>
                 )
               })}
@@ -693,7 +641,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories }
                     key={value}
                     onClick={() => setSort(value)}
                     aria-pressed={sortBy === value}
-                    className={"relative shrink-0 px-3 py-1 rounded-[4px] text-meta transition-colors whitespace-nowrap border after:absolute after:inset-x-0 after:top-1/2 after:h-11 after:-translate-y-1/2 after:content-[''] " + (sortBy === value ? 'bg-muted text-ink border-edge-strong' : 'text-ink-4 border-transparent hover:text-ink-2')}
+                    className={`shrink-0 px-1.5 py-0.5 ${sortButton(sortBy === value)}`}
                   >
                     {label}
                   </button>
@@ -703,12 +651,41 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories }
           </div>
 
           <div className="flex-1 p-5 xl:p-6">
-            <FilterBar
-              filters={appliedFilters}
-              total={pagination.total}
-              isLoading={isRefetching}
-              onClearAll={clearAll}
-            />
+            <div className="hidden xl:flex items-center justify-between gap-4 pb-3 mb-5 border-b border-edge">
+              <div className="flex items-center gap-2 min-w-0">
+                <h2 className="text-meta text-ink font-medium">
+                  {galleryHeading}{' '}
+                  <span className="text-ink-4 tabular-nums">{pagination.total}</span>
+                </h2>
+                {hasFilters && (
+                  <Link
+                    href={pathname}
+                    scroll={false}
+                    className="text-meta text-ink-4 hover:text-ink transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-foreground/25 rounded-[4px]"
+                  >
+                    Clear
+                  </Link>
+                )}
+              </div>
+
+              <div
+                className="flex items-center gap-0.5"
+                role="group"
+                aria-label="Sort sites"
+              >
+                <span className="text-micro text-ink-4 shrink-0 mr-0.5">Sort</span>
+                {SORT_OPTIONS.map(({ value, label }) => (
+                  <button
+                    key={value}
+                    onClick={() => setSort(value)}
+                    aria-pressed={sortBy === value}
+                    className={`shrink-0 px-1.5 py-0.5 ${sortButton(sortBy === value)}`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
 
             {/* Height is held during a swap so the page doesn't collapse and
                 rebound between result sets. */}
@@ -822,7 +799,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories }
                 <div className="flex flex-col items-center gap-2 text-center px-6">
                   <p className="text-meta text-ink-4">Select a site</p>
                   <p className="text-micro text-ink-4">
-                    preview · colors · type · assets
+                    preview · mobile · colors · type
                   </p>
                 </div>
               </motion.div>
@@ -883,18 +860,6 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories }
               </div>
             </motion.div>
           </>
-        )}
-      </AnimatePresence>
-
-      {/* Presentation mode */}
-      <AnimatePresence>
-        {presentationIndex !== null && (
-          <PresentationMode
-            designs={designs}
-            initialIndex={presentationIndex}
-            onClose={() => setPresentationIndex(null)}
-            onSelect={design => { const full = designs.find(d => d.id === design.id); if (full) selectDesign(full) }}
-          />
         )}
       </AnimatePresence>
 

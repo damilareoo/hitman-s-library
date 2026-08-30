@@ -2,11 +2,11 @@
 
 import React from 'react'
 import { motion } from 'motion/react'
-import { Monitor, Palette, TextT, Images } from '@phosphor-icons/react'
+import { DeviceMobile, Monitor, Palette, TextT } from '@phosphor-icons/react'
 import { useSoundsContext } from '@/contexts/sounds-context'
 import { MOVE_EASE, DUR } from '@/lib/motion'
 
-export type PanelTab = 'preview' | 'colors' | 'type' | 'assets'
+export type PanelTab = 'preview' | 'mobile' | 'colors' | 'type'
 
 interface PanelTabsProps {
   active: PanelTab
@@ -15,9 +15,9 @@ interface PanelTabsProps {
 
 const TABS: { key: PanelTab; label: string; Icon: React.ComponentType<{ className?: string; weight?: 'regular' | 'fill' }> }[] = [
   { key: 'preview', label: 'Preview', Icon: Monitor },
+  { key: 'mobile',  label: 'Mobile',  Icon: DeviceMobile },
   { key: 'colors', label: 'Colors', Icon: Palette },
   { key: 'type',   label: 'Type',    Icon: TextT },
-  { key: 'assets', label: 'Assets',  Icon: Images },
 ]
 
 export function PanelTabs({ active, onChange }: PanelTabsProps) {

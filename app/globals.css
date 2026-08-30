@@ -8,7 +8,7 @@
    ============================================================================ */
 :root {
   /* Light mode — warm paper */
-  --background: #f7f7f5;
+  --background: #ffffff;
   --foreground: #111111;
   --card: #ffffff;
   --card-foreground: #111111;
@@ -35,7 +35,7 @@
   --radius: 0.5rem;
 
   /* RGB values for rgba() calculations */
-  --background-rgb: 247, 247, 245;
+  --background-rgb: 255, 255, 255;
   --card-rgb: 255, 255, 255;
   --border-rgb: 226, 226, 222;
   --primary-rgb: 17, 17, 17;
@@ -265,6 +265,15 @@ button, a, [role="button"] {
     transform var(--dur-press) var(--ease-hover);
 }
 
+button:not(:disabled),
+a[href],
+[role="button"]:not([aria-disabled="true"]),
+button:not(:disabled) *,
+a[href] *,
+[role="button"]:not([aria-disabled="true"]) * {
+  cursor: pointer !important;
+}
+
 /* Press feedback. Every pressable surface confirms it heard the press —
    without this the interface reads as unresponsive no matter how fast it is.
    Scoped to fine pointers: on touch, the browser's own tap delay makes the
@@ -292,7 +301,7 @@ button, a, [role="button"] {
   }
 }
 
-:focus-visible {
+:focus-visible:not(input):not(textarea):not(select) {
   outline: 2px solid var(--ring);
   outline-offset: 2px;
 }

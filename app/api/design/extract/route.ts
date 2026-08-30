@@ -7,6 +7,7 @@ import { extractFullDesignData } from '@/lib/browser-extraction'
 import { toColorFormats, deduplicateColors } from '@/lib/color-utils'
 import { requireAdmin } from '@/lib/admin-auth'
 import { assertPublicUrl, BlockedUrlError } from '@/lib/safe-url'
+import { normalizeUrl } from '@/lib/normalize-url'
 
 const sql = neon(process.env.DATABASE_URL!)
 
@@ -53,6 +54,8 @@ export async function POST(req: NextRequest) {
     }
 
     const hostname = validUrl.hostname
+    const normalizedUrl = normalizeUrl(url)
+    const normalizedUrlNoQuery = normalizedUrl.split('?')[0]
 
     // Fetch the webpage with robust redirect handling
     let html = ''
@@ -195,7 +198,13 @@ export async function POST(req: NextRequest) {
 
     // Check if URL already exists
     const existing = await sql`
-      SELECT id FROM design_sources WHERE source_url = ${url} LIMIT 1
+      SELECT id FROM design_sources
+      WHERE regexp_replace(
+        regexp_replace(lower(split_part(source_url, '?', 1)), '^https?://(www\\.)?', ''),
+        '/$',
+        ''
+      ) = ${normalizedUrlNoQuery}
+      LIMIT 1
     `
     if (existing.length > 0) {
       return NextResponse.json({

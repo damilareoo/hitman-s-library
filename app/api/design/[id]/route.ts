@@ -24,17 +24,12 @@ export async function GET(
       return NextResponse.json({ error: 'Not found' }, { status: 404 })
     }
 
-    const [colors, typography, assets] = await Promise.all([
+    const [colors, typography] = await Promise.all([
       sql`SELECT hex_value, oklch FROM design_colors WHERE source_id = ${id} ORDER BY id`,
       sql`
         SELECT font_family, role, google_fonts_url, primary_weight
         FROM design_typography WHERE source_id = ${id} AND role != 'legacy'
         ORDER BY CASE role WHEN 'heading' THEN 1 WHEN 'body' THEN 2 WHEN 'mono' THEN 3 ELSE 4 END
-      `,
-      sql`
-        SELECT id, type, content, width, height
-        FROM design_assets WHERE source_id = ${id}
-        ORDER BY type, id
       `,
     ])
 
@@ -49,7 +44,6 @@ export async function GET(
       extraction_error: source.extraction_error ?? null,
       colors,
       typography,
-      assets,
     })
   } catch (err) {
     console.error('[GET /api/design/[id]]', err)
