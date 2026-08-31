@@ -86,11 +86,12 @@ const changelog: ChangelogRelease[] = [
   {
     date: '2026-08-31',
     title: 'Reachable From Anywhere',
-    description: 'Three of the four things in the header vanished below 640px, which meant a phone could reach the gallery and nothing else. Fixing that was mostly a question of deciding what the header is for.',
+    description: 'Three of the four things in the header vanished below 640px, which meant a phone could reach the gallery and nothing else. The fix turned out to be less about where things fit than about what kind of thing each one is.',
     items: [
       { type: 'fixed',    author: 'damilare', text: 'Request a site, About and Changelog were all hidden below the small breakpoint, so on a phone the header held a logo and two toggles and there was no way to reach anything else at all' },
       { type: 'improved', author: 'damilare', text: 'The header keeps one thing now — Request a site, beside sound and theme, shedding its label on a phone the way those two already do. It is the only action of the three; the other two are destinations and were competing with it for the same corner' },
-      { type: 'improved', author: 'damilare', text: 'About and Changelog moved to the end of the navigation: under the categories in the sidebar on desktop, and on the filter bar below it, which is where the category list lives at that size. They share the sort row rather than taking one of their own — a fourth row of sticky chrome on a phone is a lot to spend on two links. The foot of the grid was the obvious place and the wrong one, because the grid loads as you scroll and therefore has no foot to arrive at' },
+      { type: 'improved', author: 'damilare', text: 'About and Changelog sit beside the wordmark now. They describe the library rather than filter it, and there are four kinds of thing in this interface — the name of the site, the controls that narrow the grid, the one action, and the two preferences. Hanging a destination off the end of the category list put it in the container whose whole job is filtering, where it read as another sort option. The sidebar and the filter bar hold nothing but filters again' },
+      { type: 'improved', author: 'damilare', text: 'Below the small breakpoint there is no room to show them, so they collapse behind the wordmark — the one piece of chrome already about the site as a whole. The foot of the grid was the obvious home and the wrong one twice over: it belongs to the content rather than the site, and the grid loads as you scroll, so it has no foot to arrive at' },
       { type: 'improved', author: 'damilare', text: 'The detail panel drops the Mobile tab below xl. Offering a mobile view to someone already holding a phone is offering them the view they are in — Preview carries the mobile rendering there instead, out of its drawn phone frame so it fills the sheet. A phone drawn inside a phone is a picture of the thing in your hand' },
     ],
   },

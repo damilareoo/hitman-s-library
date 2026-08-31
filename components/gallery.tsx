@@ -11,6 +11,7 @@ import { Spinner } from '@/components/ui/spinner'
 import { motion, AnimatePresence } from 'motion/react'
 import { useSoundsContext } from '@/contexts/sounds-context'
 import { RequestSiteDialog } from '@/components/request-site-dialog'
+import { SiteNavMenu } from '@/components/site-nav-menu'
 import { EASE, DUR } from '@/lib/motion'
 import Link from 'next/link'
 
@@ -87,13 +88,6 @@ const ICON_BUTTON =
   'relative w-9 h-9 flex items-center justify-center rounded-[10px] border border-transparent bg-muted/60 ' +
   'text-ink-3 hover:text-ink hover:bg-muted active:scale-[0.98] transition-[background-color,border-color,color,transform] duration-[var(--dur-2)] ease-[var(--ease-sig)] ' +
   "after:absolute after:left-1/2 after:top-1/2 after:h-11 after:w-[42px] after:-translate-x-1/2 after:-translate-y-1/2 after:content-['']"
-
-// Where the navigation ends. About and Changelog are destinations rather than
-// filters, so they sit after the list on desktop and after the grid on a
-// phone — the same idea in the same relative place, at both sizes.
-const SECONDARY_LINK =
-  'relative flex items-center text-meta text-ink-3 hover:text-ink transition-colors ' +
-  "after:absolute after:inset-x-0 after:top-1/2 after:h-11 after:-translate-y-1/2 after:content-['']"
 
 // Counts share a fixed column and sit right-aligned, so the digits line up down
 // the list instead of ending wherever each label happens to leave them.
@@ -447,6 +441,8 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories }
             Hitman<span className="font-light opacity-50">&apos;s</span> Library
           </h1>
 
+          <SiteNavMenu />
+
           {/* Search — the header controls belong to the 3-pane layout. Below
               it the filter block above the grid owns search and sort, and two
               live copies of each would be on screen at once. */}
@@ -584,12 +580,6 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories }
                 categories and search, rather than in a second list here. */}
           </nav>
 
-          {/* mt-auto so this sits at the foot of the column on a short list
-              and is scrolled to on a long one, rather than floating mid-way. */}
-          <div className="mt-auto px-4 py-4 border-t border-edge flex flex-col gap-2.5">
-            <Link href="/about" className={SECONDARY_LINK}>About</Link>
-            <Link href="/changelog" className={SECONDARY_LINK}>Changelog</Link>
-          </div>
         </aside>
 
         {/* Gallery */}
@@ -655,15 +645,6 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories }
                 ))}
               </div>
 
-              {/* Below xl this bar *is* the category list, so "after the
-                  navigation" lands here. It shares the sort row rather than
-                  taking one of its own — a fourth row of sticky chrome on a
-                  phone is a lot to spend on two links. */}
-              <div className="ml-auto flex items-center gap-2 shrink-0 pl-2">
-                <Link href="/about" className={SECONDARY_LINK}>About</Link>
-                <span aria-hidden="true" className="text-meta text-ink-4">·</span>
-                <Link href="/changelog" className={SECONDARY_LINK}>Changelog</Link>
-              </div>
             </div>
           </div>
 
