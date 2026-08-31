@@ -456,6 +456,26 @@ a[href] *,
   }
 }
 
+/* Used by components/mark.tsx — books arriving onto a shelf that is already
+   there. Each book grows from its own base, so the origin is set per rect. */
+@keyframes shelve {
+  0%   { transform: scaleY(0); opacity: 0; }
+  12%  { transform: scaleY(1); opacity: 1; }
+  68%  { transform: scaleY(1); opacity: 1; }
+  80%  { transform: scaleY(0); opacity: 0; }
+  100% { transform: scaleY(0); opacity: 0; }
+}
+
+.shelve {
+  animation: shelve 2.4s cubic-bezier(0.2, 0.8, 0.2, 1) infinite both;
+}
+
+/* Dropping the animation also drops its `both` fill, which is what leaves the
+   shelf full rather than empty — the mark, just not the performance of it. */
+@media (prefers-reduced-motion: reduce) {
+  .shelve { animation: none; }
+}
+
 /* ============================================================================
    DIALOG
    ============================================================================ */

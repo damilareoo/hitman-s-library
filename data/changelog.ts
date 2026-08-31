@@ -85,6 +85,17 @@ export function releaseAuthors(release: ChangelogRelease): Author[] {
 const changelog: ChangelogRelease[] = [
   {
     date: '2026-08-31',
+    title: 'Books, Arriving',
+    description: 'The library has been running on its wordmark alone. It now has a mark of its own, and the mark is what you look at while you wait.',
+    items: [
+      { type: 'new',      author: 'damilare', text: 'Four books stood on a shelf. It is what the library is, and also what it holds — a full-page capture is a tall narrow thing, and a row of them stood on their ends is a shelf of spines. The last book has fallen against its neighbour because the shelf is not full, which is the detail that stops the whole thing reading as a bar chart. No spine is thinner than five units, so nothing disappears when the mark is drawn at twenty-two pixels' },
+      { type: 'new',      author: 'damilare', text: 'It doubles as the loading screen. The shelf is already there and the books arrive onto it one at a time, hold for a moment complete, then clear and begin again — a wait that ends on a finished picture rather than mid-gesture. Each book grows out of its own footing rather than the group centre, and the leaning one is tilted around the animation instead of inside it, because tilting a growing rectangle makes it sweep like a wiper blade' },
+      { type: 'improved', author: 'damilare', text: 'Anyone who has asked for less motion gets the shelf full and still. Dropping the animation drops its fill mode with it, which is what leaves the books standing rather than gone — the mark, without the performance of it' },
+      { type: 'improved', author: 'damilare', text: 'The sixteen-pixel ring stays where it is, inside buttons and beside the sites still loading. A mark with four books and a lean becomes a smudge at that size, and a spinner is the right shape for a wait that lives inside a control' },
+    ],
+  },
+  {
+    date: '2026-08-31',
     title: 'Reachable From Anywhere',
     description: 'Three of the four things in the header vanished below 640px, which meant a phone could reach the gallery and nothing else. The fix turned out to be less about where things fit than about what kind of thing each one is.',
     items: [
