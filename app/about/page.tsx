@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Brand } from '@/components/brand'
+import { SiteLinks } from '@/components/site-links'
 import { OriginPeek } from '@/components/origin-peek'
 import { Signature } from '@/components/signature'
 import { queryDesigns } from '@/lib/design-queries'
@@ -45,6 +46,8 @@ export default async function AboutPage() {
           <span className="text-meta text-ink-4">About</span>
         </div>
       </nav>
+
+      <SiteLinks />
 
       <main className="max-w-[640px] mx-auto px-6 pt-14 pb-32">
 

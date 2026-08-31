@@ -12,6 +12,7 @@ import { motion, AnimatePresence } from 'motion/react'
 import { useSoundsContext } from '@/contexts/sounds-context'
 import { RequestSiteDialog } from '@/components/request-site-dialog'
 import { Brand } from '@/components/brand'
+import { SiteLinks } from '@/components/site-links'
 import { EASE, DUR } from '@/lib/motion'
 import Link from 'next/link'
 
@@ -766,7 +767,9 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories }
 
         </main>
 
-        <RequestSiteDialog
+        <SiteLinks hidden={isPanelOpen} />
+
+      <RequestSiteDialog
         open={requestOpen}
         onClose={() => setRequestOpen(false)}
         initialUrl={search.trim()}

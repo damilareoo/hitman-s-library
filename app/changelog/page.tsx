@@ -3,6 +3,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import changelog, { AUTHORS, groupByMonth, releaseAuthors, type Author, type ChangeItem } from '@/data/changelog'
 import { Brand } from '@/components/brand'
+import { SiteLinks } from '@/components/site-links'
 import { ChangelogRail } from '@/components/changelog-rail'
 
 export const metadata: Metadata = {
@@ -95,6 +96,8 @@ export default function ChangelogPage() {
       {/* Below the nav in the document as well as on screen, so the sticky
           offset has something to sit under rather than push down. */}
       <ChangelogRail months={months} />
+
+      <SiteLinks />
 
       <main className="max-w-[640px] mx-auto px-6 pt-7 xl:pt-14 pb-32">
 

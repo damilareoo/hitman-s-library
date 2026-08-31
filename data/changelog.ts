@@ -89,7 +89,7 @@ const changelog: ChangelogRelease[] = [
     items: [
       { type: 'new',      author: 'damilare', text: 'A mark for the library — three books on a shelf, one leaning' },
       { type: 'new',      author: 'damilare', text: 'The mark is the loading screen. Books arrive onto the shelf, hold, clear, repeat' },
-      { type: 'new',      author: 'damilare', text: 'Copy or download it as SVG from the About page' },
+      { type: 'new',      author: 'damilare', text: 'Right-click the logo — or long-press it on a phone — to copy or download it as SVG' },
       { type: 'improved', author: 'damilare', text: 'Favicon, touch icon and app icon are generated from the same geometry the site draws' },
     ],
   },
@@ -98,7 +98,7 @@ const changelog: ChangelogRelease[] = [
     title: 'Navigation',
     items: [
       { type: 'fixed',    author: 'damilare', text: 'Request a site, About and Changelog were all hidden below 640px — a phone reached the gallery and nothing else' },
-      { type: 'improved', author: 'damilare', text: 'The mark carries the site menu. It lists the pages you are not on' },
+      { type: 'improved', author: 'damilare', text: 'About and Changelog sit in the bottom-left corner of the window, at every width. They list the pages you are not on' },
       { type: 'new',      author: 'damilare', text: 'A changelog minimap — one dot per release, grouped by month. In the gutter on desktop, under the nav on mobile' },
       { type: 'improved', author: 'damilare', text: 'Month markers on the changelog timeline, so a jump lands somewhere marked' },
       { type: 'fixed',    author: 'damilare', text: 'sort=top could be set from a bookmark but never cleared' },
