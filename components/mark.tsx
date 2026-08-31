@@ -30,6 +30,22 @@ const BOOKS = [
 
 const SHELF = { x: 6, w: 52, y: BASE, h: 4 }
 
+/**
+ * The mark as standalone SVG source, built from the same constants the
+ * component draws — so what anyone copies is what is on the page.
+ */
+export const MARK_SVG = [
+  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" fill="currentColor">',
+  `  <rect x="${SHELF.x}" y="${SHELF.y}" width="${SHELF.w}" height="${SHELF.h}" rx="${SHELF.h / 2}"/>`,
+  ...BOOKS.map((b, i) => {
+    const rect = `<rect x="${b.x}" y="${b.top}" width="${b.w}" height="${BASE - b.top}" rx="1.6"/>`
+    return i === BOOKS.length - 1
+      ? `  <g transform="rotate(${LEAN} ${b.x + b.w} ${BASE})">${rect}</g>`
+      : `  ${rect}`
+  }),
+  '</svg>',
+].join('\n')
+
 interface MarkProps {
   /** Books arrive onto the shelf, hold, and clear. For waits, not for chrome. */
   animated?: boolean

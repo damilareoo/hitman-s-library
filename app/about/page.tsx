@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Brand } from '@/components/brand'
+import { CopyMark } from '@/components/copy-mark'
 import { OriginPeek } from '@/components/origin-peek'
 import { Signature } from '@/components/signature'
 import { queryDesigns } from '@/lib/design-queries'
@@ -62,27 +63,22 @@ export default async function AboutPage() {
             It started as a{' '}
             <OriginPeek
               src="/origin-spreadsheet.png"
-              alt="The original spreadsheet: a column of site addresses beside notes reading 'i like the feel', 'playful vibe', 'colorful', with tabs for e-commerce, sections, landing pages and UX"
-              caption="Websites — the original sheet"
+              alt="The original spreadsheet — links beside notes reading 'i like the feel', 'playful vibe', 'colorful'"
+              caption="The original sheet"
             >
               spreadsheet
             </OriginPeek>
-            . A column of addresses, a column of notes on why each one was
-            worth keeping, and no way to look at any of it.
+            . A column of links, a column of notes, and no way to look at any
+            of it.
           </p>
           <p className="text-reading text-ink-2">
-            Opening the file told you nothing. An address is not a design — to
-            see what you had saved you had to go and visit all of it again, a
-            tab at a time, and by the time you got there you had forgotten what
-            you went looking for. The sheet was a record of taste that you
-            could not actually see.
+            A link is not a design. To see what you had saved you had to go and
+            visit it all again, a tab at a time.
           </p>
           <p className="text-reading text-ink-2">
-            So it became this. Paste an address and the library goes and looks:
-            photographs the page end to end, reads the palette back as hex and
-            OKLCH, works out which typefaces are doing which job. A row becomes
-            something you can look at. The importer that read the original
-            sheet is still in the codebase, which feels about right.
+            So it became this. Paste a link and the library goes and looks —
+            photographs the page, reads the palette, works out the typefaces. A
+            row becomes something you can see.
           </p>
           <p className="text-reading text-ink-2">
             {pagination.total} sites so far. First commit February 23, 2026.
@@ -128,6 +124,11 @@ export default async function AboutPage() {
               </div>
             ))}
           </div>
+        </div>
+
+        <div className="mt-16 pt-10 border-t border-edge">
+          <p className="text-micro text-ink-4 mb-6">The mark</p>
+          <CopyMark />
         </div>
 
         <p className="text-meta text-ink-4 mt-14">

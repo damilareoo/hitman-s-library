@@ -96,10 +96,10 @@ export default function ChangelogPage() {
           offset has something to sit under rather than push down. */}
       <ChangelogRail months={months} />
 
-      <main className="max-w-[640px] mx-auto px-6 pt-14 pb-32">
+      <main className="max-w-[640px] mx-auto px-6 pt-7 xl:pt-14 pb-32">
 
         {/* Page header */}
-        <div className="mb-14">
+        <div className="mb-8 xl:mb-14">
           <h1 className="text-display text-foreground mb-2">
             Changelog
           </h1>
