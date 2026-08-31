@@ -2,7 +2,6 @@ import type { Metadata } from 'next'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Brand } from '@/components/brand'
-import { CopyMark } from '@/components/copy-mark'
 import { OriginPeek } from '@/components/origin-peek'
 import { Signature } from '@/components/signature'
 import { queryDesigns } from '@/lib/design-queries'
@@ -124,11 +123,6 @@ export default async function AboutPage() {
               </div>
             ))}
           </div>
-        </div>
-
-        <div className="mt-16 pt-10 border-t border-edge">
-          <p className="text-micro text-ink-4 mb-6">The mark</p>
-          <CopyMark />
         </div>
 
         <p className="text-meta text-ink-4 mt-14">

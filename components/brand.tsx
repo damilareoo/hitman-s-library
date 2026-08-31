@@ -2,9 +2,11 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { CaretDown } from '@phosphor-icons/react'
+import { CaretDown, Check, Copy, DownloadSimple } from '@phosphor-icons/react'
 import { useEffect, useRef, useState } from 'react'
 import { Mark } from '@/components/mark'
+import { copyMarkSvg, downloadMarkSvg } from '@/lib/mark-assets'
+import { useSoundsContext } from '@/contexts/sounds-context'
 
 const PAGES = [
   { href: '/', label: 'Gallery' },
@@ -24,8 +26,21 @@ const PAGES = [
  */
 export function Brand() {
   const [open, setOpen] = useState(false)
+  const [copied, setCopied] = useState(false)
   const pathname = usePathname()
   const wrapRef = useRef<HTMLDivElement>(null)
+  const copyTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const { playCopy } = useSoundsContext()
+
+  useEffect(() => () => { if (copyTimer.current) clearTimeout(copyTimer.current) }, [])
+
+  async function onCopy() {
+    if (!(await copyMarkSvg())) return
+    playCopy()
+    setCopied(true)
+    if (copyTimer.current) clearTimeout(copyTimer.current)
+    copyTimer.current = setTimeout(() => setCopied(false), 1500)
+  }
 
   useEffect(() => {
     if (!open) return
@@ -52,6 +67,9 @@ export function Brand() {
     <div ref={wrapRef} className="relative flex items-center gap-1.5 shrink-0">
       <Link
         href="/"
+        // Right-clicking a logo to take it is the established gesture, so it
+        // opens this menu rather than the browser's.
+        onContextMenu={e => { e.preventDefault(); setOpen(true) }}
         aria-label="Hitman's Library, home"
         title="Hitman's Library"
         className="relative flex items-center justify-center w-8 h-8 rounded-[8px] text-foreground hover:bg-muted/60 active:scale-[0.98] transition-[background-color,transform] duration-[var(--dur-2)] ease-[var(--ease-sig)] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-foreground/25 after:absolute after:left-1/2 after:top-1/2 after:h-11 after:w-11 after:-translate-x-1/2 after:-translate-y-1/2 after:content-['']"
@@ -89,6 +107,29 @@ export function Brand() {
               {page.label}
             </Link>
           ))}
+
+          <div className="my-1 h-px bg-edge" role="separator" />
+
+          <button
+            type="button"
+            role="menuitem"
+            onClick={onCopy}
+            className="w-full flex items-center gap-2 px-2.5 py-2 rounded-[7px] text-bodytext text-ink-2 hover:text-ink hover:bg-muted transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-foreground/25"
+          >
+            {copied
+              ? <><Check className="w-3.5 h-3.5 shrink-0" weight="bold" /> Copied</>
+              : <><Copy className="w-3.5 h-3.5 shrink-0" weight="regular" /> Copy logo</>}
+          </button>
+
+          <button
+            type="button"
+            role="menuitem"
+            onClick={() => { downloadMarkSvg(); setOpen(false) }}
+            className="w-full flex items-center gap-2 px-2.5 py-2 rounded-[7px] text-bodytext text-ink-2 hover:text-ink hover:bg-muted transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-foreground/25"
+          >
+            <DownloadSimple className="w-3.5 h-3.5 shrink-0" weight="regular" />
+            Download SVG
+          </button>
         </div>
       )}
     </div>
