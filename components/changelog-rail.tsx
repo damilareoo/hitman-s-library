@@ -67,7 +67,67 @@ export function ChangelogRail({ months }: ChangelogRailProps) {
     m.releases.some(r => r.index === activeIndex),
   )
 
+  function Dot({ release }: { release: MonthGroup['releases'][number] }) {
+    const isActive = release.index === activeIndex
+    return (
+      <button
+        onClick={() => jumpTo(`rel-${release.index}`)}
+        title={`${formatDate(release.date)} — ${release.title}`}
+        aria-label={`${formatDate(release.date)}, ${release.title}`}
+        aria-current={isActive ? 'true' : undefined}
+        // A 5px dot is smaller than any finger or hurried cursor. The
+        // pseudo-element carries the hit area so the rail keeps its drawn
+        // size and gains a usable one.
+        className="relative w-[5px] h-[5px] grid place-items-center shrink-0 before:absolute before:-inset-y-[9px] before:-inset-x-[2px] before:content-[''] focus-visible:outline-none group"
+      >
+        <span
+          className={[
+            'rounded-full transition-all duration-[var(--dur-2)] ease-[var(--ease-sig)]',
+            isActive
+              ? 'w-[5px] h-[5px] bg-foreground'
+              : 'w-[3px] h-[3px] bg-ink-3 group-hover:bg-ink-2',
+          ].join(' ')}
+        />
+      </button>
+    )
+  }
+
+  function MonthLabel({ month, active }: { month: MonthGroup; active: boolean }) {
+    return (
+      <button
+        onClick={() => jumpTo(month.id)}
+        className={[
+          'text-micro shrink-0 transition-colors duration-[var(--dur-2)] ease-[var(--ease-sig)]',
+          'focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-foreground/25 rounded-[3px]',
+          active ? 'text-ink' : 'text-ink-3 hover:text-ink-2',
+        ].join(' ')}
+      >
+        {month.label}
+      </button>
+    )
+  }
+
   return (
+    <>
+    {/* Below xl there is no gutter to pin a column in, so the same rail lies
+        on its side under the nav and scrolls sideways — the map is the same
+        map, only turned ninety degrees. */}
+    <nav
+      aria-label="Jump to a month"
+      className="xl:hidden sticky top-12 z-40 bg-background/95 backdrop-blur-sm border-b border-edge"
+    >
+      <div className="flex items-center gap-4 overflow-x-auto no-scrollbar px-6 py-3">
+        {months.map(month => (
+          <div key={month.id} className="flex items-center gap-2 shrink-0">
+            <MonthLabel month={month} active={activeMonth?.id === month.id} />
+            <div className="flex items-center gap-[3px]">
+              {month.releases.map(r => <Dot key={r.index} release={r} />)}
+            </div>
+          </div>
+        ))}
+      </div>
+    </nav>
+
     <nav
       aria-label="Jump to a month"
       className="hidden xl:block fixed top-1/2 -translate-y-1/2 left-[max(1.5rem,calc(50%-490px))] w-[150px] z-40"
@@ -79,45 +139,12 @@ export function ChangelogRail({ months }: ChangelogRailProps) {
           const isActiveMonth = activeMonth?.id === month.id
           return (
             <div key={month.id} className="flex items-center gap-2">
-              <button
-                onClick={() => jumpTo(month.id)}
-                className={[
-                  'text-micro w-8 text-left shrink-0 transition-colors',
-                  'duration-[var(--dur-2)] ease-[var(--ease-sig)]',
-                  'focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-foreground/25 rounded-[3px]',
-                  isActiveMonth ? 'text-ink' : 'text-ink-4 hover:text-ink-2',
-                ].join(' ')}
-              >
-                {month.label}
-              </button>
+              <span className="w-8 text-left shrink-0">
+                <MonthLabel month={month} active={isActiveMonth} />
+              </span>
 
               <div className="flex items-center gap-[1px]">
-                {month.releases.map(release => {
-                  const isActive = release.index === activeIndex
-                  return (
-                    <button
-                      key={release.index}
-                      onClick={() => jumpTo(`rel-${release.index}`)}
-                      title={`${formatDate(release.date)} — ${release.title}`}
-                      aria-label={`${formatDate(release.date)}, ${release.title}`}
-                      aria-current={isActive ? 'true' : undefined}
-                      // A 5px dot is smaller than any finger or hurried
-                      // cursor. The pseudo-element carries the hit area so the
-                      // rail keeps its drawn size and gains a usable one.
-                      className="relative w-[5px] h-[5px] grid place-items-center shrink-0 before:absolute before:-inset-y-[7px] before:-inset-x-[1px] before:content-[''] focus-visible:outline-none group"
-                    >
-                      <span
-                        className={[
-                          'rounded-full transition-all',
-                          'duration-[var(--dur-2)] ease-[var(--ease-sig)]',
-                          isActive
-                            ? 'w-[5px] h-[5px] bg-foreground'
-                            : 'w-[3px] h-[3px] bg-ink-4 group-hover:bg-ink-2',
-                        ].join(' ')}
-                      />
-                    </button>
-                  )
-                })}
+                {month.releases.map(r => <Dot key={r.index} release={r} />)}
               </div>
 
               <span
@@ -134,5 +161,6 @@ export function ChangelogRail({ months }: ChangelogRailProps) {
         })}
       </div>
     </nav>
+    </>
   )
 }

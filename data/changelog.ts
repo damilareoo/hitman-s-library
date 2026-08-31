@@ -85,6 +85,16 @@ export function releaseAuthors(release: ChangelogRelease): Author[] {
 const changelog: ChangelogRelease[] = [
   {
     date: '2026-08-31',
+    title: 'One Lockup, One Map',
+    description: 'The mark now sits where the name is, the name carries the site\u2019s own pages, and the minimap finally exists on a phone. Three things that turned out to be one thing: put each piece where its kind belongs and stop moving it about between breakpoints.',
+    items: [
+      { type: 'new',      author: 'damilare', text: 'The mark is in the header on every page, and it is the favicon, the touch icon and the installed app icon. The SVG one answers the browser\u2019s own theme rather than being handed a colour; the Apple icon carries its own light ground, because transparency there gets flattened onto black' },
+      { type: 'improved', author: 'damilare', text: 'Mark, wordmark and a chevron are one lockup now, on the gallery, About and the changelog alike. The mark and the name go home, and the chevron beside them opens About and Changelog \u2014 so the logo still does what a logo is expected to do, reaching the front page in a single click, while the pages that describe the library hang off the only chrome already about the library. Identical at every width: nothing relocates as the window narrows' },
+      { type: 'fixed',    author: 'damilare', text: 'The minimap existed only above 1280px, which meant a phone had thirty-one releases and no way past them but scrolling. The same rail now lies on its side beneath the nav and scrolls sideways \u2014 the same dots, the same months, the same dot filling in as you read, turned ninety degrees. It sits below the nav in the document as well as on screen, which is what stops a sticky offset pushing the header down instead of tucking under it' },
+    ],
+  },
+  {
+    date: '2026-08-31',
     title: 'Books, Arriving',
     description: 'The library has been running on its wordmark alone. It now has a mark of its own, and the mark is what you look at while you wait.',
     items: [

@@ -11,7 +11,7 @@ import { Spinner } from '@/components/ui/spinner'
 import { motion, AnimatePresence } from 'motion/react'
 import { useSoundsContext } from '@/contexts/sounds-context'
 import { RequestSiteDialog } from '@/components/request-site-dialog'
-import { SiteNavMenu } from '@/components/site-nav-menu'
+import { Brand } from '@/components/brand'
 import { EASE, DUR } from '@/lib/motion'
 import Link from 'next/link'
 
@@ -437,11 +437,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories }
       <header className="sticky top-0 z-50 border-b border-edge-strong bg-background/95 backdrop-blur-sm">
         <div className="h-14 px-5 xl:px-7 flex items-center gap-4">
 
-          <h1 className="text-[15px] font-semibold tracking-[-0.04em] text-foreground select-none shrink-0">
-            Hitman<span className="font-light opacity-50">&apos;s</span> Library
-          </h1>
-
-          <SiteNavMenu />
+          <Brand asHeading />
 
           {/* Search — the header controls belong to the 3-pane layout. Below
               it the filter block above the grid owns search and sort, and two

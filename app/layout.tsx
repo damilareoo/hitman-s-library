@@ -38,14 +38,16 @@ export const metadata: Metadata = {
   },
   metadataBase: new URL("https://hitmanslibrary.xyz"),
   icons: {
-    // SVG first — it stays sharp at every size and both themes; the JPEG is
-    // the fallback for clients that don't take SVG favicons.
+    // SVG first — it stays sharp at every size and answers the browser's own
+    // theme; the PNG is the fallback for clients that don't take SVG favicons.
     icon: [
       { url: "/icon.svg", type: "image/svg+xml" },
-      { url: "/icon.jpg", sizes: "32x32", type: "image/jpeg" },
+      { url: "/icon-32.png", sizes: "32x32", type: "image/png" },
     ],
+    // Apple flattens transparency onto black, so this one carries its own
+    // light ground rather than being handed one.
     apple: [
-      { url: "/icon.jpg", sizes: "180x180", type: "image/jpeg" },
+      { url: "/apple-icon.png", sizes: "180x180", type: "image/png" },
     ],
     shortcut: "/icon.svg",
   },

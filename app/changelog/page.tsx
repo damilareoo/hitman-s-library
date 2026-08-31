@@ -1,8 +1,8 @@
 import type { Metadata } from 'next'
 import Image from 'next/image'
 import Link from 'next/link'
-import { ArrowLeft } from '@phosphor-icons/react/dist/ssr'
 import changelog, { AUTHORS, groupByMonth, releaseAuthors, type Author, type ChangeItem } from '@/data/changelog'
+import { Brand } from '@/components/brand'
 import { ChangelogRail } from '@/components/changelog-rail'
 
 export const metadata: Metadata = {
@@ -84,29 +84,17 @@ export default function ChangelogPage() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <ChangelogRail months={months} />
-
       {/* Nav */}
       <nav className="sticky top-0 z-50 border-b border-edge bg-background/90 backdrop-blur-md">
         <div className="max-w-[640px] mx-auto px-6 h-12 flex items-center justify-between">
-          <Link
-            href="/"
-            className="flex items-center gap-1.5 text-meta text-ink-3 hover:text-ink transition-colors"
-          >
-            <ArrowLeft className="w-3 h-3" weight="regular" />
-            Gallery
-          </Link>
-          <div className="flex items-center gap-4">
-            <Link
-              href="/about"
-              className="text-meta text-ink-3 hover:text-ink transition-colors"
-            >
-              About
-            </Link>
-            <span className="text-meta text-ink-4">Changelog</span>
-          </div>
+          <Brand />
+          <span className="text-meta text-ink-4">Changelog</span>
         </div>
       </nav>
+
+      {/* Below the nav in the document as well as on screen, so the sticky
+          offset has something to sit under rather than push down. */}
+      <ChangelogRail months={months} />
 
       <main className="max-w-[640px] mx-auto px-6 pt-14 pb-32">
 

@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import Image from 'next/image'
 import Link from 'next/link'
-import { ArrowLeft } from '@phosphor-icons/react/dist/ssr'
+import { Brand } from '@/components/brand'
 import { OriginPeek } from '@/components/origin-peek'
 import { Signature } from '@/components/signature'
 import { queryDesigns } from '@/lib/design-queries'
@@ -41,13 +41,7 @@ export default async function AboutPage() {
       {/* Nav */}
       <nav className="sticky top-0 z-50 border-b border-edge bg-background/90 backdrop-blur-md">
         <div className="max-w-[640px] mx-auto px-6 h-12 flex items-center justify-between">
-          <Link
-            href="/"
-            className="flex items-center gap-1.5 text-meta text-ink-3 hover:text-ink transition-colors"
-          >
-            <ArrowLeft className="w-3 h-3" weight="regular" />
-            Gallery
-          </Link>
+          <Brand />
           <span className="text-meta text-ink-4">About</span>
         </div>
       </nav>
