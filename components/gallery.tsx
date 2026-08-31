@@ -437,7 +437,11 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories }
       <header className="sticky top-0 z-50 border-b border-edge-strong bg-background/95 backdrop-blur-sm">
         <div className="h-14 px-5 xl:px-7 flex items-center gap-4">
 
-          <Brand asHeading />
+          {/* The wordmark used to be this page's h1. With only the mark on
+              screen the heading still has to exist for anything that reads
+              structure rather than pixels. */}
+          <h1 className="sr-only">Hitman&apos;s Library</h1>
+          <Brand />
 
           {/* Search — the header controls belong to the 3-pane layout. Below
               it the filter block above the grid owns search and sort, and two

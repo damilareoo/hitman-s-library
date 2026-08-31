@@ -4,5 +4,5 @@
     .m { fill: #111111 }
     @media (prefers-color-scheme: dark) { .m { fill: #e6e2db } }
   </style>
-  <g class="m"><rect x="8" y="51.5" width="48" height="2" rx="1" /><rect x="13" y="15" width="6" height="35" rx="1.2" /><rect x="21" y="10" width="5" height="40" rx="1.2" /><rect x="28" y="19" width="8" height="31" rx="1.2" /><g transform="rotate(11 44 50)"><rect x="38" y="14" width="6" height="36" rx="1.2" /></g></g>
+  <g class="m"><rect x="6" y="54" width="52" height="4" rx="2"/><rect x="9" y="12" width="11" height="42" rx="1.6"/><rect x="26" y="6" width="11" height="48" rx="1.6"/><g transform="rotate(15 54 54)"><rect x="43" y="10" width="11" height="44" rx="1.6"/></g></g>
 </svg>

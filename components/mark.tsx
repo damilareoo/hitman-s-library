@@ -11,17 +11,24 @@
  * disappears when the mark is drawn at 22px.
  */
 
-const BASE = 50
-const LEAN = 11
+// Three books, not four, and drawn to the edges of the artboard.
+//
+// The first pass sat in the middle of its square using two thirds of the
+// height, with four books four units apart and a two-unit shelf — which meant
+// that at 16px the books merged into a smudge and the shelf thinned to a
+// hairline, leaving something that read as neither books nor a shelf. Fewer,
+// thicker books with six units between them survive being small, which is the
+// only thing a favicon has to do.
+const BASE = 54
+const LEAN = 15
 
 const BOOKS = [
-  { x: 13, w: 6, top: 15 },
-  { x: 21, w: 5, top: 10 },
-  { x: 28, w: 8, top: 19 },
-  { x: 38, w: 6, top: 14 },
+  { x: 9, w: 11, top: 12 },
+  { x: 26, w: 11, top: 6 },
+  { x: 43, w: 11, top: 10 },
 ]
 
-const SHELF = { x: 8, w: 48, y: BASE + 1.5, h: 2 }
+const SHELF = { x: 6, w: 52, y: BASE, h: 4 }
 
 interface MarkProps {
   /** Books arrive onto the shelf, hold, and clear. For waits, not for chrome. */
@@ -42,7 +49,7 @@ export function Mark({ animated = false, className = '', title }: MarkProps) {
       {/* The shelf does not animate. It is the thing the books arrive onto. */}
       <rect
         x={SHELF.x} y={SHELF.y} width={SHELF.w} height={SHELF.h}
-        rx={1} fill="currentColor"
+        rx={SHELF.h / 2} fill="currentColor"
       />
 
       {BOOKS.map((book, i) => {
@@ -54,7 +61,7 @@ export function Mark({ animated = false, className = '', title }: MarkProps) {
             y={book.top}
             width={book.w}
             height={BASE - book.top}
-            rx={1.2}
+            rx={1.6}
             fill="currentColor"
             className={animated ? 'shelve' : undefined}
             style={animated ? {

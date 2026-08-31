@@ -15,11 +15,12 @@ export const dynamic = 'force-dynamic'
 
 const LIMIT = 32
 
+// No 'top' — the Top control went when sorting moved beside the result count,
+// and a slug the interface cannot show or clear is a state you get stuck in.
 const SLUG_TO_SORT: Record<string, SortBy> = {
   new: 'recent',
   old: 'oldest',
   az: 'name',
-  top: 'quality',
 }
 
 type SearchParams = Record<string, string | string[] | undefined>

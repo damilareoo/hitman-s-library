@@ -97,8 +97,12 @@ export function ChangelogRail({ months }: ChangelogRailProps) {
       <button
         onClick={() => jumpTo(month.id)}
         className={[
-          'text-micro shrink-0 transition-colors duration-[var(--dur-2)] ease-[var(--ease-sig)]',
+          'relative text-micro shrink-0 transition-colors duration-[var(--dur-2)] ease-[var(--ease-sig)]',
           'focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-foreground/25 rounded-[3px]',
+          // Ten-pixel type is a ten-pixel target. The overlay gives the label
+          // the same reach the dots beside it already have, without changing
+          // how tightly the rail is drawn.
+          "after:absolute after:left-1/2 after:top-1/2 after:h-9 after:w-[calc(100%+12px)] after:-translate-x-1/2 after:-translate-y-1/2 after:content-['']",
           active ? 'text-ink' : 'text-ink-3 hover:text-ink-2',
         ].join(' ')}
       >

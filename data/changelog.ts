@@ -85,6 +85,19 @@ export function releaseAuthors(release: ChangelogRelease): Author[] {
 const changelog: ChangelogRelease[] = [
   {
     date: '2026-08-31',
+    title: 'The Mark, Alone',
+    description: 'The name has come off the header. A mark that has to stand on its own has to be legible on its own, so it was redrawn for the smallest place it will ever appear rather than the largest.',
+    items: [
+      { type: 'improved', author: 'damilare', text: 'Three books now, not four, drawn to the edges of the artboard. The first pass sat in the middle of its square using two thirds of the height, with four books four units apart over a two-unit shelf — at sixteen pixels the books merged into a smudge and the shelf thinned to a hairline, leaving something that read as neither books nor a shelf. Fewer, thicker books with six units between them survive being small, which is the only thing a favicon has to do' },
+      { type: 'improved', author: 'damilare', text: 'The wordmark is gone from the header; the mark carries it. The name still exists for anything reading structure rather than pixels, and the mark still goes home in one click' },
+      { type: 'improved', author: 'damilare', text: 'The menu beside it lists the places you are not. On About it offers Gallery and Changelog, on the changelog Gallery and About — no dead row for the page you are already reading, and never three things to scan to find the two that go anywhere' },
+      { type: 'fixed',    author: 'damilare', text: 'Month labels in the changelog rail were ten-pixel type acting as ten-pixel targets. They now carry the same reach the dots beside them already had, without the rail being drawn any looser' },
+      { type: 'fixed',    author: 'damilare', text: 'A bookmark ending in sort=top still sorted by a rule that no longer has a control, so the state could be entered and not cleared. The slug is gone; anything holding it lands on the default order' },
+      { type: 'improved', author: 'damilare', text: 'Five files nothing imported any more have been removed, most of them stranded when the assets panel and the in-panel re-extract button went. Every icon is generated from the same geometry the component draws, so the mark on the page and the mark in the tab cannot drift apart' },
+    ],
+  },
+  {
+    date: '2026-08-31',
     title: 'One Lockup, One Map',
     description: 'The mark now sits where the name is, the name carries the site\u2019s own pages, and the minimap finally exists on a phone. Three things that turned out to be one thing: put each piece where its kind belongs and stop moving it about between breakpoints.',
     items: [
