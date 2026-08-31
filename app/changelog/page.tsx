@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { ArrowLeft } from '@phosphor-icons/react/dist/ssr'
-import changelog, { AUTHORS, releaseAuthors, type ChangeItem } from '@/data/changelog'
+import changelog, { AUTHORS, releaseAuthors, type Author, type ChangeItem } from '@/data/changelog'
 
 export const metadata: Metadata = {
   title: 'Changelog',
@@ -24,6 +24,33 @@ const TYPE_TEXT: Record<ChangeItem['type'], string> = {
   new:      'text-[var(--color-success)]/70',
   improved: 'text-[var(--color-running)]/70',
   fixed:    'text-ink-4',
+}
+
+/**
+ * A person, as one disc. Monochrome on purpose: green and blue already mean
+ * New and Improved on this page, and a second colour system competing with
+ * that one would make both harder to read rather than either easier.
+ *
+ * `stacked` is for the byline, where the discs overlap and each needs the
+ * page ground drawn around it — without that the one behind reads as a dent
+ * in the one in front rather than as a disc of its own.
+ */
+function Monogram({ author, stacked = false }: { author: Author; stacked?: boolean }) {
+  return (
+    <span
+      className={[
+        'shrink-0 inline-flex items-center justify-center select-none',
+        'w-[18px] h-[18px] rounded-full border border-edge-strong bg-muted',
+        // text-micro carries 0.08em of tracking, which on a single centred
+        // glyph is half a letter of drift to the right. Set flat here.
+        'font-mono text-[9px] leading-none tracking-normal text-ink-2',
+        stacked ? 'ring-[2.5px] ring-background' : '',
+      ].join(' ')}
+    >
+      <span aria-hidden="true">{AUTHORS[author].charAt(0)}</span>
+      <span className="sr-only">{AUTHORS[author]}</span>
+    </span>
+  )
 }
 
 function formatDate(iso: string) {
@@ -96,9 +123,10 @@ export default function ChangelogPage() {
                     {formatDate(release.date)}
                   </time>
                   {authors.length > 0 && (
-                    <span className="text-meta text-ink-4">
-                      <span aria-hidden="true" className="mr-2">·</span>
-                      {authors.map(a => AUTHORS[a]).join(' & ')}
+                    <span className="flex items-center -space-x-1 ml-0.5">
+                      {authors.map(a => (
+                        <Monogram key={a} author={a} stacked />
+                      ))}
                     </span>
                   )}
                   {i === 0 && (
@@ -127,20 +155,18 @@ export default function ChangelogPage() {
                       <div className="shrink-0 mt-[6px]">
                         <div className={`w-1.5 h-1.5 rounded-full ${DOT_COLOR[item.type]}`} />
                       </div>
+                      {attributeItems && item.author && (
+                        <div className="shrink-0 -ml-1 -mt-[3px]">
+                          <Monogram author={item.author} />
+                        </div>
+                      )}
                       <div className="flex-1 min-w-0">
                         <p className="text-reading text-ink-2">
                           {item.text}
                         </p>
                       </div>
-                      <span className="shrink-0 flex flex-col items-end gap-0.5 pt-[3px]">
-                        <span className={`text-micro ${TYPE_TEXT[item.type]}`}>
-                          {TYPE_LABEL[item.type]}
-                        </span>
-                        {attributeItems && item.author && (
-                          <span className="text-micro text-ink-4">
-                            {AUTHORS[item.author]}
-                          </span>
-                        )}
+                      <span className={`shrink-0 text-micro pt-[3px] ${TYPE_TEXT[item.type]}`}>
+                        {TYPE_LABEL[item.type]}
                       </span>
                     </div>
                   ))}
