@@ -2,9 +2,15 @@ export type ChangeType = 'new' | 'improved' | 'fixed'
 
 export type Author = 'damilare' | 'florence'
 
-export const AUTHORS: Record<Author, string> = {
-  damilare: 'Damilare',
-  florence: 'Florence',
+export interface Person {
+  name: string
+  /** Local copy of the GitHub avatar, so the page owns its own images. */
+  avatar: string
+}
+
+export const AUTHORS: Record<Author, Person> = {
+  damilare: { name: 'Damilare', avatar: '/people/damilare.png' },
+  florence: { name: 'Florence', avatar: '/people/florence.jpg' },
 }
 
 export interface ChangeItem {
@@ -37,6 +43,17 @@ export function releaseAuthors(release: ChangelogRelease): Author[] {
 // more than one hand in it names each line instead, because that is the
 // only case where the question is actually being asked.
 const changelog: ChangelogRelease[] = [
+  {
+    date: '2026-08-31',
+    title: 'Signed at the Bottom',
+    description: 'The library has been running for six months without anywhere that says what it is or who keeps it. It began as a column of addresses in a spreadsheet, which is worth writing down while anyone still remembers it.',
+    items: [
+      { type: 'new',      author: 'damilare', text: 'An About page. Four paragraphs on how a sheet of links became this, and the two of us at the end. The site count in it is read from the database on each request rather than typed into the copy, because a number written by hand is a number that goes wrong quietly and stays wrong' },
+      { type: 'new',      author: 'damilare', text: 'Both signatures write themselves when they come into view, a quarter-second apart so they sign one after the other rather than together. Each is a single centreline path, which is what lets a pen actually travel it — a filled letter shape has no stroke to follow and animates as a crawling outline instead. Anyone who has asked for less motion gets them already finished, since the name is the content and the writing is decoration. They are stylised stand-ins for now, and the file says as much: real ones can be traced in without touching the animation' },
+      { type: 'improved', author: 'damilare', text: 'The changelog byline is faces now rather than initials — seen once per release, at the top, where there is room to read a photograph as a person. Each change line keeps its lettered disc, because eight small portraits down one column would shout over the text they are annotating' },
+      { type: 'improved', author: 'damilare', text: 'About sits beside Changelog in the header and in the changelog nav, so the two pages that explain the place can be reached from either side of it' },
+    ],
+  },
   {
     date: '2026-08-30',
     title: 'Fewer Things, Better Placed',

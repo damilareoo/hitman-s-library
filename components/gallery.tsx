@@ -483,6 +483,13 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories }
             </button>
 
             <Link
+              href="/about"
+              className="relative hidden sm:flex items-center text-meta text-ink-3 hover:text-ink transition-colors mr-1 after:absolute after:inset-x-0 after:top-1/2 after:h-11 after:-translate-y-1/2 after:content-['']"
+            >
+              About
+            </Link>
+
+            <Link
               href="/changelog"
               // 17px tall as drawn. The overlay carries the touch target so the
               // link keeps its weight in the header.

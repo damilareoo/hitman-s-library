@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Image from 'next/image'
 import Link from 'next/link'
 import { ArrowLeft } from '@phosphor-icons/react/dist/ssr'
 import changelog, { AUTHORS, releaseAuthors, type Author, type ChangeItem } from '@/data/changelog'
@@ -27,15 +28,14 @@ const TYPE_TEXT: Record<ChangeItem['type'], string> = {
 }
 
 /**
- * A person, as one disc. Monochrome on purpose: green and blue already mean
- * New and Improved on this page, and a second colour system competing with
- * that one would make both harder to read rather than either easier.
+ * A person, as one disc — used per change line, where eight photographs down
+ * a single column would shout over the text they are annotating.
  *
- * `stacked` is for the byline, where the discs overlap and each needs the
- * page ground drawn around it — without that the one behind reads as a dent
- * in the one in front rather than as a disc of its own.
+ * Monochrome on purpose: green and blue already mean New and Improved on this
+ * page, and a second colour system competing with that one would make both
+ * harder to read rather than either easier.
  */
-function Monogram({ author, stacked = false }: { author: Author; stacked?: boolean }) {
+function Monogram({ author }: { author: Author }) {
   return (
     <span
       className={[
@@ -44,12 +44,31 @@ function Monogram({ author, stacked = false }: { author: Author; stacked?: boole
         // text-micro carries 0.08em of tracking, which on a single centred
         // glyph is half a letter of drift to the right. Set flat here.
         'font-mono text-[9px] leading-none tracking-normal text-ink-2',
-        stacked ? 'ring-[2.5px] ring-background' : '',
       ].join(' ')}
     >
-      <span aria-hidden="true">{AUTHORS[author].charAt(0)}</span>
-      <span className="sr-only">{AUTHORS[author]}</span>
+      <span aria-hidden="true">{AUTHORS[author].name.charAt(0)}</span>
+      <span className="sr-only">{AUTHORS[author].name}</span>
     </span>
+  )
+}
+
+/**
+ * A person, as their face. Only the byline gets one — seen once per release,
+ * at the top, where there is room to read it as a face rather than a speck.
+ *
+ * The ring is the page ground drawn back around each disc: the pair overlap,
+ * and without it the one behind reads as a dent in the one in front.
+ */
+function Avatar({ author }: { author: Author }) {
+  const person = AUTHORS[author]
+  return (
+    <Image
+      src={person.avatar}
+      alt={person.name}
+      width={20}
+      height={20}
+      className="w-5 h-5 rounded-full object-cover ring-[2.5px] ring-background border border-edge-strong"
+    />
   )
 }
 
@@ -73,7 +92,15 @@ export default function ChangelogPage() {
             <ArrowLeft className="w-3 h-3" weight="regular" />
             Gallery
           </Link>
-          <span className="text-meta text-ink-4">Changelog</span>
+          <div className="flex items-center gap-4">
+            <Link
+              href="/about"
+              className="text-meta text-ink-3 hover:text-ink transition-colors"
+            >
+              About
+            </Link>
+            <span className="text-meta text-ink-4">Changelog</span>
+          </div>
         </div>
       </nav>
 
@@ -125,7 +152,7 @@ export default function ChangelogPage() {
                   {authors.length > 0 && (
                     <span className="flex items-center -space-x-1 ml-0.5">
                       {authors.map(a => (
-                        <Monogram key={a} author={a} stacked />
+                        <Avatar key={a} author={a} />
                       ))}
                     </span>
                   )}

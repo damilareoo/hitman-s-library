@@ -21,6 +21,7 @@ When you add a URL, the app:
 
 - **Card grid** — Browse all sites with staggered card entrances, filter by category
 - **Detail panel** — Click any site to see preview, mobile, colors, and type in a wide inspector with a sliding tab underline
+- **About** — Where the library came from, with both signatures drawn on as single-centreline SVG paths when they scroll into view (`components/signature.tsx`; art in `data/signatures.ts`)
 - **Keyboard** — `/` focuses search, arrow keys cycle tabs, `Esc` closes the panel
 - **Full-page preview** — Scrollable screenshot in a bounded panel with back-to-top button; Mobile is its own tab when a mobile screenshot is available
 - **Color extraction** — HEX and OKLCH values, copy-paste ready, sorted by lightness
