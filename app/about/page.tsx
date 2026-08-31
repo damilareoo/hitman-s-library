@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import Image from 'next/image'
 import Link from 'next/link'
 import { ArrowLeft } from '@phosphor-icons/react/dist/ssr'
+import { OriginPeek } from '@/components/origin-peek'
 import { Signature } from '@/components/signature'
 import { queryDesigns } from '@/lib/design-queries'
 
@@ -25,7 +26,7 @@ const PEOPLE = [
   {
     key: 'florence' as const,
     name: 'Florence Eze',
-    role: 'Software engineering',
+    role: 'Design and build',
     avatar: '/people/florence.jpg',
     github: 'https://github.com/Judiedesigns',
   },
@@ -64,9 +65,16 @@ export default async function AboutPage() {
         {/* The essay */}
         <div className="space-y-6">
           <p className="text-reading text-ink-2">
-            It started as a spreadsheet. A column of addresses, a column of
-            notes on why each one was worth keeping, and no way to look at any
-            of it.
+            It started as a{' '}
+            <OriginPeek
+              src="/origin-spreadsheet.png"
+              alt="The original spreadsheet: columns of site addresses and notes, with tabs for motion, portfolios, hex and travel"
+              caption="The original sheet"
+            >
+              spreadsheet
+            </OriginPeek>
+            . A column of addresses, a column of notes on why each one was
+            worth keeping, and no way to look at any of it.
           </p>
           <p className="text-reading text-ink-2">
             Opening the file told you nothing. An address is not a design — to

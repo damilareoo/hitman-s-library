@@ -2,7 +2,8 @@ import type { Metadata } from 'next'
 import Image from 'next/image'
 import Link from 'next/link'
 import { ArrowLeft } from '@phosphor-icons/react/dist/ssr'
-import changelog, { AUTHORS, releaseAuthors, type Author, type ChangeItem } from '@/data/changelog'
+import changelog, { AUTHORS, groupByMonth, releaseAuthors, type Author, type ChangeItem } from '@/data/changelog'
+import { ChangelogRail } from '@/components/changelog-rail'
 
 export const metadata: Metadata = {
   title: 'Changelog',
@@ -79,8 +80,11 @@ function formatDate(iso: string) {
 }
 
 export default function ChangelogPage() {
+  const months = groupByMonth(changelog)
+
   return (
     <div className="min-h-screen bg-background text-foreground">
+      <ChangelogRail months={months} />
 
       {/* Nav */}
       <nav className="sticky top-0 z-50 border-b border-edge bg-background/90 backdrop-blur-md">
@@ -118,17 +122,38 @@ export default function ChangelogPage() {
 
         {/* Releases */}
         <div className="space-y-0">
-          {changelog.map((release, i) => {
+          {months.map((month, mi) => (
+            <section key={month.id} id={month.id} className="scroll-mt-16">
+
+              {/* Where a month turns over. The first needs no marker — the
+                  page header has just said what you are looking at. */}
+              {mi > 0 && (
+                <div className="relative flex gap-8 pb-8">
+                  <div className="absolute left-[5px] top-0 bottom-0 w-px bg-edge" />
+                  <div className="shrink-0 w-[11px]" />
+                  <span className="text-micro text-ink-4">
+                    {month.label} {month.year}
+                  </span>
+                </div>
+              )}
+
+              {month.releases.map(({ index: i }) => {
+            const release = changelog[i]
             const authors = releaseAuthors(release)
             // One person's release says so once, beside the date. Only a
             // release with more than one hand in it needs each line named.
             const attributeItems = authors.length > 1
             return (
-            <div key={i} className="relative flex gap-8 pb-14 last:pb-0">
+            <div
+              key={i}
+              id={`rel-${i}`}
+              data-release-index={i}
+              className="relative flex gap-8 pb-14 last:pb-0 scroll-mt-16"
+            >
 
               {/* Timeline line */}
               {i < changelog.length - 1 && (
-                <div className="absolute left-[5px] top-[11px] bottom-0 w-px bg-edge" />
+                <div className="absolute left-[5px] top-[11px] -bottom-8 w-px bg-edge" />
               )}
 
               {/* Timeline dot */}
@@ -201,7 +226,9 @@ export default function ChangelogPage() {
               </div>
             </div>
             )
-          })}
+              })}
+            </section>
+          ))}
         </div>
 
         <p className="text-meta text-ink-4 mt-10">

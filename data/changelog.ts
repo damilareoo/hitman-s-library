@@ -26,6 +26,46 @@ export interface ChangelogRelease {
   items: ChangeItem[]
 }
 
+export interface ReleaseRef {
+  /** Index into `changelog` — also the anchor id, as `rel-{index}`. */
+  index: number
+  date: string
+  title: string
+}
+
+export interface MonthGroup {
+  /** Anchor id for the month, e.g. "m-2026-08". */
+  id: string
+  /** Three letters, e.g. "AUG". */
+  label: string
+  year: string
+  releases: ReleaseRef[]
+}
+
+const MONTH_LABEL = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC']
+
+/**
+ * The releases folded into the months they happened in, newest first.
+ *
+ * Months with nothing in them never appear — there was no release in June or
+ * July, and a navigation that lists empty months is offering somewhere to go
+ * that has nothing when you get there.
+ */
+export function groupByMonth(releases: ChangelogRelease[] = changelog): MonthGroup[] {
+  const groups: MonthGroup[] = []
+  releases.forEach((release, index) => {
+    const [year, month] = release.date.split('-')
+    const id = `m-${year}-${month}`
+    let group = groups.find(g => g.id === id)
+    if (!group) {
+      group = { id, label: MONTH_LABEL[Number(month) - 1], year, releases: [] }
+      groups.push(group)
+    }
+    group.releases.push({ index, date: release.date, title: release.title })
+  })
+  return groups
+}
+
 /** Everyone who has a line in this release, in the order they first appear. */
 export function releaseAuthors(release: ChangelogRelease): Author[] {
   const seen: Author[] = []
@@ -43,6 +83,17 @@ export function releaseAuthors(release: ChangelogRelease): Author[] {
 // more than one hand in it names each line instead, because that is the
 // only case where the question is actually being asked.
 const changelog: ChangelogRelease[] = [
+  {
+    date: '2026-08-31',
+    title: 'The Page, Zoomed Out',
+    description: 'Thirty releases is more than anyone will scroll through to reach February. The fix is not a menu of month names but a smaller copy of the page itself, kept in the margin.',
+    items: [
+      { type: 'new',      author: 'damilare', text: 'A rail in the left gutter holds one dot per release, grouped by month. It is a minimap rather than a list: the dots are the same shape the timeline uses, so it reads as this page seen from further away, and the shape of the work comes with it — thirteen releases in August against two in February is a fact a row of month names would have thrown away' },
+      { type: 'new',      author: 'damilare', text: 'Every dot is its own target, which buys release-level precision without asking anyone to read thirty titles to find one. The dot you are currently reading fills in as you scroll, so the rail answers where am I as well as where can I go. Months with nothing in them never appear — there was no release in June or July, and offering somewhere to go that is empty when you arrive is not navigation' },
+      { type: 'improved', author: 'damilare', text: 'The timeline carries a quiet month label where one month turns into the next, so a jump lands somewhere that looks deliberate instead of part-way down an unmarked run' },
+      { type: 'new',      author: 'damilare', text: 'On the About page the word spreadsheet shows you the spreadsheet. It opens on hover, on keyboard focus and on tap, and flips below the line when there is no room above it — a panel clipped by the top of the window is worse than one that opens the other way' },
+    ],
+  },
   {
     date: '2026-08-31',
     title: 'Signed at the Bottom',
