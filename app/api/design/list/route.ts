@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { neon } from '@neondatabase/serverless'
+import { toHttps } from '@/lib/secure-url'
 
 const sql = neon(process.env.DATABASE_URL!)
 
@@ -59,10 +60,10 @@ export async function GET(req: NextRequest) {
         title: row.source_name,
         industry: row.industry,
         created_at: row.created_at,
-        screenshot_url: row.screenshot_url ?? null,
-        mobile_screenshot_url: row.mobile_screenshot_url ?? null,
+        screenshot_url: toHttps(row.screenshot_url),
+        mobile_screenshot_url: toHttps(row.mobile_screenshot_url),
         figma_capture_url: row.figma_capture_url ?? null,
-        thumbnail_url: row.thumbnail_url ?? null,
+        thumbnail_url: toHttps(row.thumbnail_url),
         extraction_error: metadata.extraction_error ?? null,
       }
     })

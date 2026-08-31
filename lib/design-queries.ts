@@ -4,6 +4,7 @@
 // Both the server-rendered gallery and /api/design/filter-advanced call these,
 // so the first paint and every subsequent fetch cannot drift apart.
 import { unstable_cache } from 'next/cache'
+import { toHttps } from '@/lib/secure-url'
 import { neon } from '@neondatabase/serverless'
 import { cleanTitle, decodeEntities } from './clean-title'
 
@@ -104,7 +105,7 @@ function parseTags(raw: unknown): string[] {
  */
 function cleanUrl(raw: unknown): string | null {
   if (typeof raw !== 'string' || !raw) return null
-  return decodeEntities(raw)
+  return toHttps(decodeEntities(raw))
 }
 
 function parseMetadata(raw: unknown): Record<string, any> {

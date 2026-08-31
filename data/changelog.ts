@@ -85,6 +85,16 @@ export function releaseAuthors(release: ChangelogRelease): Author[] {
 const changelog: ChangelogRelease[] = [
   {
     date: '2026-08-31',
+    title: 'Legibility',
+    items: [
+      { type: 'fixed',    author: 'damilare', text: 'The site read as not secure. One card stored its image over http, and a single insecure image drops the padlock for the whole page. Scraped URLs are upgraded to https on the way out now, so it cannot come back' },
+      { type: 'improved', author: 'damilare', text: 'Muted text was too faint to read. The lightest level measured 1.7:1 on white; every level now clears 4.5:1 in both themes' },
+      { type: 'improved', author: 'damilare', text: 'Type scale up one step across the board — the smallest labels were 10px' },
+      { type: 'fixed',    author: 'damilare', text: 'The rule above the corner links stopped in mid-air on About and Changelog. It follows the sidebar on the gallery and spans the page where there is none' },
+    ],
+  },
+  {
+    date: '2026-08-31',
     title: 'A Mark',
     items: [
       { type: 'new',      author: 'damilare', text: 'A mark for the library — three books on a shelf, one leaning' },

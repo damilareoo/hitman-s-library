@@ -12,6 +12,12 @@ const PAGES = [
 interface SiteLinksProps {
   /** The mobile detail sheet covers this corner; nothing behind it is reachable. */
   hidden?: boolean
+  /**
+   * What the rule above the links is closing off. On the gallery it is the
+   * sidebar, so it stops at the sidebar's edge. On a page with no sidebar it
+   * has nothing to stop at, and a rule ending in mid-air reads as broken.
+   */
+  variant?: 'sidebar' | 'page'
 }
 
 /**
@@ -25,7 +31,7 @@ interface SiteLinksProps {
  * here means the row always answers "where else can I go" without you having
  * to know the logo is a link.
  */
-export function SiteLinks({ hidden = false }: SiteLinksProps) {
+export function SiteLinks({ hidden = false, variant = 'page' }: SiteLinksProps) {
   const pathname = usePathname()
   const elsewhere = PAGES.filter(page => page.href !== pathname)
 
@@ -39,7 +45,12 @@ export function SiteLinks({ hidden = false }: SiteLinksProps) {
         // On a phone this floats over cards rather than over a sidebar, so it
         // carries just enough ground to stay readable against a screenshot.
         'bg-background/85 backdrop-blur-sm rounded-tr-[12px]',
-        'border-t border-r border-edge xl:border-r-0 xl:rounded-tr-none xl:w-[calc((100%/12)*2)]',
+        'border-t border-r border-edge xl:border-r-0 xl:rounded-tr-none',
+        variant === 'sidebar'
+          // Two of twelve columns — the sidebar's own width, so the rule ends
+          // exactly on its edge rather than somewhere near it.
+          ? 'xl:w-[calc((100%/12)*2)]'
+          : 'xl:w-full',
         'transition-opacity duration-[var(--dur-2)] ease-[var(--ease-sig)]',
         'data-[hidden]:opacity-0 data-[hidden]:pointer-events-none',
       ].join(' ')}

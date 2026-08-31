@@ -767,7 +767,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories }
 
         </main>
 
-        <SiteLinks hidden={isPanelOpen} />
+        <SiteLinks hidden={isPanelOpen} variant="sidebar" />
 
       <RequestSiteDialog
         open={requestOpen}

@@ -1,5 +1,6 @@
 // app/api/design/[id]/route.ts
 import { neon } from '@neondatabase/serverless'
+import { toHttps } from '@/lib/secure-url'
 import { NextResponse } from 'next/server'
 
 const sql = neon(process.env.DATABASE_URL!)
@@ -37,8 +38,8 @@ export async function GET(
     return NextResponse.json({
       id: source.id,
       url: source.source_url,
-      screenshot_url: source.screenshot_url ?? null,
-      mobile_screenshot_url: source.mobile_screenshot_url ?? null,
+      screenshot_url: toHttps(source.screenshot_url),
+      mobile_screenshot_url: toHttps(source.mobile_screenshot_url),
       figma_capture_url: source.figma_capture_url ?? null,
       created_at: source.created_at,
       extraction_error: source.extraction_error ?? null,

@@ -58,11 +58,16 @@
   --color-error:   #dc2626;
   --color-running: #2563eb;
 
-  /* Ink levels — all muted text derives from these */
+  /* Ink levels — all muted text derives from these.
+     Every one of these carries text at 11-15px, so every one of them is held
+     to 4.5:1 rather than the 3:1 that only large type earns. The old floor
+     was 0.24, which measured 1.71:1 on white — a label you had to hunt for.
+     0.58 is the alpha where the lightest level clears 4.5:1 in both themes;
+     the rest are spread above it so four distinct levels survive. */
   --ink: var(--foreground);
-  --ink-2: oklch(from var(--foreground) l c h / 0.62);
-  --ink-3: oklch(from var(--foreground) l c h / 0.4);
-  --ink-4: oklch(from var(--foreground) l c h / 0.24);
+  --ink-2: oklch(from var(--foreground) l c h / 0.80);
+  --ink-3: oklch(from var(--foreground) l c h / 0.68);
+  --ink-4: oklch(from var(--foreground) l c h / 0.58);
 
   /* Edge weights — all borders derive from these */
   --edge-strong: oklch(from var(--border) l c h / 0.7);
@@ -377,14 +382,14 @@ a[href] *,
    descriptions were being set in it. */
 @utility text-reading {
   font-family: var(--font-sans);
-  font-size: 15px;
+  font-size: 16px;
   letter-spacing: -0.005em;
   line-height: 1.55;
 }
 
 @utility text-micro {
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 11px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   line-height: 1;
@@ -392,24 +397,24 @@ a[href] *,
 
 @utility text-meta {
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 12px;
   letter-spacing: 0;
 }
 
 @utility text-ui {
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: 13px;
 }
 
 @utility text-bodytext {
   font-family: var(--font-sans);
-  font-size: 13px;
+  font-size: 14px;
   letter-spacing: -0.01em;
 }
 
 @utility text-titletext {
   font-family: var(--font-sans);
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 600;
   letter-spacing: -0.02em;
 }
