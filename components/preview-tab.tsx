@@ -16,6 +16,9 @@ interface PreviewTabProps {
   mobileScreenshotUrl?: string | null
   extractionError?: string | null
   displayMode?: Extract<PreviewMode, 'live' | 'mobile'>
+  /** Drop the drawn phone frame — on an actual phone it is a picture of the
+   *  device you are holding, and it costs the preview most of its width. */
+  fill?: boolean
 }
 
 export function PreviewTab({
@@ -24,6 +27,7 @@ export function PreviewTab({
   mobileScreenshotUrl,
   extractionError,
   displayMode = 'live',
+  fill = false,
 }: PreviewTabProps) {
   const [loaded, setLoaded] = useState(false)
   const [proxyFailed, setProxyFailed] = useState(false)
@@ -113,7 +117,7 @@ export function PreviewTab({
   if (activeScreenshotUrl) {
     return (
       <div className="relative flex-1 min-h-0 overflow-auto bg-muted/35">
-        <div className={`min-h-full p-4 ${mode === 'mobile' ? 'flex justify-center' : ''}`}>
+        <div className={`min-h-full ${fill ? 'p-0' : 'p-4'} ${mode === 'mobile' && !fill ? 'flex justify-center' : ''}`}>
           <img
             src={activeScreenshotUrl}
             alt={`${mode === 'mobile' ? 'Mobile' : 'Desktop'} screenshot of ${domain}`}
@@ -129,8 +133,8 @@ export function PreviewTab({
   if (mode === 'mobile' && !proxyFailed) {
     return (
       <div className="relative flex-1 min-h-0 overflow-hidden bg-muted/35">
-        <div className="absolute inset-4 flex justify-center">
-          <div className="relative h-full w-full max-w-[390px] overflow-hidden rounded-[4px] border border-edge bg-background shadow-sm">
+        <div className={fill ? 'absolute inset-0' : 'absolute inset-4 flex justify-center'}>
+          <div className={`relative h-full w-full overflow-hidden bg-background ${fill ? '' : 'max-w-[390px] rounded-[4px] border border-edge shadow-sm'}`}>
             {!loaded && (
               <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 pointer-events-none">
                 <span className="text-meta text-ink-3">{domain}</span>

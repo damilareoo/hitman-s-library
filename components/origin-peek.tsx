@@ -22,6 +22,7 @@ interface OriginPeekProps {
 export function OriginPeek({ children, src, alt, caption }: OriginPeekProps) {
   const [open, setOpen] = useState(false)
   const [below, setBelow] = useState(false)
+  const [shift, setShift] = useState(0)
   const wrapRef = useRef<HTMLSpanElement>(null)
 
   // Opening upward is the better read — the picture sits above the sentence
@@ -30,7 +31,20 @@ export function OriginPeek({ children, src, alt, caption }: OriginPeekProps) {
   // way. Measured at open, because the answer changes with the scroll.
   function place() {
     const rect = wrapRef.current?.getBoundingClientRect()
-    if (rect) setBelow(rect.top < 320)
+    if (!rect) return
+    setBelow(rect.top < 320)
+
+    // Centred on the word is right until the word is near an edge, and on a
+    // phone it usually is — a 351px panel centred on a word 90px from the
+    // left runs off the screen. Nudge it back inside and let it sit
+    // off-centre, which nobody notices; a panel half out of the window is
+    // the thing people notice.
+    const width = Math.min(600, window.innerWidth * 0.9)
+    const margin = 12
+    const left = rect.left + rect.width / 2 - width / 2
+    const overLeft = margin - left
+    const overRight = left + width - (window.innerWidth - margin)
+    setShift(overLeft > 0 ? overLeft : overRight > 0 ? -overRight : 0)
   }
 
   // A tap opens it; the next tap anywhere else puts it away again.
@@ -73,20 +87,25 @@ export function OriginPeek({ children, src, alt, caption }: OriginPeekProps) {
       <span
         aria-hidden={!open}
         className={[
-          'pointer-events-none absolute z-50 left-1/2 -translate-x-1/2',
+          'pointer-events-none absolute z-50 left-1/2',
           below ? 'top-[calc(100%+10px)]' : 'bottom-[calc(100%+10px)]',
-          'w-[min(420px,78vw)] rounded-[6px] border border-edge-strong bg-card overflow-hidden',
+          'w-[min(600px,90vw)] rounded-[6px] border border-edge-strong bg-card overflow-hidden',
           'shadow-[0_12px_32px_-8px_rgba(0,0,0,0.28)]',
           'transition-[opacity,transform] duration-[var(--dur-2)] ease-[var(--ease-sig)]',
           'motion-reduce:transition-none',
-          open ? 'opacity-100 translate-y-0' : `opacity-0 ${below ? '-translate-y-1' : 'translate-y-1'}`,
+          open ? 'opacity-100' : 'opacity-0',
         ].join(' ')}
+        style={{
+          transform: `translateX(calc(-50% + ${shift}px)) translateY(${
+            open ? 0 : below ? -4 : 4
+          }px)`,
+        }}
       >
         <Image
           src={src}
           alt={alt}
-          width={840}
-          height={520}
+          width={1500}
+          height={896}
           className="w-full h-auto block"
         />
         {caption && (

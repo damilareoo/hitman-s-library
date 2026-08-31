@@ -68,8 +68,8 @@ export default async function AboutPage() {
             It started as a{' '}
             <OriginPeek
               src="/origin-spreadsheet.png"
-              alt="The original spreadsheet: columns of site addresses and notes, with tabs for motion, portfolios, hex and travel"
-              caption="The original sheet"
+              alt="The original spreadsheet: a column of site addresses beside notes reading 'i like the feel', 'playful vibe', 'colorful', with tabs for e-commerce, sections, landing pages and UX"
+              caption="Websites — the original sheet"
             >
               spreadsheet
             </OriginPeek>

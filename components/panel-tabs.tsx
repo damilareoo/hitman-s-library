@@ -11,17 +11,29 @@ export type PanelTab = 'preview' | 'mobile' | 'colors' | 'type'
 interface PanelTabsProps {
   active: PanelTab
   onChange: (tab: PanelTab) => void
+  /** On a phone there is no second device to offer, so Mobile is not a tab. */
+  variant?: 'desktop' | 'mobile'
 }
 
-const TABS: { key: PanelTab; label: string; Icon: React.ComponentType<{ className?: string; weight?: 'regular' | 'fill' }> }[] = [
+type TabDef = { key: PanelTab; label: string; Icon: React.ComponentType<{ className?: string; weight?: 'regular' | 'fill' }> }
+
+const ALL_TABS: TabDef[] = [
   { key: 'preview', label: 'Preview', Icon: Monitor },
   { key: 'mobile',  label: 'Mobile',  Icon: DeviceMobile },
   { key: 'colors', label: 'Colors', Icon: Palette },
   { key: 'type',   label: 'Type',    Icon: TextT },
 ]
 
-export function PanelTabs({ active, onChange }: PanelTabsProps) {
+// Offering Mobile to someone already holding a phone is offering them the
+// view they are in. Preview carries the mobile rendering there instead, and
+// the tab keeps the name that describes what it is rather than which device.
+const MOBILE_TABS: TabDef[] = ALL_TABS.filter(t => t.key !== 'mobile').map(t =>
+  t.key === 'preview' ? { ...t, Icon: DeviceMobile } : t,
+)
+
+export function PanelTabs({ active, onChange, variant = 'desktop' }: PanelTabsProps) {
   const { playTabChange } = useSoundsContext()
+  const TABS = variant === 'mobile' ? MOBILE_TABS : ALL_TABS
   const activeIndex = TABS.findIndex(t => t.key === active)
 
   // Arrow-key tab changes are repeated far more than clicks, and animating a

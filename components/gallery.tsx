@@ -88,6 +88,13 @@ const ICON_BUTTON =
   'text-ink-3 hover:text-ink hover:bg-muted active:scale-[0.98] transition-[background-color,border-color,color,transform] duration-[var(--dur-2)] ease-[var(--ease-sig)] ' +
   "after:absolute after:left-1/2 after:top-1/2 after:h-11 after:w-[42px] after:-translate-x-1/2 after:-translate-y-1/2 after:content-['']"
 
+// Where the navigation ends. About and Changelog are destinations rather than
+// filters, so they sit after the list on desktop and after the grid on a
+// phone — the same idea in the same relative place, at both sizes.
+const SECONDARY_LINK =
+  'relative flex items-center text-meta text-ink-3 hover:text-ink transition-colors ' +
+  "after:absolute after:inset-x-0 after:top-1/2 after:h-11 after:-translate-y-1/2 after:content-['']"
+
 // Counts share a fixed column and sit right-aligned, so the digits line up down
 // the list instead of ending wherever each label happens to leave them.
 function sidebarCount(isActive: boolean): string {
@@ -405,8 +412,9 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories }
   // has the same room either way and the count does not shift under you.
   const cardColumns = 'grid-cols-1 sm:grid-cols-2 2xl:grid-cols-3'
 
-  const detailPanel = isPanelOpen && (
+  const renderDetailPanel = (variant: 'desktop' | 'mobile') => isPanelOpen && (
     <SiteDetailPanel
+      variant={variant}
       sourceId={Number(selectedId)}
       metadata={selectedDesign ? {
         tags: selectedDesign.tags,
@@ -476,27 +484,12 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories }
                 something the person just asked for. */}
             <button
               onClick={() => setRequestOpen(true)}
-              className="relative hidden sm:flex items-center gap-1 text-meta text-ink-3 hover:text-ink transition-colors mr-1 after:absolute after:inset-x-0 after:top-1/2 after:h-11 after:-translate-y-1/2 after:content-['']"
+              aria-label="Request a site"
+              className="relative flex items-center gap-1 text-meta text-ink-3 hover:text-ink transition-colors mr-1 sm:mr-1 max-sm:w-9 max-sm:h-9 max-sm:justify-center max-sm:rounded-[10px] max-sm:bg-muted/60 max-sm:hover:bg-muted max-sm:active:scale-[0.98] after:absolute after:inset-x-0 after:top-1/2 after:h-11 after:-translate-y-1/2 after:content-['']"
             >
-              <Plus className="w-3 h-3" weight="bold" />
-              Request a site
+              <Plus className="w-3 h-3 max-sm:w-4 max-sm:h-4" weight="bold" />
+              <span className="max-sm:sr-only">Request a site</span>
             </button>
-
-            <Link
-              href="/about"
-              className="relative hidden sm:flex items-center text-meta text-ink-3 hover:text-ink transition-colors mr-1 after:absolute after:inset-x-0 after:top-1/2 after:h-11 after:-translate-y-1/2 after:content-['']"
-            >
-              About
-            </Link>
-
-            <Link
-              href="/changelog"
-              // 17px tall as drawn. The overlay carries the touch target so the
-              // link keeps its weight in the header.
-              className="relative hidden sm:flex items-center text-meta text-ink-3 hover:text-ink transition-colors mr-1 after:absolute after:inset-x-0 after:top-1/2 after:h-11 after:-translate-y-1/2 after:content-['']"
-            >
-              Changelog
-            </Link>
 
             <button
               onClick={() => {
@@ -590,6 +583,13 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories }
             {/* Active tags live in the filter bar above the grid, alongside
                 categories and search, rather than in a second list here. */}
           </nav>
+
+          {/* mt-auto so this sits at the foot of the column on a short list
+              and is scrolled to on a long one, rather than floating mid-way. */}
+          <div className="mt-auto px-4 py-4 border-t border-edge flex flex-col gap-2.5">
+            <Link href="/about" className={SECONDARY_LINK}>About</Link>
+            <Link href="/changelog" className={SECONDARY_LINK}>Changelog</Link>
+          </div>
         </aside>
 
         {/* Gallery */}
@@ -653,6 +653,16 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories }
                     {label}
                   </button>
                 ))}
+              </div>
+
+              {/* Below xl this bar *is* the category list, so "after the
+                  navigation" lands here. It shares the sort row rather than
+                  taking one of its own — a fourth row of sticky chrome on a
+                  phone is a lot to spend on two links. */}
+              <div className="ml-auto flex items-center gap-2 shrink-0 pl-2">
+                <Link href="/about" className={SECONDARY_LINK}>About</Link>
+                <span aria-hidden="true" className="text-meta text-ink-4">·</span>
+                <Link href="/changelog" className={SECONDARY_LINK}>Changelog</Link>
               </div>
             </div>
           </div>
@@ -772,6 +782,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories }
               {isRefetching ? 'Loading sites' : `${pagination.total} sites`}
             </p>
           </div>
+
         </main>
 
         <RequestSiteDialog
@@ -794,7 +805,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories }
                 transition={{ duration: 0.15 }}
                 className="flex flex-col h-full"
               >
-                {detailPanel}
+                {renderDetailPanel('desktop')}
               </motion.div>
             ) : (
               <motion.div
@@ -863,7 +874,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories }
               </div>
 
               <div className="flex flex-col flex-1 min-h-0" style={{ touchAction: 'pan-y', paddingBottom: 'var(--safe-bottom)' }}>
-                {detailPanel}
+                {renderDetailPanel('mobile')}
               </div>
             </motion.div>
           </>
