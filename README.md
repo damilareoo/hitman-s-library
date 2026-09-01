@@ -105,6 +105,14 @@ HTML rather than being fetched after hydration.
 - Filtered views (`?q=`, `?category=`, `?tag=`, `?site=`) are marked `noindex` to
   avoid competing with the index page.
 - `app/robots.ts`, `app/sitemap.ts`, and `app/manifest.ts` generate their routes.
+- `public/og.png` is the link preview card. It is one fixed image on purpose:
+  platforms scrape it once and serve it from their own cache, so it has no
+  viewer and no theme to answer. The card's frame follows the phone; the picture
+  inside it cannot. `public/og-light.png` is the same artwork inverted, kept for
+  a light-ground surface if one ever needs it. Changing the artwork means
+  changing the filename too — platforms cache the old bytes against the old URL.
+- Favicons *are* theme-aware: `public/icon.svg` answers `prefers-color-scheme`,
+  as does `themeColor` in `app/layout.tsx`.
 
 ---
 

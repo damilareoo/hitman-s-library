@@ -59,12 +59,17 @@ export const metadata: Metadata = {
     description:
       "A personal infrastructure for everything worth saving on the web. No folders. No bookmarks. Just the library.",
     siteName: "Hitman's Library",
+    // One image, not two. Link previews are rendered from a copy the platform
+    // scraped and cached on its own servers, so there is no viewer and no
+    // theme to answer — the card's frame follows the phone, the picture in it
+    // cannot. Dark holds up on both grounds; /og-light.png is the same artwork
+    // the other way round if we ever want to switch.
     images: [
       {
-        url: "https://hitmanslibrary.xyz/og-image-v2.png",
+        url: "https://hitmanslibrary.xyz/og.png",
         width: 1200,
         height: 630,
-        alt: "Hitman's Library - A personal infrastructure for everything worth saving on the web",
+        alt: "Hitman's Library",
         type: "image/png",
       },
     ],
@@ -74,7 +79,7 @@ export const metadata: Metadata = {
     title: "Hitman's Library",
     description:
       "A personal infrastructure for everything worth saving on the web. No folders. No bookmarks. Just the library.",
-    images: ["https://hitmanslibrary.xyz/og-image-v2.png"],
+    images: ["https://hitmanslibrary.xyz/og.png"],
     creator: "@damilareoo",
   },
   robots: {

@@ -84,6 +84,13 @@ export function releaseAuthors(release: ChangelogRelease): Author[] {
 // only case where the question is actually being asked.
 const changelog: ChangelogRelease[] = [
   {
+    date: '2026-09-01',
+    title: 'Link Previews',
+    items: [
+      { type: 'improved', author: 'damilare', text: 'New artwork when the site is shared, replacing a card from March' },
+    ],
+  },
+  {
     date: '2026-08-31',
     title: 'Legibility',
     items: [
