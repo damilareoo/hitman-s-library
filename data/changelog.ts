@@ -88,6 +88,7 @@ const changelog: ChangelogRelease[] = [
     title: 'Link Previews',
     items: [
       { type: 'improved', author: 'damilare', text: 'New artwork when the site is shared, replacing a card from March' },
+      { type: 'fixed',    author: 'damilare', text: 'The site answered on two addresses at once. www now redirects to hitmanslibrary.xyz' },
     ],
   },
   {
