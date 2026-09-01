@@ -105,6 +105,12 @@ HTML rather than being fetched after hydration.
 - Filtered views (`?q=`, `?category=`, `?tag=`, `?site=`) are marked `noindex` to
   avoid competing with the index page.
 - `app/robots.ts`, `app/sitemap.ts`, and `app/manifest.ts` generate their routes.
+- **The canonical host is the apex, `hitmanslibrary.xyz`.** `metadataBase`, the
+  sitemap's `BASE`, `robots.host`, and the `og:image` URL all say so, and
+  `www.` is a 308 to it in the Vercel project's domain settings. These have to
+  agree: a canonical tag pointing at a URL that redirects splits the site in
+  two as far as a crawler is concerned. If you ever move the serving host,
+  change all four here in the same commit.
 - `public/og.png` is the link preview card. It is one fixed image on purpose:
   platforms scrape it once and serve it from their own cache, so it has no
   viewer and no theme to answer. The card's frame follows the phone; the picture
