@@ -1,21 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { neon } from '@neondatabase/serverless'
 import { toHttps } from '@/lib/secure-url'
-import { denormalizeIndustry, normalizeIndustry } from '@/lib/categories'
 
 const sql = neon(process.env.DATABASE_URL!)
-
-const SELECT_FIELDS = `
-  SELECT id, source_url, source_name, industry, metadata, tags, created_at, screenshot_url, mobile_screenshot_url, figma_capture_url, thumbnail_url
-  FROM design_sources
-`
 
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url)
     const industry = searchParams.get('kind')
     const search = searchParams.get('search')
-    const rawIndustries = industry && industry !== 'all' ? denormalizeIndustry(industry) : []
 
     let results: any[]
 
@@ -33,7 +26,7 @@ export async function GET(req: NextRequest) {
         FROM design_sources
         WHERE kind = ${industry}
         ORDER BY created_at DESC
-      `, rawIndustries)
+      `
     } else if (search) {
       results = await sql`
         SELECT id, source_url, source_name, kind, metadata, tags, created_at, screenshot_url, mobile_screenshot_url, thumbnail_url
@@ -65,7 +58,7 @@ export async function GET(req: NextRequest) {
         id: row.id,
         url: row.source_url,
         title: row.source_name,
-        kind: row.kind,
+        kind: row.kind || 'Unsorted',
         created_at: row.created_at,
         screenshot_url: toHttps(row.screenshot_url),
         mobile_screenshot_url: toHttps(row.mobile_screenshot_url),

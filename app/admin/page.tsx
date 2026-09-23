@@ -370,6 +370,26 @@ export default function AdminPage() {
     processQueue(items)
   }
 
+  const handleMobbinImport = async () => {
+    if (!confirm(`Import ${mobbinSites.length} curated Mobbin sites? Existing sites will be skipped automatically.`)) return
+    setIsMobbinImporting(true)
+    setMobbinResult(null)
+    try {
+      const res = await fetch('/api/admin/bulk-import', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      })
+      const data = await res.json()
+      setMobbinResult({ added: data.added ?? 0, skipped: data.skipped ?? 0, errors: data.errors ?? 0 })
+      if ((data.added ?? 0) > 0) await loadSites()
+    } catch {
+      setMobbinResult({ added: 0, skipped: 0, errors: 1 })
+    } finally {
+      setIsMobbinImporting(false)
+    }
+  }
+
   const handleDeduplicate = async () => {
     if (!confirm('This will remove duplicate entries, keeping the best version of each site. Continue?')) return
     setIsDeduping(true)
@@ -724,8 +744,6 @@ export default function AdminPage() {
 
         {/* Search + filters */}
         <div className="flex flex-wrap items-center gap-3">
-        {/* Search + count */}
-        <div className="flex items-center gap-3">
           <div className="relative flex-1 max-w-xs">
             <MagnifyingGlass className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-ink-3" weight="regular" />
             <input
