@@ -1,12 +1,15 @@
 // app/api/design/[id]/reextract/route.ts
 // Re-runs full design extraction for an existing source, bypassing the duplicate guard.
 import { NextResponse } from 'next/server'
-import { neon, Client } from '@neondatabase/serverless'
+import { Client } from '@neondatabase/serverless'
+import { getSql } from '@/lib/db'
 import { extractFullDesignData } from '@/lib/browser-extraction'
 import { toColorFormats, deduplicateColors } from '@/lib/color-utils'
+import { recordExtraction } from '@/lib/extraction-history'
+import { SIMILAR_ENABLED, embedSite, toVectorLiteral } from '@/lib/similarity'
 import { requireAdmin } from '@/lib/admin-auth'
 
-const sql = neon(process.env.DATABASE_URL!)
+const sql = getSql()
 
 export async function POST(
   req: Request,
@@ -61,6 +64,42 @@ export async function POST(
     // Update screenshot URL
     if (extractionResult.screenshotUrl) {
       await sql`UPDATE design_sources SET screenshot_url = ${extractionResult.screenshotUrl}, mobile_screenshot_url = ${extractionResult.mobileScreenshotUrl} WHERE id = ${id}`
+    }
+
+    // Hover clip (Phase 3): same write shape as the initial insert. A fresh
+    // take replaces the old clip; the old blob is deleted best-effort so
+    // storage does not accumulate a clip per re-extract.
+    {
+      const [prev] = await sql`SELECT motion_clip_url FROM design_sources WHERE id = ${id}`
+      if (extractionResult.motionClipUrl) {
+        await sql`UPDATE design_sources SET motion_clip_url = ${extractionResult.motionClipUrl}, motion_bytes = ${extractionResult.motionBytes} WHERE id = ${id}`.catch(() => null)
+        if (prev?.motion_clip_url && prev.motion_clip_url !== extractionResult.motionClipUrl) {
+          try {
+            const { del } = await import('@vercel/blob')
+            await del(prev.motion_clip_url)
+          } catch { /* orphaned blob — storage, not data loss */ }
+        }
+      }
+      const motionMeta: Record<string, unknown> = {}
+      if (extractionResult.motionError) {
+        motionMeta.motion_error = extractionResult.motionError
+      } else {
+        // A fresh take clears a stale motion error, like extraction_error.
+        await sql`UPDATE design_sources SET metadata = COALESCE(metadata, '{}') - 'motion_error' WHERE id = ${id}`.catch(() => null)
+      }
+      const mt = extractionResult.motionTags
+      if (mt && (mt.hasTransitions || mt.hasAnimations)) {
+        motionMeta.motion = mt
+        const motionTagList = [
+          ...(mt.hasTransitions ? ['motion:transitions'] : []),
+          ...(mt.hasAnimations ? ['motion:animations'] : []),
+          ...mt.easings.slice(0, 4).map(e => `motion:${e}`),
+        ]
+        if (motionTagList.length > 0) {
+          await sql`UPDATE design_sources SET tags = ARRAY(SELECT DISTINCT unnest(COALESCE(tags, '{}') || ${motionTagList}::text[])) WHERE id = ${id}`.catch(() => null)
+        }
+      }
+      await sql`UPDATE design_sources SET metadata = COALESCE(metadata, '{}') || ${JSON.stringify(motionMeta)}::jsonb WHERE id = ${id}`.catch(() => null)
     }
 
     // Write changelog entry for reextraction
@@ -124,13 +163,15 @@ export async function POST(
         )
         for (const t of extractionResult.typography) {
           await typClient.query(
-            `INSERT INTO design_typography (source_id, font_family, role, google_fonts_url, primary_weight)
-             VALUES ($1, $2, $3, $4, $5)
+            `INSERT INTO design_typography (source_id, font_family, role, google_fonts_url, primary_weight, sample_size_px, sample_line_height)
+             VALUES ($1, $2, $3, $4, $5, $6, $7)
              ON CONFLICT (source_id, role) DO UPDATE SET
                font_family = EXCLUDED.font_family,
                google_fonts_url = EXCLUDED.google_fonts_url,
-               primary_weight = EXCLUDED.primary_weight`,
-            [id, t.fontFamily, t.role, t.googleFontsUrl, t.primaryWeight]
+               primary_weight = EXCLUDED.primary_weight,
+               sample_size_px = EXCLUDED.sample_size_px,
+               sample_line_height = EXCLUDED.sample_line_height`,
+            [id, t.fontFamily, t.role, t.googleFontsUrl, t.primaryWeight, t.sampleSizePx, t.sampleLineHeight]
           )
         }
         await typClient.query('COMMIT')
@@ -139,6 +180,47 @@ export async function POST(
         console.error('[reextract] Typography transaction rolled back:', err)
       } finally {
         await typClient.end()
+      }
+    }
+
+    // Append-only snapshot (Phase 0): every run appends a versioned row and
+    // repoints the site at it. The legacy tables above are still the public
+    // read path, so re-extracting twice leaves two history rows and one
+    // unchanged public view.
+    await recordExtraction({
+      siteId: id,
+      screenshotUrl: extractionResult.screenshotUrl ?? null,
+      mobileScreenshotUrl: extractionResult.mobileScreenshotUrl ?? null,
+      palette: colorFormats,
+      typography: (extractionResult.typography ?? []).map(t => ({
+        fontFamily: t.fontFamily,
+        role: t.role,
+        googleFontsUrl: t.googleFontsUrl,
+        primaryWeight: t.primaryWeight,
+        sampleSizePx: t.sampleSizePx,
+        sampleLineHeight: t.sampleLineHeight,
+      })),
+      assets: validAssets,
+    })
+
+    // Similarity embedding (Phase 2): re-embed on every re-extract, same
+    // best-effort rule as the initial insert. Never fails the extraction.
+    if (SIMILAR_ENABLED) {
+      try {
+        const [siteRow] = await sql`SELECT kind FROM design_sources WHERE id = ${id}`
+        const embedding = await embedSite({
+          palette: colorFormats.map(c => ({ hex: c.hex, oklch: c.oklch })),
+          fonts: (extractionResult.typography ?? []).map(t => ({
+            fontFamily: t.fontFamily,
+            role: t.role,
+          })),
+          kind: siteRow?.kind ?? null,
+          screenshotUrl: extractionResult.screenshotUrl ?? null,
+          siteId: id,
+        })
+        await sql`UPDATE design_sources SET embedding = ${toVectorLiteral(embedding)}::vector WHERE id = ${id}`.catch(() => null)
+      } catch (err) {
+        console.error('[reextract] embedding failed:', err)
       }
     }
 

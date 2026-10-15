@@ -14,7 +14,17 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url)
 
     const sortParam = searchParams.get('sortBy') as SortBy | null
+    // '' .split(',') is [''], and Number('') is 0 — filter empties first or
+    // every ids-less call short-circuits to site id 0 and returns nothing.
+    const ids = (searchParams.get('ids') ?? '')
+      .split(',')
+      .map(s => s.trim())
+      .filter(s => s !== '')
+      .map(Number)
+      .filter(Number.isFinite)
+      .slice(0, 200)
     const result = await queryDesigns({
+      ids,
       kinds: searchParams.getAll('kind'),
       tags: searchParams.getAll('tag'),
       search: searchParams.get('search') ?? '',

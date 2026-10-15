@@ -27,6 +27,7 @@ interface Props {
 
 export function RequestSiteDialog({ open, onClose, initialUrl = '', onOpenSite }: Props) {
   const [url, setUrl] = useState(initialUrl)
+  const [email, setEmail] = useState('')
   const [preview, setPreview] = useState<PreviewState>({ kind: 'idle' })
   const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState<{ title: string | null; count: number } | null>(null)
@@ -39,7 +40,7 @@ export function RequestSiteDialog({ open, onClose, initialUrl = '', onOpenSite }
 
   const { requests, remember } = useSiteRequests()
 
-  useEffect(() => { if (open) setUrl(initialUrl) }, [open, initialUrl])
+  useEffect(() => { if (open) { setUrl(initialUrl); setEmail('') } }, [open, initialUrl])
 
   // Focus moves in on open and returns where it came from on close. Without the
   // second half, dismissing the dialog drops focus onto <body> and the next Tab
@@ -160,6 +161,7 @@ export function RequestSiteDialog({ open, onClose, initialUrl = '', onOpenSite }
         body: JSON.stringify({
           url: url.trim(),
           company: '', // honeypot — real people never fill this
+          email: email.trim() || undefined,
           preview: { title: previewTitle, image: previewImage },
         }),
       })
@@ -261,6 +263,25 @@ export function RequestSiteDialog({ open, onClose, initialUrl = '', onOpenSite }
                 </div>
 
                 <PreviewCard preview={preview} onOpenSite={id => { onOpenSite(id); onClose() }} />
+
+                {canSubmit && (
+                  <>
+                    <input
+                      type="email"
+                      inputMode="email"
+                      autoComplete="email"
+                      spellCheck={false}
+                      placeholder="you@example.com (optional)"
+                      aria-label="Email address (optional)"
+                      value={email}
+                      onChange={e => setEmail(e.target.value)}
+                      className="mt-2 w-full h-10 px-3 text-bodytext bg-muted/60 border border-edge rounded-[6px] text-foreground placeholder:text-ink-4 focus:outline-none focus:border-foreground/30 focus:bg-muted transition-colors"
+                    />
+                    <p className="mt-2 text-meta text-ink-4 leading-relaxed">
+                      We check every request — if it makes the cut, we&apos;ll tell you when it&apos;s live.
+                    </p>
+                  </>
+                )}
 
                 {error && (
                   <p className="mt-3 text-meta text-[var(--color-error)] flex items-center gap-1.5">

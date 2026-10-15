@@ -5,9 +5,9 @@
 // named, so it discloses nothing they could not have discovered by typing the
 // URL into the request form.
 import { NextResponse } from 'next/server'
-import { neon } from '@neondatabase/serverless'
+import { getSql } from '@/lib/db'
 
-const sql = neon(process.env.DATABASE_URL!)
+const sql = getSql()
 
 const MAX_URLS = 25
 

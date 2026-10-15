@@ -2,11 +2,15 @@
 
 import React from 'react'
 import { motion } from 'motion/react'
-import { DeviceMobile, Monitor, Palette, TextT } from '@phosphor-icons/react'
+import { DeviceMobile, Monitor, Palette, TextT, ClockCounterClockwise } from '@phosphor-icons/react'
 import { useSoundsContext } from '@/contexts/sounds-context'
 import { MOVE_EASE, DUR } from '@/lib/motion'
 
-export type PanelTab = 'preview' | 'mobile' | 'colors' | 'type'
+/** History tab ships separately from drift data: badges and the history API
+ *  keep working underneath while the tab stays out of the panel. */
+export const HISTORY_TAB_ENABLED = false
+
+export type PanelTab = 'preview' | 'mobile' | 'colors' | 'type' | 'history'
 
 interface PanelTabsProps {
   active: PanelTab
@@ -17,12 +21,17 @@ interface PanelTabsProps {
 
 type TabDef = { key: PanelTab; label: string; Icon: React.ComponentType<{ className?: string; weight?: 'regular' | 'fill' }> }
 
-const ALL_TABS: TabDef[] = [
+const BASE_TABS: TabDef[] = [
   { key: 'preview', label: 'Preview', Icon: Monitor },
   { key: 'mobile',  label: 'Mobile',  Icon: DeviceMobile },
   { key: 'colors', label: 'Colors', Icon: Palette },
   { key: 'type',   label: 'Type',    Icon: TextT },
 ]
+
+// History sits beside Type; the whole tab vanishes with the flag.
+const ALL_TABS: TabDef[] = HISTORY_TAB_ENABLED
+  ? [...BASE_TABS, { key: 'history', label: 'History', Icon: ClockCounterClockwise }]
+  : BASE_TABS
 
 // Offering Mobile to someone already holding a phone is offering them the
 // view they are in. Preview carries the mobile rendering there instead, and

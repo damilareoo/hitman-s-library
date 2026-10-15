@@ -2,7 +2,7 @@
 // Vercel cron — runs daily at 3am UTC. Processes as many sites as fit in
 // the 60s window, taking the sites that are missing a capture.
 import { NextRequest, NextResponse } from 'next/server'
-import { neon } from '@neondatabase/serverless'
+import { getSql } from '@/lib/db'
 import {
   getBrowser,
   captureFullPageScreenshot,
@@ -11,7 +11,7 @@ import {
 
 export const maxDuration = 60
 
-const sql = neon(process.env.DATABASE_URL!)
+const sql = getSql()
 const BUDGET_MS = 50_000 // stop queuing new sites after 50s, leave buffer for cleanup
 
 export async function GET(req: NextRequest) {

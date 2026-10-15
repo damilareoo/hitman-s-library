@@ -8,12 +8,12 @@
 // request through safeFetch, which re-validates every redirect hop. It never
 // touches the headless browser.
 import { NextResponse } from 'next/server'
-import { neon } from '@neondatabase/serverless'
+import { getSql } from '@/lib/db'
 import { safeFetch, assertPublicUrl, BlockedUrlError } from '@/lib/safe-url'
 import { normalizeUrl, toAbsoluteUrl } from '@/lib/normalize-url'
 import { checkRateLimit, clientIp, hashIp } from '@/lib/rate-limit'
 
-const sql = neon(process.env.DATABASE_URL!)
+const sql = getSql()
 
 // Generous: this fires while someone is typing, and being throttled mid-paste
 // would feel like the feature is broken rather than protected.

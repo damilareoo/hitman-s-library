@@ -11,6 +11,8 @@ interface TypographyRow {
   role: string
   google_fonts_url: string | null
   primary_weight: number | null
+  sample_size_px?: number | null
+  sample_line_height?: string | null
 }
 
 const ROLE_LABEL: Record<string, string> = {
@@ -199,7 +201,13 @@ export function TypeSpecimenCard({ typography, index }: { typography: Typography
 
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
-          <span className="text-meta text-ink-4 tabular-nums">{weight}</span>
+          {/* Measured sample from the extraction row — what the role actually
+              renders at — not the specimen's display size above it. */}
+          <span className="text-meta text-ink-4 tabular-nums">
+            {weight}
+            {typography.sample_size_px != null && ` · ${Math.round(typography.sample_size_px)}px`}
+            {typography.sample_line_height && ` / ${typography.sample_line_height}`}
+          </span>
           {/* Rendering a fallback while naming the real face is a quiet lie,
               and the reader has no way to tell from the shapes alone. */}
           {state === 'unavailable' && (

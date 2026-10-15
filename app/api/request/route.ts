@@ -4,12 +4,12 @@
 // else — no extraction, no headless browser, no blob storage. Approving a
 // request is what starts real work, and that is behind the admin session.
 import { NextResponse } from 'next/server'
-import { neon } from '@neondatabase/serverless'
+import { getSql } from '@/lib/db'
 import { assertPublicUrl, BlockedUrlError } from '@/lib/safe-url'
 import { normalizeUrl, toAbsoluteUrl } from '@/lib/normalize-url'
 import { checkRateLimit, clientIp, hashIp } from '@/lib/rate-limit'
 
-const sql = neon(process.env.DATABASE_URL!)
+const sql = getSql()
 
 // Deliberately tight. Nobody has five genuine, distinct sites to suggest in
 // ten minutes, and this is the endpoint that puts rows in front of a human.
@@ -19,12 +19,20 @@ const WINDOW_SECONDS = 60 * 10
 export async function POST(req: Request) {
   let url = ''
   let honeypot = ''
+  let email: string | null = null
   let preview: { title?: string; image?: string } = {}
 
   try {
     const body = await req.json()
     url = typeof body?.url === 'string' ? body.url : ''
     honeypot = typeof body?.company === 'string' ? body.company : ''
+    // Optional contact so an approved request can be answered. Validated
+    // loosely and length-capped; anything else is dropped, not rejected —
+    // a bad email must never cost someone their request.
+    if (typeof body?.email === 'string') {
+      const candidate = body.email.trim().slice(0, 254)
+      email = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(candidate) ? candidate : null
+    }
     if (body?.preview && typeof body.preview === 'object') preview = body.preview
   } catch {
     return NextResponse.json({ error: 'Invalid request' }, { status: 400 })
@@ -85,16 +93,18 @@ export async function POST(req: Request) {
   // anything previously dismissed, so a site that gets asked for repeatedly
   // comes back rather than staying buried.
   const rows = await sql`
-    INSERT INTO design_requests (url, normalized_url, preview_title, preview_image, ip_hash)
+    INSERT INTO design_requests (url, normalized_url, preview_title, preview_image, ip_hash, email)
     VALUES (
       ${toAbsoluteUrl(url)},
       ${normalized},
       ${preview.title ?? null},
       ${preview.image ?? null},
-      ${ipHash}
+      ${ipHash},
+      ${email}
     )
     ON CONFLICT (normalized_url) DO UPDATE SET
       request_count = design_requests.request_count + 1,
+      email = COALESCE(design_requests.email, EXCLUDED.email),
       status = CASE WHEN design_requests.status = 'dismissed' THEN 'pending' ELSE design_requests.status END,
       preview_title = COALESCE(design_requests.preview_title, EXCLUDED.preview_title),
       preview_image = COALESCE(design_requests.preview_image, EXCLUDED.preview_image),

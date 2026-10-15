@@ -3,8 +3,10 @@
 import { useState } from 'react'
 import Image from 'next/image'
 import { motion } from 'motion/react'
-import { ArrowUpRight } from '@phosphor-icons/react'
+import { ArrowUpRight, Heart } from '@phosphor-icons/react'
 import { getDomain } from '@/lib/get-domain'
+import { UNSORTED } from '@/lib/categories'
+import { DRIFT_ENABLED } from '@/lib/drift'
 import { EASE, DUR } from '@/lib/motion'
 
 export interface Design {
@@ -24,6 +26,8 @@ export interface Design {
   designStyle?: string
   complexity?: string
   useCase?: string
+  redesigned?: boolean
+  motion_clip_url?: string | null
 }
 
 export const cardVariants = {
@@ -39,11 +43,20 @@ interface DesignCardProps {
   onHover: () => void
   onTagClick: (tag: string) => void
   hasAnimated: boolean
+  isFavorite?: boolean
+  onToggleFavorite?: () => void
 }
 
-export function DesignCard({ design, index, isSelected, onClick, onHover, onTagClick, hasAnimated }: DesignCardProps) {
+export function DesignCard({ design, index, isSelected, onClick, onHover, onTagClick, hasAnimated, isFavorite = false, onToggleFavorite }: DesignCardProps) {
   const [imgSrc, setImgSrc] = useState<string | null>(design.thumbnail_url ?? null)
   const [imgStatus, setImgStatus] = useState<'loading' | 'loaded' | 'error'>('loading')
+  // Hover clip (Phase 3): the <video> mounts only while hovered, so no clip
+  // bytes load on first paint — the URL rides in the card data (~100 bytes)
+  // and the network starts on hover. Honors reduced-motion by staying still.
+  const [playing, setPlaying] = useState(false)
+  const reduceMotion = typeof window !== 'undefined'
+    && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  const showClip = playing && !reduceMotion && Boolean(design.motion_clip_url)
   const domain = getDomain(design.url)
   const label = design.title || domain
 
@@ -72,7 +85,8 @@ export function DesignCard({ design, index, isSelected, onClick, onHover, onTagC
       animate={hasAnimated ? { opacity: 1, y: 0 } : 'show'}
       transition={hasAnimated ? { duration: DUR.color, ease: EASE } : undefined}
       exit={{ opacity: 0, transition: { duration: DUR.exit } }}
-      onHoverStart={onHover}
+      onHoverStart={() => { onHover(); if (design.motion_clip_url) setPlaying(true) }}
+      onHoverEnd={() => setPlaying(false)}
       style={{ contain: 'layout paint style' }}
       // :active propagates from the title button, so pressing anywhere in the
       // card lights the border. A card is too large to scale — that reads as
@@ -95,15 +109,15 @@ export function DesignCard({ design, index, isSelected, onClick, onHover, onTagC
             src={imgSrc}
             alt=""
             fill
-            sizes="(max-width: 640px) 100vw, (max-width: 1279px) 50vw, (max-width: 1535px) 33vw, 25vw"
-            // The grid runs one to four columns, so six covers the first row at
-            // every width and reaches into the second where the columns are
-            // narrow enough for two rows to sit above the fold — that second
-            // row is where the LCP image actually lands on a wide screen.
-            // Beyond six the browser fetched images it then reported as unused,
-            // so the rest load eagerly without the preload.
+            // Cards render at ~283px, so 320px covers DPR 2 with headroom and
+            // the optimizer never serves wider than 640. The old breakpoints
+            // (up to 25vw) asked for 3840px files for these slots.
+            sizes="(max-width: 640px) 100vw, 320px"
+            // Only the first row preloads. Everything else is explicitly
+            // lazy — the default eager would fetch a dozen full screenshots
+            // before the visitor scrolls.
             priority={index < 6}
-            loading={index < 12 ? undefined : 'lazy'}
+            loading={index < 6 ? undefined : 'lazy'}
             onLoad={e => {
               const img = e.currentTarget as HTMLImageElement
               img.naturalWidth > 0 ? setImgStatus('loaded') : handleImgError()
@@ -119,8 +133,27 @@ export function DesignCard({ design, index, isSelected, onClick, onHover, onTagC
           </div>
         )}
 
+        {/* Hover clip — mounted only while hovered, over the still. Muted,
+            looping, inline: a card preview, not a video player. */}
+        {showClip && (
+          <video
+            src={design.motion_clip_url!}
+            className="absolute inset-0 w-full h-full object-cover object-top"
+            muted
+            loop
+            playsInline
+            autoPlay
+            aria-hidden="true"
+          />
+        )}
+
         {/* Hover scrim — subtle, not harsh */}
         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/[0.04] dark:group-hover:bg-black/[0.1] transition-colors duration-300 pointer-events-none" />
+        {DRIFT_ENABLED && design.redesigned && (
+          <span className="absolute top-2 left-2 rounded-full border border-edge bg-background/90 px-2 py-0.5 text-micro text-ink-2 backdrop-blur-sm">
+            Redesigned
+          </span>
+        )}
       </div>
 
       {/* Metadata */}
@@ -150,6 +183,18 @@ export function DesignCard({ design, index, isSelected, onClick, onHover, onTagC
           </div>
 
           {/* Always visible so it works on touch, where there is no hover. */}
+          {onToggleFavorite && (
+            <button
+              type="button"
+              onClick={e => { e.stopPropagation(); onToggleFavorite() }}
+              aria-pressed={isFavorite}
+              aria-label={isFavorite ? `Remove ${label} from favorites` : `Favorite ${label}`}
+              title={isFavorite ? 'Favorited' : 'Favorite'}
+              className="relative z-10 shrink-0 -mt-0.5 -mr-1 w-7 h-7 flex items-center justify-center rounded-[4px] text-ink-4 hover:text-ink hover:bg-muted/40 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-foreground/40 before:absolute before:-inset-2 before:content-['']"
+            >
+              <Heart className="w-3.5 h-3.5" weight={isFavorite ? 'fill' : 'bold'} />
+            </button>
+          )}
           <a
             href={design.url}
             target="_blank"
@@ -191,16 +236,29 @@ export function DesignCard({ design, index, isSelected, onClick, onHover, onTagC
               ))}
             </div>
           ) : (
-            // Holds the swatch row's height so a card with no palette is not
-            // 6px shorter than the cards beside it.
-            <span className="h-4" />
+            // No palette yet: five muted swatches in the row's own shape, so
+            // the card keeps its anatomy instead of reading as a different
+            // component. Real swatches replace them on the next extraction.
+            <div
+              aria-hidden="true"
+              className="flex gap-[3px] shrink-0 animate-pulse"
+            >
+              {[0, 1, 2, 3, 4].map(i => (
+                <div
+                  key={i}
+                  className="w-4 h-4 rounded-full bg-muted border border-black/[0.06] dark:border-white/[0.22]"
+                />
+              ))}
+            </div>
           )}
           {/* min-w-0, not shrink-0: a flex item that cannot shrink never
               reaches the width where truncate fires, so the label used to spill
               past the card and get sliced mid-word by overflow-hidden. */}
-          {design.kind ? (
+          {/* Unsorted renders no chip: to a visitor it reads as unfinished
+              work, and the swatches carry the card without it. */}
+          {design.kind && design.kind !== UNSORTED ? (
             <span className="text-micro text-ink-4 truncate min-w-0">{design.kind}</span>
-          ) : design.tags[0] ? (
+          ) : design.kind === UNSORTED ? null : design.tags[0] ? (
             <button
               onClick={e => { e.stopPropagation(); onTagClick(design.tags[0]) }}
               aria-label={`Filter by tag ${design.tags[0]}`}

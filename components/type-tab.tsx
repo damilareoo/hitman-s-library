@@ -9,6 +9,8 @@ interface TypographyRow {
   role: string
   google_fonts_url: string | null
   primary_weight: number | null
+  sample_size_px?: number | null
+  sample_line_height?: string | null
 }
 
 export function TypeTab({ typography, extractionError }: { typography: TypographyRow[]; extractionError?: string | null }) {

@@ -21,7 +21,7 @@ const PEOPLE = [
     key: 'damilare' as const,
     name: 'Damilare Osofisan',
     role: 'Design and build',
-    avatar: '/people/damilare.png',
+    avatar: '/people/damilare.jpg',
     github: 'https://github.com/damilareoo',
   },
   {

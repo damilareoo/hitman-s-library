@@ -1,15 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { revalidateTag } from 'next/cache'
-import { neon, Client } from '@neondatabase/serverless'
-import { detectIndustry } from './detectIndustry'
+import { Client } from '@neondatabase/serverless'
+import { getSql } from '@/lib/db'
 import { extractTypographyEnhanced } from '@/lib/typography-extraction'
 import { extractFullDesignData } from '@/lib/browser-extraction'
 import { toColorFormats, deduplicateColors } from '@/lib/color-utils'
+import { computeTags } from '@/lib/tagging'
+import { recordExtraction } from '@/lib/extraction-history'
+import { optimizeThumbnail } from '@/lib/thumbnail-optimize'
+import { SIMILAR_ENABLED, embedSite, toVectorLiteral } from '@/lib/similarity'
 import { requireAdmin } from '@/lib/admin-auth'
 import { assertPublicUrl, BlockedUrlError } from '@/lib/safe-url'
 import { normalizeUrl } from '@/lib/normalize-url'
 
-const sql = neon(process.env.DATABASE_URL!)
+const sql = getSql()
 
 // This route drives a headless browser, same as every other capture route.
 // Without it the function inherits the platform default while doing the
@@ -21,7 +25,7 @@ export async function POST(req: NextRequest) {
   if (denied) return denied
 
   try {
-    let { url, industry, notes } = await req.json()
+    let { url } = await req.json()
 
     if (!url || typeof url !== 'string') {
       return NextResponse.json({ error: 'Valid URL required' }, { status: 400 })
@@ -191,7 +195,17 @@ export async function POST(req: NextRequest) {
     
     const layout = extractLayout(html)
     const architecture = extractArchitecture(html)
-    const tags = extractTags(html)
+    // Tags are computed from extracted data, never sniffed from HTML — the
+    // old keyword sniffing is how `animated` ended up on 80% of the library.
+    const tags = computeTags({
+      palette: colorFormats.map(c => ({ oklch: c.oklch })),
+      fontFamilies: [
+        ...(extractionResult?.typography ?? []).map(t => t.fontFamily),
+        ...typography,
+      ],
+      colorCount: colorFormats.length,
+      assetCount: extractionResult?.assets?.length ?? 0,
+    })
 
     // Calculate quality score
     const quality = Math.min(10, Math.max(1, Math.round((colors.length + typography.length) / 2)))
@@ -249,7 +263,6 @@ export async function POST(req: NextRequest) {
           source_url,
           source_name,
           source_type,
-          industry,
           metadata,
           tags,
           thumbnail_url,
@@ -259,7 +272,6 @@ export async function POST(req: NextRequest) {
           ${url},
           ${title},
           ${'website'},
-          ${industry || 'Uncategorized'},
           ${JSON.stringify({
             description, quality, layout, architecture,
             // Recorded so the admin can say what happened rather than showing a
@@ -289,6 +301,44 @@ export async function POST(req: NextRequest) {
       // keeps the card showing something real instead of a bare domain name.
       if (sourceId && effectiveScreenshot) {
         await sql`UPDATE design_sources SET screenshot_url = ${effectiveScreenshot}, mobile_screenshot_url = ${extractionResult?.mobileScreenshotUrl ?? null} WHERE id = ${sourceId}`
+      }
+
+      // Re-encoded thumbnail (Work order 1): the grid must never hotlink an
+      // origin CDN at full size. Best-effort — the hotlink stays the fallback
+      // when the download or encode fails.
+      if (sourceId && thumbnailUrl) {
+        const optimized = await optimizeThumbnail(thumbnailUrl, url)
+        if (optimized) {
+          await sql`UPDATE design_sources SET thumbnail_optimized_url = ${optimized} WHERE id = ${sourceId}`.catch(() => null)
+        }
+      }
+
+      // Hover clip (Phase 3): URL + bytes on the row, vocabulary in metadata.
+      // A failed capture records its category exactly like extraction_error;
+      // a missing recorder records nothing — the screenshot stays the card.
+      // Motion tags are appended for later filtering (the tag filter itself
+      // stays frozen behind TAG_FILTER_ENABLED).
+      if (sourceId && extractionResult) {
+        const motionMeta: Record<string, unknown> = {}
+        if (extractionResult.motionClipUrl) {
+          await sql`UPDATE design_sources SET motion_clip_url = ${extractionResult.motionClipUrl}, motion_bytes = ${extractionResult.motionBytes} WHERE id = ${sourceId}`.catch(() => null)
+        }
+        if (extractionResult.motionError) motionMeta.motion_error = extractionResult.motionError
+        const mt = extractionResult.motionTags
+        if (mt && (mt.hasTransitions || mt.hasAnimations)) {
+          motionMeta.motion = mt
+          const motionTagList = [
+            ...(mt.hasTransitions ? ['motion:transitions'] : []),
+            ...(mt.hasAnimations ? ['motion:animations'] : []),
+            ...mt.easings.slice(0, 4).map(e => `motion:${e}`),
+          ]
+          if (motionTagList.length > 0) {
+            await sql`UPDATE design_sources SET tags = ARRAY(SELECT DISTINCT unnest(COALESCE(tags, '{}') || ${motionTagList}::text[])) WHERE id = ${sourceId}`.catch(() => null)
+          }
+        }
+        if (Object.keys(motionMeta).length > 0) {
+          await sql`UPDATE design_sources SET metadata = COALESCE(metadata, '{}') || ${JSON.stringify(motionMeta)}::jsonb WHERE id = ${sourceId}`.catch(() => null)
+        }
       }
 
       // Save colors. Every path writes hex_value/oklch, because that is the only
@@ -328,8 +378,8 @@ export async function POST(req: NextRequest) {
         for (const [role, family] of htmlRoles) {
           if (!family) continue
           await sql`
-            INSERT INTO design_typography (source_id, font_family, role, primary_weight)
-            VALUES (${sourceId}, ${family}, ${role}, ${400})
+            INSERT INTO design_typography (source_id, font_family, role, primary_weight, sample_size_px, sample_line_height)
+            VALUES (${sourceId}, ${family}, ${role}, ${400}, ${null}, ${null})
             ON CONFLICT (source_id, role) DO UPDATE SET font_family = EXCLUDED.font_family
           `.catch(err => {
             console.error(`[extract] typography fallback insert failed for ${url}:`, err)
@@ -378,13 +428,15 @@ export async function POST(req: NextRequest) {
           )
           for (const t of typographyRoles) {
             await typClient.query(
-              `INSERT INTO design_typography (source_id, font_family, role, google_fonts_url, primary_weight)
-               VALUES ($1, $2, $3, $4, $5)
+              `INSERT INTO design_typography (source_id, font_family, role, google_fonts_url, primary_weight, sample_size_px, sample_line_height)
+               VALUES ($1, $2, $3, $4, $5, $6, $7)
                ON CONFLICT (source_id, role) DO UPDATE SET
                  font_family = EXCLUDED.font_family,
                  google_fonts_url = EXCLUDED.google_fonts_url,
-                 primary_weight = EXCLUDED.primary_weight`,
-              [sourceId, t.fontFamily, t.role, t.googleFontsUrl, t.primaryWeight]
+                 primary_weight = EXCLUDED.primary_weight,
+                 sample_size_px = EXCLUDED.sample_size_px,
+                 sample_line_height = EXCLUDED.sample_line_height`,
+              [sourceId, t.fontFamily, t.role, t.googleFontsUrl, t.primaryWeight, t.sampleSizePx, t.sampleLineHeight]
             )
           }
           await typClient.query('COMMIT')
@@ -396,33 +448,52 @@ export async function POST(req: NextRequest) {
         }
       }
 
+      // Append-only snapshot (Phase 0): the legacy tables above are still the
+      // public read path, so this changes nothing visible — it only records
+      // the run and repoints the site at it.
+      if (sourceId) {
+        await recordExtraction({
+          siteId: sourceId,
+          screenshotUrl: extractionResult?.screenshotUrl ?? null,
+          mobileScreenshotUrl: extractionResult?.mobileScreenshotUrl ?? null,
+          palette: colorFormats,
+          typography: (extractionResult?.typography ?? []).map(t => ({
+            fontFamily: t.fontFamily,
+            role: t.role,
+            googleFontsUrl: t.googleFontsUrl,
+            primaryWeight: t.primaryWeight,
+            sampleSizePx: t.sampleSizePx,
+            sampleLineHeight: t.sampleLineHeight,
+          })),
+          assets: validAssets,
+        })
+      }
+
+      // Similarity embedding (Phase 2): automatic on every insert. The image
+      // block upgrades to CLIP features when the model loads in budget;
+      // otherwise it stores zeros there and the backfill enriches it later.
+      // Either way the row is searchable immediately. Never fails the insert.
+      if (SIMILAR_ENABLED && sourceId) {
+        try {
+          const embedding = await embedSite({
+            palette: colorFormats.map(c => ({ hex: c.hex, oklch: c.oklch })),
+            fonts: (extractionResult?.typography ?? []).map(t => ({
+              fontFamily: t.fontFamily,
+              role: t.role,
+            })),
+            kind: null,
+            screenshotUrl: effectiveScreenshot,
+            siteId: sourceId,
+          })
+          await sql`UPDATE design_sources SET embedding = ${toVectorLiteral(embedding)}::vector WHERE id = ${sourceId}`.catch(() => null)
+        } catch (err) {
+          console.error('[extract] embedding failed:', err)
+        }
+      }
+
       // The category counts and the crawlable index are cached; a site nobody
       // can see until the cache expires has not really been added.
       revalidateTag('designs', 'max')
-
-      // Auto-categorize based on extracted design data
-      const autoCategory = detectIndustry(title, url, {
-        architecture,
-        colors,
-        typography,
-        layout,
-        tags,
-        description
-      })
-
-      // Update with auto-detected industry if not provided
-      if (!industry || industry === 'Uncategorized') {
-        try {
-          await sql`
-            UPDATE design_sources 
-            SET industry = ${autoCategory},
-                updated_at = NOW()
-            WHERE id = ${sourceId}
-          `
-        } catch (err) {
-          console.error('[v0] Failed to update industry:', err)
-        }
-      }
 
       return NextResponse.json({
         // A source with no image is not a success, however far the rest of the
@@ -442,7 +513,6 @@ export async function POST(req: NextRequest) {
         quality,
         tags,
         description,
-        industry: autoCategory
       })
     } catch (dbError) {
       console.error('Database error:', dbError)
@@ -531,15 +601,6 @@ function extractArchitecture(html: string): string {
   if (hasBootstrap) techs.push('Bootstrap')
   
   return techs.join(' • ') || 'Custom CSS'
-}
-
-function extractTags(html: string): string[] {
-  const tags = new Set<string>()
-  if (/dark/i.test(html)) tags.add('dark-mode')
-  if (/responsive|mobile/i.test(html)) tags.add('responsive')
-  if (/animate|transition/i.test(html)) tags.add('animated')
-  if (/glass|blur/i.test(html)) tags.add('glassmorphism')
-  return Array.from(tags)
 }
 
 function extractFontsDirectly(html: string): string[] {

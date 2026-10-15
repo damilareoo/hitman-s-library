@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server'
-import { neon } from '@neondatabase/serverless'
+import { getSql } from '@/lib/db'
 import { requireAdmin } from '@/lib/admin-auth'
 
-const sql = neon(process.env.DATABASE_URL!)
+const sql = getSql()
 
 function normalizeUrl(url: string): string {
   try {

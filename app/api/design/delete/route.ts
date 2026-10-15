@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { revalidateTag } from 'next/cache'
-import { neon } from '@neondatabase/serverless'
+import { getSql } from '@/lib/db'
 import { requireAdmin } from '@/lib/admin-auth'
 
-const sql = neon(process.env.DATABASE_URL!)
+const sql = getSql()
 
 export async function DELETE(req: NextRequest) {
   const denied = await requireAdmin(req)

@@ -1,8 +1,8 @@
 // lib/rate-limit.ts
 import { createHash } from 'crypto'
-import { neon } from '@neondatabase/serverless'
+import { getSql } from '@/lib/db'
 
-const sql = neon(process.env.DATABASE_URL!)
+const sql = getSql()
 
 /**
  * Never store the raw address. The hash is enough to count against, and the

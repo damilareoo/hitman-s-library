@@ -4,11 +4,11 @@
 // the same extraction route the admin add form uses, so there is exactly one
 // path that puts a site in the library — a second one would drift.
 import { NextRequest, NextResponse } from 'next/server'
-import { neon } from '@neondatabase/serverless'
+import { getSql } from '@/lib/db'
 import { requireAdmin } from '@/lib/admin-auth'
 import { revalidateTag } from 'next/cache'
 
-const sql = neon(process.env.DATABASE_URL!)
+const sql = getSql()
 
 // Extraction drives a browser; inherit the same ceiling the extract route sets
 // rather than the platform default.

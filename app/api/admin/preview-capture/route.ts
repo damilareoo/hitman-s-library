@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { neon } from '@neondatabase/serverless'
+import { getSql } from '@/lib/db'
 import type { Page } from 'puppeteer'
 import { getBrowser, captureFullPageScreenshot } from '@/lib/browser-extraction'
 import { requireAdmin } from '@/lib/admin-auth'
 
 export const maxDuration = 60
 
-const sql = neon(process.env.DATABASE_URL!)
+const sql = getSql()
 
 async function storeExtractionError(id: string, error: string) {
   await sql`

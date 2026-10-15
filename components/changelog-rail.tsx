@@ -159,6 +159,16 @@ export function ChangelogRail({ months }: ChangelogRailProps) {
   const activeMonth = months.find(m => m.releases.some(r => r.index === activeIndex))
   const activeRelease = releases.find(r => r.index === activeIndex)
 
+  // The sideways rail overflows on phones: without this the active month
+  // scrolls out of sight and the map stops matching the territory.
+  const mobileRailRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (scrubbingRef.current) return
+    const rail = mobileRailRef.current
+    const active = rail?.querySelector<HTMLElement>(`[data-month-id="${activeMonth?.id}"]`)
+    active?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' })
+  }, [activeIndex, activeMonth?.id])
+
   function Dot({ release }: { release: MonthGroup['releases'][number] }) {
     const isActive = release.index === activeIndex
     return (
@@ -221,13 +231,14 @@ export function ChangelogRail({ months }: ChangelogRailProps) {
       className="xl:hidden sticky top-12 z-40 bg-background/95 backdrop-blur-sm border-b border-edge"
     >
       <div
+        ref={mobileRailRef}
         {...scrubHandlers}
         onKeyDown={onKeyDown}
         tabIndex={-1}
         className={`flex items-center gap-4 overflow-x-auto no-scrollbar px-6 py-3 ${isScrubbing ? 'cursor-grabbing touch-none select-none' : ''}`}
       >
         {months.map(month => (
-          <div key={month.id} className="flex items-center gap-2 shrink-0">
+          <div key={month.id} data-month-id={month.id} className="flex items-center gap-2 shrink-0">
             <MonthLabel month={month} active={activeMonth?.id === month.id} />
             <div className="flex items-center gap-[3px]">
               {month.releases.map(r => <Dot key={r.index} release={r} />)}
@@ -243,14 +254,19 @@ export function ChangelogRail({ months }: ChangelogRailProps) {
     >
       {/* The label was "Jump to", which said what the rail does and nothing
           about where you are. It carries the date now: the one fact that
-          changes as you scroll, and the thing you are steering by mid-drag. */}
+          changes as you scroll, and the thing you are steering by mid-drag.
+          The title rides under it so the rail answers "which release" without
+          a trip back to the page. */}
       <p
         className={[
-          'text-micro tabular-nums mb-3 transition-colors duration-[var(--dur-2)] ease-[var(--ease-sig)]',
+          'text-micro tabular-nums mb-1 transition-colors duration-[var(--dur-2)] ease-[var(--ease-sig)]',
           isScrubbing ? 'text-ink' : 'text-ink-4',
         ].join(' ')}
       >
         {activeRelease ? formatDate(activeRelease.date) : 'Jump to'}
+      </p>
+      <p className="text-meta text-ink-3 mb-3 truncate" aria-hidden="true">
+        {activeRelease?.title ?? ''}
       </p>
 
       <div

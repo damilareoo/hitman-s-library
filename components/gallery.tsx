@@ -7,6 +7,14 @@ import { useTheme } from 'next-themes'
 import { Sun, Moon, SpeakerHigh, SpeakerSlash, MagnifyingGlass, X, ArrowRight, Plus } from '@phosphor-icons/react'
 import { SiteDetailPanel } from '@/components/site-detail-panel'
 import { DesignCard, type Design } from '@/components/design-card'
+import { SIMILAR_ENABLED } from '@/lib/drift'
+import { UNSORTED, displayKind } from '@/lib/categories'
+import { FILTER_TAGS } from '@/lib/tagging'
+import { TasteSignup } from '@/components/taste-signup'
+import { useCollections, deleteCollection } from '@/lib/collections'
+import { EnvelopeSimple } from '@phosphor-icons/react'
+import type { PanelTab } from '@/components/panel-tabs'
+import { HISTORY_TAB_ENABLED } from '@/components/panel-tabs'
 import { Spinner } from '@/components/ui/spinner'
 import { motion, AnimatePresence } from 'motion/react'
 import { useSoundsContext } from '@/contexts/sounds-context'
@@ -45,6 +53,7 @@ interface GalleryProps {
   initialDesigns: Design[]
   initialPagination: Pagination
   initialCategories: { name: string; count: number }[]
+  initialSimilar: { site: Design | null; neighbors: Design[] } | null
 }
 
 // Direction H keeps active rows obvious through fill, not a leading rule.
@@ -117,7 +126,48 @@ function SkeletonCard() {
   )
 }
 
-export function Gallery({ initialDesigns, initialPagination, initialCategories }: GalleryProps) {
+/**
+ * Named sets, listed where they are made. One row per set with its count;
+ * opening one swaps the grid to its members. The × removes the set, never
+ * a site — membership is edited from the panel's Save menu.
+ */
+function CollectionsSection({ onOpen, activeName }: { onOpen: (name: string) => void; activeName: string | null }) {
+  const [collections] = useCollections()
+  const names = Object.keys(collections)
+  if (names.length === 0) return null
+  return (
+    <div className="px-2.5 pb-5">
+      <p className="px-2.5 pb-2 text-micro text-ink-4 select-none">Sets</p>
+      <ul className="space-y-1" role="list">
+        {names.map(name => {
+          const isActive = activeName === name
+          return (
+            <li key={name} className="group flex items-center gap-1">
+              <button
+                onClick={() => onOpen(name)}
+                aria-pressed={isActive}
+                className={sidebarRow(isActive) + ' flex-1 min-w-0'}
+              >
+                <span className="flex-1 text-left truncate text-bodytext">{name}</span>
+                <span className={sidebarCount(isActive)}>{collections[name].length}</span>
+              </button>
+              <button
+                onClick={() => deleteCollection(name)}
+                aria-label={`Delete set ${name}`}
+                title={`Delete set ${name}`}
+                className="shrink-0 w-7 h-7 hidden group-hover:flex group-focus-within:flex items-center justify-center rounded-[4px] text-ink-4 hover:text-ink hover:bg-muted transition-colors"
+              >
+                <span aria-hidden="true">×</span>
+              </button>
+            </li>
+          )
+        })}
+      </ul>
+    </div>
+  )
+}
+
+export function Gallery({ initialDesigns, initialPagination, initialCategories, initialSimilar }: GalleryProps) {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
@@ -129,6 +179,22 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories }
   const search = searchParams.get('q') ?? ''
   const sortBy = SLUG_TO_SORT.get(searchParams.get('sort') ?? '') ?? 'recent'
   const selectedId = searchParams.get('site')
+  // Deep-link tab (A1): ?site=415&tab=colors restores the exact tab.
+  const rawTab = searchParams.get('tab')
+  const panelTab: PanelTab = (
+    rawTab === 'mobile' || rawTab === 'colors' || rawTab === 'type' ||
+    (rawTab === 'history' && HISTORY_TAB_ENABLED) || rawTab === 'preview'
+  ) ? rawTab : 'preview'
+  // Similar mode (Phase 2): the main pane shows one site's neighbors with
+  // the site pinned first, instead of the filter grid. Lives in the URL so
+  // any neighbor view is shareable and the back button steps out of it.
+  const similarTo = searchParams.get('similarTo')
+  const similarToId = SIMILAR_ENABLED && similarTo && Number.isFinite(Number(similarTo)) ? similarTo : null
+
+  const [similarTitle, setSimilarTitle] = useState<string | null>(
+    initialSimilar && similarToId && initialSimilar.site ? initialSimilar.site.title : null,
+  )
+  const [similarLoading, setSimilarLoading] = useState(false)
 
   const [designs, setDesigns] = useState<Design[]>(initialDesigns)
   const [pagination, setPagination] = useState<Pagination>(initialPagination)
@@ -137,6 +203,50 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories }
   const [isRefetching, setIsRefetching] = useState(false)
   const [searchInput, setSearchInput] = useState(search)
   const [requestOpen, setRequestOpen] = useState(false)
+  const [digestOpen, setDigestOpen] = useState(false)
+  const digestRef = useRef<HTMLDivElement>(null)
+
+  // Dismiss the digest popover on outside click or Escape. One effect for
+  // both, torn down with the popover.
+  useEffect(() => {
+    if (!digestOpen) return
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') setDigestOpen(false)
+    }
+    function onPointer(e: PointerEvent) {
+      if (digestRef.current && !digestRef.current.contains(e.target as Node)) setDigestOpen(false)
+    }
+    document.addEventListener('keydown', onKey)
+    document.addEventListener('pointerdown', onPointer)
+    return () => {
+      document.removeEventListener('keydown', onKey)
+      document.removeEventListener('pointerdown', onPointer)
+    }
+  }, [digestOpen])
+  // Hearts feed the digest signup only: ids persist in localStorage and the
+  // taste vector is recomputed server-side on every subscribe. No view, no
+  // route — the Mobbin-style Save without the collection machinery.
+  const [favorites, setFavorites] = useState<number[]>(() => {
+    if (typeof window === 'undefined') return []
+    try {
+      const raw = window.localStorage.getItem('hl:favorites')
+      const parsed: unknown = raw ? JSON.parse(raw) : []
+      return Array.isArray(parsed) ? parsed.map(Number).filter(Number.isFinite) : []
+    } catch {
+      return []
+    }
+  })
+  const toggleFavorite = useCallback((id: string) => {
+    setFavorites(prev => {
+      const n = Number(id)
+      const next = prev.includes(n) ? prev.filter(f => f !== n) : [...prev, n]
+      try {
+        window.localStorage.setItem('hl:favorites', JSON.stringify(next))
+      } catch { /* storage unavailable */ }
+      return next
+    })
+  }, [])
+
 
   const [minGridHeight, setMinGridHeight] = useState<number | null>(null)
   const gridRef = useRef<HTMLDivElement>(null)
@@ -235,7 +345,9 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories }
         offset: data.pagination?.offset ?? offset,
       })
     } catch {
-      if (seq === requestSeq.current && !append) setDesigns([])
+      // A failed refetch changes nothing: wiping thirty-two rendered cards
+      // on a network hiccup is how "All sites 0" happened. The stale grid
+      // and its count stand until a request succeeds.
     }
   }, [buildQuery])
 
@@ -246,6 +358,9 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories }
   useEffect(() => {
     if (lastFilterKey.current === filterKey) return
     lastFilterKey.current = filterKey
+    // Similar and collection modes own the grid; filter edits apply when
+    // they are cleared.
+    if (similarToId || collectionName) return
 
     // Navigation is scroll:false so opening a site doesn't jump the page, but a
     // new filter is a new result set — staying halfway down it reads as though
@@ -270,13 +385,90 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories }
     })
   }, [filterKey, loadDesigns])
 
+  // Similar mode fetch (Phase 2). The first paint is server-rendered;
+  // this takes over on navigation — back/forward and the panel's Similar
+  // action. Leaving similar mode restores the filter grid.
+  const similarSeq = useRef(0)
+  const showingSimilar = useRef<boolean>(Boolean(initialSimilar && similarToId))
+  const lastSimilarTo = useRef<string | null>(similarToId)
+  useEffect(() => {
+    if (lastSimilarTo.current === similarToId) return
+    lastSimilarTo.current = similarToId
+    if (!similarToId) {
+      if (!showingSimilar.current) return
+      showingSimilar.current = false
+      setSimilarTitle(null)
+      setIsRefetching(true)
+      loadDesigns(0, false).finally(() => setIsRefetching(false))
+      return
+    }
+    showingSimilar.current = true
+    setSimilarLoading(true)
+    const seq = ++similarSeq.current
+    fetch(`/api/design/${similarToId}/similar?k=24`).then(r => r.json()).then(raw => {
+      if (seq !== similarSeq.current) return
+      const site = raw.site
+      const neighbors: Design[] = raw.neighbors || []
+      if (!site) { setDesigns([]); setSimilarTitle(null); return }
+      setSimilarTitle(site.title || site.url)
+      setDesigns([site, ...neighbors])
+      setPagination({ total: neighbors.length + 1, hasMore: false, offset: 0 })
+    }).catch(() => {
+      if (seq === similarSeq.current) { setDesigns([]); setSimilarTitle(null) }
+    }).finally(() => {
+      if (seq === similarSeq.current) setSimilarLoading(false)
+    })
+  }, [similarToId, loadDesigns])
+
+  // Collection view (?collection=name): ids resolve client-side from the
+  // named set, rows come from the same ids filter as favorites did. An empty
+  // or foreign set renders the honest empty state, never someone else's grid.
+  const collectionName = searchParams.get('collection')
+  const [collections] = useCollections()
+  const collectionIds = collectionName ? (collections[collectionName] ?? []) : []
+  const [collectionTitle, setCollectionTitle] = useState<string | null>(null)
+  const showingCollection = useRef(false)
+  const collectionSeq = useRef(0)
+  const lastCollection = useRef<string | null>(null)
+  useEffect(() => {
+    const key = collectionName ? `${collectionName}:${collectionIds.join(',')}` : null
+    if (lastCollection.current === key) return
+    lastCollection.current = key
+    if (!collectionName) {
+      if (!showingCollection.current) return
+      showingCollection.current = false
+      setCollectionTitle(null)
+      setIsRefetching(true)
+      loadDesigns(0, false).finally(() => setIsRefetching(false))
+      return
+    }
+    showingCollection.current = true
+    setCollectionTitle(collectionName)
+    if (collectionIds.length === 0) {
+      setDesigns([])
+      setPagination({ total: 0, hasMore: false, offset: 0 })
+      return
+    }
+    setIsRefetching(true)
+    const seq = ++collectionSeq.current
+    fetch(`/api/design/filter-advanced?ids=${collectionIds.join(',')}&limit=200`).then(r => r.json()).then(data => {
+      if (seq !== collectionSeq.current) return
+      setDesigns(data.designs || [])
+      setPagination({ total: data.pagination?.total ?? 0, hasMore: false, offset: 0 })
+    }).catch(() => {
+      if (seq === collectionSeq.current) setDesigns([])
+    }).finally(() => {
+      if (seq === collectionSeq.current) setIsRefetching(false)
+    })
+  }, [collectionName, collectionIds.join(','), loadDesigns])
+
   // Infinite scroll
   useEffect(() => {
     const sentinel = sentinelRef.current
     if (!sentinel) return
     const obs = new IntersectionObserver(
       ([entry]) => {
-        if (entry.isIntersecting && pagination.hasMore && !isLoadingMore && !isRefetching) {
+        if (entry.isIntersecting && pagination.hasMore && !isLoadingMore && !isRefetching && !showingSimilar.current && !showingCollection.current) {
           setIsLoadingMore(true)
           loadDesigns(pagination.offset + LIMIT, true).finally(() => setIsLoadingMore(false))
         }
@@ -292,12 +484,26 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories }
     updateParams(p => p.set('site', id))
   }, [updateParams])
 
+  // Explicit deselect is remembered for the session, so the cold-load
+  // default-select below does not resurrect a panel the visitor closed.
+  const deselected = useRef(false)
   const selectDesign = useCallback((design: Design | null) => {
+    if (!design) deselected.current = true
     updateParams(p => {
       if (design) p.set('site', design.id)
       else p.delete('site')
     })
   }, [updateParams])
+
+  // Cold loads open populated: the first card is selected so the panel
+  // never greets a visitor empty. Runs once per result set, only when no
+  // site is open and none was explicitly closed. Desktop only — on a phone
+  // this would pop the bottom sheet on every cold load.
+  useEffect(() => {
+    if (selectedId || deselected.current || designs.length === 0 || isRefetching) return
+    if (!window.matchMedia('(min-width: 1280px)').matches) return
+    selectDesign(designs[0])
+  }, [designs, selectedId, isRefetching, selectDesign])
 
   const isNarrow = useIsNarrow()
 
@@ -398,7 +604,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories }
   const showSkeletons = isRefetching && designs.length === 0
   const galleryHeading =
     !hasFilters ? 'All sites' :
-    kinds.length === 1 && tags.length === 0 && !search ? kinds[0] :
+    kinds.length === 1 && tags.length === 0 && !search ? displayKind(kinds[0]) :
     search && kinds.length === 0 && tags.length === 0 ? 'Search results' :
     'Filtered sites'
 
@@ -408,7 +614,11 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories }
   // heights go ragged.
   // The panel holds its column whether or not a site is selected, so the grid
   // has the same room either way and the count does not shift under you.
-  const cardColumns = 'grid-cols-1 sm:grid-cols-2 2xl:grid-cols-3'
+  // Three columns at 1536 and four at 1920 come from .gallery-grid in
+  // globals.css — Tailwind's arbitrary-variant ordering proved
+  // nondeterministic for overlapping same-property queries, so the wide
+  // breakpoints live in plain CSS.
+  const cardColumns = 'grid-cols-1 sm:grid-cols-2 gallery-grid'
 
   // Only the panel the viewport actually shows is mounted. Rendering both and
   // hiding one in CSS meant two live previews per site, and the invisible one
@@ -426,6 +636,12 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories }
         kind: selectedDesign.kind,
       } : undefined}
       onClose={() => selectDesign(null)}
+      onSimilar={() => updateParams(p => { if (selectedId) p.set('similarTo', selectedId) })}
+      initialTab={panelTab}
+      onTabChange={tab => updateParams(p => {
+        if (tab === 'preview') p.delete('tab')
+        else p.set('tab', tab)
+      }, { replace: true })}
     />
   )
 
@@ -443,7 +659,10 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories }
 
       {/* Header */}
       <header className="sticky top-0 z-50 border-b border-edge-strong bg-background/95 backdrop-blur-sm">
-        <div className="h-14 px-5 xl:px-7 flex items-center gap-4">
+        {/* px-5 at every width: the mark sits on the same 20px line as the
+            sidebar's text (nav px-2.5 + label px-2.5), so logo and rail read
+            as one structured edge rather than two near-misses. */}
+        <div className="h-14 px-5 flex items-center gap-4">
 
           {/* The wordmark used to be this page's h1. With only the mark on
               screen the heading still has to exist for anything that reads
@@ -480,12 +699,27 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories }
               </kbd>
             )}
           </div>
+          {/* Live result count sits outside the box: inside it would collide
+              with the clear button and the / hint sharing the right edge. */}
+          <span className="hidden xl:block w-8 text-right text-micro tabular-nums text-ink-4 shrink-0" aria-hidden="true">
+            {search ? pagination.total : ''}
+          </span>
 
           <div className="flex items-center gap-1.5 ml-auto">
             {/* Deliberately in the same quiet register as Changelog rather
                 than styled as a call to action. The loud version of this
                 belongs in the zero-results state, where it is an answer to
                 something the person just asked for. */}
+            <button
+              onClick={() => setDigestOpen(v => !v)}
+              aria-expanded={digestOpen}
+              aria-label="Weekly digest"
+              title="Weekly digest"
+              className="relative flex items-center gap-1 text-meta text-ink-3 hover:text-ink transition-colors mr-1 max-sm:w-9 max-sm:h-9 max-sm:justify-center max-sm:rounded-[10px] max-sm:bg-muted/60 max-sm:hover:bg-muted max-sm:active:scale-[0.98] after:absolute after:inset-x-0 after:top-1/2 after:h-11 after:-translate-y-1/2 after:content-['']"
+            >
+              <EnvelopeSimple className="w-3.5 h-3.5 max-sm:w-4 max-sm:h-4" weight="bold" />
+              <span className="max-sm:sr-only">Digest</span>
+            </button>
             <button
               onClick={() => setRequestOpen(true)}
               aria-label="Request a site"
@@ -540,6 +774,21 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories }
         </div>
       </header>
 
+      {digestOpen && (
+        <div ref={digestRef} className="fixed z-[60] top-14 right-4 left-4 sm:left-auto sm:w-[320px] rounded-[10px] border border-edge-strong bg-card shadow-[0_12px_32px_-8px_rgba(0,0,0,0.28)] p-1">
+          <div className="flex items-center justify-end pl-3 pr-1 py-1">
+            <button
+              onClick={() => setDigestOpen(false)}
+              aria-label="Close digest signup"
+              className="w-7 h-7 flex items-center justify-center rounded-[4px] text-ink-4 hover:text-ink hover:bg-muted transition-colors"
+            >
+              <X className="w-3.5 h-3.5" weight="bold" />
+            </button>
+          </div>
+          <TasteSignup />
+        </div>
+      )}
+
       {/* Body — the 3-pane split waits for xl. Below it, phones and tablets
           share one layout: a tablet gets the mobile treatment with more room,
           not the desktop one squeezed into it. At lg the panes technically fit
@@ -550,7 +799,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories }
 
         {/* Sidebar */}
         <aside className="hidden xl:flex xl:col-span-2 flex-col sticky top-14 h-[calc(100vh-56px)] border-r border-edge-strong bg-background overflow-y-auto">
-          <nav className="flex-1 py-5 px-2.5" aria-label="Filter by kind of site">
+          <nav className="flex-1 py-5 px-2.5" aria-label="Library">
             <p className="px-2.5 pb-2.5 text-micro text-ink-4 select-none">Library</p>
 
             {/* A 4px gap keeps adjacent filled rows from merging visually when
@@ -568,14 +817,17 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories }
               </li>
               {categories.map(({ name, count }) => {
                 const isActive = kinds.includes(name)
+                const label = displayKind(name)
                 return (
                   <li key={name}>
                     <button
                       onClick={() => handleFilterChange(name)}
                       aria-pressed={isActive}
+                      aria-label={`Filter by ${label}`}
+                      title={label}
                       className={sidebarRow(isActive)}
                     >
-                      <span className="flex-1 text-left truncate text-bodytext">{name}</span>
+                      <span className="flex-1 text-left truncate text-bodytext">{label}</span>
                       <span className={sidebarCount(isActive)}>{count}</span>
                     </button>
                   </li>
@@ -587,12 +839,21 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories }
                 categories and search, rather than in a second list here. */}
           </nav>
 
+          <CollectionsSection
+            onOpen={name => updateParams(p => {
+              p.delete('site')
+              p.delete('similarTo')
+              p.set('collection', name)
+            })}
+            activeName={searchParams.get('collection')}
+          />
+
         </aside>
 
         {/* Gallery */}
         {/* tabIndex -1 so the skip link moves focus here and not just the
             scroll position; without it the next Tab returns to the header. */}
-        <main id="gallery" tabIndex={-1} className="xl:col-span-6 flex flex-col min-w-0 focus:outline-none">
+        <main id="gallery" tabIndex={-1} className="xl:col-span-6 min-[1920px]:col-span-7 flex flex-col min-w-0 focus:outline-none">
           {/* Compact filters — mobile and tablet */}
           <div className="xl:hidden sticky top-14 z-20 bg-background border-b border-edge-strong">
             <div className="px-4 pt-3 pb-2 relative">
@@ -614,7 +875,16 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories }
                   <X className="w-3 h-3" weight="bold" />
                 </button>
               )}
+              {!searchInput && search && (
+                <span className="absolute right-4 top-1/2 -translate-y-[2px] text-micro tabular-nums text-ink-4 pointer-events-none" aria-hidden="true">
+                  {pagination.total}
+                </span>
+              )}
             </div>
+
+            <p className="px-4 pt-1 pb-2 text-meta text-ink-4 text-balance">
+              {libraryTotal} of the web&apos;s best-designed sites, dissected.
+            </p>
 
             {/* Categories */}
             <div className="flex gap-2 overflow-x-auto px-4 pb-2 no-scrollbar" role="group" aria-label="Filter by kind of site">
@@ -627,19 +897,36 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories }
                     aria-pressed={isActive}
                     className={categoryPill(isActive)}
                   >
-                    {name} <span className="tabular-nums text-ink-4">{count}</span>
+                    {name === 'All' ? name : displayKind(name)} <span className="tabular-nums text-ink-4">{count}</span>
                   </button>
                 )
               })}
             </div>
 
-            {/* Sort — kept on its own row so it can't be mistaken for a category */}
-            <div className="flex items-center gap-2 px-4 pb-3">
-              <span className="text-micro text-ink-4 shrink-0">Sort</span>
-              {/* overflow-x-auto also clips vertically, which would cut the
-                  buttons' touch overlays off. The padding gives them room and
-                  the negative margin gives the space back to the layout. */}
-              <div className="flex gap-1.5 overflow-x-auto no-scrollbar py-3 -my-3" role="group" aria-label="Sort sites">
+            {/* Tags and sort share one row: three stacked control rows read
+                as clutter beside the categories above them. */}
+            <div className="flex items-center gap-2 px-4 pb-3 overflow-x-auto no-scrollbar">
+              <div className="flex gap-2 shrink-0" role="group" aria-label="Filter by tag">
+                {FILTER_TAGS.map(t => {
+                  const isActive = tags.includes(t)
+                  return (
+                    <button
+                      key={t}
+                      onClick={() => handleTagClick(t)}
+                      aria-pressed={isActive}
+                      className={categoryPill(isActive)}
+                    >
+                      {t}
+                    </button>
+                  )
+                })}
+              </div>
+              <span aria-hidden="true" className="shrink-0 w-px self-stretch bg-edge" />
+              {/* overflow-x-auto clips vertically, which would cut the sort
+                  buttons' touch overlays off — same compensation as before,
+                  scoped to the sort group now. */}
+              <div className="flex items-center gap-1.5 shrink-0 py-3 -my-3" role="group" aria-label="Sort sites">
+                <span className="text-micro text-ink-4 shrink-0">Sort</span>
                 {SORT_OPTIONS.map(({ value, label }) => (
                   <button
                     key={value}
@@ -651,7 +938,6 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories }
                   </button>
                 ))}
               </div>
-
             </div>
           </div>
 
@@ -659,10 +945,10 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories }
             <div className="hidden xl:flex items-center justify-between gap-4 pb-3 mb-5 border-b border-edge">
               <div className="flex items-center gap-2 min-w-0">
                 <h2 className="text-meta text-ink font-medium">
-                  {galleryHeading}{' '}
+                  {similarToId ? `Similar to ${similarTitle ?? '…'}` : collectionName ? collectionTitle ?? collectionName : galleryHeading}{' '}
                   <span className="text-ink-4 tabular-nums">{pagination.total}</span>
                 </h2>
-                {hasFilters && (
+                {(hasFilters || similarToId) && (
                   <Link
                     href={pathname}
                     scroll={false}
@@ -692,14 +978,20 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories }
               </div>
             </div>
 
-            {/* Height is held during a swap so the page doesn't collapse and
+            {/* One line of value proposition: nothing above the fold says
+                what this is, and shared-link visitors bounce on confusion. */}
+            <p className="hidden xl:block text-meta text-ink-4 text-balance pb-3 -mt-2">
+              {libraryTotal} of the web&apos;s best-designed sites, dissected. Colors, type, assets and screenshots, extracted automatically.
+            </p>
+
+                        {/* Height is held during a swap so the page doesn't collapse and
                 rebound between result sets. */}
             <motion.div
               className={`grid ${cardColumns} gap-4 xl:gap-5`}
               variants={gridVariants}
               initial={hasAnimated.current ? false : 'hidden'}
               animate="show"
-              aria-busy={isRefetching}
+              aria-busy={isRefetching || similarLoading}
               style={minGridHeight ? { minHeight: minGridHeight } : undefined}
               ref={gridRef}
             >
@@ -732,6 +1024,19 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories }
                           </>
                         )}
 
+                        {categories.length > 0 && (
+                          <div className="flex flex-wrap items-center justify-center gap-1.5 mt-1 max-w-[320px]">
+                            {categories.map(({ name }) => (
+                              <button
+                                key={name}
+                                onClick={() => handleFilterChange(name)}
+                                className="shrink-0 h-8 px-3 rounded-[8px] text-meta whitespace-nowrap border bg-foreground/[0.055] text-ink-2 border-transparent hover:text-ink hover:bg-foreground/[0.09] active:scale-[0.98] transition-[background-color,border-color,color,transform] duration-[var(--dur-2)] ease-[var(--ease-sig)]"
+                              >
+                                {name === 'All' ? name : displayKind(name)}
+                              </button>
+                            ))}
+                          </div>
+                        )}
                         {hasFilters && (
                           <button
                             onClick={clearAll}
@@ -752,6 +1057,8 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories }
                         onHover={() => sounds.playHover()}
                         onTagClick={handleTagClick}
                         hasAnimated={hasAnimated.current}
+                        isFavorite={favorites.includes(Number(design.id))}
+                        onToggleFavorite={() => toggleFavorite(design.id)}
                       />
                     ))
                 }
@@ -773,7 +1080,11 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories }
 
         </main>
 
-        <SiteLinks hidden={isPanelOpen} variant="sidebar" />
+        {/* The sheet covers this corner on a phone, so the links hide only
+            there. On desktop the sidebar corner stays visible and reachable
+            with a card open — hiding them there stranded About/Changelog
+            behind the panel. */}
+        <SiteLinks hidden={isPanelOpen && isNarrow} variant="sidebar" />
 
       <RequestSiteDialog
         open={requestOpen}
@@ -784,7 +1095,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories }
 
       {/* Detail panel — the column is always here. The empty state names
             what the panel holds, which is how you learn the tabs exist. */}
-        <div className="hidden xl:flex xl:col-span-4 flex-col sticky top-14 h-[calc(100vh-56px)] border-l border-edge-strong bg-background">
+        <div className="hidden xl:flex xl:col-span-4 track-panel flex-col sticky top-14 h-[calc(100vh-56px)] border-l border-edge-strong bg-background">
           <AnimatePresence mode="wait">
             {isPanelOpen ? (
               <motion.div

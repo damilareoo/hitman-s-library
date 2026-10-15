@@ -62,3 +62,4 @@ capture-problems.json
 sweep-flagged.json
 recheck-done.json
 panel-done.json
+*.tmp.mjs

@@ -53,8 +53,9 @@
   --sidebar-ring: oklch(0.708 0 0);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
 
-  /* Semantic status colors */
-  --color-success: #16a34a;
+  /* Semantic status colors — the light-theme green is the dark one pulled
+     down to where 12px labels clear 4.5:1 on white (#16a34a measured 3.30). */
+  --color-success: #15803d;
   --color-error:   #dc2626;
   --color-running: #2563eb;
 
@@ -143,9 +144,23 @@
   --sidebar-ring: #777777;
 }
 
+/* BDO Grotesk (variable, wght 300–900) carries the whole sans UI at the
+   exact sizes Geist held — family swap only, no size touched. Mono stays
+   Geist: the sans/mono pairing is load-bearing for dense metadata. */
+@font-face {
+  font-family: 'BDO Grotesk';
+  src: url('/fonts/BDOGrotesk-VF.ttf') format('truetype-variations');
+  font-weight: 300 900;
+  font-style: normal;
+  font-display: swap;
+}
+
 @theme inline {
-  --font-sans: var(--font-geist-sans), 'Helvetica Neue', system-ui, sans-serif;
-  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+  --font-sans: 'BDO Grotesk', 'Helvetica Neue', system-ui, sans-serif;
+  /* No mono anywhere in the UI: metadata, tabs, counts and labels all set
+     in BDO Grotesk. Tabular figures ride along where the face provides them;
+     row alignment comes from fixed-width count slots, not the face. */
+  --font-mono: 'BDO Grotesk', 'Helvetica Neue', system-ui, sans-serif;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -389,7 +404,9 @@ a[href] *,
 
 @utility text-micro {
   font-family: var(--font-mono);
-  font-size: 11px;
+  /* Metadata floor is 12px — 11px all-caps grey failed readable for a
+     meaningful share of visitors (work order 2). */
+  font-size: 12px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   line-height: 1;
@@ -401,9 +418,29 @@ a[href] *,
   letter-spacing: 0;
 }
 
+/* Work order 2: wide-screen grid tracks. Three columns at 1536px and four at
+   1920px, with the main pane widening to hold them. Plain CSS, not arbitrary
+   variants: overlapping same-property queries under min-[..]: ordering proved
+   nondeterministic (the 4-column rule lost to the 3-column one at 1920px),
+   and stacked min:max: variants are never generated at all. */
+@media (min-width: 1536px) and (max-width: 1919px) {
+  .gallery-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@media (min-width: 1920px) {
+  .gallery-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+  .track-panel {
+    grid-column: span 3 / span 3;
+  }
+}
+
 @utility text-ui {
   font-family: var(--font-mono);
-  font-size: 13px;
+  /* Two-size text scale: labels read 12, bodies read 14. */
+  font-size: 12px;
 }
 
 @utility text-bodytext {
@@ -414,7 +451,7 @@ a[href] *,
 
 @utility text-titletext {
   font-family: var(--font-sans);
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 600;
   letter-spacing: -0.02em;
 }

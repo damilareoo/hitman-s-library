@@ -13,7 +13,18 @@ const nextConfig = {
     formats: ['image/avif', 'image/webp'],
     minimumCacheTTL: 2678400,
   },
-  serverExternalPackages: ['puppeteer', '@sparticuz/chromium'],
+  // Heavy native/ML dependencies stay out of the bundled function and load
+  // from node_modules at runtime (same pattern as puppeteer below). Bundling
+  // onnxruntime drags every platform binary into the function and risks the
+  // size limit; the dynamic imports in lib/similarity.ts tolerate absence.
+  serverExternalPackages: [
+    'puppeteer',
+    '@sparticuz/chromium',
+    '@xenova/transformers',
+    'onnxruntime-node',
+    '@ffmpeg-installer/ffmpeg',
+    '@ffmpeg-installer/linux-x64',
+  ],
 }
 
 export default nextConfig

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { neon } from '@neondatabase/serverless'
+import { getSql } from '@/lib/db'
 
-const sql = neon(process.env.DATABASE_URL!)
+const sql = getSql()
 
 export async function GET(req: NextRequest) {
   const limit = Math.min(Math.max(1, parseInt(new URL(req.url).searchParams.get('limit') ?? '50') || 50), 100)

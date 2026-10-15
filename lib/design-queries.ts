@@ -5,31 +5,26 @@
 // so the first paint and every subsequent fetch cannot drift apart.
 import { unstable_cache } from 'next/cache'
 import { toHttps } from '@/lib/secure-url'
-import { neon } from '@neondatabase/serverless'
+import { getSql } from '@/lib/db'
 import { cleanTitle, decodeEntities } from './clean-title'
-import { compareCategories, denormalizeIndustry, normalizeIndustry } from './categories'
+import { getHistoriesByIds } from './extraction-history'
+import { DRIFT_ENABLED, driftBetween } from './drift'
 
-const sql = neon(process.env.DATABASE_URL!)
+const sql = getSql()
+
+/**
+ * Tag filtering (work order A9): tags are computed from extracted data
+ * (lib/tagging.ts) — dark, serif, dense, sparse — each matching a small,
+ * useful slice of the library. The old keyword-sniffed tags were pruned as
+ * everywhere-tags. While off, `tags` params are ignored.
+ */
+export const TAG_FILTER_ENABLED = true
 
 export type SortBy = 'recent' | 'oldest' | 'name' | 'quality'
 
-/**
- * What kind of site it is — the axis the library is actually browsed on.
- *
- * It replaced `industry`, which asked what business the site's customer is in.
- * That answered a question nobody browsing a design library was asking, and it
- * answered it badly: 104 of 279 sites were filed as "SaaS" and another 105 as
- * some flavour of uncategorised, so three quarters of the shelf sat in two
- * buckets that told you nothing. A studio like hex.inc was filed as E-commerce.
- *
- * `Unsorted` is not a kind. It is where a newly added site waits until someone
- * files it, and it sorts last.
- */
-export const KINDS = [
-  'Product', 'Studio', 'Editorial', 'Company', 'Portfolio', 'Store', 'Venue', 'Event',
-] as const
-export type Kind = (typeof KINDS)[number]
-export const UNSORTED = 'Unsorted'
+import { KINDS, UNSORTED } from './categories'
+export { KINDS, UNSORTED }
+export type { Kind } from './categories'
 
 export interface DesignRecord {
   id: string
@@ -48,6 +43,11 @@ export interface DesignRecord {
   designStyle?: string
   complexity?: string
   useCase?: string
+  /** Hover motion clip URL (Phase 3). Null renders the static screenshot. */
+  motion_clip_url?: string | null
+  /** True when the newest snapshot drifted beyond threshold vs the previous
+   *  one (Phase 1). Absent when drift is disabled or only one snapshot exists. */
+  redesigned?: boolean
 }
 
 export interface QueryOptions {
@@ -57,12 +57,49 @@ export interface QueryOptions {
   sortBy?: SortBy
   limit?: number
   offset?: number
+  /** Explicit id list (favorites view). Order-preserved, ignores paging. */
+  ids?: number[]
 }
 
 export interface QueryResult {
   designs: DesignRecord[]
   pagination: { total: number; limit: number; offset: number; hasMore: boolean }
 }
+
+/**
+ * Blob host for our own captures. Anything else in screenshot_url is a
+ * salvaged og:image from before the salvage removal — see mapDesignRecords.
+ */
+const OWN_CAPTURE_HOST = '.public.blob.vercel-storage.com'
+
+/**
+ * Column list shared by every gallery-shaped read, so the card grid, the
+ * similar-neighbors grid, and the first paint can never drift apart.
+ */
+const DESIGN_ROW_SELECT = `
+      ds.id,
+      ds.source_url,
+      ds.source_name,
+      ds.kind,
+      ds.metadata,
+      ds.tags,
+      ds.created_at,
+      ds.thumbnail_url,
+      ds.screenshot_url,
+      ds.thumbnail_optimized_url,
+      ds.current_extraction_id,
+      ds.motion_clip_url,
+      (SELECT ARRAY(
+        SELECT hex_value FROM design_colors
+        WHERE source_id = ds.id AND hex_value IS NOT NULL
+        ORDER BY id LIMIT 8
+      )) AS hex_colors,
+      (SELECT ARRAY(
+        SELECT DISTINCT font_family FROM design_typography
+        WHERE source_id = ds.id AND role != 'legacy' AND font_family IS NOT NULL
+        LIMIT 3
+      )) AS font_families
+`
 
 const SORT_CLAUSES: Record<SortBy, string> = {
   recent: 'ds.created_at DESC',
@@ -112,7 +149,16 @@ export async function queryDesigns(opts: QueryOptions = {}): Promise<QueryResult
     sortBy = 'recent',
     limit = 32,
     offset = 0,
+    ids = [],
   } = opts
+  // Explicit id list short-circuits every other filter.
+  if (ids.length > 0) {
+    const designs = await queryDesignsByIds(ids.filter(Number.isFinite))
+    return {
+      designs,
+      pagination: { total: designs.length, limit: designs.length, offset: 0, hasMore: false },
+    }
+  }
 
   const sortClause = SORT_CLAUSES[sortBy] ?? SORT_CLAUSES.recent
 
@@ -127,7 +173,7 @@ export async function queryDesigns(opts: QueryOptions = {}): Promise<QueryResult
     filterParams.push(...kinds)
   }
 
-  if (tags.length > 0) {
+  if (tags.length > 0 && TAG_FILTER_ENABLED) {
     // tags is TEXT[]; && is "arrays overlap", i.e. matches any selected tag.
     whereConditions.push(`ds.tags && $${filterParams.length + 1}::text[]`)
     filterParams.push(tags)
@@ -135,33 +181,15 @@ export async function queryDesigns(opts: QueryOptions = {}): Promise<QueryResult
 
   if (search) {
     const idx = filterParams.length + 1
-    whereConditions.push(`(ds.source_name ILIKE $${idx} OR ds.source_url ILIKE $${idx})`)
+    // Domain, title, and kind: the three things a visitor means by a query.
+    whereConditions.push(`(ds.source_name ILIKE $${idx} OR ds.source_url ILIKE $${idx} OR COALESCE(ds.kind, '${UNSORTED}') ILIKE $${idx})`)
     filterParams.push(`%${search}%`)
   }
 
   const whereClause = `WHERE ${whereConditions.join(' AND ')}`
 
   const mainQuery = `
-    SELECT
-      ds.id,
-      ds.source_url,
-      ds.source_name,
-      ds.kind,
-      ds.metadata,
-      ds.tags,
-      ds.created_at,
-      ds.thumbnail_url,
-      ds.screenshot_url,
-      (SELECT ARRAY(
-        SELECT hex_value FROM design_colors
-        WHERE source_id = ds.id AND hex_value IS NOT NULL
-        ORDER BY id LIMIT 8
-      )) AS hex_colors,
-      (SELECT ARRAY(
-        SELECT DISTINCT font_family FROM design_typography
-        WHERE source_id = ds.id AND role != 'legacy' AND font_family IS NOT NULL
-        LIMIT 3
-      )) AS font_families
+    SELECT ${DESIGN_ROW_SELECT}
     FROM design_sources ds
     ${whereClause}
     ORDER BY ${sortClause}
@@ -177,17 +205,107 @@ export async function queryDesigns(opts: QueryOptions = {}): Promise<QueryResult
 
   const total = parseInt(countResult[0]?.total ?? '0', 10)
 
-  const designs: DesignRecord[] = results.map((row: any) => {
+  // Resolve through the current-extraction pointer (Phase 0). Rows whose
+  // pointer is set render the pointed-to snapshot; rows without one (written
+  // before the history table existed) render their legacy tables unchanged.
+  const historyIds = results
+    .map((row: any) => row.current_extraction_id)
+    .filter((v: unknown): v is number => typeof v === 'number')
+  const histories = await getHistoriesByIds(historyIds)
+
+  // "Redesigned" badges (Phase 1): newest snapshot vs the previous one, one
+  // extra query for the page. Never allowed to break the gallery.
+  const redesignedBySite = await fetchRedesignedMap(results.map((row: any) => Number(row.id)).filter(Number.isFinite))
+
+  const designs = mapDesignRecords(results, histories, redesignedBySite)
+
+  return {
+    designs,
+    pagination: { total, limit, offset, hasMore: offset + limit < total },
+  }
+}
+
+/** "Redesigned" badges: newest snapshot vs the previous one per site. */
+export async function fetchRedesignedMap(siteIds: number[]): Promise<Map<number, boolean>> {
+  const out = new Map<number, boolean>()
+  if (!DRIFT_ENABLED || siteIds.length === 0) return out
+  try {
+    const recent = await sql`
+      SELECT site_id, palette, typography, screenshot_hash, captured_at, id FROM (
+        SELECT site_id, palette, typography, screenshot_hash, captured_at, id,
+               ROW_NUMBER() OVER (PARTITION BY site_id ORDER BY captured_at DESC, id DESC) AS rn
+        FROM extraction_history
+        WHERE site_id = ANY(${siteIds}::int[])
+      ) s WHERE rn <= 2
+    `
+    const bySite = new Map<number, any[]>()
+    for (const row of recent) {
+      const list = bySite.get(Number(row.site_id)) ?? []
+      list.push(row)
+      bySite.set(Number(row.site_id), list)
+    }
+    for (const [siteId, rows] of bySite) {
+      if (rows.length < 2) continue
+      const [newest, prev] = rows
+      const drift = driftBetween(
+        {
+          palette: Array.isArray(prev.palette) ? prev.palette : [],
+          typography: Array.isArray(prev.typography) ? prev.typography : [],
+          screenshotHash: typeof prev.screenshot_hash === 'string' ? prev.screenshot_hash : null,
+        },
+        {
+          palette: Array.isArray(newest.palette) ? newest.palette : [],
+          typography: Array.isArray(newest.typography) ? newest.typography : [],
+          screenshotHash: typeof newest.screenshot_hash === 'string' ? newest.screenshot_hash : null,
+        },
+      )
+      if (drift.redesigned) out.set(siteId, true)
+    }
+  } catch (err) {
+    console.error('[design-queries] drift badges failed:', err)
+  }
+  return out
+}
+
+function mapDesignRecords(
+  results: any[],
+  histories: Map<number, import('./extraction-history').ExtractionSnapshot>,
+  redesignedBySite: Map<number, boolean>,
+): DesignRecord[] {
+  return results.map((row: any) => {
     const metadata = parseMetadata(row.metadata)
+    const snapshot = typeof row.current_extraction_id === 'number'
+      ? histories.get(row.current_extraction_id)
+      : undefined
+    // A salvaged og:image promoted into screenshot_url is not a capture of
+    // the page (six such rows predate the salvage removal) — and two of them
+    // are animated GIFs that would autoplay in the grid at full size. Only a
+    // blob URL counts as a capture; anything else drops to thumbnail duty.
+    const capture = typeof row.screenshot_url === 'string' && row.screenshot_url.includes(OWN_CAPTURE_HOST)
+      ? cleanUrl(row.screenshot_url)
+      : null
+    const salvaged = !capture ? cleanUrl(row.screenshot_url) : null
+    // Snapshots copy whatever the row held — including a salvaged og:image
+    // where the row never had a capture. Same blob check as below.
+    const snapCapture = typeof snapshot?.screenshot_url === 'string' && snapshot.screenshot_url.includes(OWN_CAPTURE_HOST)
+      ? cleanUrl(snapshot.screenshot_url)
+      : null
+    const snapSalvaged = !snapCapture ? cleanUrl(snapshot?.screenshot_url) : null
+    const legacyColors: string[] = Array.isArray(row.hex_colors) ? row.hex_colors.filter(Boolean) : []
+    const legacyType: string[] = Array.isArray(row.font_families) ? row.font_families.filter(Boolean) : []
     return {
       id: String(row.id),
       url: row.source_url,
       title: cleanTitle(row.source_name, row.source_url),
       kind: row.kind || UNSORTED,
-      thumbnail_url: cleanUrl(row.screenshot_url) || cleanUrl(row.thumbnail_url) || undefined,
-      fallback_thumbnail: row.screenshot_url ? cleanUrl(row.thumbnail_url) : null,
-      colors: Array.isArray(row.hex_colors) ? row.hex_colors.filter(Boolean) : [],
-      typography: Array.isArray(row.font_families) ? row.font_families.filter(Boolean) : [],
+      // The re-encoded thumbnail leads where it exists; the hotlink is the
+      // last resort and disappears as the backfill covers each row.
+      thumbnail_url: snapCapture || capture || cleanUrl(row.thumbnail_optimized_url) || snapSalvaged || salvaged || cleanUrl(row.thumbnail_url) || undefined,
+      fallback_thumbnail: (snapCapture || capture) ? cleanUrl(row.thumbnail_optimized_url) || snapSalvaged || salvaged || cleanUrl(row.thumbnail_url) : null,
+      colors: snapshot ? snapshot.palette.map(p => p.hex).filter(Boolean) : legacyColors,
+      typography: snapshot
+        ? [...new Set(snapshot.typography.map(t => t.fontFamily).filter(Boolean))].slice(0, 3)
+        : legacyType,
       layout: metadata.layout || 'Standard',
       designStyle: metadata.designStyle || 'Modern',
       architecture: metadata.architecture || 'Custom',
@@ -196,13 +314,32 @@ export async function queryDesigns(opts: QueryOptions = {}): Promise<QueryResult
       useCase: metadata.useCase,
       tags: parseTags(row.tags),
       addedDate: new Date(row.created_at).toISOString(),
+      motion_clip_url: typeof row.motion_clip_url === 'string' && row.motion_clip_url ? row.motion_clip_url : null,
+      ...(redesignedBySite.get(Number(row.id)) ? { redesigned: true as const } : {}),
     }
   })
+}
 
-  return {
-    designs,
-    pagination: { total, limit, offset, hasMore: offset + limit < total },
-  }
+/**
+ * Full card rows for an explicit id list, order-preserved. Feeds the
+ * similar-neighbors grid so it renders exactly like the main grid.
+ */
+export async function queryDesignsByIds(ids: number[]): Promise<DesignRecord[]> {
+  if (ids.length === 0) return []
+  // Main rows and badges are independent — one round trip saved.
+  const [results, redesignedBySite] = await Promise.all([
+    sql.query(
+      `SELECT ${DESIGN_ROW_SELECT} FROM design_sources ds WHERE ds.id = ANY($1::int[])`,
+      [ids],
+    ),
+    fetchRedesignedMap(ids),
+  ])
+  const historyIds = results
+    .map((row: any) => row.current_extraction_id)
+    .filter((v: unknown): v is number => typeof v === 'number')
+  const histories = await getHistoriesByIds(historyIds)
+  const byId = new Map(mapDesignRecords(results, histories, redesignedBySite).map(d => [Number(d.id), d]))
+  return ids.map(id => byId.get(id)).filter((d): d is DesignRecord => Boolean(d))
 }
 
 export async function queryCategories(): Promise<{ name: string; count: number }[]> {

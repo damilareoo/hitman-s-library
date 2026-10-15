@@ -5,6 +5,7 @@ import { put } from '@vercel/blob'
 import { existsSync, unlinkSync } from 'fs'
 import { extractAssets } from './asset-extraction'
 import { measureColorAreaShares } from './color-area.js'
+import { recordMotionClip, extractMotionTags, resolveFfmpegPath, type MotionTags } from './motion-capture'
 
 // For serverless environments, use the lightweight Chromium from Sparticuz
 let browser: any = null
@@ -566,6 +567,8 @@ export async function extractTypographyWithRoles(page: Page): Promise<Array<{
   role: 'heading' | 'body' | 'mono'
   googleFontsUrl: string | null
   primaryWeight: number
+  sampleSizePx: number | null
+  sampleLineHeight: string | null
 }>> {
   const raw = await page.evaluate(() => {
     // A computed family that resolves to one of these tells us the site's own
@@ -577,14 +580,18 @@ export async function extractTypographyWithRoles(page: Page): Promise<Array<{
       '-apple-system', 'blinkmacsystemfont', 'inherit', 'initial', 'unset',
     ])
 
-    function familyOf(el: Element): { family: string; weight: number; size: number } | null {
+    function familyOf(el: Element): { family: string; weight: number; size: number; lineHeight: string | null } | null {
       const style = getComputedStyle(el)
       const family = style.fontFamily.split(',')[0].trim().replace(/['"]/g, '')
       if (!family || GENERIC.has(family.toLowerCase())) return null
+      // The measured sample, not the specimen's display size: what the role
+      // actually renders at on the site. Stored per role for the Type tab.
+      const lh = style.lineHeight && style.lineHeight !== 'normal' ? style.lineHeight : null
       return {
         family,
         weight: parseInt(style.fontWeight, 10) || 400,
         size: parseFloat(style.fontSize) || 0,
+        lineHeight: lh,
       }
     }
 
@@ -600,7 +607,7 @@ export async function extractTypographyWithRoles(page: Page): Promise<Array<{
     // Reading `querySelector('h1')` missed every site that builds headings out
     // of divs, and every site that keeps a visually-hidden h1 for SEO in a
     // different font from the one you can actually see.
-    let heading: { family: string; weight: number } | null = null
+    let heading: { family: string; weight: number; size: number; lineHeight: string | null } | null = null
     let headingSize = 0
     const headingCandidates = document.querySelectorAll(
       'h1, h2, h3, [class*="title" i], [class*="heading" i], [class*="display" i], [class*="hero" i]',
@@ -609,7 +616,7 @@ export async function extractTypographyWithRoles(page: Page): Promise<Array<{
       if (!isVisible(el)) continue
       const f = familyOf(el)
       if (f && f.size > headingSize) {
-        heading = { family: f.family, weight: f.weight }
+        heading = { family: f.family, weight: f.weight, size: f.size, lineHeight: f.lineHeight }
         headingSize = f.size
       }
     }
@@ -617,7 +624,7 @@ export async function extractTypographyWithRoles(page: Page): Promise<Array<{
     // --- Body: the family covering the most rendered text area.
     // "Whatever the first <p> uses" was a guess that failed on any page whose
     // first paragraph happened to be a caption, a legal line, or absent.
-    const areaByFamily = new Map<string, { area: number; weight: number }>()
+    const areaByFamily = new Map<string, { area: number; weight: number; size: number; lineHeight: string | null }>()
     const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT)
     let node: Node | null
     let visited = 0
@@ -631,22 +638,22 @@ export async function extractTypographyWithRoles(page: Page): Promise<Array<{
       // Display sizes are not body text however much of them there is.
       if (!f || f.size > 32) continue
       const r = el.getBoundingClientRect()
-      const entry = areaByFamily.get(f.family) ?? { area: 0, weight: f.weight }
+      const entry = areaByFamily.get(f.family) ?? { area: 0, weight: f.weight, size: f.size, lineHeight: f.lineHeight }
       entry.area += r.width * r.height
       areaByFamily.set(f.family, entry)
     }
 
-    let body: { family: string; weight: number } | null = null
+    let body: { family: string; weight: number; size: number; lineHeight: string | null } | null = null
     let bodyArea = 0
     for (const [family, entry] of areaByFamily) {
       if (entry.area > bodyArea) {
-        body = { family, weight: entry.weight }
+        body = { family, weight: entry.weight, size: entry.size, lineHeight: entry.lineHeight }
         bodyArea = entry.area
       }
     }
     if (!body) {
       const fallback = familyOf(document.body)
-      if (fallback) body = { family: fallback.family, weight: fallback.weight }
+      if (fallback) body = { family: fallback.family, weight: fallback.weight, size: fallback.size, lineHeight: fallback.lineHeight }
     }
 
     // --- Mono
@@ -672,12 +679,12 @@ export async function extractTypographyWithRoles(page: Page): Promise<Array<{
       }
     }
 
-    let mono: { family: string; weight: number } | null = null
+    let mono: { family: string; weight: number; size: number; lineHeight: string | null } | null = null
     const monoCandidates = document.querySelectorAll('code, pre, kbd, samp, [class*="mono" i], [class*="code" i]')
     for (const el of Array.from(monoCandidates).slice(0, 60)) {
       const f = familyOf(el)
       if (f && isMonospaced(f.family)) {
-        mono = { family: f.family, weight: f.weight }
+        mono = { family: f.family, weight: f.weight, size: f.size, lineHeight: f.lineHeight }
         break
       }
     }
@@ -696,6 +703,8 @@ export async function extractTypographyWithRoles(page: Page): Promise<Array<{
     role: 'heading' | 'body' | 'mono'
     googleFontsUrl: string | null
     primaryWeight: number
+    sampleSizePx: number | null
+    sampleLineHeight: string | null
   }> = []
 
   /** Google encodes a family as "Space+Grotesk" or "Space%20Grotesk" depending on the API version. */
@@ -721,6 +730,8 @@ export async function extractTypographyWithRoles(page: Page): Promise<Array<{
       role,
       googleFontsUrl: findFontUrl(data.family),
       primaryWeight: data.weight,
+      sampleSizePx: data.size > 0 ? Math.round(data.size * 10) / 10 : null,
+      sampleLineHeight: data.lineHeight,
     })
   }
 
@@ -752,7 +763,15 @@ export interface FullExtractionResult {
     role: 'heading' | 'body' | 'mono'
     googleFontsUrl: string | null
     primaryWeight: number
+    sampleSizePx: number | null
+    sampleLineHeight: string | null
   }>
+  /** Hover clip (Phase 3). Null when recording was impossible or failed. */
+  motionClipUrl: string | null
+  motionBytes: number | null
+  /** Failure category for a failed capture — same vocabulary as extraction_error. */
+  motionError: string | null
+  motionTags: MotionTags
 }
 
 /**
@@ -805,7 +824,7 @@ export async function extractFullDesignData(url: string): Promise<FullExtraction
   const browser = await getBrowser()
   if (!browser) {
     console.error('[extractFullDesignData] Browser unavailable for:', url)
-    return { colors: [], screenshotUrl: null, mobileScreenshotUrl: null, assets: [], typography: [] }
+    return { colors: [], screenshotUrl: null, mobileScreenshotUrl: null, assets: [], typography: [], motionClipUrl: null, motionBytes: null, motionError: 'unknown', motionTags: { hasTransitions: false, hasAnimations: false, easings: [] } }
   }
   const page = await browser.newPage()
 
@@ -870,14 +889,55 @@ export async function extractFullDesignData(url: string): Promise<FullExtraction
         assets: [],
         typography: [],
         renderedNothing: true,
+        motionClipUrl: null,
+        motionBytes: null,
+        motionError: null,
+        motionTags: { hasTransitions: false, hasAnimations: false, easings: [] },
       }
     }
+
+    // Motion vocabulary is pure DOM reads — no ffmpeg needed, recorded on
+    // every run for later filtering.
+    const motionTags = await extractMotionTags(page)
 
     // Captures scroll and resize the viewport, so they come after every read.
     const screenshotUrl = await captureFullPageScreenshot(page, url, { scroll: false })
     const mobileScreenshotUrl = await captureMobileScreenshot(page, url)
 
-    return { colors, screenshotUrl, mobileScreenshotUrl, assets, typography }
+    // The take runs last: it scrolls, resizes, and leaves a hover behind,
+    // and nothing downstream may read the page after it. ~8s against the
+    // function's 60s budget; any failure keeps the screenshots.
+    let motionClipUrl: string | null = null
+    let motionBytes: number | null = null
+    let motionError: string | null = null
+    const ffmpegPath = resolveFfmpegPath()
+    if (ffmpegPath) {
+      const { existsSync: exists, readFileSync, unlinkSync } = await import('node:fs')
+      const outcome = await recordMotionClip(page, url, ffmpegPath)
+      if ('clip' in outcome && exists(outcome.clip.tmpPath)) {
+        try {
+          const hostname = new URL(url).hostname.replace(/\./g, '-')
+          const filename = `motion/${hostname}-${Date.now()}.webm`
+          const blob = await put(filename, readFileSync(outcome.clip.tmpPath), {
+            access: 'public',
+            contentType: 'video/webm',
+          })
+          motionClipUrl = blob.url
+          motionBytes = outcome.clip.bytes
+        } catch (err) {
+          console.error('[motion] upload failed:', err)
+        } finally {
+          try { unlinkSync(outcome.clip.tmpPath) } catch {}
+        }
+      } else if ('failed' in outcome) {
+        // The oversize cap is enforced by discarding, not by erroring: only
+        // genuine capture failures are recorded, in the shared vocabulary.
+        const known = ['bot_protection', 'login_required', 'timeout', 'not_found', 'unknown']
+        if (known.includes(outcome.failed)) motionError = outcome.failed
+      }
+    }
+
+    return { colors, screenshotUrl, mobileScreenshotUrl, assets, typography, motionClipUrl, motionBytes, motionError, motionTags }
   } finally {
     await page.close().catch(() => {})
   }

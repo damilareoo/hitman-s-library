@@ -13,6 +13,7 @@ interface RequestRow {
   image: string | null
   requestCount: number
   createdAt: string
+  email: string | null
 }
 
 type Tab = 'pending' | 'added' | 'dismissed'
@@ -147,7 +148,9 @@ export function AdminRequests() {
 
                 <div className="min-w-0 flex-1">
                   <p className="text-bodytext text-ink truncate">{row.title ?? host}</p>
-                  <p className="text-meta text-ink-4 truncate">{host}</p>
+                  <p className="text-meta text-ink-4 truncate">
+                    {host} · {formatDate(row.createdAt)}{row.email ? ` · ${row.email}` : ''}
+                  </p>
                 </div>
 
                 {row.requestCount > 1 && (
@@ -215,6 +218,14 @@ export function AdminRequests() {
       )}
     </div>
   )
+}
+
+function formatDate(iso: string): string {
+  try {
+    return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+  } catch {
+    return ''
+  }
 }
 
 function safeHost(url: string): string {

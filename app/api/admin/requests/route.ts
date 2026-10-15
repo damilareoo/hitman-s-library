@@ -1,11 +1,11 @@
 // app/api/admin/requests/route.ts
 // The review queue. Everything here is behind the admin session.
 import { NextRequest, NextResponse } from 'next/server'
-import { neon } from '@neondatabase/serverless'
+import { getSql } from '@/lib/db'
 import { requireAdmin } from '@/lib/admin-auth'
 import { revalidateTag } from 'next/cache'
 
-const sql = neon(process.env.DATABASE_URL!)
+const sql = getSql()
 
 export async function GET(req: NextRequest) {
   const denied = await requireAdmin(req)
@@ -15,7 +15,7 @@ export async function GET(req: NextRequest) {
 
   const rows = await sql`
     SELECT id, url, normalized_url, status, source_id,
-           preview_title, preview_image, request_count, created_at
+           preview_title, preview_image, request_count, created_at, email
     FROM design_requests
     WHERE status = ${status}
     ORDER BY request_count DESC, created_at DESC
@@ -40,6 +40,7 @@ export async function GET(req: NextRequest) {
       image: r.preview_image,
       requestCount: r.request_count,
       createdAt: r.created_at,
+      email: r.email ?? null,
     })),
     counts,
   })

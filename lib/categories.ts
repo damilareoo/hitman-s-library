@@ -1,5 +1,4 @@
-export const CATEGORY_ALIASES: Record<string, string[]> = {
-  'SaaS / App': ['saas', 'productivity', 'saas / app'],
+export const CATEGORY_ALIASES: Record<string, string[]> = {  'SaaS / App': ['saas', 'productivity', 'saas / app'],
   Creative: ['creative', 'agency', 'design', 'branding', 'studio', 'design firm'],
   Finance: ['fintech', 'finance'],
   Entertainment: ['entertainment', 'social media'],
@@ -68,4 +67,28 @@ export function compareCategories(a: { name: string; count: number }, b: { name:
   }
 
   return b.count - a.count
+}
+
+/**
+ * What kind of site it is — the axis the library is browsed on. Lives here
+ * (client-safe, no imports) because cards and the sidebar read it too; the
+ * server queries re-export it from lib/design-queries.
+ */
+export const KINDS = [
+  'AI', 'Developer', 'Work', 'Money', 'Consumer',
+  'Studio', 'Editorial', 'Company', 'Portfolio', 'Store', 'Venue', 'Event',
+] as const
+export type Kind = (typeof KINDS)[number]
+
+/**
+ * Not a kind — where a newly added site waits until someone files it. Never
+ * rendered on a card; the sidebar shows NEW_LABEL instead while the URL value
+ * stays 'Unsorted' so shared links keep working.
+ */
+export const UNSORTED = 'Unsorted'
+export const NEW_LABEL = 'New'
+
+/** Display name for a kind value in visitor-facing UI. */
+export function displayKind(kind: string): string {
+  return kind === UNSORTED ? NEW_LABEL : kind
 }

@@ -48,14 +48,23 @@ someone browsing a design library is actually asking:
 
 | Kind | What belongs in it |
 |---|---|
-| **Product** | Software you sign up for, download, or deploy |
+| **AI** | Models, agents, copilots, and AI platforms — the product *is* artificial intelligence |
+| **Developer** | APIs, infrastructure, and tools for people who build software |
+| **Work** | Team productivity, collaboration, and workplace SaaS |
+| **Money** | Banking, payments, trading, and crypto |
+| **Consumer** | Games, browsers, devices, and personal apps |
 | **Studio** | Agencies and studios selling their own craft |
 | **Editorial** | Publications, galleries, archives, guidelines |
-| **Company** | Businesses that aren't a product, studio, or store |
+| **Company** | Businesses that aren't covered above |
 | **Portfolio** | One person's work, under their own name |
 | **Store** | Things you buy |
 | **Venue** | Places you physically go |
 | **Event** | Something with a date on it |
+
+Product used to be the first row and held half the library on its own, so it
+was split five ways (AI, Developer, Work, Money, Consumer) in October 2026.
+The rule for the borderline: AI means the product *is* artificial
+intelligence; AI-assisted tools in a vertical stay in their vertical.
 
 The rail lists them in that fixed order rather than by size, because a list that
 reshuffles as sites are added is one you have to read again every visit.
@@ -505,3 +514,8 @@ node scripts/panel-sweep.mjs                 # the panel, both breakpoints
 before deleting anything. Colors, typography and assets cascade off
 `design_sources`, which makes removal one statement and makes an unexamined
 removal unrecoverable — hence the export, and hence `--dry` first.
+
+## Contributors
+
+- [Damilare](https://github.com/damilareoo)
+- [Judie](https://github.com/Judiedesigns)

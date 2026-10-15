@@ -1,6 +1,6 @@
 export type ChangeType = 'new' | 'improved' | 'fixed'
 
-export type Author = 'damilare' | 'florence'
+export type Author = 'damilare' | 'florence' | 'judie'
 
 export interface Person {
   name: string
@@ -9,8 +9,9 @@ export interface Person {
 }
 
 export const AUTHORS: Record<Author, Person> = {
-  damilare: { name: 'Damilare', avatar: '/people/damilare.png' },
+  damilare: { name: 'Damilare', avatar: '/people/damilare.jpg' },
   florence: { name: 'Florence', avatar: '/people/florence.jpg' },
+  judie: { name: 'Judie', avatar: '/people/judie.jpg' },
 }
 
 export interface ChangeItem {
@@ -83,6 +84,105 @@ export function releaseAuthors(release: ChangelogRelease): Author[] {
 // more than one hand in it names each line instead, because that is the
 // only case where the question is actually being asked.
 const changelog: ChangelogRelease[] = [
+  {
+    date: '2026-10-15',
+    title: 'One Voice',
+    items: [
+      { type: 'improved', author: 'damilare', text: 'The whole library now sets in BDO Grotesk, at two text sizes' },
+    ],
+  },
+  {
+    date: '2026-10-15',
+    title: 'Room to Breathe',
+    items: [
+      { type: 'improved', author: 'damilare', text: 'The digest invite folds to one line until you have favorites' },
+      { type: 'fixed', author: 'damilare', text: 'The last paletteless cards now show measured colors' },
+    ],
+  },
+  {
+    date: '2026-10-15',
+    title: 'Weekly Taste Digest',
+    items: [
+      { type: 'new', author: 'damilare', text: 'Heart sites and get new arrivals matched to your taste, weekly' },
+    ],
+  },
+  {
+    date: '2026-10-15',
+    title: 'Tags You Can Trust',
+    items: [
+      { type: 'new', author: 'damilare', text: 'Filter chips for dark, serif, dense and sparse — computed, not guessed' },
+      { type: 'fixed', author: 'damilare', text: 'Retired the tags that matched most of the library' },
+    ],
+  },
+  {
+    date: '2026-10-15',
+    title: 'Second UI Pass',
+    items: [
+      { type: 'new', author: 'damilare', text: 'Any open site has a Link button — the address bar restores the exact tab' },
+      { type: 'improved', author: 'damilare', text: 'Search matches kind as well, counts live, and empty searches suggest shelves' },
+      { type: 'improved', author: 'damilare', text: 'Requesting a site takes an email, and says what happens next' },
+      { type: 'improved', author: 'damilare', text: 'Type specimens show the measured size and line-height' },
+    ],
+  },
+  {
+    date: '2026-10-15',
+    title: 'Five New Shelves',
+    items: [
+      { type: 'new', author: 'damilare', text: 'The giant Product shelf splits five ways: AI, Developer, Work, Money, Consumer' },
+    ],
+  },
+  {
+    date: '2026-10-14',
+    title: 'A Fuller Front Door',
+    items: [
+      { type: 'new', author: 'damilare', text: 'The panel opens on a real site now instead of an empty column' },
+      { type: 'improved', author: 'damilare', text: 'The grid says what it is on first sight' },
+      { type: 'improved', author: 'damilare', text: 'Small text is larger and easier to read everywhere' },
+      { type: 'improved', author: 'damilare', text: 'Wide screens get three and four columns instead of two' },
+    ],
+  },
+  {
+    date: '2026-10-14',
+    title: 'Faster Cards',
+    items: [
+      { type: 'improved', author: 'damilare', text: 'Cards load images at the size they render — the homepage carries a fifth of the weight' },
+      { type: 'fixed', author: 'damilare', text: 'Animated thumbnails no longer play in the grid' },
+    ],
+  },
+  {
+    date: '2026-10-14',
+    title: 'Motion on Hover',
+    items: [
+      { type: 'new', author: 'damilare', text: 'Cards play the real site in motion when you hover them' },
+      { type: 'improved', author: 'damilare', text: 'First paint costs nothing extra — clips load only on hover' },
+    ],
+  },
+  {
+    date: '2026-10-14',
+    title: 'Visual Neighbors',
+    items: [
+      { type: 'new', author: 'damilare', text: 'Every site has a Similar action — a grid of its closest visual neighbors' },
+      { type: 'new', author: 'damilare', text: 'Blank captures no longer surface as each other’s neighbors' },
+    ],
+  },
+  {
+    date: '2026-10-14',
+    title: 'Design Drift',
+    items: [
+      { type: 'new', author: 'damilare', text: 'Every site has a History tab — pick any two snapshots to see what changed' },
+      { type: 'new', author: 'damilare', text: 'Sites that were genuinely redesigned now carry a Redesigned badge' },
+      { type: 'new', author: 'damilare', text: 'The changelog reads one site at a time with a ?site= link' },
+    ],
+  },
+  {
+    date: '2026-10-14',
+    title: 'Snapshots, Not Overwrites',
+    items: [
+      { type: 'new', author: 'damilare', text: 'Re-extracting a site keeps every previous snapshot instead of replacing it' },
+      { type: 'improved', author: 'damilare', text: 'Tag filtering is paused while tags are reworked — two tags matched most of the library' },
+      { type: 'fixed', author: 'damilare', text: 'The build no longer crashes when the database address is not set' },
+    ],
+  },
   {
     date: '2026-09-14',
     title: 'Fresh Link Previews',

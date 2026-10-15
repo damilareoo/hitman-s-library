@@ -8,6 +8,7 @@ import {
   type SortBy,
 } from '@/lib/design-queries'
 import { getDomain } from '@/lib/get-domain'
+import { SIMILAR_ENABLED, querySimilar } from '@/lib/similarity'
 
 // Rendered per request so the grid ships as HTML — crawlers and first paint
 // both get real content instead of an empty shell.
@@ -38,7 +39,7 @@ export async function generateMetadata(
   const q = typeof params.q === 'string' ? params.q : ''
 
   // Filtered views are near-duplicates of the index — describe them, don't index them.
-  const isFiltered = categories.length > 0 || Boolean(q) || Boolean(params.tag) || Boolean(params.site)
+  const isFiltered = categories.length > 0 || Boolean(q) || Boolean(params.tag) || Boolean(params.site) || Boolean(params.similarTo)
 
   let title = "Hitman's Library"
   if (q) title = `Search: ${q}`
@@ -57,7 +58,9 @@ export default async function Page(
   const params = await searchParams
 
   const sortParam = typeof params.sort === 'string' ? params.sort : ''
-  const [{ designs, pagination }, categories] = await Promise.all([
+  const similarToRaw = typeof params.similarTo === 'string' ? params.similarTo : ''
+  const similarToId = SIMILAR_ENABLED ? parseInt(similarToRaw, 10) : NaN
+  const [{ designs, pagination }, categories, initialSimilar] = await Promise.all([
     queryDesigns({
       kinds: toArray(params.category),
       tags: toArray(params.tag),
@@ -67,18 +70,26 @@ export default async function Page(
       offset: 0,
     }),
     queryCategoriesCached(),
+    // The neighbor grid ships as HTML too, with the open site pinned first —
+    // the same rows the client fetch would land on.
+    Number.isFinite(similarToId) ? querySimilar(similarToId, 24) : Promise.resolve(null),
   ])
 
   return (
     <Suspense fallback={null}>
       <Gallery
-        initialDesigns={designs}
-        initialPagination={{
-          total: pagination.total,
-          hasMore: pagination.hasMore,
-          offset: pagination.offset,
-        }}
+        initialDesigns={initialSimilar && initialSimilar.site ? [initialSimilar.site, ...initialSimilar.neighbors] : designs}
+        initialPagination={
+          initialSimilar && initialSimilar.site
+            ? { total: initialSimilar.neighbors.length + 1, hasMore: false, offset: 0 }
+            : {
+              total: pagination.total,
+              hasMore: pagination.hasMore,
+              offset: pagination.offset,
+            }
+        }
         initialCategories={categories}
+        initialSimilar={initialSimilar}
       />
 
       {/* Crawlable index of the full collection. The gallery above paginates as

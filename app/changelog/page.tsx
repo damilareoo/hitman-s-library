@@ -5,6 +5,8 @@ import changelog, { AUTHORS, groupByMonth, releaseAuthors, type Author, type Cha
 import { Brand } from '@/components/brand'
 import { SiteLinks } from '@/components/site-links'
 import { ChangelogRail } from '@/components/changelog-rail'
+import { ChangelogSiteHistory } from '@/components/changelog-site-history'
+import { DRIFT_ENABLED } from '@/lib/drift'
 
 export const metadata: Metadata = {
   title: 'Changelog',
@@ -24,8 +26,10 @@ const TYPE_LABEL: Record<ChangeItem['type'], string> = {
 }
 
 const TYPE_TEXT: Record<ChangeItem['type'], string> = {
-  new:      'text-[var(--color-success)]/70',
-  improved: 'text-[var(--color-running)]/70',
+  // Full strength, never dimmed: the /70 versions measured 2.28–4.19:1 and
+  // failed readable (work order 2). All three clear 4.5:1 at full opacity.
+  new:      'text-[var(--color-success)]',
+  improved: 'text-[var(--color-running)]',
   fixed:    'text-ink-4',
 }
 
@@ -80,8 +84,19 @@ function formatDate(iso: string) {
   })
 }
 
-export default function ChangelogPage() {
+export default async function ChangelogPage(
+  { searchParams }: { searchParams?: Promise<Record<string, string | string[] | undefined>> },
+) {
   const months = groupByMonth(changelog)
+  // Per-site filter (Phase 1): /changelog?site=<id> reads extraction_history
+  // events for one site. Invalid values render the plain page.
+  let siteId: number | null = null
+  if (DRIFT_ENABLED && searchParams) {
+    const params = await searchParams
+    const raw = Array.isArray(params.site) ? params.site[0] : params.site
+    const n = parseInt(raw ?? '', 10)
+    if (Number.isFinite(n)) siteId = n
+  }
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -110,6 +125,9 @@ export default function ChangelogPage() {
             What's new in Hitman's Library
           </p>
         </div>
+
+        {/* Per-site extraction history, when ?site= names a site. */}
+        {siteId != null && <ChangelogSiteHistory siteId={siteId} />}
 
         {/* Releases */}
         <div className="space-y-0">
