@@ -45,12 +45,18 @@ export async function POST(req: Request) {
     return NextResponse.json({ state: 'received' })
   }
 
-  const normalized = normalizeUrl(url)
-  if (!normalized || !normalized.includes('.')) {
+  // One address per line, comma, or space run — a batch counts as one
+  // submission against the limiter, not one per address.
+  const candidates = url
+    .split(/[\n,]+/)
+    .map(part => part.trim())
+    .filter(Boolean)
+    .slice(0, 10)
+  if (candidates.length === 0) {
     return NextResponse.json({ state: 'invalid', message: 'Enter a website address.' }, { status: 400 })
   }
 
-  // The limiter runs before the URL is resolved, not after. assertPublicUrl
+  // The limiter runs before any URL is resolved, not after. assertPublicUrl
   // does a DNS lookup, and validating first meant a stream of invalid
   // addresses cost lookups without ever touching anyone's quota.
   const ipHash = hashIp(clientIp(req))
@@ -63,60 +69,96 @@ export async function POST(req: Request) {
     }, { status: 429 })
   }
 
-  try {
-    await assertPublicUrl(toAbsoluteUrl(url))
-  } catch (err) {
-    return NextResponse.json({
-      state: 'invalid',
-      message: err instanceof BlockedUrlError
-        ? 'That address is not a public website.'
-        : 'That does not look like a valid address.',
-    }, { status: 400 })
+  async function handleOne(raw: string): Promise<Record<string, unknown>> {
+    const normalized = normalizeUrl(raw)
+    if (!normalized || !normalized.includes('.')) {
+      return { url: raw, state: 'invalid', message: 'That does not look like a valid address.' }
+    }
+
+    try {
+      await assertPublicUrl(toAbsoluteUrl(raw))
+    } catch (err) {
+      return {
+        url: raw,
+        state: 'invalid',
+        message: err instanceof BlockedUrlError
+          ? 'That address is not a public website.'
+          : 'That does not look like a valid address.',
+      }
+    }
+
+    // Already in the library — answer with the site rather than filing a request
+    // nobody needs to review.
+    const existing = await sql`
+      SELECT id, source_name
+      FROM design_sources
+      WHERE lower(regexp_replace(regexp_replace(source_url, '^https?://(www\.)?', ''), '/+$', '')) = ${normalized}
+      LIMIT 1
+    `
+    if (existing.length > 0) {
+      return {
+        url: raw,
+        state: 'existing',
+        site: { id: String(existing[0].id), title: existing[0].source_name },
+      }
+    }
+
+    // One row per site. A second person asking increments the count and revives
+    // anything previously dismissed, so a site that gets asked for repeatedly
+    // comes back rather than staying buried.
+    // The live preview only resolves the single address the visitor typed, so
+    // batch rows carry no preview — the reviewer sees the address itself.
+    const single = candidates.length === 1
+    const rows = await sql`
+      INSERT INTO design_requests (url, normalized_url, preview_title, preview_image, ip_hash, email)
+      VALUES (
+        ${toAbsoluteUrl(raw)},
+        ${normalized},
+        ${single ? preview.title ?? null : null},
+        ${single ? preview.image ?? null : null},
+        ${ipHash},
+        ${email}
+      )
+      ON CONFLICT (normalized_url) DO UPDATE SET
+        request_count = design_requests.request_count + 1,
+        email = COALESCE(design_requests.email, EXCLUDED.email),
+        status = CASE WHEN design_requests.status = 'dismissed' THEN 'pending' ELSE design_requests.status END,
+        preview_title = COALESCE(design_requests.preview_title, EXCLUDED.preview_title),
+        preview_image = COALESCE(design_requests.preview_image, EXCLUDED.preview_image),
+        updated_at = NOW()
+      RETURNING id, request_count, status
+    `
+    const row = rows[0]
+    return {
+      url: raw,
+      state: 'received',
+      id: String(row.id),
+      requestCount: row.request_count,
+      status: row.status,
+    }
   }
 
-  // Already in the library — answer with the site rather than filing a request
-  // nobody needs to review.
-  const existing = await sql`
-    SELECT id, source_name
-    FROM design_sources
-    WHERE lower(regexp_replace(regexp_replace(source_url, '^https?://(www\.)?', ''), '/+$', '')) = ${normalized}
-    LIMIT 1
-  `
-  if (existing.length > 0) {
+  // Single address keeps the exact historical shapes the dialog's preview
+  // flow branches on. Batches return one shared shape instead.
+  if (candidates.length === 1) {
+    const single = await handleOne(candidates[0])
+    if (single.state === 'existing') {
+      return NextResponse.json({ state: 'existing', site: single.site })
+    }
+    if (single.state === 'invalid') {
+      return NextResponse.json({ state: 'invalid', message: single.message }, { status: 400 })
+    }
     return NextResponse.json({
-      state: 'existing',
-      site: { id: String(existing[0].id), title: existing[0].source_name },
+      state: 'received',
+      id: single.id,
+      requestCount: single.requestCount,
+      status: single.status,
     })
   }
 
-  // One row per site. A second person asking increments the count and revives
-  // anything previously dismissed, so a site that gets asked for repeatedly
-  // comes back rather than staying buried.
-  const rows = await sql`
-    INSERT INTO design_requests (url, normalized_url, preview_title, preview_image, ip_hash, email)
-    VALUES (
-      ${toAbsoluteUrl(url)},
-      ${normalized},
-      ${preview.title ?? null},
-      ${preview.image ?? null},
-      ${ipHash},
-      ${email}
-    )
-    ON CONFLICT (normalized_url) DO UPDATE SET
-      request_count = design_requests.request_count + 1,
-      email = COALESCE(design_requests.email, EXCLUDED.email),
-      status = CASE WHEN design_requests.status = 'dismissed' THEN 'pending' ELSE design_requests.status END,
-      preview_title = COALESCE(design_requests.preview_title, EXCLUDED.preview_title),
-      preview_image = COALESCE(design_requests.preview_image, EXCLUDED.preview_image),
-      updated_at = NOW()
-    RETURNING id, request_count, status
-  `
-
-  const row = rows[0]
-  return NextResponse.json({
-    state: 'received',
-    id: String(row.id),
-    requestCount: row.request_count,
-    status: row.status,
-  })
+  const results = []
+  for (const raw of candidates) {
+    results.push(await handleOne(raw))
+  }
+  return NextResponse.json({ state: 'batch', results })
 }

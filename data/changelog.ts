@@ -85,6 +85,13 @@ export function releaseAuthors(release: ChangelogRelease): Author[] {
 // only case where the question is actually being asked.
 const changelog: ChangelogRelease[] = [
   {
+    date: '2026-10-16',
+    title: 'Ask for Many',
+    items: [
+      { type: 'new', author: 'damilare', text: 'Request a whole list at once — one per line, one shared receipt' },
+    ],
+  },
+  {
     date: '2026-10-15',
     title: 'One Voice',
     items: [

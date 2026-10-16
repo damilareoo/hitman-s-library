@@ -33,7 +33,10 @@ export function RequestSiteDialog({ open, onClose, initialUrl = '', onOpenSite }
   const [submitted, setSubmitted] = useState<{ title: string | null; count: number } | null>(null)
   const [error, setError] = useState<string | null>(null)
 
-  const inputRef = useRef<HTMLInputElement>(null)
+  const inputRef = useRef<HTMLTextAreaElement>(null)
+  // One per line, comma, or space run — mirrors the server split exactly.
+  const parts = url.split(/[\n,]+/).map(part => part.trim()).filter(Boolean).slice(0, 10)
+  const isBatch = parts.length > 1
   const panelRef = useRef<HTMLDivElement>(null)
   const previousFocus = useRef<HTMLElement | null>(null)
   const checkSeq = useRef(0)
@@ -59,6 +62,7 @@ export function RequestSiteDialog({ open, onClose, initialUrl = '', onOpenSite }
     if (!open) {
       setPreview({ kind: 'idle' })
       setSubmitted(null)
+      setBatchResults(null)
       setError(null)
     }
   }, [open])
@@ -85,6 +89,10 @@ export function RequestSiteDialog({ open, onClose, initialUrl = '', onOpenSite }
   // character and a preview that flickers between three different sites.
   useEffect(() => {
     if (!open) return
+    if (parts.length !== 1) {
+      setPreview({ kind: 'idle' })
+      return
+    }
     const trimmed = url.trim()
     if (trimmed.length < 4 || !trimmed.includes('.')) {
       setPreview({ kind: 'idle' })
@@ -140,10 +148,13 @@ export function RequestSiteDialog({ open, onClose, initialUrl = '', onOpenSite }
     return () => clearTimeout(t)
   }, [url, open])
 
+  const [batchResults, setBatchResults] = useState<Array<{ url: string; state: string; site?: { id: string; title: string }; message?: string; requestCount?: number }> | null>(null)
+
   const submit = useCallback(async () => {
     if (submitting) return
     setSubmitting(true)
     setError(null)
+    setBatchResults(null)
 
     const previewTitle =
       preview.kind === 'new' ? preview.title
@@ -172,6 +183,11 @@ export function RequestSiteDialog({ open, onClose, initialUrl = '', onOpenSite }
       } else if (data.state === 'received') {
         remember(url.trim(), previewTitle)
         setSubmitted({ title: previewTitle, count: data.requestCount ?? 1 })
+      } else if (data.state === 'batch' && Array.isArray(data.results)) {
+        for (const r of data.results) {
+          if (r.state === 'received') remember(r.url, null)
+        }
+        setBatchResults(data.results)
       } else {
         setError(data.message ?? 'That did not go through. Try again.')
       }
@@ -180,10 +196,14 @@ export function RequestSiteDialog({ open, onClose, initialUrl = '', onOpenSite }
     } finally {
       setSubmitting(false)
     }
-  }, [url, preview, submitting, remember])
+  }, [url, preview, submitting, remember, email])
 
+  const looksLikeUrl = (part: string) => part.includes('.') && part.length >= 4
   const canSubmit =
-    !submitting && (preview.kind === 'new' || preview.kind === 'already-requested')
+    !submitting &&
+    (isBatch
+      ? parts.length > 0 && parts.every(looksLikeUrl)
+      : preview.kind === 'new' || preview.kind === 'already-requested')
 
   return (
     <AnimatePresence>
@@ -212,8 +232,7 @@ export function RequestSiteDialog({ open, onClose, initialUrl = '', onOpenSite }
             exit={{ opacity: 0, y: -6, scale: 0.99 }}
             transition={{ duration: DUR.move, ease: EASE }}
           >
-            <div className="flex items-center justify-between px-4 h-11 border-b border-edge">
-              <p className="text-micro text-ink-4">Request a site</p>
+            <div className="flex items-center justify-end px-4 h-11">
               <button
                 onClick={onClose}
                 className="w-7 h-7 -mr-1.5 flex items-center justify-center rounded-[4px] text-ink-4 hover:text-ink hover:bg-muted transition-colors"
@@ -231,21 +250,29 @@ export function RequestSiteDialog({ open, onClose, initialUrl = '', onOpenSite }
                 onClose={onClose}
               />
             ) : (
-              <div className="p-4">
+              <div className="px-4 pb-4">
+                <p className="text-titletext text-ink leading-snug mb-1">
+                  Ask for a site.
+                </p>
+                <p className="text-meta text-ink-3 leading-relaxed mb-3">
+                  Paste any address. We check it, extract it, and put it on the shelf.
+                </p>
                 <div className="relative">
-                  <Globe className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-ink-4 pointer-events-none" weight="regular" />
-                  <input
+                  <Globe className="absolute left-3 top-3 w-3.5 h-3.5 text-ink-4 pointer-events-none" weight="regular" />
+                  <textarea
                     ref={inputRef}
-                    type="url"
+                    rows={isBatch ? 3 : 2}
                     inputMode="url"
                     autoComplete="off"
                     spellCheck={false}
-                    placeholder="stripe.com"
-                    aria-label="Website address"
+                    placeholder="stripe.com — one per line for several"
+                    aria-label="Website addresses, one per line"
                     value={url}
                     onChange={e => setUrl(e.target.value)}
-                    onKeyDown={e => { if (e.key === 'Enter' && canSubmit) submit() }}
-                    className="w-full h-10 pl-9 pr-9 text-bodytext bg-muted/60 border border-edge rounded-[6px] text-foreground placeholder:text-ink-4 focus:outline-none focus:border-foreground/30 focus:bg-muted transition-colors"
+                    // Enter is a newline (this is a list now); Cmd/Ctrl+Enter
+                    // sends, like every other multi-line composer.
+                    onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey) && canSubmit) { e.preventDefault(); submit() } }}
+                    className="w-full min-h-[68px] pl-9 pr-9 py-2.5 text-bodytext bg-muted/60 border border-edge rounded-[6px] text-foreground placeholder:text-ink-4 focus:outline-none focus:border-foreground/30 focus:bg-muted transition-colors resize-y"
                   />
                   {preview.kind === 'checking' && (
                     <span className="absolute right-3 top-1/2 -translate-y-1/2">
@@ -275,7 +302,7 @@ export function RequestSiteDialog({ open, onClose, initialUrl = '', onOpenSite }
                       aria-label="Email address (optional)"
                       value={email}
                       onChange={e => setEmail(e.target.value)}
-                      className="mt-2 w-full h-10 px-3 text-bodytext bg-muted/60 border border-edge rounded-[6px] text-foreground placeholder:text-ink-4 focus:outline-none focus:border-foreground/30 focus:bg-muted transition-colors"
+                      className="mt-2 w-full h-9 px-3 text-bodytext bg-muted/60 border border-edge rounded-[6px] text-foreground placeholder:text-ink-4 focus:outline-none focus:border-foreground/30 focus:bg-muted transition-colors"
                     />
                     <p className="mt-2 text-meta text-ink-4 leading-relaxed">
                       We check every request — if it makes the cut, we&apos;ll tell you when it&apos;s live.
@@ -290,17 +317,26 @@ export function RequestSiteDialog({ open, onClose, initialUrl = '', onOpenSite }
                   </p>
                 )}
 
-                {canSubmit && (
+                {batchResults ? (
+                  <BatchResults
+                    results={batchResults}
+                    onOpenSite={id => { onOpenSite(id); onClose() }}
+                    onAnother={() => { setBatchResults(null); setUrl(''); setPreview({ kind: 'idle' }) }}
+                    onClose={onClose}
+                  />
+                ) : canSubmit && (
                   <motion.button
                     initial={{ opacity: 0, y: 4 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: DUR.color, ease: EASE }}
                     onClick={submit}
                     disabled={submitting}
-                    className="mt-3 w-full h-10 flex items-center justify-center gap-2 rounded-[6px] bg-foreground text-background text-bodytext font-medium hover:opacity-90 disabled:opacity-50 transition-opacity"
+                    className="mt-3 w-full h-9 flex items-center justify-center gap-2 rounded-[6px] bg-foreground text-background text-bodytext font-medium hover:opacity-90 disabled:opacity-50 transition-opacity"
                   >
                     {submitting ? <Spinner className="w-3.5 h-3.5 border-t-background" /> : null}
-                    {preview.kind === 'already-requested' ? 'Add my request' : 'Request it'}
+                    {isBatch
+                      ? `Request ${parts.length} sites`
+                      : preview.kind === 'already-requested' ? 'Add my request' : 'Request it'}
                     {!submitting && <ArrowRight className="w-3.5 h-3.5" weight="bold" />}
                   </motion.button>
                 )}
@@ -317,11 +353,7 @@ export function RequestSiteDialog({ open, onClose, initialUrl = '', onOpenSite }
 
 function PreviewCard({ preview, onOpenSite }: { preview: PreviewState; onOpenSite: (id: string) => void }) {
   if (preview.kind === 'idle' || preview.kind === 'checking') {
-    return (
-      <p className="mt-3 text-meta text-ink-4">
-        Paste any website address. We&apos;ll check it isn&apos;t already here.
-      </p>
-    )
+    return null
   }
 
   if (preview.kind === 'unreachable') {
@@ -422,6 +454,66 @@ function PreviewCard({ preview, onOpenSite }: { preview: PreviewState; onOpenSit
         <p className="text-meta text-ink-4 mt-0.5">
           {preview.reachable ? 'Ready to request' : 'Could not load a preview — you can still ask'}
         </p>
+      </div>
+    </motion.div>
+  )
+}
+
+function BatchResults({
+  results, onOpenSite, onAnother, onClose,
+}: {
+  results: Array<{ url: string; state: string; site?: { id: string; title: string }; message?: string; requestCount?: number }>
+  onOpenSite: (id: string) => void
+  onAnother: () => void
+  onClose: () => void
+}) {
+  const received = results.filter(r => r.state === 'received').length
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 6 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: DUR.move, ease: EASE }}
+      className="mt-3 rounded-[6px] border border-edge bg-muted/40 p-2.5"
+    >
+      <p className="text-micro text-ink-4 mb-2">
+        {received === results.length
+          ? `All ${received} asked for — the queue has them.`
+          : `${received} of ${results.length} asked for.`}
+      </p>
+      <ul className="space-y-1.5" role="list">
+        {results.map(r => (
+          <li key={r.url} className="flex items-center gap-2 min-w-0">
+            <span className="flex-1 truncate text-meta text-ink-3">{r.url}</span>
+            {r.state === 'received' && (
+              <span className="shrink-0 text-micro text-[var(--color-success)]">Asked</span>
+            )}
+            {r.state === 'existing' && r.site && (
+              <button
+                onClick={() => onOpenSite(r.site!.id)}
+                className="shrink-0 text-micro text-ink-2 hover:text-ink underline underline-offset-2 transition-colors"
+              >
+                In library
+              </button>
+            )}
+            {r.state === 'invalid' && (
+              <span className="shrink-0 text-micro text-[var(--color-error)]" title={r.message}>Skipped</span>
+            )}
+          </li>
+        ))}
+      </ul>
+      <div className="mt-3 flex items-center justify-center gap-2">
+        <button
+          onClick={onAnother}
+          className="h-9 px-3 rounded-[6px] border border-edge-strong text-bodytext text-ink-2 hover:text-ink hover:border-foreground/40 transition-colors"
+        >
+          Request more
+        </button>
+        <button
+          onClick={onClose}
+          className="h-9 px-4 rounded-[6px] bg-foreground text-background text-bodytext font-medium hover:opacity-90 transition-opacity"
+        >
+          Done
+        </button>
       </div>
     </motion.div>
   )
