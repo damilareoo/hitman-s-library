@@ -133,13 +133,55 @@ export async function gotoResilient(page: Page, url: string): Promise<'idle' | '
   return idle
 }
 
+// Cloudflare "Just a moment", bot checkpoints and similar interstitials run a
+// verification script and then redirect to the real page. Headless Chrome can
+// clear some of them unaided, but only if we wait for the redirect instead of
+// reading the interstitial as if it were the site.
+const INTERSTITIAL_TITLE_MARKERS = [
+  'just a moment',
+  'checking your browser',
+  'attention required',
+  'verify you are human',
+  'verification required',
+]
+const INTERSTITIAL_WAIT_MS = 20000
+
+async function waitPastInterstitial(page: Page, siteUrl: string): Promise<void> {
+  let title = ''
+  try {
+    title = await page.title()
+  } catch {}
+  if (!INTERSTITIAL_TITLE_MARKERS.some(m => title.toLowerCase().includes(m))) return
+
+  const deadline = Date.now() + INTERSTITIAL_WAIT_MS
+  while (Date.now() < deadline) {
+    await new Promise(r => setTimeout(r, 1000))
+    try {
+      title = await page.title()
+    } catch {}
+    if (!INTERSTITIAL_TITLE_MARKERS.some(m => title.toLowerCase().includes(m))) return
+    try {
+      if (page.url() !== siteUrl && !page.url().includes('cloudflare.com')) return
+    } catch {}
+  }
+}
+
 /** One pass to the bottom and back, slow enough for lazy-loading observers to follow. */
-async function autoScroll(page: Page, step = 400): Promise<void> {
+async function autoScroll(page: Page, step = 400, maxMs = 15000): Promise<void> {
   await page
-    .evaluate(async (step: number) => {
+    .evaluate(async (step: number, maxMs: number) => {
       await new Promise<void>(resolve => {
         let y = 0
+        const started = Date.now()
         const id = setInterval(() => {
+          // A hard ceiling: an interstitial that keeps injecting content (or a
+          // lazy page that never stops growing) must not scroll forever.
+          if (Date.now() - started >= maxMs) {
+            clearInterval(id)
+            window.scrollTo(0, 0)
+            resolve()
+            return
+          }
           // Recomputed each tick: a page that lazy-loads gets taller as we go,
           // and the original read the height once and stopped short of the new
           // bottom.
@@ -153,7 +195,7 @@ async function autoScroll(page: Page, step = 400): Promise<void> {
           }
         }, 80)
       })
-    }, step)
+    }, step, maxMs)
     .catch(() => {})
 }
 
@@ -835,6 +877,7 @@ export async function extractFullDesignData(url: string): Promise<FullExtraction
     await page.setViewport({ width: 1440, height: 900, deviceScaleFactor: 2 })
 
     await gotoResilient(page, url)
+    await waitPastInterstitial(page, url)
     await settlePage(page)
 
     // Pure reads, so they are safe to run together — but only now that nothing
