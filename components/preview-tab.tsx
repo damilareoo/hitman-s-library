@@ -2,7 +2,7 @@
 'use client'
 
 import { useEffect, useRef, useState, type ReactNode } from 'react'
-import { ShieldWarning, LockSimple, Clock, FileDashed, Warning, ArrowClockwise } from '@phosphor-icons/react'
+import { ShieldWarning, LockSimple, Clock, FileDashed, Warning, ArrowClockwise, ArrowUpRight } from '@phosphor-icons/react'
 import { classifyExtractionError } from '@/lib/classify-extraction-error'
 import { getDomain } from '@/lib/get-domain'
 import { previewOrigin } from '@/lib/preview-origin'
@@ -264,11 +264,23 @@ export function PreviewTab({
           onClick={reload}
           aria-label="Reload preview"
           title="Reload preview"
-          className="w-7 h-7 -mr-1 flex-shrink-0 flex items-center justify-center rounded-[6px] text-ink-3 hover:text-ink hover:bg-muted transition-colors"
+          className="w-7 h-7 flex-shrink-0 flex items-center justify-center rounded-[6px] text-ink-3 hover:text-ink hover:bg-muted transition-colors"
         >
           <ArrowClockwise className="w-3.5 h-3.5" weight="bold" />
         </button>
       )}
+      {/* The one way out of the panel to the real site: the preview itself is
+          proxied and sandboxed, so its own links go nowhere. */}
+      <a
+        href={siteUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label={`Open ${domain} in a new tab`}
+        title={`Open ${domain}`}
+        className="w-7 h-7 -mr-1 flex-shrink-0 flex items-center justify-center rounded-[6px] text-ink-3 hover:text-ink hover:bg-muted transition-colors"
+      >
+        <ArrowUpRight className="w-3.5 h-3.5" weight="bold" />
+      </a>
     </div>
   )
 

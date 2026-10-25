@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
-import { ArrowUpRight, SquaresFour, Link as LinkIcon, Check, BookmarkSimple, Heart, X } from '@phosphor-icons/react'
+import { SquaresFour, Link as LinkIcon, Check, BookmarkSimple, Heart, X } from '@phosphor-icons/react'
 import { useCollections, toggleMembership, sanitizeName } from '@/lib/collections'
 import { SIMILAR_ENABLED } from '@/lib/drift'
 import { PanelTabs, type PanelTab } from './panel-tabs'
@@ -244,19 +244,6 @@ export function SiteDetailPanel({ variant = 'desktop', sourceId, metadata, onClo
               ? <Check className="w-4 h-4" weight="bold" />
               : <LinkIcon className="w-4 h-4" weight="bold" />}
           </button>
-          {data?.url && (
-            <a
-              href={data.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label={`Open ${hostname}`}
-              title={`Open ${hostname}`}
-              className="h-8 rounded-[6px] border border-transparent px-2.5 text-ink-2 hover:text-ink hover:bg-muted active:scale-[0.98] inline-flex items-center gap-1.5 transition-[background-color,color,transform] duration-[var(--dur-2)] ease-[var(--ease-sig)]"
-            >
-              <span className="text-micro max-sm:hidden">Live link</span>
-              <ArrowUpRight className="w-3.5 h-3.5" weight="bold" />
-            </a>
-          )}
           {onClose && (
             <button
               onClick={() => { playClose(); onClose() }}
