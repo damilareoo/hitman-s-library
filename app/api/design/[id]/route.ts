@@ -3,6 +3,9 @@ import { getSql } from '@/lib/db'
 import { getHistoriesByIds } from '@/lib/extraction-history'
 import { favoriteCounts } from '@/lib/taste'
 import { toHttps } from '@/lib/secure-url'
+import { requireAdmin } from '@/lib/admin-auth'
+import { KINDS } from '@/lib/categories'
+import { revalidateTag } from 'next/cache'
 import { NextResponse } from 'next/server'
 
 const sql = getSql()
@@ -96,6 +99,51 @@ export async function GET(
     })
   } catch (err) {
     console.error('[GET /api/design/[id]]', err)
+    return NextResponse.json({ error: 'Internal error' }, { status: 500 })
+  }
+}
+
+/**
+ * Re-file a source. This is the admin's correction path for a kind the
+ * classifier got wrong — the only place a kind is written after extraction.
+ */
+export async function PATCH(
+  req: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const denied = await requireAdmin(req)
+  if (denied) return denied
+
+  const { id: rawId } = await params
+  const id = parseInt(rawId, 10)
+  if (isNaN(id)) {
+    return NextResponse.json({ error: 'Invalid id' }, { status: 400 })
+  }
+
+  let body: { kind?: unknown }
+  try {
+    body = await req.json()
+  } catch {
+    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
+  }
+
+  const kind = typeof body.kind === 'string' ? body.kind : ''
+  if (!(KINDS as readonly string[]).includes(kind)) {
+    return NextResponse.json({ error: `Unknown kind: ${kind || '(empty)'}` }, { status: 400 })
+  }
+
+  try {
+    const rows = await sql`
+      UPDATE design_sources SET kind = ${kind} WHERE id = ${id}
+      RETURNING id, kind
+    `
+    if (!rows.length) {
+      return NextResponse.json({ error: 'Not found' }, { status: 404 })
+    }
+    revalidateTag('designs', 'max')
+    return NextResponse.json({ id: rows[0].id, kind: rows[0].kind })
+  } catch (err) {
+    console.error('[PATCH /api/design/[id]]', err)
     return NextResponse.json({ error: 'Internal error' }, { status: 500 })
   }
 }

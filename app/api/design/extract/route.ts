@@ -12,6 +12,8 @@ import { SIMILAR_ENABLED, embedSite, toVectorLiteral } from '@/lib/similarity'
 import { requireAdmin } from '@/lib/admin-auth'
 import { assertPublicUrl, BlockedUrlError } from '@/lib/safe-url'
 import { normalizeUrl } from '@/lib/normalize-url'
+import { inferKind } from '@/lib/site-kind'
+import { KINDS, type Kind } from '@/lib/categories'
 
 const sql = getSql()
 
@@ -25,11 +27,16 @@ export async function POST(req: NextRequest) {
   if (denied) return denied
 
   try {
-    let { url } = await req.json()
+    let { url, kind: requestedKind } = await req.json()
 
     if (!url || typeof url !== 'string') {
       return NextResponse.json({ error: 'Valid URL required' }, { status: 400 })
     }
+
+    // The admin can name the kind before adding; otherwise the classifier
+    // files it below. An unrecognised value is ignored, never stored.
+    const kindOverride: Kind | null =
+      (KINDS as readonly string[]).includes(requestedKind) ? (requestedKind as Kind) : null
 
     // Normalize URL - add https:// if no protocol
     url = url.trim()
@@ -197,15 +204,20 @@ export async function POST(req: NextRequest) {
     const architecture = extractArchitecture(html)
     // Tags are computed from extracted data, never sniffed from HTML — the
     // old keyword sniffing is how `animated` ended up on 80% of the library.
+    const fontFamilies = [
+      ...(extractionResult?.typography ?? []).map(t => t.fontFamily),
+      ...typography,
+    ]
     const tags = computeTags({
       palette: colorFormats.map(c => ({ oklch: c.oklch })),
-      fontFamilies: [
-        ...(extractionResult?.typography ?? []).map(t => t.fontFamily),
-        ...typography,
-      ],
+      fontFamilies,
       colorCount: colorFormats.length,
       assetCount: extractionResult?.assets?.length ?? 0,
     })
+
+    // Filed on the way in, so no new source can sit outside the browse filters
+    // waiting for someone to open the admin. The admin can still override it.
+    const kind: Kind = kindOverride ?? inferKind({ url, title, description, fontFamilies, tags })
 
     // Calculate quality score
     const quality = Math.min(10, Math.max(1, Math.round((colors.length + typography.length) / 2)))
@@ -263,6 +275,7 @@ export async function POST(req: NextRequest) {
           source_url,
           source_name,
           source_type,
+          kind,
           metadata,
           tags,
           thumbnail_url,
@@ -272,6 +285,7 @@ export async function POST(req: NextRequest) {
           ${url},
           ${title},
           ${'website'},
+          ${kind},
           ${JSON.stringify({
             description, quality, layout, architecture,
             // Recorded so the admin can say what happened rather than showing a
@@ -481,7 +495,7 @@ export async function POST(req: NextRequest) {
               fontFamily: t.fontFamily,
               role: t.role,
             })),
-            kind: null,
+            kind,
             screenshotUrl: effectiveScreenshot,
             siteId: sourceId,
           })
@@ -505,6 +519,7 @@ export async function POST(req: NextRequest) {
         id: sourceId,
         title,
         url,
+        kind,
         colors,
         typography,
         typography_detailed: typographyData,

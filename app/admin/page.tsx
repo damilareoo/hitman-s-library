@@ -3,10 +3,11 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { AdminRequests } from '@/components/admin-requests'
 import Link from 'next/link'
-import { ArrowLeft, ArrowUpRight, MagnifyingGlass, Trash, CircleNotch, ArrowCounterClockwise, ImageSquare } from '@phosphor-icons/react'
+import { ArrowLeft, ArrowUpRight, MagnifyingGlass, Trash, CircleNotch, ArrowCounterClockwise, ImageSquare, Check } from '@phosphor-icons/react'
 import { motion, AnimatePresence } from 'motion/react'
 import { classifyExtractionError } from '@/lib/classify-extraction-error'
 import { useSoundsContext } from '@/contexts/sounds-context'
+import { KINDS, UNSORTED, type Kind } from '@/lib/categories'
 
 interface Site {
   id: string
@@ -28,6 +29,7 @@ interface QueueItem {
 
 type AddedFilter = 'all' | 'today' | '7' | '30' | '90' | 'older-90'
 type DateSort = 'newest' | 'oldest'
+type KindFilter = 'all' | Kind | typeof UNSORTED
 
 const DAY_MS = 24 * 60 * 60 * 1000
 const ADDED_FILTERS: { value: AddedFilter; label: string }[] = [
@@ -49,6 +51,16 @@ const STAGES = [
 
 function getDomain(url: string) {
   try { return new URL(url).hostname.replace('www.', '') } catch { return url }
+}
+
+/**
+ * Anything outside the fixed taxonomy is treated as unsorted, not as a kind.
+ * The sidebar only renders KINDS + Unsorted, so a legacy value like "Product"
+ * would otherwise leave the row visible in the admin and nowhere else.
+ */
+function adminKindValue(raw: unknown): string {
+  if (typeof raw !== 'string' || !raw.trim()) return UNSORTED
+  return (KINDS as readonly string[]).includes(raw) ? raw : UNSORTED
 }
 
 function getCreatedTime(createdAt: string) {
@@ -179,6 +191,7 @@ export default function AdminPage() {
   const [addStage, setAddStage] = useState<string | null>(null)
   const [addError, setAddError] = useState<string | null>(null)
   const [addedId, setAddedId] = useState<string | null>(null)
+  const [addedKind, setAddedKind] = useState<string | null>(null)
   const [isLoadingSites, setIsLoadingSites] = useState(true)
   const [allSites, setAllSites] = useState<Site[]>([])
   const [deletingId, setDeletingId] = useState<string | null>(null)
@@ -188,10 +201,12 @@ export default function AdminPage() {
   const [backfillProgress, setBackfillProgress] = useState<{ done: number; total: number } | null>(null)
   const [isPreviewBackfilling, setIsPreviewBackfilling] = useState(false)
   const [previewBackfillProgress, setPreviewBackfillProgress] = useState<{ done: number; total: number } | null>(null)
-  const [isMobbinImporting, setIsMobbinImporting] = useState(false)
-  const [mobbinResult, setMobbinResult] = useState<{ added: number; skipped: number; errors: number } | null>(null)
-  const [mobbinSites, setMobbinSites] = useState<{ url: string; name: string; industry: string }[]>([])
-  const [mobbinOpen, setMobbinOpen] = useState(false)
+  const [kindFilter, setKindFilter] = useState<KindFilter>('all')
+  const [savingKindId, setSavingKindId] = useState<string | null>(null)
+  const [kindError, setKindError] = useState<string | null>(null)
+  const [isFilingUnsorted, setIsFilingUnsorted] = useState(false)
+  const [fileResult, setFileResult] = useState<string | null>(null)
+  const [overrideKind, setOverrideKind] = useState<Kind | ''>('')
   const [currentPage, setCurrentPage] = useState(1)
   const stageTimers = useRef<ReturnType<typeof setTimeout>[]>([])
   const addInputRef = useRef<HTMLInputElement>(null)
@@ -212,13 +227,23 @@ export default function AdminPage() {
       .finally(() => setAuthChecked(true))
   }, [])
 
+  const kindCounts = allSites.reduce<Record<string, number>>((acc, site) => {
+    acc[site.kind] = (acc[site.kind] ?? 0) + 1
+    return acc
+  }, {})
+  const unsortedCount = kindCounts[UNSORTED] ?? 0
+  const filedCount = allSites.length - unsortedCount
+
   const searchedSites = allSites.filter(s =>
     !searchInput ||
     s.source_name.toLowerCase().includes(searchInput.toLowerCase()) ||
     s.source_url.toLowerCase().includes(searchInput.toLowerCase()) ||
     s.kind.toLowerCase().includes(searchInput.toLowerCase())
   )
-  const filtered = searchedSites.filter(site => matchesAddedFilter(site, addedFilter))
+  const filtered = searchedSites.filter(site =>
+    matchesAddedFilter(site, addedFilter) &&
+    (kindFilter === 'all' || site.kind === kindFilter)
+  )
   const sortedSites = [...filtered].sort((a, b) => {
     const aTime = getCreatedTime(a.created_at)
     const bTime = getCreatedTime(b.created_at)
@@ -232,7 +257,7 @@ export default function AdminPage() {
   const totalPages = Math.ceil(sortedSites.length / ITEMS)
   const paginated = sortedSites.slice((currentPage - 1) * ITEMS, currentPage * ITEMS)
 
-  useEffect(() => { setCurrentPage(1) }, [searchInput, addedFilter, dateSort])
+  useEffect(() => { setCurrentPage(1) }, [searchInput, addedFilter, dateSort, kindFilter])
 
   useEffect(() => { loadSites() }, [])
 
@@ -251,7 +276,7 @@ export default function AdminPage() {
         id: String(s.id),
         source_name: s.title || s.source_name || 'Untitled',
         source_url: s.url || s.source_url,
-        kind: s.kind || 'Unsorted',
+        kind: adminKindValue(s.kind),
         created_at: s.addedDate || s.created_at,
         thumbnail_url: s.thumbnail_url,
         screenshot_url: s.screenshot_url,
@@ -271,6 +296,7 @@ export default function AdminPage() {
     setAddError(null)
     setAddStage(null)
     setAddedId(null)
+    setAddedKind(null)
     clearTimers()
 
     STAGES.forEach(({ label, delay }) => {
@@ -282,7 +308,7 @@ export default function AdminPage() {
       const res = await fetch('/api/design/extract', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: linkInput, notes: '' }),
+        body: JSON.stringify({ url: linkInput, notes: '', ...(overrideKind ? { kind: overrideKind } : {}) }),
       })
       const data = await res.json()
       clearTimers()
@@ -293,6 +319,7 @@ export default function AdminPage() {
       } else if (data.success || data.id) {
         sounds.playSuccess()
         setAddedId(String(data.id))
+        setAddedKind(typeof data.kind === 'string' ? data.kind : null)
         setLinkInput('')
         await loadSites()
       } else if (data.error) {
@@ -344,7 +371,7 @@ export default function AdminPage() {
         if (data.isDuplicate) {
           setQueue(prev => prev.map((q, idx) => idx === i ? { ...q, status: 'done', message: 'Already in collection' } : q))
         } else if (data.success || data.id) {
-          setQueue(prev => prev.map((q, idx) => idx === i ? { ...q, status: 'done', message: 'Added' } : q))
+          setQueue(prev => prev.map((q, idx) => idx === i ? { ...q, status: 'done', message: typeof data.kind === 'string' ? `Added · ${data.kind}` : 'Added' } : q))
         } else {
           const msg = data.error ? classifyExtractionError(data.error).label : 'Failed'
           setQueue(prev => prev.map((q, idx) => idx === i ? { ...q, status: 'error', message: msg } : q))
@@ -370,23 +397,50 @@ export default function AdminPage() {
     processQueue(items)
   }
 
-  const handleMobbinImport = async () => {
-    if (!confirm(`Import ${mobbinSites.length} curated Mobbin sites? Existing sites will be skipped automatically.`)) return
-    setIsMobbinImporting(true)
-    setMobbinResult(null)
+  const handleKindChange = async (siteId: string, kind: Kind) => {
+    const previous = allSites.find(s => s.id === siteId)?.kind
+    if (previous === kind) return
+    setKindError(null)
+    setSavingKindId(siteId)
+    // Optimistic: the row moves under its new filter immediately; a failure
+    // puts the old value back and says so, rather than silently diverging.
+    setAllSites(prev => prev.map(s => s.id === siteId ? { ...s, kind } : s))
     try {
-      const res = await fetch('/api/admin/bulk-import', {
-        method: 'POST',
+      const res = await fetch(`/api/design/${siteId}`, {
+        method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({}),
+        body: JSON.stringify({ kind }),
       })
-      const data = await res.json()
-      setMobbinResult({ added: data.added ?? 0, skipped: data.skipped ?? 0, errors: data.errors ?? 0 })
-      if ((data.added ?? 0) > 0) await loadSites()
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
     } catch {
-      setMobbinResult({ added: 0, skipped: 0, errors: 1 })
+      setAllSites(prev => prev.map(s => s.id === siteId ? { ...s, kind: previous ?? UNSORTED } : s))
+      setKindError('Could not save that kind. Try again.')
     } finally {
-      setIsMobbinImporting(false)
+      setSavingKindId(null)
+    }
+  }
+
+  const handleFileUnsorted = async () => {
+    if (isFilingUnsorted || unsortedCount === 0) return
+    setIsFilingUnsorted(true)
+    setFileResult(null)
+    setKindError(null)
+    try {
+      const res = await fetch('/api/admin/kinds', { method: 'POST' })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`)
+      const filed = Number(data.filed) || 0
+      const remaining = Number(data.remaining) || 0
+      setFileResult(
+        remaining === 0
+          ? `Filed ${filed} ${filed === 1 ? 'site' : 'sites'} — nothing left unsorted.`
+          : `Filed ${filed}; ${remaining} still unsorted.`
+      )
+      await loadSites()
+    } catch {
+      setFileResult('Could not file the unsorted sites. Try again.')
+    } finally {
+      setIsFilingUnsorted(false)
     }
   }
 
@@ -566,6 +620,19 @@ export default function AdminPage() {
               disabled={isAdding}
               className="flex-1 h-9 px-3 text-ui bg-muted border border-edge-strong rounded-[4px] outline-none focus:border-foreground/40 transition-colors placeholder:text-ink-3 disabled:opacity-60"
             />
+            <select
+              value={overrideKind}
+              onChange={e => setOverrideKind(e.target.value as Kind | '')}
+              disabled={isAdding}
+              className="h-9 px-2 text-ui bg-muted border border-edge-strong rounded-[4px] outline-none focus:border-foreground/40 transition-colors disabled:opacity-60 shrink-0"
+              aria-label="Kind for the site being added"
+              title="Leave on Auto-file to let extraction file it"
+            >
+              <option value="">Auto-file</option>
+              {KINDS.map(kind => (
+                <option key={kind} value={kind}>{kind}</option>
+              ))}
+            </select>
             <button
               onClick={handleAdd}
               disabled={isAdding || !linkInput.trim()}
@@ -608,7 +675,7 @@ export default function AdminPage() {
                 exit={{ opacity: 0 }}
                 className="text-ui text-emerald-600 dark:text-emerald-400"
               >
-                ✓ Site added successfully
+                ✓ Site added{addedKind ? ` — filed under ${addedKind}` : ''}
               </motion.p>
             )}
           </AnimatePresence>
@@ -623,6 +690,13 @@ export default function AdminPage() {
             </div>
             <div className="w-px h-8 bg-border/40" />
             <div>
+              <p className={"text-heading tabular-nums " + (unsortedCount > 0 ? 'text-amber-600 dark:text-amber-400' : '')}>{filedCount}</p>
+              <p className="text-meta text-ink-3 mt-0.5">
+                Filed{unsortedCount > 0 ? ` · ${unsortedCount} unsorted` : ''}
+              </p>
+            </div>
+            <div className="w-px h-8 bg-border/40" />
+            <div>
               <p className="text-heading tabular-nums text-emerald-600 dark:text-emerald-400">{inGallery}</p>
               <p className="text-meta text-ink-3 mt-0.5">In gallery</p>
             </div>
@@ -633,6 +707,24 @@ export default function AdminPage() {
             </div>
           </div>
           <div className="flex min-w-0 flex-wrap items-center gap-2">
+            {unsortedCount > 0 && (
+              <button
+                onClick={handleFileUnsorted}
+                disabled={isFilingUnsorted}
+                className="h-8 px-3 text-ui border border-foreground/20 bg-foreground/[0.04] rounded-[4px] disabled:opacity-40 hover:bg-foreground/[0.08] hover:border-foreground/40 transition-colors flex items-center gap-1.5 whitespace-nowrap"
+              >
+                {isFilingUnsorted
+                  ? <><CircleNotch className="w-3 h-3 animate-spin" weight="bold" /> Filing…</>
+                  : <><Check className="w-3 h-3" weight="bold" /> File {unsortedCount} unsorted</>
+                }
+              </button>
+            )}
+            {fileResult && (
+              <span className="text-ui text-ink-3">{fileResult}</span>
+            )}
+            {kindError && (
+              <span className="text-ui text-destructive" role="alert">{kindError}</span>
+            )}
             {dedupResult && (
               <span className="text-ui text-ink-3">{dedupResult}</span>
             )}
@@ -666,81 +758,55 @@ export default function AdminPage() {
                 : 'Backfill mobile'
               }
             </button>
-            {mobbinSites.length > 0 && (
-              <button
-                type="button"
-                onClick={() => setMobbinOpen(open => !open)}
-                className="h-8 px-3 text-ui border border-edge-strong rounded-[4px] hover:bg-muted transition-colors flex items-center gap-1.5 whitespace-nowrap"
-                aria-expanded={mobbinOpen}
-              >
-                Curated import
-                <span className="text-ink-3 tabular-nums">{mobbinSites.length}</span>
-              </button>
-            )}
           </div>
         </div>
 
-        {/* Mobbin import */}
-        <AnimatePresence initial={false}>
-          {mobbinOpen && mobbinSites.length > 0 && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              className="overflow-hidden"
+        {/* Kind filter — the same shelf order as the gallery, with counts so an
+            unbalanced library is visible at a glance. */}
+        <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label="Filter by kind">
+          <button
+            onClick={() => setKindFilter('all')}
+            aria-pressed={kindFilter === 'all'}
+            className={"h-7 px-2.5 text-meta rounded-[4px] border transition-colors whitespace-nowrap " + (
+              kindFilter === 'all'
+                ? 'bg-foreground text-background border-foreground'
+                : 'border-edge-strong text-ink-3 hover:text-foreground hover:bg-muted'
+            )}
+          >
+            All <span className="tabular-nums opacity-60">{allSites.length}</span>
+          </button>
+          {KINDS.map(kind => {
+            const count = kindCounts[kind] ?? 0
+            const active = kindFilter === kind
+            return (
+              <button
+                key={kind}
+                onClick={() => setKindFilter(kind)}
+                aria-pressed={active}
+                className={"h-7 px-2.5 text-meta rounded-[4px] border transition-colors whitespace-nowrap " + (
+                  active
+                    ? 'bg-foreground text-background border-foreground'
+                    : 'border-edge-strong hover:text-foreground hover:bg-muted ' + (count === 0 ? 'text-ink-4' : 'text-ink-3')
+                )}
+              >
+                {kind} <span className="tabular-nums opacity-60">{count}</span>
+              </button>
+            )
+          })}
+          {unsortedCount > 0 && (
+            <button
+              onClick={() => setKindFilter(UNSORTED)}
+              aria-pressed={kindFilter === UNSORTED}
+              className={"h-7 px-2.5 text-meta rounded-[4px] border transition-colors whitespace-nowrap " + (
+                kindFilter === UNSORTED
+                  ? 'bg-amber-500 text-white border-amber-500'
+                  : 'border-amber-500/50 text-amber-600 dark:text-amber-400 hover:bg-amber-500/10'
+              )}
             >
-              <div className="border border-edge rounded-[4px] p-4 space-y-3">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="text-bodytext font-medium">Mobbin curated sites</p>
-                    <p className="text-meta text-ink-3 mt-0.5">
-                      {mobbinSites.length} sites · SaaS, Fintech, Design, Dev Tools — duplicates skipped automatically
-                    </p>
-                  </div>
-                  <div className="flex min-w-0 flex-wrap items-center gap-2">
-                    {mobbinResult && (
-                      <span className="text-meta text-ink-3">
-                        +{mobbinResult.added} added · {mobbinResult.skipped} skipped{mobbinResult.errors > 0 ? ` · ${mobbinResult.errors} errors` : ''}
-                      </span>
-                    )}
-                    <button
-                      onClick={handleMobbinImport}
-                      disabled={isMobbinImporting}
-                      className="h-8 px-3 text-ui border border-foreground/20 bg-foreground/[0.04] rounded-[4px] disabled:opacity-40 hover:bg-foreground/[0.08] hover:border-foreground/40 transition-colors flex items-center gap-1.5 whitespace-nowrap"
-                    >
-                      {isMobbinImporting
-                        ? <><CircleNotch className="w-3 h-3 animate-spin" weight="bold" /> Importing…</>
-                        : `Import ${mobbinSites.length} sites`
-                      }
-                    </button>
-                  </div>
-                </div>
-                <div className="flex flex-wrap gap-1.5">
-                  {mobbinSites.map(s => {
-                    const alreadyIn = allSites.some(a =>
-                      a.source_url.replace(/\/$/, '').replace('https://', '').replace('http://', '').replace('www.', '') ===
-                      s.url.replace(/\/$/, '').replace('https://', '').replace('http://', '').replace('www.', '')
-                    )
-                    return (
-                      <span
-                        key={s.url}
-                        className={[
-                          'text-[10px] font-mono px-2 py-1 rounded-[4px] border',
-                          alreadyIn
-                            ? 'text-ink-4 border-edge-faint'
-                            : 'text-ink-2 border-edge',
-                        ].join(' ')}
-                        title={alreadyIn ? 'Already in library' : s.industry}
-                      >
-                        {alreadyIn ? '✓ ' : ''}{s.name}
-                      </span>
-                    )
-                  })}
-                </div>
-              </div>
-            </motion.div>
+              {UNSORTED} <span className="tabular-nums opacity-70">{unsortedCount}</span>
+            </button>
           )}
-        </AnimatePresence>
+        </div>
 
         {/* Search + filters */}
         <div className="flex flex-wrap items-center gap-3">
@@ -837,9 +903,25 @@ export default function AdminPage() {
                     >
                       <ArrowUpRight className="w-3.5 h-3.5" weight="regular" />
                     </a>
-                    <span className="text-[10px] font-mono text-ink-3 border border-edge px-1.5 py-0.5 rounded-[4px] shrink-0">
-                      {site.kind}
-                    </span>
+                    <select
+                      value={site.kind}
+                      onChange={event => handleKindChange(site.id, event.target.value as Kind)}
+                      disabled={savingKindId === site.id}
+                      className={"h-6 px-1.5 text-[10px] font-mono rounded-[4px] border outline-none transition-colors disabled:opacity-60 cursor-pointer " + (
+                        site.kind === UNSORTED
+                          ? 'border-amber-500/50 text-amber-600 dark:text-amber-400 bg-amber-500/5'
+                          : 'border-edge text-ink-3 bg-transparent hover:border-edge-strong hover:text-foreground'
+                      )}
+                      aria-label={`Kind for ${site.source_name}`}
+                      title={savingKindId === site.id ? 'Saving…' : 'Change kind'}
+                    >
+                      {(site.kind === UNSORTED || !(KINDS as readonly string[]).includes(site.kind)) && (
+                        <option value={site.kind}>{site.kind}</option>
+                      )}
+                      {KINDS.map(kind => (
+                        <option key={kind} value={kind}>{kind}</option>
+                      ))}
+                    </select>
                   </div>
                   <p className="text-meta text-ink-3 truncate mt-0.5">
                     {getDomain(site.source_url)}
