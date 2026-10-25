@@ -1,8 +1,9 @@
 // components/colors-tab.tsx
 'use client'
 
-import { useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { Check } from '@phosphor-icons/react'
+import { parse, oklch as toOklch, clampChroma } from 'culori'
 import { useSoundsContext } from '@/contexts/sounds-context'
 import { TabEmptyState } from './tab-empty-state'
 import { useCopied } from '@/lib/use-copied'
@@ -15,23 +16,51 @@ interface ColorRow {
   area_share: number | null
 }
 
-function parseOklch(s: string): { l: number; c: number; h: number } | null {
-  const m = s.match(/oklch\(\s*([\d.]+)\s+([\d.e+\-]+)\s+([\d.]+|none)/)
+type Oklch = { l: number; c: number; h: number }
+
+function parseStoredOklch(s: string): Oklch | null {
+  const m = s.match(/oklch\(\s*([\d.]+)(%?)\s+([\d.e+\-]+)\s+([\d.]+|none)/)
   if (!m) return null
+  const l = parseFloat(m[1])
   return {
-    l: Math.round(parseFloat(m[1]) * 100),
-    c: parseFloat(m[2]),
-    h: m[3] === 'none' ? 0 : Math.round(parseFloat(m[3])),
+    l: Math.round(m[2] ? l : l * 100),
+    c: parseFloat(m[3]),
+    h: m[4] === 'none' ? 0 : Math.round(parseFloat(m[4])),
   }
 }
 
+/**
+ * OKLCH for a row that never stored one. Rows extracted before OKLCH was
+ * recorded still have a hex, and the format toggle has to mean something for
+ * them — falling back to hex made the control look broken on half the library.
+ */
+function deriveOklch(hex: string): Oklch | null {
+  try {
+    const parsed = parse(hex)
+    if (!parsed) return null
+    const converted = clampChroma(toOklch(parsed), 'oklch')
+    if (!converted) return null
+    const c = converted.c ?? 0
+    // culori leaves hue undefined (or a meaningless 180) on achromatic
+    // colours; a hue of 0 is the honest value there.
+    const h = c < 0.0005 || !Number.isFinite(converted.h) ? 0 : Math.round(converted.h as number)
+    return { l: Math.round((converted.l ?? 0) * 100), c, h }
+  } catch {
+    return null
+  }
+}
+
+function oklchOf(c: ColorRow): Oklch | null {
+  return (c.oklch ? parseStoredOklch(c.oklch) : null) ?? deriveOklch(c.hex_value)
+}
+
 function lightness(c: ColorRow): number {
-  return c.oklch ? parseFloat(c.oklch.match(/oklch\(([\d.]+)/)?.[1] ?? '0.5') : 0.5
+  return oklchOf(c)?.l ?? 50
 }
 
 /** Readable text on a given band, judged by the band's own lightness. */
 function inkOn(c: ColorRow): string {
-  return lightness(c) > 0.62 ? 'rgba(0,0,0,0.78)' : 'rgba(255,255,255,0.86)'
+  return lightness(c) > 62 ? 'rgba(0,0,0,0.78)' : 'rgba(255,255,255,0.86)'
 }
 
 /**
@@ -47,6 +76,38 @@ export function ColorsTab({ colors, extractionError }: { colors: ColorRow[]; ext
   const rowCopy = useCopied()
   const exportCopy = useCopied()
   const { playCopy } = useSoundsContext()
+
+  // One track, one thumb — the same control as the panel tabs, at the size of
+  // a secondary choice. Measured so the thumb follows the label widths.
+  const trackRef = useRef<HTMLDivElement>(null)
+  const [thumb, setThumb] = useState<{ left: number; width: number } | null>(null)
+  const [settled, setSettled] = useState(false)
+
+  const measure = useCallback(() => {
+    const track = trackRef.current
+    if (!track) return
+    const el = track.querySelector<HTMLElement>(`[data-format="${format}"]`)
+    if (!el) return
+    const trackBox = track.getBoundingClientRect()
+    const tabBox = el.getBoundingClientRect()
+    setThumb({ left: tabBox.left - trackBox.left, width: tabBox.width })
+  }, [format])
+
+  useLayoutEffect(() => { measure() }, [measure])
+
+  useEffect(() => {
+    if (!thumb || settled) return
+    const id = requestAnimationFrame(() => setSettled(true))
+    return () => cancelAnimationFrame(id)
+  }, [thumb, settled])
+
+  useEffect(() => {
+    const track = trackRef.current
+    if (!track) return
+    const ro = new ResizeObserver(measure)
+    ro.observe(track)
+    return () => ro.disconnect()
+  }, [measure])
 
   if (!colors.length) {
     return <TabEmptyState message="No colors extracted" extractionError={extractionError} />
@@ -74,10 +135,8 @@ export function ColorsTab({ colors, extractionError }: { colors: ColorRow[]; ext
   }
 
   function valueOf(c: ColorRow): string {
-    const parsed = c.oklch ? parseOklch(c.oklch) : null
-    return format === 'oklch' && parsed
-      ? `oklch(${parsed.l}% ${parsed.c.toFixed(2)} ${parsed.h}°)`
-      : c.hex_value
+    const oklch = format === 'oklch' ? oklchOf(c) : null
+    return oklch ? `oklch(${oklch.l}% ${oklch.c.toFixed(3)} ${oklch.h}°)` : c.hex_value
   }
 
   function buildCssVars(): string {
@@ -101,17 +160,38 @@ export function ColorsTab({ colors, extractionError }: { colors: ColorRow[]; ext
     <div className="flex flex-col flex-1 min-h-0 overflow-y-auto">
 
       <div className="sticky top-0 bg-background border-b border-edge px-4 py-2 flex items-center justify-between gap-2 shrink-0 z-10">
-        <div className="flex items-center gap-px">
+        <div
+          ref={trackRef}
+          role="group"
+          aria-label="Color format"
+          className="relative inline-flex items-center h-7 p-[3px] rounded-[7px] bg-foreground/[0.05] dark:bg-foreground/[0.07]"
+        >
+          <span
+            aria-hidden="true"
+            className={[
+              'absolute top-[3px] left-0 h-[22px] rounded-[5px] bg-card pointer-events-none',
+              'shadow-[0_1px_2px_rgba(0,0,0,0.06),0_0_0_1px_rgba(0,0,0,0.03)]',
+              'dark:bg-[color-mix(in_srgb,var(--foreground)_12%,var(--background))] dark:shadow-[0_1px_2px_rgba(0,0,0,0.4)]',
+              settled ? 'transition-[transform,width] duration-[var(--dur-2)] ease-[var(--ease-sig)] motion-reduce:transition-none' : '',
+            ].join(' ')}
+            style={{
+              width: thumb?.width ?? 0,
+              transform: `translateX(${thumb?.left ?? 0}px)`,
+              opacity: thumb ? 1 : 0,
+            }}
+          />
           {(['hex', 'oklch'] as const).map(f => (
             <button
               key={f}
+              data-format={f}
+              aria-pressed={format === f}
               onClick={() => setFormat(f)}
               className={[
-                'px-2 py-0.5 rounded-[4px] text-micro transition-colors',
-                format === f ? 'bg-foreground text-background' : 'text-ink-4 hover:text-ink-2',
+                'relative z-[1] h-[22px] px-2 rounded-[5px] text-[11px] font-medium leading-none transition-colors',
+                format === f ? 'text-ink' : 'text-ink-3 hover:text-ink',
               ].join(' ')}
             >
-              {f}
+              {f === 'hex' ? 'Hex' : 'OKLCH'}
             </button>
           ))}
         </div>

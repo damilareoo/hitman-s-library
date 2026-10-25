@@ -116,6 +116,13 @@ export function SiteDetailPanel({ variant = 'desktop', sourceId, metadata, onClo
   // offer. Preview already renders the phone layout here, so it stands in.
   const effectiveTab: PanelTab = isMobile && activeTab === 'mobile' ? 'preview' : activeTab
 
+  // The title is usually the domain, so the meta line says what it doesn't:
+  // the kind and one human tag. Motion tags are machine data (one was even
+  // stored cut mid-value), so they never reach a label.
+  const displayTag = metadata?.tags?.find(
+    t => !t.startsWith('motion:') && t.toLowerCase() !== (metadata?.kind ?? '').toLowerCase(),
+  )
+
   return (
     <div className="flex flex-col h-full bg-background">
       {/* Header */}
@@ -124,9 +131,9 @@ export function SiteDetailPanel({ variant = 'desktop', sourceId, metadata, onClo
           <p className="text-titletext text-ink truncate">
             {hostname}
           </p>
-          {(metadata?.kind || metadata?.tags?.[0] || (data?.favorite_count ?? 0) >= 2) && (
+          {(metadata?.kind || displayTag || (data?.favorite_count ?? 0) >= 2) && (
             <p className="text-micro text-ink-4 mt-0.5 truncate">
-              {[metadata?.kind, metadata?.tags?.[0]].filter(Boolean).join(' · ')}
+              {[metadata?.kind, displayTag].filter(Boolean).join(' · ')}
               {(data?.favorite_count ?? 0) >= 2 && (
                 <span className="inline-flex items-center gap-1 ml-1.5 align-middle">
                   <Heart className="w-3 h-3" weight="fill" aria-hidden="true" />
@@ -366,7 +373,7 @@ export function SiteDetailPanel({ variant = 'desktop', sourceId, metadata, onClo
           it only needs the palette and type the panel already holds. */}
       {data && !loading && (
         <div className="flex-shrink-0 border-t border-edge-faint px-4 py-2 flex items-center justify-between gap-2">
-          <span className="text-micro text-ink-4">Copy theme</span>
+          <span className="text-micro text-ink-4 max-[359px]:hidden">Copy theme</span>
           <ThemeExport
             siteUrl={data.url}
             siteTitle={hostname}

@@ -137,7 +137,7 @@ export default async function ChangelogPage(
               {/* Where a month turns over. The first needs no marker — the
                   page header has just said what you are looking at. */}
               {mi > 0 && (
-                <div className="relative flex gap-8 pb-8">
+                <div className="relative flex gap-8 pb-8 max-sm:gap-5 max-sm:pb-6">
                   <div className="absolute left-[5px] top-0 bottom-0 w-px bg-edge" />
                   <div className="shrink-0 w-[11px]" />
                   <span className="text-micro text-ink-4">
@@ -157,7 +157,7 @@ export default async function ChangelogPage(
               key={i}
               id={`rel-${i}`}
               data-release-index={i}
-              className="relative flex gap-8 pb-14 last:pb-0 scroll-mt-16"
+              className="relative flex gap-8 pb-14 last:pb-0 max-sm:gap-5 max-sm:pb-11 scroll-mt-16"
             >
 
               {/* Timeline line */}
@@ -212,23 +212,29 @@ export default async function ChangelogPage(
                 {/* Change items */}
                 <div className="mt-4 space-y-3">
                   {release.items.map((item, j) => (
-                    <div key={j} className="flex items-start gap-3">
-                      <div className="shrink-0 mt-[6px]">
+                    // On a phone the type sits above the sentence instead of
+                    // holding a column of its own: at 393px a trailing label
+                    // leaves the text 200px wide and the rows read as rubble.
+                    <div
+                      key={j}
+                      className="flex items-start gap-3 max-sm:grid max-sm:grid-cols-[6px_auto_minmax(0,1fr)] max-sm:gap-x-[9px] max-sm:gap-y-0.5"
+                    >
+                      <div className="shrink-0 mt-[6px] max-sm:col-start-1 max-sm:row-start-1">
                         <div className={`w-1.5 h-1.5 rounded-full ${DOT_COLOR[item.type]}`} />
                       </div>
                       {attributeItems && item.author && (
-                        <div className="shrink-0 -ml-1 -mt-[3px]">
+                        <div className="shrink-0 -ml-1 -mt-[3px] max-sm:col-start-2 max-sm:row-start-1 max-sm:ml-0 max-sm:mt-0">
                           <Monogram author={item.author} />
                         </div>
                       )}
-                      <div className="flex-1 min-w-0">
-                        <p className="text-reading text-ink-2">
+                      <span className={`shrink-0 text-micro pt-[3px] max-sm:col-start-3 max-sm:row-start-1 max-sm:pt-0 max-sm:text-[11px] max-sm:leading-none sm:order-last ${TYPE_TEXT[item.type]}`}>
+                        {TYPE_LABEL[item.type]}
+                      </span>
+                      <div className="flex-1 min-w-0 max-sm:col-start-3 max-sm:row-start-2">
+                        <p className="text-reading text-ink-2 max-sm:text-[15px] max-sm:leading-[1.5] [overflow-wrap:anywhere]">
                           {item.text}
                         </p>
                       </div>
-                      <span className={`shrink-0 text-micro pt-[3px] ${TYPE_TEXT[item.type]}`}>
-                        {TYPE_LABEL[item.type]}
-                      </span>
                     </div>
                   ))}
                 </div>

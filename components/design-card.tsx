@@ -179,7 +179,16 @@ export function DesignCard({ design, index, isSelected, onClick, onHover, onTagC
               </span>
               <span className="sr-only">— open details</span>
             </button>
-            <p className="text-meta text-ink-4 mt-0.5 truncate">{domain}</p>
+            {/* The title is often the domain, so this line would repeat it
+                verbatim. On a phone it goes away for good; from sm up it keeps
+                its box, because dropping it lifted the palette row and left
+                the swatches ragged across a grid row. */}
+            <p
+              className={`text-meta text-ink-4 mt-0.5 truncate ${label.toLowerCase() === domain.toLowerCase() ? 'hidden sm:block' : ''}`}
+              aria-hidden={label.toLowerCase() === domain.toLowerCase()}
+            >
+              {label.toLowerCase() === domain.toLowerCase() ? '\u00A0' : domain}
+            </p>
           </div>
 
           {/* Always visible so it works on touch, where there is no hover. */}
