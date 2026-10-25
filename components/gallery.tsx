@@ -941,7 +941,9 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
             </div>
           </div>
 
-          <div className="flex-1 p-5 xl:p-6">
+          {/* pb-20 below xl clears the floating page links, which are centred
+              over the last row on phones and tablets. */}
+          <div className="flex-1 p-5 xl:p-6 max-xl:pb-20">
             <div className="hidden xl:flex items-center justify-between gap-4 pb-3 mb-5 border-b border-edge">
               <div className="flex items-center gap-2 min-w-0">
                 <h2 className="text-meta text-ink font-medium">

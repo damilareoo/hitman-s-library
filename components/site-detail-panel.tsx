@@ -112,6 +112,10 @@ export function SiteDetailPanel({ variant = 'desktop', sourceId, metadata, onClo
     try { return data?.url ? new URL(data.url).hostname.replace('www.', '') : '…' } catch { return data?.url ?? '…' }
   })()
 
+  // A shared phone link can name the Mobile tab, which this variant does not
+  // offer. Preview already renders the phone layout here, so it stands in.
+  const effectiveTab: PanelTab = isMobile && activeTab === 'mobile' ? 'preview' : activeTab
+
   return (
     <div className="flex flex-col h-full bg-background">
       {/* Header */}
@@ -235,7 +239,7 @@ export function SiteDetailPanel({ variant = 'desktop', sourceId, metadata, onClo
               title={`Open ${hostname}`}
               className="h-8 rounded-[6px] border border-transparent px-2.5 text-ink-2 hover:text-ink hover:bg-muted active:scale-[0.98] inline-flex items-center gap-1.5 transition-[background-color,color,transform] duration-[var(--dur-2)] ease-[var(--ease-sig)]"
             >
-              <span className="text-micro">Live link</span>
+              <span className="text-micro max-sm:hidden">Live link</span>
               <ArrowUpRight className="w-3.5 h-3.5" weight="bold" />
             </a>
           )}
@@ -253,7 +257,13 @@ export function SiteDetailPanel({ variant = 'desktop', sourceId, metadata, onClo
 
       {/* Tab bar */}
       <div className="flex-shrink-0">
-        <PanelTabs active={activeTab} onChange={tab => { setActiveTab(tab); onTabChange?.(tab) }} variant={variant} />
+        <PanelTabs
+          active={effectiveTab}
+          onChange={tab => { setActiveTab(tab); onTabChange?.(tab) }}
+          variant={variant}
+          colorsCount={data?.colors.length}
+          typeCount={data?.typography.length}
+        />
       </div>
 
       {/* Content */}
@@ -278,7 +288,7 @@ export function SiteDetailPanel({ variant = 'desktop', sourceId, metadata, onClo
             className="flex flex-col flex-1 min-h-0"
           >
             <AnimatePresence mode="wait">
-              {activeTab === 'preview' && (
+              {effectiveTab === 'preview' && (
                 <motion.div key="preview" className="flex flex-col flex-1 min-h-0"
                   initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: DUR.move, ease: EASE }}
@@ -308,7 +318,7 @@ export function SiteDetailPanel({ variant = 'desktop', sourceId, metadata, onClo
                   />
                 </motion.div>
               )}
-              {activeTab === 'colors' && (
+              {effectiveTab === 'colors' && (
                 <motion.div key="colors" className="flex flex-col flex-1 min-h-0"
                   initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: DUR.move, ease: EASE }}
@@ -316,7 +326,7 @@ export function SiteDetailPanel({ variant = 'desktop', sourceId, metadata, onClo
                   <ColorsTab colors={data.colors} extractionError={data.extraction_error} />
                 </motion.div>
               )}
-              {activeTab === 'type' && (
+              {effectiveTab === 'type' && (
                 <motion.div key="type" className="flex flex-col flex-1 min-h-0"
                   initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: DUR.move, ease: EASE }}
@@ -324,7 +334,7 @@ export function SiteDetailPanel({ variant = 'desktop', sourceId, metadata, onClo
                   <TypeTab typography={data.typography} extractionError={data.extraction_error} />
                 </motion.div>
               )}
-              {DRIFT_ENABLED && activeTab === 'history' && (
+              {DRIFT_ENABLED && effectiveTab === 'history' && (
                 <motion.div key="history" className="flex flex-col flex-1 min-h-0"
                   initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: DUR.move, ease: EASE }}

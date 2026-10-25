@@ -1,11 +1,10 @@
 // components/preview-tab.tsx
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
-import { ShieldWarning, LockSimple, Clock, FileDashed, Warning } from '@phosphor-icons/react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { ShieldWarning, LockSimple, Clock, FileDashed, Warning, ArrowClockwise } from '@phosphor-icons/react'
 import { classifyExtractionError } from '@/lib/classify-extraction-error'
 import { getDomain } from '@/lib/get-domain'
-import { Spinner } from './ui/spinner'
 import { previewOrigin } from '@/lib/preview-origin'
 
 const ICONS = { ShieldWarning, LockSimple, Clock, FileDashed, Warning }
@@ -43,6 +42,8 @@ function optimized(url: string, width: number): string {
  * of AVIF.
  */
 const WIDTHS = [640, 1080]
+/** The underlay only has to suggest the page through a 14px blur. */
+const BLUR_WIDTH = 640
 
 interface PreviewTabProps {
   siteUrl: string
@@ -90,12 +91,17 @@ export function PreviewTab({
 }: PreviewTabProps) {
   const hasDesktop = Boolean(screenshotUrl)
   /** Where this site starts: its capture if live can never work, else live. */
-  const openingMode: PreviewMode =
-    !livePreview && displayMode === 'live' ? (hasDesktop ? 'screenshot' : 'mobile') : displayMode
+  const openingMode: PreviewMode = livePreview
+    ? displayMode
+    : displayMode === 'mobile'
+      ? (mobileScreenshotUrl ? 'mobile' : hasDesktop ? 'screenshot' : 'mobile')
+      : (hasDesktop ? 'screenshot' : 'mobile')
 
   const [loaded, setLoaded] = useState(false)
   const [proxyFailed, setProxyFailed] = useState(false)
   const [mode, setMode] = useState<PreviewMode>(openingMode)
+  const [nonce, setNonce] = useState(0)
+  const [captureSharp, setCaptureSharp] = useState(false)
   const loadTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const iframeRef = useRef<HTMLIFrameElement | null>(null)
 
@@ -137,6 +143,8 @@ export function PreviewTab({
   useEffect(() => {
     setLoaded(false)
     setProxyFailed(false)
+    setCaptureSharp(false)
+    setNonce(0)
     setMode(openingMode)
     if (loadTimerRef.current) clearTimeout(loadTimerRef.current)
     // No timer where there is no live attempt to time out.
@@ -183,6 +191,23 @@ export function PreviewTab({
     setLoaded(true)
   }
 
+  /**
+   * Retry the live attempt. A failed frame has already moved the panel to its
+   * capture, so this is the only way back — without it a proxy blip left the
+   * capture in place for the rest of the visit.
+   */
+  function reload() {
+    setLoaded(false)
+    setProxyFailed(false)
+    setCaptureSharp(false)
+    setMode(openingMode)
+    setNonce(n => n + 1)
+    if (loadTimerRef.current) clearTimeout(loadTimerRef.current)
+    if (openingMode !== 'screenshot') {
+      loadTimerRef.current = setTimeout(() => setProxyFailed(true), GIVE_UP_MS)
+    }
+  }
+
   if (extractionError && !siteUrl) {
     const info = classifyExtractionError(extractionError)
     const Icon = ICONS[info.icon]
@@ -199,83 +224,161 @@ export function PreviewTab({
     )
   }
 
+  const showingCapture = Boolean(activeScreenshotUrl)
+  const state: 'loading' | 'live' | 'capture' =
+    showingCapture || proxyFailed || !livePreview ? 'capture' : loaded ? 'live' : 'loading'
+  const stateLabel = state === 'loading' ? 'Loading' : state === 'live' ? 'Live' : showingCapture ? 'Capture' : 'Unavailable'
+  // Offered even after a failure has swapped in the capture: that state is
+  // exactly when a retry is wanted. Sites that can never go live have no
+  // button, because it would only fail the same way again.
+  const canReload = livePreview
+
+  /** The site never draws its own chrome over itself: status lives in the bar,
+   *  and the page sits on a framed screen so busy artwork reads as content. */
+  const bar = (
+    <div className="h-[46px] flex-shrink-0 flex items-center gap-2 px-3 border-b border-edge-faint bg-card">
+      <span
+        title={siteUrl}
+        className="flex-1 min-w-0 truncate px-2.5 py-1.5 rounded-[6px] bg-foreground/[0.045] text-[12px] text-ink-3"
+      >
+        {domain}
+      </span>
+      <span className="inline-flex items-center gap-1.5 flex-shrink-0 text-[12px] text-ink-4">
+        {state === 'loading' ? (
+          <span className="w-2.5 h-2.5 rounded-full border-[1.5px] border-edge-strong border-t-ink-3 animate-spin motion-reduce:animate-none" />
+        ) : (
+          <span
+            className={[
+              'w-1.5 h-1.5 rounded-full',
+              state === 'live' ? 'bg-[var(--color-success)]' : 'bg-ink-4',
+            ].join(' ')}
+            style={state === 'live'
+              ? { boxShadow: '0 0 0 3px color-mix(in srgb, var(--color-success) 12%, transparent)' }
+              : undefined}
+          />
+        )}
+        {stateLabel}
+      </span>
+      {canReload && (
+        <button
+          onClick={reload}
+          aria-label="Reload preview"
+          title="Reload preview"
+          className="w-7 h-7 -mr-1 flex-shrink-0 flex items-center justify-center rounded-[6px] text-ink-3 hover:text-ink hover:bg-muted transition-colors"
+        >
+          <ArrowClockwise className="w-3.5 h-3.5" weight="bold" />
+        </button>
+      )}
+    </div>
+  )
+
+  const stage = (content: ReactNode) => (
+    <div className="relative flex-1 min-h-0 bg-background">
+      <div className="absolute inset-3 max-sm:inset-2 rounded-[10px] max-sm:rounded-[8px] border border-edge overflow-hidden bg-muted">
+        {content}
+      </div>
+    </div>
+  )
+
+  /** Blur-up: the capture arrives instantly and sharpens while the page loads
+   *  underneath it, so the screen is never an empty grey rectangle. */
+  const underlay = (url: string | null | undefined) => url ? (
+    <div
+      className={[
+        'absolute inset-0 transition-[filter,transform] duration-[450ms] ease-[var(--ease-sig)] motion-reduce:transition-none',
+        captureSharp ? '' : 'blur-[14px] scale-[1.03]',
+      ].join(' ')}
+      aria-hidden="true"
+    >
+      <img
+        src={optimized(url, BLUR_WIDTH)}
+        alt=""
+        decoding="async"
+        onLoad={() => setCaptureSharp(true)}
+        className="w-full h-full object-cover object-top"
+      />
+    </div>
+  ) : null
+
   if (activeScreenshotUrl) {
     return (
-      <div className="relative flex-1 min-h-0 overflow-auto bg-muted/35">
-        <div className={`min-h-full ${fill ? 'p-0' : 'p-4'} ${mode === 'mobile' && !fill ? 'flex justify-center' : ''}`}>
-          <img
-            src={optimized(activeScreenshotUrl, 1080)}
-            srcSet={WIDTHS.map(w => `${optimized(activeScreenshotUrl, w)} ${w}w`).join(', ')}
-            sizes={mode === 'mobile' ? '390px' : '(max-width: 1279px) 100vw, 40vw'}
-            decoding="async"
-            alt={`${mode === 'mobile' ? 'Mobile' : 'Desktop'} screenshot of ${domain}`}
-            className={`block rounded-[4px] border border-edge bg-background shadow-sm ${
-              mode === 'mobile' ? 'w-full max-w-[390px]' : 'w-full'
-            }`}
-          />
-        </div>
+      <div className="flex flex-col flex-1 min-h-0">
+        {bar}
+        {stage(
+          <div className={`absolute inset-0 overflow-auto ${mode === 'mobile' && !fill ? 'flex justify-center' : ''}`}>
+            <img
+              src={optimized(activeScreenshotUrl, 1080)}
+              srcSet={WIDTHS.map(w => `${optimized(activeScreenshotUrl, w)} ${w}w`).join(', ')}
+              sizes={mode === 'mobile' ? '390px' : '(max-width: 1279px) 100vw, 40vw'}
+              decoding="async"
+              alt={`${mode === 'mobile' ? 'Mobile' : 'Desktop'} screenshot of ${domain}`}
+              className={`block w-full h-auto ${mode === 'mobile' ? 'max-w-[390px]' : ''}`}
+            />
+          </div>,
+        )}
       </div>
     )
   }
 
   if (mode === 'mobile' && !proxyFailed && livePreview) {
     return (
-      <div className="relative flex-1 min-h-0 overflow-hidden bg-muted/35">
-        <div className={fill ? 'absolute inset-0' : 'absolute inset-4 flex justify-center'}>
-          <div className={`relative h-full w-full overflow-hidden bg-background ${fill ? '' : 'max-w-[390px] rounded-[4px] border border-edge shadow-sm'}`}>
-            {!loaded && (
-              <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 pointer-events-none">
-                <span className="text-meta text-ink-3">{domain}</span>
-                <Spinner />
-              </div>
-            )}
-            <iframe
-              ref={iframeRef}
-              key={`${proxyUrl}-mobile`}
-              src={proxyUrl}
-              title={`Mobile live preview of ${siteUrl}`}
-              onLoad={handleLoad}
-              onError={() => setProxyFailed(true)}
-              sandbox={sandbox}
-              className="h-full w-full border-none"
-              style={{ opacity: loaded ? 1 : 0, transition: 'opacity var(--dur-4) var(--ease-sig)' }}
-            />
-          </div>
-        </div>
+      <div className="flex flex-col flex-1 min-h-0">
+        {bar}
+        {stage(
+          <div className="absolute inset-0 flex justify-center">
+            <div className={`relative h-full w-full overflow-hidden bg-background ${fill ? '' : 'max-w-[390px] border-x border-edge'}`}>
+              {underlay(mobileScreenshotUrl)}
+              <iframe
+                ref={iframeRef}
+                key={`${proxyUrl}-mobile-${nonce}`}
+                src={proxyUrl}
+                title={`Mobile live preview of ${siteUrl}`}
+                onLoad={handleLoad}
+                onError={() => setProxyFailed(true)}
+                sandbox={sandbox}
+                className="absolute inset-0 h-full w-full border-none"
+                style={{ opacity: loaded ? 1 : 0, transition: 'opacity var(--dur-4) var(--ease-sig)' }}
+              />
+            </div>
+          </div>,
+        )}
       </div>
     )
   }
 
-  if (proxyFailed) {
+  if (proxyFailed || !livePreview) {
     return (
-      <div className="relative flex flex-col items-center justify-center flex-1 gap-5">
-        <div className="text-center space-y-1.5">
-          <p className="text-meta text-ink-2">{domain}</p>
-          <p className="text-micro text-ink-4">Live preview unavailable</p>
-        </div>
+      <div className="flex flex-col flex-1 min-h-0">
+        {bar}
+        {stage(
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 text-center px-6">
+            <p className="text-meta text-ink-2">{domain}</p>
+            <p className="text-micro text-ink-4">Live preview unavailable</p>
+          </div>,
+        )}
       </div>
     )
   }
 
   return (
-    <div className="relative flex-1 overflow-hidden min-h-0">
-      {!loaded && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 pointer-events-none">
-          <span className="text-meta text-ink-3">{domain}</span>
-          <Spinner />
-        </div>
+    <div className="flex flex-col flex-1 min-h-0">
+      {bar}
+      {stage(
+        <div className="absolute inset-0">
+          {underlay(screenshotUrl)}
+          <iframe
+            ref={iframeRef}
+            key={`${proxyUrl}-live-${nonce}`}
+            src={proxyUrl}
+            title={`Live preview of ${siteUrl}`}
+            onLoad={handleLoad}
+            onError={() => setProxyFailed(true)}
+            sandbox={sandbox}
+            className="absolute inset-0 w-full h-full border-none"
+            style={{ opacity: loaded ? 1 : 0, transition: 'opacity var(--dur-4) var(--ease-sig)' }}
+          />
+        </div>,
       )}
-      <iframe
-        ref={iframeRef}
-        key={`${proxyUrl}-live`}
-        src={proxyUrl}
-        title={`Live preview of ${siteUrl}`}
-        onLoad={handleLoad}
-        onError={() => setProxyFailed(true)}
-        sandbox={sandbox}
-        className="w-full h-full border-none"
-        style={{ opacity: loaded ? 1 : 0, transition: 'opacity var(--dur-4) var(--ease-sig)' }}
-      />
     </div>
   )
 }

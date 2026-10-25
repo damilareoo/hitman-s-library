@@ -46,6 +46,13 @@ export function SiteLinks({ hidden = false, variant = 'page' }: SiteLinksProps) 
         // carries just enough ground to stay readable against a screenshot.
         'bg-background/85 backdrop-blur-sm rounded-tr-[12px]',
         'border-t border-r border-edge xl:border-r-0 xl:rounded-tr-none',
+        // Below xl there is no sidebar to sit in, so the row becomes a capsule
+        // centred where a thumb already is rather than a bar wedged into a
+        // corner it no longer shares with anything.
+        'max-xl:left-1/2 max-xl:-translate-x-1/2 max-xl:w-auto max-xl:gap-0.5 max-xl:p-1 max-xl:rounded-full',
+        // Sum, not max: the 12px is breathing room above the home indicator,
+        // not a floor that the indicator itself is allowed to eat into.
+        'max-xl:bottom-[calc(12px+env(safe-area-inset-bottom))] max-xl:border max-xl:border-edge max-xl:bg-card/85 max-xl:shadow-[0_4px_20px_-8px_rgba(0,0,0,0.22)]',
         variant === 'sidebar'
           // Two of twelve columns — the sidebar's own width, so the rule ends
           // exactly on its edge rather than somewhere near it.
@@ -59,7 +66,7 @@ export function SiteLinks({ hidden = false, variant = 'page' }: SiteLinksProps) 
         <Link
           key={page.href}
           href={page.href}
-          className="relative text-meta text-ink-4 hover:text-ink transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-foreground/25 rounded-[3px] after:absolute after:inset-x-0 after:top-1/2 after:h-11 after:-translate-y-1/2 after:content-['']"
+          className="relative text-meta text-ink-4 hover:text-ink transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-foreground/25 rounded-[3px] max-xl:px-3 max-xl:py-1.5 max-xl:rounded-full max-xl:hover:bg-muted after:absolute after:inset-x-0 after:top-1/2 after:h-11 after:-translate-y-1/2 after:content-['']"
         >
           {page.label}
         </Link>
