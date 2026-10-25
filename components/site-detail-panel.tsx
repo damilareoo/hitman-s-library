@@ -14,6 +14,7 @@ import { TypeTab } from './type-tab'
 import { HistoryTab } from './history-tab'
 import { ThemeExport } from './theme-export'
 import { DRIFT_ENABLED } from '@/lib/drift'
+import { UNSORTED } from '@/lib/categories'
 import { Spinner } from './ui/spinner'
 import { EASE, DUR } from '@/lib/motion'
 interface ColorRow { hex_value: string; oklch: string | null; area_share: number | null }
@@ -118,22 +119,28 @@ export function SiteDetailPanel({ variant = 'desktop', sourceId, metadata, onClo
 
   // The title is usually the domain, so the meta line says what it doesn't:
   // the kind and one human tag. Motion tags are machine data (one was even
-  // stored cut mid-value), so they never reach a label.
+  // stored cut mid-value), and an unsorted row has no kind worth announcing.
+  const kindLabel = metadata?.kind && metadata.kind !== UNSORTED ? metadata.kind : undefined
   const displayTag = metadata?.tags?.find(
-    t => !t.startsWith('motion:') && t.toLowerCase() !== (metadata?.kind ?? '').toLowerCase(),
+    t => !t.startsWith('motion:') && t.toLowerCase() !== (kindLabel ?? '').toLowerCase(),
   )
 
   return (
     <div className="flex flex-col h-full bg-background">
       {/* Header */}
-      <div className="flex items-center gap-2 px-4 py-3.5 border-b border-edge-strong flex-shrink-0">
+      <div
+        className="flex items-center gap-2 px-4 py-3.5 border-b border-edge-strong flex-shrink-0"
+        // Only bites when the drawer runs edge to edge on a phone; on desktop
+        // env() is 0 and this is the same 14px the padding already was.
+        style={{ paddingTop: 'max(14px, env(safe-area-inset-top))' }}
+      >
         <div className="min-w-0 flex-1">
           <p className="text-titletext text-ink truncate">
             {hostname}
           </p>
-          {(metadata?.kind || displayTag || (data?.favorite_count ?? 0) >= 2) && (
+          {(kindLabel || displayTag || (data?.favorite_count ?? 0) >= 2) && (
             <p className="text-micro text-ink-4 mt-0.5 truncate">
-              {[metadata?.kind, displayTag].filter(Boolean).join(' · ')}
+              {[kindLabel, displayTag].filter(Boolean).join(' · ')}
               {(data?.favorite_count ?? 0) >= 2 && (
                 <span className="inline-flex items-center gap-1 ml-1.5 align-middle">
                   <Heart className="w-3 h-3" weight="fill" aria-hidden="true" />

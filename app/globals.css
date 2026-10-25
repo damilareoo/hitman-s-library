@@ -515,3 +515,20 @@ dialog:not([open]) {
 dialog::backdrop {
   background: oklch(0% 0 0 / 0.5);
 }
+
+/* ============================================================================
+   PHONE DRAWER
+   ============================================================================ */
+
+/* Under 640 the detail sheet is the page: no card floating inside a strip of
+   backdrop, no drag handle it doesn't need. The vars feed the inline styles on
+   the motion element, which is the only place those values can live. */
+@media (max-width: 639px) {
+  .site-sheet {
+    --sheet-height: auto;
+    --sheet-radius: 0px;
+    --sheet-shadow: none;
+    top: 0;
+  }
+  .site-sheet-handle { display: none; }
+}

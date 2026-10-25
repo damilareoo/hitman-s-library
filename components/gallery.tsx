@@ -1162,15 +1162,17 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
               onDragEnd={(_, info) => {
                 if (info.offset.y > 80 || info.velocity.y > 500) selectDesign(null)
               }}
-              className="xl:hidden fixed bottom-0 left-0 right-0 z-50 bg-background flex flex-col"
+              className="site-sheet xl:hidden fixed bottom-0 left-0 right-0 z-50 bg-background flex flex-col"
               style={{
-                height: '82svh',
-                borderRadius: '20px 20px 0 0',
-                boxShadow: '0 -12px 40px rgba(0,0,0,0.12)',
+                // On a phone this becomes the page: edge to edge, full height,
+                // no handle. From 640 up it stays the sheet you can drag away.
+                height: 'var(--sheet-height, 82svh)',
+                borderRadius: 'var(--sheet-radius, 20px 20px 0 0)',
+                boxShadow: 'var(--sheet-shadow, 0 -12px 40px rgba(0,0,0,0.12))',
               }}
             >
               <div
-                className="flex justify-center pt-3 pb-1 shrink-0 cursor-grab active:cursor-grabbing select-none"
+                className="site-sheet-handle flex justify-center pt-3 pb-1 shrink-0 cursor-grab active:cursor-grabbing select-none"
                 onPointerDown={e => sheetDragControls.start(e)}
               >
                 <div className="w-10 h-[5px] rounded-full bg-ink-4" />
