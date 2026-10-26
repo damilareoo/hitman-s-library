@@ -12,8 +12,9 @@ import { recordExtraction } from '@/lib/extraction-history'
 export const maxDuration = 60
 
 const sql = getSql()
-const BUDGET_MS = 40_000 // stop starting new sites after 40s, leave cleanup time
+const RUN_MS = 52_000 // the function is killed at 60s; leave time to answer
 const PER_SITE_MS = 22_000 // one page cannot eat the run
+const MIN_SITE_MS = 8_000 // below this a site cannot be read at all
 const PER_RUN = 12
 
 interface RepairResult {
@@ -80,7 +81,7 @@ export async function GET(req: NextRequest) {
   const results: RepairResult[] = []
   const start = Date.now()
 
-  async function repairOne(id: number, source_url: string): Promise<RepairResult> {
+  async function repairOne(id: number, source_url: string, deadlineMs: number): Promise<RepairResult> {
     await sql`
       UPDATE design_sources
       SET metadata = COALESCE(metadata, '{}') || jsonb_build_object('backfill_at', ${new Date().toISOString()}::text)
@@ -93,7 +94,7 @@ export async function GET(req: NextRequest) {
       // back the next time the site is re-extracted by hand.
       const extraction = await withDeadline(
         extractFullDesignData(source_url, { motion: false }),
-        PER_SITE_MS
+        deadlineMs
       )
 
       // Nothing rendered: the site is down or challenging us. Leave what is
@@ -235,10 +236,12 @@ export async function GET(req: NextRequest) {
   // The motion take is skipped instead — it is the last ~8 seconds of a run
   // and no backfill writes it.
   for (const job of pending) {
-    // Only start a site that can still finish — a job begun with less than a
-    // full deadline left is a job that dies with the function.
-    if (Date.now() - start + PER_SITE_MS > BUDGET_MS) break
-    results.push(await repairOne(job.id, job.source_url))
+    // Whatever is left of the run, but never longer than one site is allowed.
+    // A site given the full 22s after a slow one has already failed is a site
+    // that dies with the function.
+    const left = RUN_MS - (Date.now() - start)
+    if (left < MIN_SITE_MS) break
+    results.push(await repairOne(job.id, job.source_url, Math.min(PER_SITE_MS, left)))
   }
 
   if (results.some(r => r.ok)) revalidateTag('designs', 'max')
