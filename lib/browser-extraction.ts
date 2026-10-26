@@ -59,17 +59,12 @@ export async function getBrowser() {
         ? existingLibPath
         : `${al2LibDir}:${existingLibPath}`
 
-      // @sparticuz/chromium launches with --single-process, and in that mode a
-      // navigation restarts the only process there is: every read in flight
-      // throws "Attempted to use detached Frame", retries against a document
-      // that keeps being replaced, and half the library looks unreadable on
-      // Vercel while the same sites extract in seconds locally. Each page gets
-      // its own renderer without it; --disable-dev-shm-usage (already in the
-      // default args) is what makes that safe on a serverless box.
-      const args = chromium.args.filter(a => a !== '--single-process')
-
+      // --single-process stays. Removing it is the textbook fix for "detached
+      // Frame" on navigation, but Chrome cannot start a renderer process in
+      // the Vercel sandbox at all without it: the launch times out after 30s
+      // and every site fails as "Browser unavailable".
       browser = await puppeteer.launch({
-        args,
+        args: chromium.args,
         defaultViewport: chromium.defaultViewport,
         executablePath,
         headless: chromium.headless,
@@ -208,7 +203,12 @@ export async function readPage<T>(
         console.warn(`[extract] ${label} failed${attempt > 1 ? ` (attempt ${attempt})` : ''}:`, err)
         return fallback
       }
-      console.warn(`[extract] ${label}: frame replaced mid-read — waiting and retrying`)
+      // Where the document went matters: a redirect to a locale, a consent
+      // gate or a bot wall reads very differently from a site that simply
+      // finished late.
+      let where = '?'
+      try { where = page.url() } catch {}
+      console.warn(`[extract] ${label}: frame replaced mid-read at ${where} — waiting and retrying`)
       await settleNavigation(page, 5000)
     }
   }

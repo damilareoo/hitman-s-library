@@ -13,8 +13,8 @@ export const maxDuration = 60
 
 const sql = getSql()
 const RUN_MS = 52_000 // the function is killed at 60s; leave time to answer
-const PER_SITE_MS = 22_000 // one page cannot eat the run
-const MIN_SITE_MS = 8_000 // below this a site cannot be read at all
+const PER_SITE_MS = 24_000 // one page cannot eat the run
+const MIN_SITE_MS = 10_000 // below this a site cannot be read at all
 const PER_RUN = 12
 
 interface RepairResult {
