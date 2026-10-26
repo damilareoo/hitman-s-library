@@ -25,6 +25,29 @@ interface RepairResult {
   typography?: number
 }
 
+class SiteTimeoutError extends Error {}
+
+/**
+ * Wait for the extraction, but never past the site's deadline.
+ *
+ * Aborting only asks the page to close; in single-process Chromium a page
+ * jammed inside a CDP call does not come back, and the run then died at the
+ * function's own 60s limit with the queue untouched. The caller must walk
+ * away on time even if the abandoned work never finishes.
+ */
+function withDeadline<T>(promise: Promise<T>, ms: number): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(
+      () => reject(new SiteTimeoutError(`Extraction did not finish within ${Math.round(ms / 1000)}s`)),
+      ms
+    )
+    promise.then(
+      value => { clearTimeout(timer); resolve(value) },
+      err => { clearTimeout(timer); reject(err) }
+    )
+  })
+}
+
 export async function GET(req: NextRequest) {
   const authHeader = req.headers.get('authorization')
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
@@ -76,10 +99,10 @@ export async function GET(req: NextRequest) {
       // No motion take: it is the last ~8 seconds of the run and no backfill
       // writes it. A repair fills palette, type and captures; a clip comes
       // back the next time the site is re-extracted by hand.
-      const extraction = await extractFullDesignData(source_url, {
-        motion: false,
-        signal: deadline.signal,
-      })
+      const extraction = await withDeadline(
+        extractFullDesignData(source_url, { motion: false, signal: deadline.signal }),
+        deadlineMs
+      )
 
       // Nothing rendered: the site is down or challenging us. Leave what is
       // already on the row alone rather than overwriting it with nothing.
@@ -198,7 +221,7 @@ export async function GET(req: NextRequest) {
         typography: keepType ? extraction.typography.length : undefined,
       }
     } catch (err) {
-      const message = deadline.signal.aborted
+      const message = err instanceof SiteTimeoutError
         ? `Extraction did not finish within ${Math.round(deadlineMs / 1000)}s`
         : err instanceof Error ? err.message : String(err)
       console.error(`[cron/backfill] id=${id} failed:`, err)

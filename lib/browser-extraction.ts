@@ -1122,6 +1122,12 @@ export async function extractFullDesignData(url: string, options: ExtractionOpti
     return { colors, screenshotUrl, mobileScreenshotUrl, assets, typography, motionClipUrl, motionBytes, motionError, motionTags }
   } finally {
     options.signal?.removeEventListener('abort', closeOnAbort)
-    await page.close().catch(() => {})
+    // Bounded: closing a page stuck inside a hung CDP call in single-process
+    // mode never settles, and awaiting it would hold the caller past its own
+    // deadline. The page is left to the function's teardown.
+    await Promise.race([
+      page.close().catch(() => {}),
+      new Promise(resolve => setTimeout(resolve, 3000)),
+    ])
   }
 }
