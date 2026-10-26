@@ -5,9 +5,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { revalidateTag } from 'next/cache'
 import { getSql } from '@/lib/db'
-import { extractFullDesignData } from '@/lib/browser-extraction'
+import { extractFullDesignData, type FullExtractionResult } from '@/lib/browser-extraction'
 import { deduplicateColors, toColorFormats } from '@/lib/color-utils'
 import { recordExtraction } from '@/lib/extraction-history'
+import { extractTypographyEnhanced } from '@/lib/typography-extraction'
+import { safeFetch } from '@/lib/safe-url'
 
 export const maxDuration = 60
 
@@ -46,6 +48,45 @@ function withDeadline<T>(promise: Promise<T>, ms: number): Promise<T> {
       err => { clearTimeout(timer); reject(err) }
     )
   })
+}
+
+async function readHtmlDetails(url: string): Promise<{
+  colors: string[]
+  typography: FullExtractionResult['typography']
+} | null> {
+  try {
+    const response = await safeFetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+        Accept: 'text/html,application/xhtml+xml',
+      },
+      signal: AbortSignal.timeout(8000),
+    })
+    if (!response.ok || !(response.headers.get('content-type') ?? '').includes('html')) return null
+
+    const html = await response.text()
+    const colors = Array.from(new Set(html.match(/#[0-9A-Fa-f]{6}|#[0-9A-Fa-f]{3}/g) ?? []))
+    const type = extractTypographyEnhanced(html)
+    const typography: FullExtractionResult['typography'] = []
+    for (const [role, family] of [
+      ['heading', type.headingFonts[0]?.name],
+      ['body', type.bodyFonts[0]?.name],
+      ['mono', type.monoFonts[0]?.name],
+    ] as const) {
+      if (family) typography.push({
+        fontFamily: family,
+        role,
+        googleFontsUrl: null,
+        primaryWeight: 400,
+        sampleSizePx: null,
+        sampleLineHeight: null,
+      })
+    }
+    return colors.length || typography.length ? { colors, typography } : null
+  } catch (err) {
+    console.warn(`[cron/backfill] HTML fallback failed for ${url}:`, err)
+    return null
+  }
 }
 
 export async function GET(req: NextRequest) {
@@ -92,6 +133,17 @@ export async function GET(req: NextRequest) {
       WHERE id = ${id}
     `.catch(() => null)
 
+    const [current] = await sql`
+      SELECT
+        (SELECT COUNT(*)::int FROM design_colors
+          WHERE source_id = ${id} AND hex_value IS NOT NULL) AS "colorCount",
+        (SELECT COUNT(*)::int FROM design_typography
+          WHERE source_id = ${id} AND role != 'legacy') AS "typeCount"
+    `
+    const htmlDetailsPromise = current?.colorCount === 0 || current?.typeCount === 0
+      ? readHtmlDetails(source_url)
+      : Promise.resolve(null)
+
     const deadline = new AbortController()
     const timer = setTimeout(() => deadline.abort(), deadlineMs)
 
@@ -99,14 +151,23 @@ export async function GET(req: NextRequest) {
       // No motion take: it is the last ~8 seconds of the run and no backfill
       // writes it. A repair fills palette, type and captures; a clip comes
       // back the next time the site is re-extracted by hand.
-      const extraction = await withDeadline(
-        extractFullDesignData(source_url, { motion: false, signal: deadline.signal }),
-        deadlineMs
-      )
+      let extraction: FullExtractionResult | null = null
+      let browserError: unknown = null
+      try {
+        extraction = await withDeadline(
+          extractFullDesignData(source_url, { motion: false, signal: deadline.signal }),
+          deadlineMs
+        )
+      } catch (err) {
+        browserError = err
+      }
+
+      const htmlDetails = await htmlDetailsPromise
+      if (!extraction && !htmlDetails) throw browserError ?? new Error('Extraction produced no details')
 
       // Nothing rendered: the site is down or challenging us. Leave what is
       // already on the row alone rather than overwriting it with nothing.
-      if (extraction.renderedNothing) {
+      if (extraction?.renderedNothing && !htmlDetails) {
         const reason = 'The page rendered nothing readable — the site may be down or serving a challenge'
         await sql`
           UPDATE design_sources
@@ -116,7 +177,13 @@ export async function GET(req: NextRequest) {
         return { id, ok: false, error: 'rendered nothing' }
       }
 
-      const palette = deduplicateColors(extraction.colors)
+      const extractedColors = extraction && !extraction.renderedNothing && extraction.colors.length > 0
+        ? extraction.colors
+        : htmlDetails?.colors ?? []
+      const typeRows = extraction && !extraction.renderedNothing && extraction.typography.length > 0
+        ? extraction.typography
+        : htmlDetails?.typography ?? []
+      const palette = deduplicateColors(extractedColors)
         .map(c => toColorFormats(c))
         .filter((c): c is { hex: string; oklch: string } => c !== null)
         .slice(0, 16)
@@ -124,18 +191,10 @@ export async function GET(req: NextRequest) {
       // A browser that half-loaded the page still reports the two colours it
       // saw, and that must not replace a fuller palette already on the row.
       // Repair means fill a gap or improve on it, never shrink it.
-      const [current] = await sql`
-        SELECT
-          (SELECT COUNT(*)::int FROM design_colors
-            WHERE source_id = ${id} AND hex_value IS NOT NULL) AS "colorCount",
-          (SELECT COUNT(*)::int FROM design_typography
-            WHERE source_id = ${id} AND role != 'legacy') AS "typeCount"
-      `
       const keepPalette = palette.length > 0 && palette.length >= (current?.colorCount ?? 0)
-      const keepType = extraction.typography.length > 0 &&
-        extraction.typography.length >= (current?.typeCount ?? 0)
+      const keepType = typeRows.length > 0 && typeRows.length >= (current?.typeCount ?? 0)
 
-      if (extraction.screenshotUrl) {
+      if (extraction?.screenshotUrl) {
         await sql`
           UPDATE design_sources
           SET
@@ -143,7 +202,7 @@ export async function GET(req: NextRequest) {
             mobile_screenshot_url = COALESCE(${extraction.mobileScreenshotUrl}, mobile_screenshot_url)
           WHERE id = ${id}
         `
-      } else if (extraction.mobileScreenshotUrl) {
+      } else if (extraction?.mobileScreenshotUrl) {
         await sql`
           UPDATE design_sources
           SET mobile_screenshot_url = ${extraction.mobileScreenshotUrl}
@@ -164,7 +223,7 @@ export async function GET(req: NextRequest) {
 
       if (keepType) {
         await sql`DELETE FROM design_typography WHERE source_id = ${id}`
-        for (const t of extraction.typography) {
+        for (const t of typeRows) {
           await sql`
             INSERT INTO design_typography (
               source_id, font_family, role, google_fonts_url,
@@ -187,11 +246,11 @@ export async function GET(req: NextRequest) {
       // Keep the append-only record in step with the tables the API reads.
       await recordExtraction({
         siteId: id,
-        screenshotUrl: extraction.screenshotUrl ?? null,
-        mobileScreenshotUrl: extraction.mobileScreenshotUrl ?? null,
+        screenshotUrl: extraction?.screenshotUrl ?? null,
+        mobileScreenshotUrl: extraction?.mobileScreenshotUrl ?? null,
         palette: keepPalette ? palette : [],
         typography: keepType
-          ? extraction.typography.map(t => ({
+          ? typeRows.map(t => ({
               fontFamily: t.fontFamily,
               role: t.role,
               googleFontsUrl: t.googleFontsUrl,
@@ -200,13 +259,13 @@ export async function GET(req: NextRequest) {
               sampleLineHeight: t.sampleLineHeight,
             }))
           : [],
-        assets: extraction.assets ?? [],
+        assets: extraction?.assets ?? [],
       })
 
       // A capture clears the failure the add left behind. Palette or type
       // alone does not: "screenshot capture returned an empty image" is still
       // exactly true, and the admin should keep seeing it.
-      if (extraction.screenshotUrl || extraction.mobileScreenshotUrl) {
+      if (extraction?.screenshotUrl || extraction?.mobileScreenshotUrl) {
         await sql`
           UPDATE design_sources
           SET metadata = COALESCE(metadata, '{}') - 'extraction_error'
@@ -218,7 +277,7 @@ export async function GET(req: NextRequest) {
         id,
         ok: true,
         colors: keepPalette ? palette.length : undefined,
-        typography: keepType ? extraction.typography.length : undefined,
+        typography: keepType ? typeRows.length : undefined,
       }
     } catch (err) {
       const message = err instanceof SiteTimeoutError
