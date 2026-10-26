@@ -8,8 +8,8 @@ import { getSql } from '@/lib/db'
 import { extractFullDesignData, type FullExtractionResult } from '@/lib/browser-extraction'
 import { deduplicateColors, toColorFormats } from '@/lib/color-utils'
 import { recordExtraction } from '@/lib/extraction-history'
-import { extractTypographyEnhanced } from '@/lib/typography-extraction'
-import { safeFetch } from '@/lib/safe-url'
+import { withDeadline } from '@/lib/extraction-deadline'
+import { extractStaticDesignData } from '@/lib/static-extraction'
 
 export const maxDuration = 60
 
@@ -27,85 +27,6 @@ interface RepairResult {
   typography?: number
 }
 
-class SiteTimeoutError extends Error {}
-
-/**
- * Wait for the extraction, but never past the site's deadline.
- *
- * Aborting only asks the page to close; in single-process Chromium a page
- * jammed inside a CDP call does not come back, and the run then died at the
- * function's own 60s limit with the queue untouched. The caller must walk
- * away on time even if the abandoned work never finishes.
- */
-function withDeadline<T>(promise: Promise<T>, ms: number): Promise<T> {
-  return new Promise<T>((resolve, reject) => {
-    const timer = setTimeout(
-      () => reject(new SiteTimeoutError(`Extraction did not finish within ${Math.round(ms / 1000)}s`)),
-      ms
-    )
-    promise.then(
-      value => { clearTimeout(timer); resolve(value) },
-      err => { clearTimeout(timer); reject(err) }
-    )
-  })
-}
-
-async function readHtmlDetails(url: string): Promise<{
-  colors: string[]
-  typography: FullExtractionResult['typography']
-} | null> {
-  try {
-    const response = await safeFetch(url, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
-        Accept: 'text/html,application/xhtml+xml',
-      },
-      signal: AbortSignal.timeout(8000),
-    })
-    if (!response.ok || !(response.headers.get('content-type') ?? '').includes('html')) return null
-
-    const html = await response.text()
-    const stylesheetUrls = Array.from(html.matchAll(/<link\b[^>]*>/gi))
-      .filter(([tag]) => /\brel\s*=\s*["'][^"']*stylesheet/i.test(tag))
-      .map(([tag]) => tag.match(/\bhref\s*=\s*["']([^"']+)["']/i)?.[1])
-      .filter((href): href is string => Boolean(href))
-      .slice(0, 8)
-      .map(href => new URL(href.replace(/&amp;/g, '&'), response.url).href)
-    const stylesheets = await Promise.all(stylesheetUrls.map(async stylesheetUrl => {
-      try {
-        const stylesheet = await safeFetch(stylesheetUrl, {
-          headers: { Accept: 'text/css,*/*;q=0.1' },
-          signal: AbortSignal.timeout(6000),
-        })
-        return stylesheet.ok ? await stylesheet.text() : ''
-      } catch {
-        return ''
-      }
-    }))
-    const source = [html, ...stylesheets].join('\n')
-    const colors = Array.from(new Set(source.match(/#[0-9A-Fa-f]{6}|#[0-9A-Fa-f]{3}/g) ?? []))
-    const type = extractTypographyEnhanced(source)
-    const typography: FullExtractionResult['typography'] = []
-    for (const [role, family] of [
-      ['heading', type.headingFonts[0]?.name],
-      ['body', type.bodyFonts[0]?.name],
-      ['mono', type.monoFonts[0]?.name],
-    ] as const) {
-      if (family) typography.push({
-        fontFamily: family,
-        role,
-        googleFontsUrl: null,
-        primaryWeight: 400,
-        sampleSizePx: null,
-        sampleLineHeight: null,
-      })
-    }
-    return colors.length || typography.length ? { colors, typography } : null
-  } catch (err) {
-    console.warn(`[cron/backfill] HTML fallback failed for ${url}:`, err)
-    return null
-  }
-}
 
 export async function GET(req: NextRequest) {
   const authHeader = req.headers.get('authorization')
@@ -169,7 +90,7 @@ export async function GET(req: NextRequest) {
           WHERE source_id = ${id} AND role != 'legacy') AS "typeCount"
     `
     const htmlDetailsPromise = current?.colorCount === 0 || current?.typeCount === 0
-      ? readHtmlDetails(source_url)
+      ? extractStaticDesignData(source_url)
       : Promise.resolve(null)
 
     const deadline = new AbortController()
@@ -308,9 +229,7 @@ export async function GET(req: NextRequest) {
         typography: keepType ? typeRows.length : undefined,
       }
     } catch (err) {
-      const message = err instanceof SiteTimeoutError
-        ? `Extraction did not finish within ${Math.round(deadlineMs / 1000)}s`
-        : err instanceof Error ? err.message : String(err)
+      const message = err instanceof Error ? err.message : String(err)
       console.error(`[cron/backfill] id=${id} failed:`, err)
       // Visible in the admin instead of a silent miss, and out of this queue's
       // way until every other site has had a turn.

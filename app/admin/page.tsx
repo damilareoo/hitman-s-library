@@ -326,6 +326,7 @@ export default function AdminPage() {
         setAddedId(String(data.id))
         setAddedKind(typeof data.kind === 'string' ? data.kind : null)
         setLinkInput('')
+        setAddError(data.warning ?? null)
         await loadSites()
       } else if (data.error) {
         const info = classifyExtractionError(data.error)
@@ -336,7 +337,7 @@ export default function AdminPage() {
     } catch {
       clearTimers()
       setAddStage(null)
-      setAddError('Connection error. Please try again.')
+      setAddError('The add timed out or the server could not be reached. Try again — a slow page can take up to a minute.')
     } finally {
       setIsAdding(false)
     }

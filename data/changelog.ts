@@ -88,6 +88,10 @@ const changelog: ChangelogRelease[] = [
     date: '2026-10-26',
     title: 'Every Detail',
     items: [
+      { type: 'fixed', author: 'damilare', text: 'An add no longer waits on the browser forever: after 45 seconds the page is set aside and the site saves with whatever its HTML and stylesheets supply' },
+      { type: 'fixed', author: 'damilare', text: 'Adds read linked stylesheets the way the repair worker does, so colours and fonts that live in CSS files are saved instead of dropped' },
+      { type: 'fixed', author: 'damilare', text: 'A saved site whose screenshot failed now reports success with a warning instead of “extraction failed”, and the repair worker retries the capture' },
+      { type: 'fixed', author: 'damilare', text: 'Redirects on add are checked against the same public-address rules as the first URL, so a bounce to a private address is refused' },
       { type: 'fixed', author: 'damilare', text: 'A site added while its page was still redirecting no longer lands with just an og:image: extraction waits for the document and retries the read when the frame is replaced' },
       { type: 'fixed', author: 'damilare', text: 'When the browser cannot read a page, the colours and fonts in its HTML are written to the palette and type tabs instead of being thrown away' },
       { type: 'fixed', author: 'damilare', text: 'Repairs put empty palette and type ahead of missing captures, and use that same HTML fallback when the browser crashes' },

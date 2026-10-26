@@ -10,10 +10,12 @@ import { recordExtraction } from '@/lib/extraction-history'
 import { optimizeThumbnail } from '@/lib/thumbnail-optimize'
 import { SIMILAR_ENABLED, embedSite, toVectorLiteral } from '@/lib/similarity'
 import { requireAdmin } from '@/lib/admin-auth'
-import { assertPublicUrl, BlockedUrlError } from '@/lib/safe-url'
+import { assertPublicUrl, BlockedUrlError, safeFetch } from '@/lib/safe-url'
 import { normalizeUrl } from '@/lib/normalize-url'
 import { inferKind } from '@/lib/site-kind'
 import { KINDS, type Kind } from '@/lib/categories'
+import { withDeadline } from '@/lib/extraction-deadline'
+import { extractStaticDesignData } from '@/lib/static-extraction'
 
 const sql = getSql()
 
@@ -21,6 +23,11 @@ const sql = getSql()
 // Without it the function inherits the platform default while doing the
 // heaviest work in the app.
 export const maxDuration = 60
+
+// The browser stage gets most of the minute; the remaining ~15s belong to the
+// static fallback, the DB writes and the response. A page the browser cannot
+// finish is abandoned here instead of taking the whole request down with it.
+const ADD_BROWSER_MS = 45_000
 
 export async function POST(req: NextRequest) {
   const denied = await requireAdmin(req)
@@ -68,68 +75,31 @@ export async function POST(req: NextRequest) {
     const normalizedUrl = normalizeUrl(url)
     const normalizedUrlNoQuery = normalizedUrl.split('?')[0]
 
-    // Fetch the webpage with robust redirect handling
+    // Fetch the webpage. safeFetch revalidates every redirect hop, so a URL
+    // that bounces somewhere private is refused here exactly like the first hop.
     let html = ''
     let finalUrl = url
     let response: Response | null = null
-    let redirectCount = 0
-    const maxRedirects = 10
-    let currentUrl = url
 
     try {
-      // Follow redirects manually with proper handling
-      while (redirectCount < maxRedirects) {
-        const controller = new AbortController()
-        const timeoutId = setTimeout(() => controller.abort(), 8000)
-        try {
-        response = await fetch(currentUrl, {
-          headers: {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-            'Accept-Language': 'en-US,en;q=0.5',
-            'Accept-Encoding': 'gzip, deflate',
-            'Connection': 'keep-alive',
-            'Upgrade-Insecure-Requests': '1'
-          },
-          signal: controller.signal,
-          method: 'GET'
-        })
-        } finally {
-          clearTimeout(timeoutId)
-        }
+      response = await safeFetch(url, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+          'Accept-Language': 'en-US,en;q=0.5',
+        },
+        signal: AbortSignal.timeout(8000),
+      })
+      finalUrl = response.url
 
-        // Check if this is a redirect
-        const isRedirect = response.status >= 300 && response.status < 400 && response.headers.get('location')
-        
-        if (isRedirect && redirectCount < maxRedirects) {
-          const location = response.headers.get('location')
-          if (location) {
-            try {
-              // Resolve relative URLs against the current URL
-              currentUrl = new URL(location, currentUrl).toString()
-              redirectCount++
-              continue
-            } catch (err) {
-              console.error('[v0] Failed to parse redirect URL:', location)
-              break
-            }
-          }
-        }
-
-        // Not a redirect or hit limit, use this response
-        break
-      }
-
-      finalUrl = currentUrl
-
-      if (response?.ok) {
+      if (response.ok) {
         html = await response.text()
       } else {
         // This fetch supplies the title, description and og:image — nothing
         // more. It used to end the request on a 403 or 429, which meant every
         // Cloudflare-fronted site was written off without the browser being
         // asked, even though a real browser renders them fine.
-        console.warn(`[extract] metadata fetch returned ${response?.status} for ${url} — continuing to the browser`)
+        console.warn(`[extract] metadata fetch returned ${response.status} for ${url} — continuing to the browser`)
       }
     } catch (fetchError: any) {
       console.warn(`[extract] metadata fetch failed for ${url}: ${fetchError.message} — continuing to the browser`)
@@ -156,8 +126,16 @@ export async function POST(req: NextRequest) {
     let colors: string[] = []
     let extractionResult: Awaited<ReturnType<typeof extractFullDesignData>> | null = null
     let extractionError: string | null = null
+    // The static read runs alongside the browser and uses the HTML we already
+    // hold, so it cannot add another network hop to the run.
+    const staticDetailsPromise = extractStaticDesignData(finalUrl, html)
+    const browserDeadline = new AbortController()
+    const browserTimer = setTimeout(() => browserDeadline.abort(), ADD_BROWSER_MS)
     try {
-      extractionResult = await extractFullDesignData(url)
+      extractionResult = await withDeadline(
+        extractFullDesignData(url, { signal: browserDeadline.signal }),
+        ADD_BROWSER_MS
+      )
       colorFormats = deduplicateColors(extractionResult.colors)
         .map(c => toColorFormats(c))
         .filter((c): c is { hex: string; oklch: string } => c !== null)
@@ -167,14 +145,17 @@ export async function POST(req: NextRequest) {
       console.warn('[v0] Full design extraction failed, falling back to regex:', colorErr)
       extractionError = colorErr instanceof Error ? colorErr.message : String(colorErr)
       colors = extractColors(html)
+    } finally {
+      clearTimeout(browserTimer)
     }
+    const staticDetails = await staticDetailsPromise
 
     // A browser that threw or rendered an empty page is not a reason to file a
-    // colourless site. The HTML still names colours — write those, in the same
-    // hex/oklch shape every reader expects, instead of only returning them in
-    // the response and dropping them on the floor.
-    if (colorFormats.length === 0 && html) {
-      const htmlColors = extractColors(html)
+    // colourless site. The HTML and its stylesheets still name colours — write
+    // those, in the same hex/oklch shape every reader expects, instead of only
+    // returning them in the response and dropping them on the floor.
+    if (colorFormats.length === 0) {
+      const htmlColors = staticDetails?.colors ?? extractColors(html)
       colorFormats = deduplicateColors(htmlColors)
         .map(c => toColorFormats(c))
         .filter((c): c is { hex: string; oklch: string } => c !== null)
@@ -193,7 +174,7 @@ export async function POST(req: NextRequest) {
         ? 'The page rendered nothing readable — the site may be down or serving a challenge'
         : 'Screenshot capture returned an empty image'
     }
-    const typographyData = extractTypographyEnhanced(html)
+    const typographyData = staticDetails?.typographyData ?? extractTypographyEnhanced(html)
     let typography = typographyData.allFonts
     
     console.log('[v0] Initial HTML extraction found', typography.length, 'fonts')
@@ -203,7 +184,7 @@ export async function POST(req: NextRequest) {
       console.log('[v0] Typography count low, attempting direct extraction for:', url)
       try {
         // Try direct fetch using the simpler detection
-        const directFonts = extractFontsDirectly(html)
+        const directFonts = extractFontsDirectly(staticDetails?.source ?? html)
         if (directFonts.length > typography.length) {
           typography = directFonts
           console.log('[v0] Direct extraction found', typography.length, 'fonts')
@@ -334,7 +315,7 @@ export async function POST(req: NextRequest) {
       // origin CDN at full size. Best-effort — the hotlink stays the fallback
       // when the download or encode fails.
       if (sourceId && thumbnailUrl) {
-        const optimized = await optimizeThumbnail(thumbnailUrl, url)
+        const optimized = await withDeadline(optimizeThumbnail(thumbnailUrl, url), 4000).catch(() => null)
         if (optimized) {
           await sql`UPDATE design_sources SET thumbnail_optimized_url = ${optimized} WHERE id = ${sourceId}`.catch(() => null)
         }
@@ -509,7 +490,7 @@ export async function POST(req: NextRequest) {
       // Either way the row is searchable immediately. Never fails the insert.
       if (SIMILAR_ENABLED && sourceId) {
         try {
-          const embedding = await embedSite({
+          const embedding = await withDeadline(embedSite({
             palette: colorFormats.map(c => ({ hex: c.hex, oklch: c.oklch })),
             fonts: (extractionResult?.typography ?? []).map(t => ({
               fontFamily: t.fontFamily,
@@ -518,7 +499,7 @@ export async function POST(req: NextRequest) {
             kind,
             screenshotUrl: effectiveScreenshot,
             siteId: sourceId,
-          })
+          }), 4000)
           await sql`UPDATE design_sources SET embedding = ${toVectorLiteral(embedding)}::vector WHERE id = ${sourceId}`.catch(() => null)
         } catch (err) {
           console.error('[extract] embedding failed:', err)
@@ -530,11 +511,16 @@ export async function POST(req: NextRequest) {
       revalidateTag('designs', 'max')
 
       return NextResponse.json({
-        // A source with no image is not a success, however far the rest of the
-        // extraction got. Reporting it as one is what filled the admin with
-        // rows that were neither done nor failed.
-        success: !unrecoverableError,
+        // Saved is success. Missing captures or details are a partial save the
+        // backfill worker repairs; reporting them as a failed add is what made
+        // the admin say "extraction failed" about rows that were in the library
+        // and filling in by the minute.
+        success: Boolean(sourceId),
+        partial: Boolean(unrecoverableError || extractionError),
         error: unrecoverableError ?? undefined,
+        warning: sourceId && unrecoverableError
+          ? 'Saved, but the page capture could not be taken — the repair worker will retry it'
+          : undefined,
         screenshotSource,
         id: sourceId,
         title,
