@@ -975,8 +975,11 @@ export interface ExtractionOptions {
 export async function extractFullDesignData(url: string, options: ExtractionOptions = {}): Promise<FullExtractionResult> {
   const browser = await getBrowser()
   if (!browser) {
-    console.error('[extractFullDesignData] Browser unavailable for:', url)
-    return { colors: [], screenshotUrl: null, mobileScreenshotUrl: null, assets: [], typography: [], motionClipUrl: null, motionBytes: null, motionError: 'unknown', motionTags: { hasTransitions: false, hasAnimations: false, easings: [] } }
+    // An empty result used to pass for a successful one: the add path filed
+    // the site with HTML colours and no image, and the backfill cleared its
+    // error without repairing anything. A browser that will not start is a
+    // failure, and every caller already has a catch for it.
+    throw new Error('Browser unavailable')
   }
   const page = await browser.newPage()
 

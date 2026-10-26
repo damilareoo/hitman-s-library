@@ -45,8 +45,11 @@ export async function GET(req: NextRequest) {
             SELECT 1 FROM design_typography t
             WHERE t.source_id = design_sources.id AND t.role != 'legacy'
           )
-    -- Newest first: those are the ones the library is showing right now.
-    ORDER BY created_at DESC
+    -- Least recently attempted first, then newest. A single site the browser
+    -- cannot read used to sit at the head of this queue every morning, so the
+    -- one or two repairs a run could afford went to the same failure forever.
+    ORDER BY COALESCE((metadata->>'backfill_at')::timestamptz, '1970-01-01'::timestamptz) ASC,
+             created_at DESC
     LIMIT ${PER_RUN}
   `
 
@@ -58,6 +61,12 @@ export async function GET(req: NextRequest) {
   const start = Date.now()
 
   async function repairOne(id: number, source_url: string): Promise<RepairResult> {
+    await sql`
+      UPDATE design_sources
+      SET metadata = COALESCE(metadata, '{}') || jsonb_build_object('backfill_at', ${new Date().toISOString()}::text)
+      WHERE id = ${id}
+    `.catch(() => null)
+
     try {
       // No motion take: it is the last ~8 seconds of the run and no backfill
       // writes it. A repair fills palette, type and captures; a clip comes
@@ -67,6 +76,12 @@ export async function GET(req: NextRequest) {
       // Nothing rendered: the site is down or challenging us. Leave what is
       // already on the row alone rather than overwriting it with nothing.
       if (extraction.renderedNothing) {
+        const reason = 'The page rendered nothing readable — the site may be down or serving a challenge'
+        await sql`
+          UPDATE design_sources
+          SET metadata = COALESCE(metadata, '{}') || jsonb_build_object('extraction_error', ${reason}::text)
+          WHERE id = ${id}
+        `.catch(() => null)
         return { id, ok: false, error: 'rendered nothing' }
       }
 
@@ -141,10 +156,25 @@ export async function GET(req: NextRequest) {
         assets: extraction.assets ?? [],
       })
 
+      // A completed repair clears whatever the failed add left behind.
+      await sql`
+        UPDATE design_sources
+        SET metadata = COALESCE(metadata, '{}') - 'extraction_error'
+        WHERE id = ${id}
+      `.catch(() => null)
+
       return { id, ok: true, colors: palette.length, typography: extraction.typography.length }
     } catch (err) {
+      const message = err instanceof Error ? err.message : String(err)
       console.error(`[cron/backfill] id=${id} failed:`, err)
-      return { id, ok: false, error: String(err) }
+      // Visible in the admin instead of a silent miss, and out of this queue's
+      // way until every other site has had a turn.
+      await sql`
+        UPDATE design_sources
+        SET metadata = COALESCE(metadata, '{}') || jsonb_build_object('extraction_error', ${message}::text)
+        WHERE id = ${id}
+      `.catch(() => null)
+      return { id, ok: false, error: message }
     }
   }
 
