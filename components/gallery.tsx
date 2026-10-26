@@ -1237,7 +1237,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
       {/* The sheet covers this corner on a phone, so the links hide only
           there. On desktop the corner stays visible and reachable with a card
           open — hiding them there stranded About/Changelog behind the panel. */}
-      <SiteLinks hidden={isPanelOpen && isNarrow} variant="page" />
+      <SiteLinks hidden={isPanelOpen && isNarrow} />
 
       <BrowsePanel
         open={browseOpen}
