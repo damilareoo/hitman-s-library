@@ -114,7 +114,17 @@ export async function GET(req: NextRequest) {
     -- Least recently attempted first, then newest. A single site the browser
     -- cannot read used to sit at the head of this queue every morning, so the
     -- one or two repairs a run could afford went to the same failure forever.
-    ORDER BY COALESCE((metadata->>'backfill_at')::timestamptz, '1970-01-01'::timestamptz) ASC,
+    ORDER BY (
+               NOT EXISTS (
+                 SELECT 1 FROM design_colors c
+                 WHERE c.source_id = design_sources.id AND c.hex_value IS NOT NULL
+               )
+               OR NOT EXISTS (
+                 SELECT 1 FROM design_typography t
+                 WHERE t.source_id = design_sources.id AND t.role != 'legacy'
+               )
+             ) DESC,
+             COALESCE((metadata->>'backfill_at')::timestamptz, '1970-01-01'::timestamptz) ASC,
              created_at DESC
     LIMIT ${PER_RUN}
   `

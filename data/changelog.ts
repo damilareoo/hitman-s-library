@@ -90,7 +90,7 @@ const changelog: ChangelogRelease[] = [
     items: [
       { type: 'fixed', author: 'damilare', text: 'A site added while its page was still redirecting no longer lands with just an og:image: extraction waits for the document and retries the read when the frame is replaced' },
       { type: 'fixed', author: 'damilare', text: 'When the browser cannot read a page, the colours and fonts in its HTML are written to the palette and type tabs instead of being thrown away' },
-      { type: 'fixed', author: 'damilare', text: 'Repairs use that same HTML fallback, so a crashed browser no longer leaves palette and type empty when the page markup names them' },
+      { type: 'fixed', author: 'damilare', text: 'Repairs put empty palette and type ahead of missing captures, and use that same HTML fallback when the browser crashes' },
       { type: 'fixed', author: 'damilare', text: 'That HTML fallback no longer files JavaScript identifiers as typefaces \u2014 \u201curl\u201d, \u201clink\u201d and \u201cprops\u201d were being read out of script bundles, and type is now taken only from markup' },
       { type: 'fixed', author: 'damilare', text: 'An empty extraction record no longer hides palette or type rows that already exist, and the morning backfill now repairs sites missing either instead of only missing captures' },
       { type: 'fixed', author: 'damilare', text: 'A repair fills a gap or improves on it \u2014 a page that half-renders can no longer replace a fuller palette or type set with a shorter one' },
