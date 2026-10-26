@@ -95,8 +95,9 @@ export async function getBrowser() {
 }
 
 // Getting the document is what must succeed. Waiting for a quiet network is a
-// courtesy we extend briefly and then withdraw.
-const NAV_TIMEOUT = 20000
+// courtesy we extend briefly and then withdraw. A 24-second repair deadline
+// cannot spend 20 seconds waiting and still have time to read the page.
+const NAV_TIMEOUT = 12000
 const IDLE_TIMEOUT = 8000
 
 // Headless Chrome announces itself as "HeadlessChrome" in its default UA, which
@@ -131,7 +132,7 @@ export async function gotoResilient(page: Page, url: string): Promise<'idle' | '
     // extractors failed with "Attempted to use detached Frame" and the site
     // landed with an og:image and no palette or type. Wait for the document we
     // are going to read before reading it.
-    await settleNavigation(page)
+    await settleNavigation(page, 6000)
     return 'partial'
   }
 
