@@ -93,6 +93,7 @@ const changelog: ChangelogRelease[] = [
       { type: 'fixed', author: 'damilare', text: 'An empty extraction record no longer hides palette or type rows that already exist, and the morning backfill now repairs sites missing either instead of only missing captures' },
       { type: 'fixed', author: 'damilare', text: 'A repair fills a gap or improves on it \u2014 a page that half-renders can no longer replace a fuller palette or type set with a shorter one' },
       { type: 'fixed', author: 'damilare', text: 'A single page that never settles now gets 22 seconds and is set aside; it used to spend the morning run\u2019s whole minute retrying, so no repair was ever written' },
+      { type: 'fixed', author: 'damilare', text: 'The server\u2019s browser ran every page in one process, so a navigation tore down the reads in flight \u2014 the reason sites that extract in seconds locally came back empty from the live site. Each page now gets its own' },
       { type: 'improved', author: 'damilare', text: 'The detail panel leads with the site\u2019s name and heart count, keeps one line of filing, and groups its actions with the prototype\u2019s single divider' },
       { type: 'improved', author: 'damilare', text: 'From 640 to 1279 the panel is a floating drawer at the edge rather than a bottom sheet; under 640 it remains the page' },
       { type: 'improved', author: 'damilare', text: 'Colors and Type always show their counts, and the admin can re-extract any site that landed without them' },

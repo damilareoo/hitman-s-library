@@ -59,8 +59,17 @@ export async function getBrowser() {
         ? existingLibPath
         : `${al2LibDir}:${existingLibPath}`
 
+      // @sparticuz/chromium launches with --single-process, and in that mode a
+      // navigation restarts the only process there is: every read in flight
+      // throws "Attempted to use detached Frame", retries against a document
+      // that keeps being replaced, and half the library looks unreadable on
+      // Vercel while the same sites extract in seconds locally. Each page gets
+      // its own renderer without it; --disable-dev-shm-usage (already in the
+      // default args) is what makes that safe on a serverless box.
+      const args = chromium.args.filter(a => a !== '--single-process')
+
       browser = await puppeteer.launch({
-        args: chromium.args,
+        args,
         defaultViewport: chromium.defaultViewport,
         executablePath,
         headless: chromium.headless,
