@@ -24,7 +24,10 @@ export async function extractStaticDesignData(
         },
         signal: AbortSignal.timeout(8000),
       })
-      if (!response.ok || !(response.headers.get('content-type') ?? '').includes('html')) return null
+      if (!response.ok || !(response.headers.get('content-type') ?? '').includes('html')) {
+        console.warn(`[extract] HTML fallback refused for ${url}: status ${response.status} type ${response.headers.get('content-type') ?? 'none'}`)
+        return null
+      }
       html = await response.text()
       baseUrl = response.url
     }
@@ -41,8 +44,13 @@ export async function extractStaticDesignData(
           headers: { Accept: 'text/css,*/*;q=0.1' },
           signal: AbortSignal.timeout(6000),
         })
-        return stylesheet.ok ? await stylesheet.text() : ''
-      } catch {
+        if (!stylesheet.ok) {
+          console.warn(`[extract] stylesheet fallback refused for ${stylesheetUrl}: status ${stylesheet.status} type ${stylesheet.headers.get('content-type') ?? 'none'}`)
+          return ''
+        }
+        return await stylesheet.text()
+      } catch (err) {
+        console.warn(`[extract] stylesheet fallback failed for ${stylesheetUrl}:`, err)
         return ''
       }
     }))
