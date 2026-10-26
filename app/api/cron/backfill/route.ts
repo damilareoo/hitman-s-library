@@ -12,7 +12,20 @@ import { recordExtraction } from '@/lib/extraction-history'
 export const maxDuration = 60
 
 const sql = getSql()
-const BUDGET_MS = 45_000 // stop queuing new sites after 45s, leave cleanup time
+const BUDGET_MS = 40_000 // stop starting new sites after 40s, leave cleanup time
+// Three at once keeps the 60s function busy: one site takes long enough that a
+// serial loop finished exactly one per run, which is a month of mornings for
+// the sites that landed hollow before extraction was hardened.
+const CONCURRENCY = 3
+const PER_RUN = 12
+
+interface RepairResult {
+  id: number
+  ok: boolean
+  error?: string
+  colors?: number
+  typography?: number
+}
 
 export async function GET(req: NextRequest) {
   const authHeader = req.headers.get('authorization')
@@ -38,27 +51,28 @@ export async function GET(req: NextRequest) {
           )
     -- Newest first: those are the ones the library is showing right now.
     ORDER BY created_at DESC
-    LIMIT 20
+    LIMIT ${PER_RUN}
   `
 
   if (!pending.length) {
     return NextResponse.json({ done: true, message: 'All sites are up to date' })
   }
 
-  const results: Array<{ id: number; ok: boolean; error?: string; colors?: number; typography?: number }> = []
+  const results: RepairResult[] = []
   const start = Date.now()
+  const queue = [...pending]
 
-  for (const { id, source_url } of pending) {
-    if (Date.now() - start > BUDGET_MS) break
-
+  async function repairOne(id: number, source_url: string): Promise<RepairResult> {
     try {
-      const extraction = await extractFullDesignData(source_url)
+      // No motion take: it is the last ~8 seconds of the run and no backfill
+      // writes it. A repair fills palette, type and captures; a clip comes
+      // back the next time the site is re-extracted by hand.
+      const extraction = await extractFullDesignData(source_url, { motion: false })
 
       // Nothing rendered: the site is down or challenging us. Leave what is
       // already on the row alone rather than overwriting it with nothing.
       if (extraction.renderedNothing) {
-        results.push({ id, ok: false, error: 'rendered nothing' })
-        continue
+        return { id, ok: false, error: 'rendered nothing' }
       }
 
       const palette = deduplicateColors(extraction.colors)
@@ -132,12 +146,25 @@ export async function GET(req: NextRequest) {
         assets: extraction.assets ?? [],
       })
 
-      results.push({ id, ok: true, colors: palette.length, typography: extraction.typography.length })
+      return { id, ok: true, colors: palette.length, typography: extraction.typography.length }
     } catch (err) {
       console.error(`[cron/backfill] id=${id} failed:`, err)
-      results.push({ id, ok: false, error: String(err) })
+      return { id, ok: false, error: String(err) }
     }
   }
+
+  // Workers drain the shared queue, so a slow site does not hold the others
+  // behind it and nothing starts that the function cannot finish.
+  await Promise.all(
+    Array.from({ length: CONCURRENCY }, async () => {
+      while (queue.length > 0) {
+        if (Date.now() - start > BUDGET_MS) return
+        const job = queue.shift()
+        if (!job) return
+        results.push(await repairOne(job.id, job.source_url))
+      }
+    }),
+  )
 
   if (results.some(r => r.ok)) revalidateTag('designs', 'max')
 

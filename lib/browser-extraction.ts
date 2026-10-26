@@ -964,7 +964,15 @@ async function extractFromChildFrames(
   return collected
 }
 
-export async function extractFullDesignData(url: string): Promise<FullExtractionResult> {
+export interface ExtractionOptions {
+  /**
+   * The motion take costs ~8s of a 60s function and no backfill reads it.
+   * On by default so adds and re-extracts keep their clip.
+   */
+  motion?: boolean
+}
+
+export async function extractFullDesignData(url: string, options: ExtractionOptions = {}): Promise<FullExtractionResult> {
   const browser = await getBrowser()
   if (!browser) {
     console.error('[extractFullDesignData] Browser unavailable for:', url)
@@ -1046,7 +1054,9 @@ export async function extractFullDesignData(url: string): Promise<FullExtraction
 
     // Motion vocabulary is pure DOM reads — no ffmpeg needed, recorded on
     // every run for later filtering.
-    const motionTags = await extractMotionTags(page)
+    const motionTags = options.motion === false
+      ? { hasTransitions: false, hasAnimations: false, easings: [] }
+      : await extractMotionTags(page)
 
     // Captures scroll and resize the viewport, so they come after every read.
     const screenshotUrl = await captureFullPageScreenshot(page, url, { scroll: false })
@@ -1058,7 +1068,7 @@ export async function extractFullDesignData(url: string): Promise<FullExtraction
     let motionClipUrl: string | null = null
     let motionBytes: number | null = null
     let motionError: string | null = null
-    const ffmpegPath = resolveFfmpegPath()
+    const ffmpegPath = options.motion === false ? null : resolveFfmpegPath()
     if (ffmpegPath) {
       const { existsSync: exists, readFileSync, unlinkSync } = await import('node:fs')
       const outcome = await recordMotionClip(page, url, ffmpegPath)
