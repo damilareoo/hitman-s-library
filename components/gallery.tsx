@@ -469,26 +469,16 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
     updateParams(p => p.set('site', id))
   }, [updateParams])
 
-  // Explicit deselect is remembered for the session, so the cold-load
-  // default-select below does not resurrect a panel the visitor closed.
-  const deselected = useRef(false)
+  // Nothing opens itself. A cold load lands on the grid at every width and a
+  // site opens on a tap or from an explicit ?site= link — selecting the first
+  // card rewrote the URL on load, so a reload (or the same link on a phone)
+  // kept reopening a panel nobody asked for.
   const selectDesign = useCallback((design: Design | null) => {
-    if (!design) deselected.current = true
     updateParams(p => {
       if (design) p.set('site', design.id)
       else p.delete('site')
     })
   }, [updateParams])
-
-  // Cold loads open populated: the first card is selected so the panel
-  // never greets a visitor empty. Runs once per result set, only when no
-  // site is open and none was explicitly closed. Desktop only — on a phone
-  // this would pop the bottom sheet on every cold load.
-  useEffect(() => {
-    if (view !== 'grid' || selectedId || deselected.current || designs.length === 0 || isRefetching) return
-    if (!window.matchMedia('(min-width: 1280px)').matches) return
-    selectDesign(designs[0])
-  }, [view, designs, selectedId, isRefetching, selectDesign])
 
   const isNarrow = useIsNarrow()
   const isPhone = useIsPhone()
@@ -712,6 +702,12 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
     kinds.length === 1 && tags.length === 0 && !search ? displayKind(kinds[0]) :
     search && kinds.length === 0 && tags.length === 0 ? 'Search results' :
     'Filtered sites'
+  // Phones have no chip row, so a filtered grid names what it is showing and
+  // offers the way back. Search has its own field and count above.
+  const phoneFilterLabel =
+    kinds.length > 0 ? kinds.map(displayKind).join(' · ') :
+    tags.length > 0 ? tags.join(' · ') :
+    ''
 
   // Two column tracks, because the grid gets the whole row back whenever no
   // panel is open. Each step is placed where the card would otherwise fall
@@ -1001,59 +997,78 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
               {libraryTotal} of the web&apos;s best-designed sites, dissected.
             </p>
 
-            {/* Categories */}
-            <div className="flex gap-2 overflow-x-auto px-4 pb-2 no-scrollbar" role="group" aria-label="Filter by kind of site">
-              {[{ name: 'All', count: libraryTotal }, ...categories].map(({ name, count }) => {
-                const isActive = name === 'All' ? kinds.length === 0 : kinds.includes(name)
-                return (
-                  <button
-                    key={name}
-                    onClick={() => handleFilterChange(name)}
-                    aria-pressed={isActive}
-                    className={categoryPill(isActive)}
-                  >
-                    {name === 'All' ? name : displayKind(name)} <span className="tabular-nums text-ink-4">{count}</span>
-                  </button>
-                )
-              })}
-            </div>
-
-            {/* Tags and sort share one row: three stacked control rows read
-                as clutter beside the categories above them. */}
-            <div className="flex items-center gap-2 px-4 pb-3 overflow-x-auto no-scrollbar">
-              <div className="flex gap-2 shrink-0" role="group" aria-label="Filter by tag">
-                {FILTER_TAGS.map(t => {
-                  const isActive = tags.includes(t)
+            {/* Categories and tags are the tablet's chip surface. On a phone
+                the overview already owns kinds, tags and sets, so the grid
+                keeps only search and a way out of whatever filter it arrived
+                with. */}
+            <div className="hidden sm:block">
+              {/* Categories */}
+              <div className="flex gap-2 overflow-x-auto px-4 pb-2 no-scrollbar" role="group" aria-label="Filter by kind of site">
+                {[{ name: 'All', count: libraryTotal }, ...categories].map(({ name, count }) => {
+                  const isActive = name === 'All' ? kinds.length === 0 : kinds.includes(name)
                   return (
                     <button
-                      key={t}
-                      onClick={() => handleTagClick(t)}
+                      key={name}
+                      onClick={() => handleFilterChange(name)}
                       aria-pressed={isActive}
                       className={categoryPill(isActive)}
                     >
-                      {t}
+                      {name === 'All' ? name : displayKind(name)} <span className="tabular-nums text-ink-4">{count}</span>
                     </button>
                   )
                 })}
               </div>
-              <span aria-hidden="true" className="shrink-0 w-px self-stretch bg-edge" />
-              {/* overflow-x-auto clips vertically, which would cut the sort
-                  buttons' touch overlays off — same compensation as before,
-                  scoped to the sort group now. */}
-              <div className="flex items-center gap-1.5 shrink-0 py-3 -my-3" role="group" aria-label="Sort sites">
-                <span className="text-micro text-ink-4 shrink-0">Sort</span>
-                {SORT_OPTIONS.map(({ value, label }) => (
-                  <button
-                    key={value}
-                    onClick={() => setSort(value)}
-                    aria-pressed={sortBy === value}
-                    className={`shrink-0 px-1.5 py-0.5 ${sortButton(sortBy === value)}`}
-                  >
-                    {label}
-                  </button>
-                ))}
+
+              {/* Tags and sort share one row: three stacked control rows read
+                  as clutter beside the categories above them. */}
+              <div className="flex items-center gap-2 px-4 pb-3 overflow-x-auto no-scrollbar">
+                <div className="flex gap-2 shrink-0" role="group" aria-label="Filter by tag">
+                  {FILTER_TAGS.map(t => {
+                    const isActive = tags.includes(t)
+                    return (
+                      <button
+                        key={t}
+                        onClick={() => handleTagClick(t)}
+                        aria-pressed={isActive}
+                        className={categoryPill(isActive)}
+                      >
+                        {t}
+                      </button>
+                    )
+                  })}
+                </div>
+                <span aria-hidden="true" className="shrink-0 w-px self-stretch bg-edge" />
+                {/* overflow-x-auto clips vertically, which would cut the sort
+                    buttons' touch overlays off — same compensation as before,
+                    scoped to the sort group now. */}
+                <div className="flex items-center gap-1.5 shrink-0 py-3 -my-3" role="group" aria-label="Sort sites">
+                  <span className="text-micro text-ink-4 shrink-0">Sort</span>
+                  {SORT_OPTIONS.map(({ value, label }) => (
+                    <button
+                      key={value}
+                      onClick={() => setSort(value)}
+                      aria-pressed={sortBy === value}
+                      className={`shrink-0 px-1.5 py-0.5 ${sortButton(sortBy === value)}`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
+
+            {phoneFilterLabel && (
+              <div className="sm:hidden flex items-center gap-2 px-4 pb-3 text-meta text-ink-4">
+                <span className="text-ink-2 truncate">{phoneFilterLabel}</span>
+                <span className="tabular-nums shrink-0">{pagination.total}</span>
+                <button
+                  onClick={clearAll}
+                  className="ml-auto shrink-0 text-ink-3 hover:text-ink transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-foreground/25 rounded-[4px]"
+                >
+                  Clear
+                </button>
+              </div>
+            )}
           </div>
 
           {/* pb-20 below xl clears the floating page links, which are centred

@@ -94,6 +94,8 @@ const changelog: ChangelogRelease[] = [
       { type: 'improved', author: 'damilare', text: 'The detail panel leads with the site\u2019s name and heart count, keeps one line of filing, and groups its actions with the prototype\u2019s single divider' },
       { type: 'improved', author: 'damilare', text: 'From 640 to 1279 the panel is a floating drawer at the edge rather than a bottom sheet; under 640 it remains the page' },
       { type: 'improved', author: 'damilare', text: 'Colors and Type always show their counts, and the admin can re-extract any site that landed without them' },
+      { type: 'improved', author: 'damilare', text: 'On a phone the grid keeps only search — kinds, tags and sort live in the overview — and a filtered grid names the filter with a Clear action' },
+      { type: 'improved', author: 'damilare', text: 'No site opens itself on load any more: the grid lands unselected at every width and a site opens on a tap or a ?site= link' },
     ],
   },
   {
