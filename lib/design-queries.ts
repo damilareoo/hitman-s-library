@@ -368,9 +368,9 @@ export async function queryCategories(): Promise<{ name: string; count: number }
  * The crawlable index of the whole collection.
  *
  * The gallery paginates as you scroll, so this list is what guarantees every
- * site is reachable from the HTML. It is also completely identical between
- * requests, and it was being recomputed — 100 full rows, joins and all — on
- * every single page view, purely to render links nobody sees. Cache it.
+ * site is reachable from the HTML. The cap is a runaway guard, not a page
+ * size: at 200 it silently dropped the fiftieth-newest sites from the only
+ * part of the page a crawler can follow.
  */
 export const queryAllSitesIndex = unstable_cache(
   async () => {
@@ -379,7 +379,7 @@ export const queryAllSitesIndex = unstable_cache(
       FROM design_sources
       WHERE screenshot_url IS NOT NULL
       ORDER BY created_at DESC
-      LIMIT 200
+      LIMIT 1000
     `
     return rows.map(row => ({
       id: String(row.id),
@@ -399,4 +399,44 @@ export const queryCategoriesCached = unstable_cache(
   queryCategories,
   ['categories'],
   { revalidate: 300, tags: ['designs'] },
+)
+
+/** One row per site, small enough to keep in the browser for the browse panel. */
+export interface BrowseEntry {
+  id: string
+  title: string
+  url: string
+  kind: string
+  thumb: string | null
+  tags: string[]
+}
+
+/**
+ * The whole library as a search index.
+ *
+ * The panel scores matches in the browser so typing is instant; a round trip
+ * per keystroke would be slower than the thing it is replacing. ~250 rows of
+ * five short fields cost a few kilobytes, and the cache means new arrivals
+ * show up within a couple of minutes.
+ */
+export const queryBrowseIndex = unstable_cache(
+  async (): Promise<BrowseEntry[]> => {
+    const rows = await sql`
+      SELECT id, source_url, source_name, kind, tags,
+             thumbnail_optimized_url, thumbnail_url
+      FROM design_sources
+      ORDER BY created_at DESC
+      LIMIT 1000
+    `
+    return rows.map(row => ({
+      id: String(row.id),
+      title: cleanTitle(row.source_name, row.source_url),
+      url: (row.source_url as string) ?? '',
+      kind: typeof row.kind === 'string' ? row.kind : '',
+      thumb: cleanUrl(row.thumbnail_optimized_url) ?? cleanUrl(row.thumbnail_url),
+      tags: parseTags(row.tags),
+    }))
+  },
+  ['browse-index'],
+  { revalidate: 120, tags: ['designs'] },
 )

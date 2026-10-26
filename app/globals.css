@@ -404,12 +404,13 @@ a[href] *,
   letter-spacing: 0;
 }
 
-/* Work order 2: wide-screen grid tracks. Three columns at 1536px and four at
-   1920px, with the main pane widening to hold them. Plain CSS, not arbitrary
-   variants: overlapping same-property queries under min-[..]: ordering proved
-   nondeterministic (the 4-column rule lost to the 3-column one at 1920px),
-   and stacked min:max: variants are never generated at all. */
-@media (min-width: 1536px) and (max-width: 1919px) {
+/* Wide-screen grid tracks. The grid owns eight of twelve columns once the kind
+   rail is gone, so three fit from 1440 and four from 1920, with the panel
+   giving up a column. Plain CSS, not arbitrary variants: overlapping
+   same-property queries under min-[..]: ordering proved nondeterministic (the
+   4-column rule lost to the 3-column one at 1920px), and stacked min:max:
+   variants are never generated at all. */
+@media (min-width: 1440px) {
   .gallery-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }

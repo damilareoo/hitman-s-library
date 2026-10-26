@@ -85,6 +85,15 @@ export function releaseAuthors(release: ChangelogRelease): Author[] {
 // only case where the question is actually being asked.
 const changelog: ChangelogRelease[] = [
   {
+    date: '2026-10-26',
+    title: 'One Key',
+    items: [
+      { type: 'new', author: 'damilare', text: '⌘K, or /, opens a browse panel with every kind, set and newest arrival, and a search that answers as you type' },
+      { type: 'improved', author: 'damilare', text: 'The left rail is gone: the grid takes its width and fits three columns from 1440, four from 1920' },
+      { type: 'improved', author: 'damilare', text: 'Sets are removed from the panel that lists them, so the last thing that needed the rail has a home' },
+    ],
+  },
+  {
     date: '2026-10-25',
     title: 'Both Views',
     items: [

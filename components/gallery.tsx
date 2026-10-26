@@ -22,6 +22,7 @@ import { Spinner } from '@/components/ui/spinner'
 import { motion, AnimatePresence } from 'motion/react'
 import { useSoundsContext } from '@/contexts/sounds-context'
 import { RequestSiteDialog } from '@/components/request-site-dialog'
+import { BrowsePanel } from '@/components/browse-panel'
 import { Brand } from '@/components/brand'
 import { SiteLinks } from '@/components/site-links'
 import { EASE, DUR } from '@/lib/motion'
@@ -77,17 +78,6 @@ interface GalleryProps {
 }
 
 // Direction H keeps active rows obvious through fill, not a leading rule.
-function sidebarRow(isActive: boolean): string {
-  return [
-    'group w-full flex items-center gap-2 rounded-[8px] text-bodytext px-2.5 py-[7px] border',
-    'transition-[background-color,border-color,color] duration-[var(--dur-2)] ease-[var(--ease-sig)]',
-    'focus:outline-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-foreground/20',
-    isActive
-      ? 'text-ink font-medium bg-muted border-transparent hover:bg-foreground/[0.09]'
-      : 'text-ink-2 font-normal bg-transparent border-transparent hover:text-ink hover:bg-foreground/[0.055]',
-  ].join(' ')
-}
-
 function sortButton(isActive: boolean): string {
   return [
     'relative rounded-[6px] text-meta border transition-[background-color,border-color,color,transform] duration-[var(--dur-2)] ease-[var(--ease-sig)] active:scale-[0.98]',
@@ -120,15 +110,6 @@ const ICON_BUTTON =
   'text-ink-3 hover:text-ink hover:bg-muted active:scale-[0.98] transition-[background-color,border-color,color,transform] duration-[var(--dur-2)] ease-[var(--ease-sig)] ' +
   "after:absolute after:left-1/2 after:top-1/2 after:h-11 after:w-[42px] after:-translate-x-1/2 after:-translate-y-1/2 after:content-['']"
 
-// Counts share a fixed column and sit right-aligned, so the digits line up down
-// the list instead of ending wherever each label happens to leave them.
-function sidebarCount(isActive: boolean): string {
-  return [
-    'text-meta tabular-nums shrink-0 w-7 text-right transition-colors',
-    isActive ? 'text-ink-3' : 'text-ink-4',
-  ].join(' ')
-}
-
 function SkeletonCard() {
   return (
     <div className="flex flex-col border border-edge rounded-[4px] overflow-hidden animate-pulse">
@@ -142,47 +123,6 @@ function SkeletonCard() {
           {[0, 1, 2, 3].map(i => <div key={i} className="w-4 h-4 rounded-full bg-muted" />)}
         </div>
       </div>
-    </div>
-  )
-}
-
-/**
- * Named sets, listed where they are made. One row per set with its count;
- * opening one swaps the grid to its members. The × removes the set, never
- * a site — membership is edited from the panel's Save menu.
- */
-function CollectionsSection({ onOpen, activeName }: { onOpen: (name: string) => void; activeName: string | null }) {
-  const [collections] = useCollections()
-  const names = Object.keys(collections)
-  if (names.length === 0) return null
-  return (
-    <div className="px-2.5 pb-5">
-      <p className="px-2.5 pb-2 text-micro text-ink-4 select-none">Sets</p>
-      <ul className="space-y-1" role="list">
-        {names.map(name => {
-          const isActive = activeName === name
-          return (
-            <li key={name} className="group flex items-center gap-1">
-              <button
-                onClick={() => onOpen(name)}
-                aria-pressed={isActive}
-                className={sidebarRow(isActive) + ' flex-1 min-w-0'}
-              >
-                <span className="flex-1 text-left truncate text-bodytext">{name}</span>
-                <span className={sidebarCount(isActive)}>{collections[name].length}</span>
-              </button>
-              <button
-                onClick={() => deleteCollection(name)}
-                aria-label={`Delete set ${name}`}
-                title={`Delete set ${name}`}
-                className="shrink-0 w-7 h-7 hidden group-hover:flex group-focus-within:flex items-center justify-center rounded-[4px] text-ink-4 hover:text-ink hover:bg-muted transition-colors"
-              >
-                <span aria-hidden="true">×</span>
-              </button>
-            </li>
-          )
-        })}
-      </ul>
     </div>
   )
 }
@@ -226,6 +166,10 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
   const [isRefetching, setIsRefetching] = useState(false)
   const [searchInput, setSearchInput] = useState(search)
   const [requestOpen, setRequestOpen] = useState(false)
+  // Opening Request from the browse panel carries the query it found nothing
+  // for, so the person does not retype what they just searched.
+  const [requestPrefill, setRequestPrefill] = useState('')
+  const [browseOpen, setBrowseOpen] = useState(false)
   const [digestOpen, setDigestOpen] = useState(false)
   const [moreOpen, setMoreOpen] = useState(false)
   const digestRef = useRef<HTMLDivElement>(null)
@@ -294,7 +238,6 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
   const gridRef = useRef<HTMLDivElement>(null)
   const sentinelRef = useRef<HTMLDivElement>(null)
   const sheetRef = useRef<HTMLDivElement>(null)
-  const searchRef = useRef<HTMLInputElement>(null)
   const isThemeTransitioning = useRef(false)
   const sheetDragControls = useDragControls()
   const hasAnimated = useRef(false)
@@ -551,12 +494,12 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
 
   const isNarrow = useIsNarrow()
 
-  // Lock the page under anything modal: the sheet below the 3-pane split, and
-  // the request dialog at every width. Lenis has to be told as well — an
-  // overflow rule stops the native scrollbar but not a wheel it has already
-  // claimed.
+  // Lock the page under anything modal: the sheet below the 3-pane split, the
+  // request dialog at every width, and the browse layer. Lenis has to be told
+  // as well — an overflow rule stops the native scrollbar but not a wheel it
+  // has already claimed.
   useEffect(() => {
-    const lock = requestOpen || (isPanelOpen && window.matchMedia('(max-width: 1279px)').matches)
+    const lock = requestOpen || browseOpen || (isPanelOpen && window.matchMedia('(max-width: 1279px)').matches)
     const lenis = getLenis()
     if (lock) lenis?.stop()
     else lenis?.start()
@@ -565,7 +508,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
       getLenis()?.start()
       document.body.style.overflow = ''
     }
-  }, [isPanelOpen, requestOpen])
+  }, [isPanelOpen, requestOpen, browseOpen])
 
   // Escape closes the panel at any breakpoint; the focus trap only runs where
   // the sheet does, since that is where the panel is genuinely modal.
@@ -593,11 +536,21 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
     return () => document.removeEventListener('keydown', onKeyDown)
   }, [isPanelOpen, selectDesign])
 
+  // ⌘K (Ctrl+K off a Mac) opens the browse layer anywhere. "/" does the same
+  // unless something is being typed into — a slash in a search field is a
+  // slash, not a command. Both toggle, so the same keystroke closes it.
   useEffect(() => {
-    function onKey(e: KeyboardEvent) {
-      const tag = (e.target as HTMLElement).tagName
-      if (tag === 'INPUT' || tag === 'TEXTAREA') return
-      if (e.key === '/') { e.preventDefault(); searchRef.current?.focus() }
+    function onKey(e: globalThis.KeyboardEvent) {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault()
+        setBrowseOpen(v => !v)
+        return
+      }
+      if (e.key !== '/') return
+      const target = e.target as HTMLElement
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) return
+      e.preventDefault()
+      setBrowseOpen(true)
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
@@ -615,6 +568,8 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
       p.delete('category')
       p.delete('tag')
       p.delete('q')
+      p.delete('collection')
+      p.delete('similarTo')
       if (kind === 'All') {
         return
       }
@@ -648,6 +603,8 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
       p.delete('q')
       p.delete('site')
       p.delete('sort')
+      p.delete('collection')
+      p.delete('similarTo')
     })
   }, [updateParams])
 
@@ -684,6 +641,8 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
       p.delete('category')
       p.delete('tag')
       p.delete('q')
+      p.delete('collection')
+      p.delete('similarTo')
       if (kind !== 'All') p.set('category', kind)
     })
   }, [sounds, updateParams])
@@ -718,6 +677,35 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
     })
   }, [sounds, updateParams])
 
+  // The browse layer is an index of the whole library, not of the current
+  // filter, so every choice leaves the filter state behind — the same
+  // contract the sidebar had.
+  const handleBrowseKind = useCallback((kind: string) => {
+    setBrowseOpen(false)
+    handleIndexKind(kind)
+  }, [handleIndexKind])
+
+  const handleBrowseSet = useCallback((name: string) => {
+    setBrowseOpen(false)
+    handleIndexSet(name)
+  }, [handleIndexSet])
+
+  const handleBrowseOpen = useCallback((id: string) => {
+    sounds.playSelect()
+    updateParams(p => {
+      p.delete('view')
+      p.delete('collection')
+      p.delete('similarTo')
+      p.set('site', id)
+    })
+  }, [sounds, updateParams])
+
+  const handleBrowseRequest = useCallback((query: string) => {
+    setBrowseOpen(false)
+    setRequestPrefill(query)
+    setRequestOpen(true)
+  }, [])
+
   const hasFilters = kinds.length > 0 || tags.length > 0 || search.length > 0
   const showSkeletons = isRefetching && designs.length === 0
   const galleryHeading =
@@ -732,11 +720,18 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
   // heights go ragged.
   // The panel holds its column whether or not a site is selected, so the grid
   // has the same room either way and the count does not shift under you.
-  // Three columns at 1536 and four at 1920 come from .gallery-grid in
+  // Three columns at 1440 and four at 1920 come from .gallery-grid in
   // globals.css — Tailwind's arbitrary-variant ordering proved
   // nondeterministic for overlapping same-property queries, so the wide
   // breakpoints live in plain CSS.
   const cardColumns = 'grid-cols-1 sm:grid-cols-2 gallery-grid'
+
+  // The browse layer ranks the biggest shelf first, like the overview does.
+  const browseKinds = useMemo(
+    () => [...categories].sort((a, b) => b.count - a.count),
+    [categories],
+  )
+  const recentDesigns = useMemo(() => designs.slice(0, 6), [designs])
 
   // Only the panel the viewport actually shows is mounted. Rendering both and
   // hiding one in CSS meant two live previews per site, and the invisible one
@@ -777,9 +772,8 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
 
       {/* Header */}
       <header className="sticky top-0 z-50 border-b border-edge-strong bg-background/95 backdrop-blur-sm">
-        {/* px-5 at every width: the mark sits on the same 20px line as the
-            sidebar's text (nav px-2.5 + label px-2.5), so logo and rail read
-            as one structured edge rather than two near-misses. */}
+        {/* px-5 at every width keeps the mark, the search trigger and the
+            actions on one 20px line. */}
         <div className="relative h-14 px-5 flex items-center gap-4">
 
           {/* The wordmark used to be this page's h1. With only the mark on
@@ -788,40 +782,21 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
           <h1 className="sr-only">Hitman&apos;s Library</h1>
           <Brand />
 
-          {/* Search — the header controls belong to the 3-pane layout. Below
-              it the filter block above the grid owns search and sort, and two
-              live copies of each would be on screen at once. */}
-          <div className="flex-1 max-w-xs hidden xl:flex items-center relative">
-            <MagnifyingGlass className="absolute left-2.5 w-3 h-3 text-ink-3 pointer-events-none" weight="regular" />
-            <input
-              ref={searchRef}
-              type="search"
-              placeholder="Search sites…"
-              aria-label="Search sites"
-              value={searchInput}
-              onChange={e => setSearchInput(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Escape') e.currentTarget.blur() }}
-              className="w-full h-7 pl-7 pr-6 text-ui bg-muted/70 border border-transparent rounded-[10px] text-foreground placeholder:text-ink-4 outline-none hover:bg-muted focus:bg-muted focus:ring-1 focus:ring-foreground/15 focus-visible:outline-none [&:focus-visible]:outline-none transition-[background-color,box-shadow] duration-[var(--dur-2)] ease-[var(--ease-sig)] [&::-webkit-search-cancel-button]:hidden"
-            />
-            {searchInput ? (
-              <button
-                onClick={() => setSearchInput('')}
-                className="absolute right-2 text-ink-4 hover:text-ink-2 transition-colors"
-                aria-label="Clear search"
-              >
-                <X className="w-3 h-3" weight="bold" />
-              </button>
-            ) : (
-              <kbd className="absolute right-2 flex items-center justify-center h-[16px] min-w-[16px] px-1 rounded-[4px] border border-edge text-micro text-ink-4 pointer-events-none">
-                /
-              </kbd>
-            )}
-          </div>
-          {/* Live result count sits outside the box: inside it would collide
-              with the clear button and the / hint sharing the right edge. */}
-          <span className="hidden xl:block w-8 text-right text-micro tabular-nums text-ink-4 shrink-0" aria-hidden="true">
-            {search ? pagination.total : ''}
-          </span>
+          {/* Search is a layer, not a field: the same keystroke that opens it
+              searches the whole library, not just the page on screen. Below xl
+              the filter block above the grid owns search, where a thumb is. */}
+          <button
+            onClick={() => setBrowseOpen(true)}
+            aria-label="Search the library"
+            aria-keyshortcuts="Meta+K"
+            className="flex-1 max-w-xs h-7 pl-2.5 pr-1.5 hidden xl:flex items-center gap-2 rounded-[10px] bg-muted/70 border border-transparent text-ui text-ink-4 hover:bg-muted hover:text-ink-2 transition-[background-color,color] duration-[var(--dur-2)] ease-[var(--ease-sig)]"
+          >
+            <MagnifyingGlass className="w-3 h-3 shrink-0" weight="regular" />
+            <span className="flex-1 text-left truncate">Search sites…</span>
+            <kbd className="flex items-center justify-center h-[16px] min-w-[16px] px-1 rounded-[4px] border border-edge text-micro pointer-events-none">
+              ⌘K
+            </kbd>
+          </button>
 
           {/* On a phone the switcher sits on the window's centre line, the way
               the prototype does, rather than in whatever space the mark and
@@ -986,67 +961,15 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
       ) : (
       /* Body — the 3-pane split waits for xl. Below it, phones and tablets
           share one layout: a tablet gets the mobile treatment with more room,
-          not the desktop one squeezed into it. The three tracks are fixed: the
-          panel is part of the layout, not something the grid borrows. */
+          not the desktop one squeezed into it. Two tracks: the grid takes
+          everything the panel does not, and the panel is part of the layout
+          rather than something the grid borrows. */
       <div className="grid grid-cols-1 xl:grid-cols-12 min-h-[calc(100vh-56px)]">
-
-        {/* Sidebar */}
-        <aside data-lenis-prevent className="hidden xl:flex xl:col-span-2 flex-col sticky top-14 h-[calc(100vh-56px)] border-r border-edge-strong bg-background overflow-y-auto">
-          <nav className="flex-1 py-5 px-2.5" aria-label="Library">
-            <p className="px-2.5 pb-2.5 text-micro text-ink-4 select-none">Library</p>
-
-            {/* A 4px gap keeps adjacent filled rows from merging visually when
-                one is active and the next is hovered. */}
-            <ul className="space-y-1" role="list">
-              <li>
-                <button
-                  onClick={() => handleFilterChange('All')}
-                  aria-pressed={kinds.length === 0}
-                  className={sidebarRow(kinds.length === 0)}
-                >
-                  <span className="flex-1 text-left text-bodytext">All</span>
-                  <span className={sidebarCount(kinds.length === 0)}>{libraryTotal}</span>
-                </button>
-              </li>
-              {categories.map(({ name, count }) => {
-                const isActive = kinds.includes(name)
-                const label = displayKind(name)
-                return (
-                  <li key={name}>
-                    <button
-                      onClick={() => handleFilterChange(name)}
-                      aria-pressed={isActive}
-                      aria-label={`Filter by ${label}`}
-                      title={label}
-                      className={sidebarRow(isActive)}
-                    >
-                      <span className="flex-1 text-left truncate text-bodytext">{label}</span>
-                      <span className={sidebarCount(isActive)}>{count}</span>
-                    </button>
-                  </li>
-                )
-              })}
-            </ul>
-
-            {/* Active tags live in the filter bar above the grid, alongside
-                categories and search, rather than in a second list here. */}
-          </nav>
-
-          <CollectionsSection
-            onOpen={name => updateParams(p => {
-              p.delete('site')
-              p.delete('similarTo')
-              p.set('collection', name)
-            })}
-            activeName={searchParams.get('collection')}
-          />
-
-        </aside>
 
         {/* Gallery */}
         {/* tabIndex -1 so the skip link moves focus here and not just the
             scroll position; without it the next Tab returns to the header. */}
-        <main id="gallery" tabIndex={-1} className="xl:col-span-6 min-[1920px]:col-span-7 flex flex-col min-w-0 focus:outline-none">
+        <main id="gallery" tabIndex={-1} className="xl:col-span-8 min-[1920px]:col-span-9 flex flex-col min-w-0 focus:outline-none">
           {/* Compact filters — mobile and tablet */}
           <div className="xl:hidden sticky top-14 z-20 bg-background border-b border-edge-strong">
             <div className="px-4 pt-3 pb-2 relative">
@@ -1312,15 +1235,28 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
       )}
 
       {/* The sheet covers this corner on a phone, so the links hide only
-          there. On desktop the sidebar corner stays visible and reachable
-          with a card open — hiding them there stranded About/Changelog
-          behind the panel. */}
-      <SiteLinks hidden={isPanelOpen && isNarrow} variant={view === 'index' ? 'page' : 'sidebar'} />
+          there. On desktop the corner stays visible and reachable with a card
+          open — hiding them there stranded About/Changelog behind the panel. */}
+      <SiteLinks hidden={isPanelOpen && isNarrow} variant="page" />
+
+      <BrowsePanel
+        open={browseOpen}
+        onClose={() => setBrowseOpen(false)}
+        total={libraryTotal}
+        kinds={browseKinds}
+        collections={collections}
+        recents={recentDesigns}
+        onKind={handleBrowseKind}
+        onSet={handleBrowseSet}
+        onDeleteSet={deleteCollection}
+        onOpenSite={handleBrowseOpen}
+        onRequest={handleBrowseRequest}
+      />
 
       <RequestSiteDialog
         open={requestOpen}
-        onClose={() => setRequestOpen(false)}
-        initialUrl={search.trim()}
+        onClose={() => { setRequestOpen(false); setRequestPrefill('') }}
+        initialUrl={requestPrefill || search.trim()}
         onOpenSite={selectDesignById}
       />
 
