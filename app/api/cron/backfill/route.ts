@@ -13,10 +13,6 @@ export const maxDuration = 60
 
 const sql = getSql()
 const BUDGET_MS = 40_000 // stop starting new sites after 40s, leave cleanup time
-// Three at once keeps the 60s function busy: one site takes long enough that a
-// serial loop finished exactly one per run, which is a month of mornings for
-// the sites that landed hollow before extraction was hardened.
-const CONCURRENCY = 3
 const PER_RUN = 12
 
 interface RepairResult {
@@ -60,7 +56,6 @@ export async function GET(req: NextRequest) {
 
   const results: RepairResult[] = []
   const start = Date.now()
-  const queue = [...pending]
 
   async function repairOne(id: number, source_url: string): Promise<RepairResult> {
     try {
@@ -153,18 +148,14 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  // Workers drain the shared queue, so a slow site does not hold the others
-  // behind it and nothing starts that the function cannot finish.
-  await Promise.all(
-    Array.from({ length: CONCURRENCY }, async () => {
-      while (queue.length > 0) {
-        if (Date.now() - start > BUDGET_MS) return
-        const job = queue.shift()
-        if (!job) return
-        results.push(await repairOne(job.id, job.source_url))
-      }
-    }),
-  )
+  // One at a time: three concurrent pages on one serverless Chromium is
+  // enough to blow the function's memory, which failed every site silently.
+  // The motion take is skipped instead — it is the last ~8 seconds of a run
+  // and no backfill writes it.
+  for (const job of pending) {
+    if (Date.now() - start > BUDGET_MS) break
+    results.push(await repairOne(job.id, job.source_url))
+  }
 
   if (results.some(r => r.ok)) revalidateTag('designs', 'max')
 
