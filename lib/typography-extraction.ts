@@ -19,6 +19,12 @@ export interface ExtractedTypography {
 
 // AGGRESSIVE typography extraction from HTML - finds EVERYTHING
 export function extractTypographyEnhanced(html: string): ExtractedTypography {
+  // Font names only ever come from markup. A script bundle contains the words
+  // "font-family", "url" and every font in the app as quoted strings, and the
+  // loosest patterns in here pulled those out as typefaces — which is how a
+  // site landed with a type tab reading "url · link · props".
+  html = html.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '')
+
   const headingFonts = new Set<string>()
   const bodyFonts = new Set<string>()
   const monoFonts = new Set<string>()
@@ -159,20 +165,7 @@ export function extractTypographyEnhanced(html: string): ExtractedTypography {
     }
     console.log('[v0] Found', dataAttrCount, 'fonts from data attributes')
     
-    // 10. AGGRESSIVE: Extract font names from any quoted strings containing common font keywords
-    const aggressivePattern = /["']([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*(?:\s+(?:Pro|Display|Text|Light|Regular|Bold|Medium|Italic))*?)["']\s*(?:[,;:\)]|font)/gi
-    let aggressiveCount = 0
-    while ((match = aggressivePattern.exec(html)) !== null) {
-      const potential = cleanFontName(match[1])
-      // Only add if it looks like a real font name (2-50 chars, has letters and spaces)
-      if (potential && potential.length >= 3 && potential.length < 60 && /[a-zA-Z]/.test(potential)) {
-        allFonts.add(potential)
-        aggressiveCount++
-      }
-    }
-    console.log('[v0] Found', aggressiveCount, 'fonts from aggressive pattern matching')
-    
-    // 11. Extract from font-family in ANY context (loose pattern)
+    // 10. Extract from font-family in ANY context (loose pattern)
     const loosePattern = /font-family\s*:\s*([^};,\n]+(?:[,][^};,\n]+)*)/gi
     let looseCount = 0
     while ((match = loosePattern.exec(html)) !== null) {
@@ -190,7 +183,7 @@ export function extractTypographyEnhanced(html: string): ExtractedTypography {
     
     // Filter more intelligently - keep custom fonts but remove only system generics
     const filteredFonts = Array.from(allFonts)
-      .filter(f => f && f.length > 0 && !['serif', 'sans-serif', 'monospace', 'cursive', 'fantasy', 'system-ui', 'ui-serif', 'ui-sans-serif', 'ui-monospace'].includes(f.toLowerCase()))
+      .filter(isTypefaceName)
       .slice(0, 50) // Allow up to 50 fonts
     
     console.log('[v0] Final fonts after filtering:', filteredFonts.length)
@@ -218,9 +211,29 @@ export function extractTypographyEnhanced(html: string): ExtractedTypography {
     headingFonts: Array.from(headingFonts).map(f => ({ name: f })),
     bodyFonts: Array.from(bodyFonts).map(f => ({ name: f })),
     monoFonts: Array.from(monoFonts).map(f => ({ name: f })),
-    allFonts: Array.from(allFonts).filter(f => f && f.length > 0 && !['serif', 'sans-serif', 'monospace', 'cursive', 'fantasy', 'system-ui', 'ui-serif', 'ui-sans-serif', 'ui-monospace'].includes(f.toLowerCase())),
+    allFonts: Array.from(allFonts).filter(isTypefaceName),
     fontStack
   }
+}
+
+const GENERIC_OR_CSS = new Set([
+  'serif', 'sans-serif', 'monospace', 'cursive', 'fantasy', 'system-ui',
+  'ui-serif', 'ui-sans-serif', 'ui-monospace', 'inherit', 'initial', 'unset',
+  'revert', 'none', 'normal', 'default', 'auto', 'text', 'button', 'body',
+  'html', 'important', 'transparent', 'currentcolor',
+])
+
+/**
+ * A font family looks like a name. CSS values that survived cleaning —
+ * `url(...)`, `var(--x)`, `font-family` read out of the wrong context — do not,
+ * and neither do single words that are CSS keywords rather than typefaces.
+ */
+function isTypefaceName(name: string): boolean {
+  if (!name || name.length < 2 || name.length > 60) return false
+  if (!/[a-zA-Z]/.test(name)) return false
+  if (/[(){}\[\]<>;:=/!?"'`]/.test(name)) return false
+  if (name.startsWith('--')) return false
+  return !GENERIC_OR_CSS.has(name.toLowerCase())
 }
 
 // Parse font stack from font-family value - AGGRESSIVE, keep all
