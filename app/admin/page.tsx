@@ -19,6 +19,9 @@ interface Site {
   screenshot_url?: string
   mobile_screenshot_url?: string | null
   extraction_error?: string | null
+  /** Rows written at extraction time. Zero means the site is incomplete. */
+  color_count?: number
+  type_count?: number
 }
 
 interface QueueItem {
@@ -201,6 +204,8 @@ export default function AdminPage() {
   const [backfillProgress, setBackfillProgress] = useState<{ done: number; total: number } | null>(null)
   const [isPreviewBackfilling, setIsPreviewBackfilling] = useState(false)
   const [previewBackfillProgress, setPreviewBackfillProgress] = useState<{ done: number; total: number } | null>(null)
+  const [isDataBackfilling, setIsDataBackfilling] = useState(false)
+  const [dataBackfillProgress, setDataBackfillProgress] = useState<{ done: number; total: number } | null>(null)
   const [kindFilter, setKindFilter] = useState<KindFilter>('all')
   const [savingKindId, setSavingKindId] = useState<string | null>(null)
   const [kindError, setKindError] = useState<string | null>(null)
@@ -512,6 +517,31 @@ export default function AdminPage() {
     await loadSites()
   }
 
+  /**
+   * Re-extract every site that has no palette or no type. These are the rows
+   * whose browser extraction failed at add time and fell back to an og:image;
+   * the full re-extraction is what fills both tabs.
+   */
+  const handleBackfillData = async () => {
+    const missing = allSites.filter(s => !s.color_count || !s.type_count)
+    if (!missing.length) return alert('Every site has colours and type.')
+    if (!confirm(`Re-extract ${missing.length} sites missing colours or type? Each takes up to a minute.`)) return
+
+    setIsDataBackfilling(true)
+    setDataBackfillProgress({ done: 0, total: missing.length })
+
+    for (let i = 0; i < missing.length; i++) {
+      try {
+        await fetch(`/api/design/${missing[i].id}/reextract`, { method: 'POST' })
+      } catch { /* continue on individual failures */ }
+      setDataBackfillProgress({ done: i + 1, total: missing.length })
+    }
+
+    setIsDataBackfilling(false)
+    setDataBackfillProgress(null)
+    await loadSites()
+  }
+
   const inGallery = allSites.filter(s => s.screenshot_url).length
   const failed = allSites.filter(s => !s.screenshot_url && s.extraction_error).length
 
@@ -736,6 +766,16 @@ export default function AdminPage() {
               {isDeduping
                 ? <><CircleNotch className="w-3 h-3 animate-spin" weight="bold" /> Deduplicating…</>
                 : <><ArrowCounterClockwise className="w-3 h-3" weight="regular" /> Remove duplicates</>
+              }
+            </button>
+            <button
+              onClick={handleBackfillData}
+              disabled={isDataBackfilling}
+              className="h-8 px-3 text-ui border border-edge-strong rounded-[4px] disabled:opacity-40 hover:bg-muted transition-colors flex items-center gap-1.5 whitespace-nowrap"
+            >
+              {isDataBackfilling
+                ? <><CircleNotch className="w-3 h-3 animate-spin" weight="bold" /> {dataBackfillProgress?.done}/{dataBackfillProgress?.total}</>
+                : <><ArrowCounterClockwise className="w-3 h-3" weight="regular" /> Backfill colors &amp; type</>
               }
             </button>
             <button

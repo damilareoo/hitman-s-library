@@ -121,7 +121,13 @@ export async function gotoResilient(page: Page, url: string): Promise<'idle' | '
     // as a page still sitting on about:blank.
     const current = page.url()
     if (!current || current === 'about:blank') throw err
-    console.warn(`[extract] navigation incomplete for ${url} — continuing with what rendered`)
+    console.warn(`[extract] navigation incomplete for ${url} — waiting for the document to settle`)
+    // A timed-out goto does not stop the navigation. Everything read next used
+    // to run against a frame that was still being replaced, so all three
+    // extractors failed with "Attempted to use detached Frame" and the site
+    // landed with an og:image and no palette or type. Wait for the document we
+    // are going to read before reading it.
+    await settleNavigation(page)
     return 'partial'
   }
 
@@ -131,6 +137,73 @@ export async function gotoResilient(page: Page, url: string): Promise<'idle' | '
     .catch(() => 'loaded' as const)
 
   return idle
+}
+
+/**
+ * Wait until the main frame stops being replaced.
+ *
+ * Called after a navigation, and again after a read lost its frame. Two
+ * consecutive reads of a non-loading document are the signal: one sample can
+ * land on the outgoing document just before a redirect swaps it.
+ */
+export async function settleNavigation(page: Page, budgetMs = 8000): Promise<void> {
+  const deadline = Date.now() + budgetMs
+  let stable = 0
+
+  while (Date.now() < deadline) {
+    let ready: string | null = null
+    try {
+      ready = await page.evaluate(() => document.readyState)
+    } catch {
+      // Detached — the document was replaced mid-read. Start counting again
+      // against the one that replaced it.
+    }
+    if (ready && ready !== 'loading') {
+      stable++
+      if (stable >= 2) {
+        await page.waitForNetworkIdle({ idleTime: 500, timeout: 3000 }).catch(() => {})
+        return
+      }
+    } else {
+      stable = 0
+    }
+    await new Promise(r => setTimeout(r, 400))
+  }
+}
+
+/**
+ * Errors that mean "the document under this read was replaced", not "this
+ * site cannot be read". They are worth retrying; everything else is not.
+ */
+const FRAME_REPLACED = /detached Frame|Execution context was destroyed|Navigating frame was detached|Target closed|Session closed|Cannot find context/i
+
+/**
+ * Run a page read, retrying it against whatever document replaced the frame.
+ *
+ * The reads are pure functions of the DOM, so a retry is safe. Three attempts
+ * is enough for a redirect chain; past that the page is still moving, and the
+ * caller's fallback is the honest answer.
+ */
+export async function readPage<T>(
+  page: Page,
+  label: string,
+  read: () => Promise<T>,
+  fallback: T,
+): Promise<T> {
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      return await read()
+    } catch (err) {
+      const replaced = FRAME_REPLACED.test(String(err))
+      if (!replaced || attempt === 3) {
+        console.warn(`[extract] ${label} failed${attempt > 1 ? ` (attempt ${attempt})` : ''}:`, err)
+        return fallback
+      }
+      console.warn(`[extract] ${label}: frame replaced mid-read — waiting and retrying`)
+      await settleNavigation(page, 5000)
+    }
+  }
+  return fallback
 }
 
 // Cloudflare "Just a moment", bot checkpoints and similar interstitials run a
@@ -509,6 +582,34 @@ function flatFrame(capture: ClampedCapture): boolean {
   return density(capture) < FLAT_FRAME_DENSITY
 }
 
+/**
+ * A capture can fail because the frame was replaced or the renderer was still
+ * busy, neither of which is a property of the site. Retry those — after
+ * letting the document settle — rather than returning no screenshot for a page
+ * that had merely moved.
+ */
+async function captureWithRetry(
+  page: Page,
+  label: string,
+  capture: () => Promise<ClampedCapture>,
+): Promise<ClampedCapture | null> {
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    try {
+      return await capture()
+    } catch (err) {
+      const transient = FRAME_REPLACED.test(String(err)) || /Unable to capture screenshot|Protocol error/i.test(String(err))
+      if (!transient || attempt === 2) {
+        console.error(`[screenshot] ${label}:`, err)
+        return null
+      }
+      console.warn(`[screenshot] ${label}: frame moved mid-capture — retrying`)
+      await settleNavigation(page, 5000)
+      await new Promise(r => setTimeout(r, 500))
+    }
+  }
+  return null
+}
+
 export async function captureFullPageScreenshot(
   page: Page,
   siteUrl: string,
@@ -521,22 +622,22 @@ export async function captureFullPageScreenshot(
     if (opts.scroll !== false) await autoScroll(page)
     await new Promise(r => setTimeout(r, 800))
 
-    let capture = await captureClamped(page, 92)
+    let capture = await captureWithRetry(page, `${siteUrl} full-page`, () => captureClamped(page, 92))
 
     // A capture with almost nothing in it means the page was not ready, whatever
     // it said. Walking a page can restart an intro, and a scroll-triggered
     // reveal may not have run at all — so give it a moment and take one more,
     // keeping whichever frame has more in it. One retry: past that, the site
     // genuinely is this sparse.
-    if (capture.buffer?.length && flatFrame(capture)) {
+    if (capture?.buffer?.length && flatFrame(capture)) {
       console.warn(`[screenshot] ${siteUrl}: frame looks unpainted — one more attempt`)
       // Half the budget: the page has already had the full one before this.
       await waitForPaint(page, PAINT_MAX_WAIT_MS / 2)
-      const second = await captureClamped(page, 92)
-      if (second.buffer?.length && density(second) > density(capture)) capture = second
+      const second = await captureWithRetry(page, `${siteUrl} full-page (second)`, () => captureClamped(page, 92))
+      if (second?.buffer?.length && density(second) > density(capture)) capture = second
     }
 
-    let buffer = capture.buffer
+    let buffer = capture?.buffer
 
     // Chrome silently returns an empty buffer when a page is too tall to encode.
     // Uploading that produces a blob that serves 200 with no body, which the
@@ -580,7 +681,8 @@ export async function captureMobileScreenshot(
     await autoScroll(page, 300)
     await new Promise(r => setTimeout(r, 600))
 
-    const { buffer } = await captureClamped(page, 92)
+    const capture = await captureWithRetry(page, `${siteUrl} mobile`, () => captureClamped(page, 92))
+    const buffer = capture?.buffer
 
     if (!buffer || buffer.length === 0) {
       console.error(`[screenshot] empty mobile buffer for ${siteUrl} — not uploading`)
@@ -878,25 +980,28 @@ export async function extractFullDesignData(url: string): Promise<FullExtraction
 
     await gotoResilient(page, url)
     await waitPastInterstitial(page, url)
+    await settleNavigation(page)
     await settlePage(page)
 
     // Pure reads, so they are safe to run together — but only now that nothing
-    // is scrolling the page underneath them. Each one is caught on its own:
-    // a site whose assets throw should still yield its colours and its type,
-    // where before any single failure took the whole extraction down with it.
+    // is scrolling the page underneath them. Each one is caught and retried on
+    // its own: a site whose assets throw should still yield its colours and its
+    // type, and a redirect that replaces the document mid-read no longer costs
+    // the whole extraction.
     const [colors, assets, typography] = await Promise.all([
-      extractBrandColors(page).catch(err => {
-        console.warn(`[extract] colors failed for ${url}:`, err)
-        return [] as string[]
-      }),
-      extractAssets(page, url).catch(err => {
-        console.warn(`[extract] assets failed for ${url}:`, err)
-        return [] as import('./asset-extraction').ExtractedAsset[]
-      }),
-      extractTypographyWithRoles(page).catch(err => {
-        console.warn(`[extract] typography failed for ${url}:`, err)
-        return [] as Awaited<ReturnType<typeof extractTypographyWithRoles>>
-      }),
+      readPage(page, `colors for ${url}`, () => extractBrandColors(page), [] as string[]),
+      readPage(
+        page,
+        `assets for ${url}`,
+        () => extractAssets(page, url),
+        [] as import('./asset-extraction').ExtractedAsset[],
+      ),
+      readPage(
+        page,
+        `typography for ${url}`,
+        () => extractTypographyWithRoles(page),
+        [] as Awaited<ReturnType<typeof extractTypographyWithRoles>>,
+      ),
     ])
 
     // Some sites put their whole document inside a frame — cameronsworld.net is

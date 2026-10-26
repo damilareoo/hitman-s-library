@@ -521,17 +521,23 @@ dialog::backdrop {
    PHONE DRAWER
    ============================================================================ */
 
-/* Under 640 the detail sheet is the page: no card floating inside a strip of
-   backdrop, no drag handle it doesn't need. The vars feed the inline styles on
-   the motion element, which is the only place those values can live. */
+/* Under 640 the panel is the page: no card floating inside a strip of
+   backdrop, no 14px corners it doesn't need. The vars feed the inline styles
+   on the motion element, which is the only place those values can live.
+   From 640 to 1279 it keeps the prototype's drawer geometry. */
 @media (max-width: 639px) {
   .site-sheet {
-    --sheet-height: auto;
+    --sheet-top: 0px;
+    --sheet-right: 0px;
+    --sheet-bottom: 0px;
+    --sheet-width: 100%;
     --sheet-radius: 0px;
     --sheet-shadow: none;
-    top: 0;
+    border-width: 0;
   }
-  .site-sheet-handle { display: none; }
+  /* On a phone the header's one line of title needs the width more than the
+     close button needs a rule beside it. */
+  .panel-head-divider { display: none; }
 }
 
 /* ============================================================================

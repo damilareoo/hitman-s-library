@@ -22,7 +22,7 @@ export async function GET(
 
   try {
     const sources = await sql`
-      SELECT id, source_url, screenshot_url, mobile_screenshot_url, created_at,
+      SELECT id, source_url, source_name, screenshot_url, mobile_screenshot_url, created_at,
              metadata->>'extraction_error' as extraction_error,
              COALESCE((metadata->>'live_preview')::boolean, true) as live_preview,
               metadata->>'motion_error' as motion_error,
@@ -65,19 +65,27 @@ export async function GET(
       const histories = await getHistoriesByIds([pointer])
       const snapshot = histories.get(pointer)
       if (snapshot) {
-        snapshotColors = snapshot.palette.map(p => ({
-          hex_value: p.hex,
-          oklch: p.oklch,
-          area_share: typeof p.area_share === 'number' ? p.area_share : null,
-        }))
-        snapshotTypography = snapshot.typography.map(t => ({
-          font_family: t.fontFamily,
-          role: t.role,
-          google_fonts_url: t.googleFontsUrl,
-          primary_weight: t.primaryWeight,
-          sample_size_px: t.sampleSizePx ?? null,
-          sample_line_height: t.sampleLineHeight ?? null,
-        }))
+        // An empty snapshot is a record of a run that found nothing, not a
+        // statement that the site has no palette. Prefer whatever the legacy
+        // tables hold in that case — otherwise an og:image fallback run hides
+        // colours and type that are sitting right there.
+        if (snapshot.palette.length > 0) {
+          snapshotColors = snapshot.palette.map(p => ({
+            hex_value: p.hex,
+            oklch: p.oklch,
+            area_share: typeof p.area_share === 'number' ? p.area_share : null,
+          }))
+        }
+        if (snapshot.typography.length > 0) {
+          snapshotTypography = snapshot.typography.map(t => ({
+            font_family: t.fontFamily,
+            role: t.role,
+            google_fonts_url: t.googleFontsUrl,
+            primary_weight: t.primaryWeight,
+            sample_size_px: t.sampleSizePx ?? null,
+            sample_line_height: t.sampleLineHeight ?? null,
+          }))
+        }
         screenshotUrl = snapshot.screenshot_url ?? screenshotUrl
         mobileScreenshotUrl = snapshot.mobile_screenshot_url ?? mobileScreenshotUrl
       }
@@ -86,6 +94,7 @@ export async function GET(
     return NextResponse.json({
       id: source.id,
       url: source.source_url,
+      title: source.source_name,
       screenshot_url: toHttps(screenshotUrl),
       mobile_screenshot_url: toHttps(mobileScreenshotUrl),
       live_preview: source.live_preview,

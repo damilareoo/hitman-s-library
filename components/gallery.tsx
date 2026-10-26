@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
-import { useDragControls } from 'motion/react'
 import { useTheme } from 'next-themes'
 import { Sun, Moon, SpeakerHigh, SpeakerSlash, MagnifyingGlass, X, ArrowRight, Plus, DotsThree } from '@phosphor-icons/react'
 import dynamic from 'next/dynamic'
@@ -239,7 +238,6 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
   const sentinelRef = useRef<HTMLDivElement>(null)
   const sheetRef = useRef<HTMLDivElement>(null)
   const isThemeTransitioning = useRef(false)
-  const sheetDragControls = useDragControls()
   const hasAnimated = useRef(false)
   const requestSeq = useRef(0)
 
@@ -1260,7 +1258,9 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
         onOpenSite={selectDesignById}
       />
 
-      {/* Mobile bottom sheet */}
+      {/* The panel below the three-pane split. On a tablet it is the same
+          drawer the prototype draws: a card floating 10px inside the viewport,
+          not a sheet bolted to the bottom. Under 640 it becomes the page. */}
       <AnimatePresence>
         {isPanelOpen && (
           <>
@@ -1270,7 +1270,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.22 }}
-              className="xl:hidden fixed inset-0 z-40 bg-black/40 backdrop-blur-[3px]"
+              className="xl:hidden fixed inset-0 z-40 bg-black/20 backdrop-blur-[2px]"
               onClick={() => selectDesign(null)}
             />
 
@@ -1280,34 +1280,20 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
               role="dialog"
               aria-modal="true"
               aria-label="Site details"
-              initial={{ y: '100%' }}
-              animate={{ y: 0 }}
-              exit={{ y: '100%' }}
-              transition={{ type: 'spring', damping: 36, stiffness: 380, mass: 0.7 }}
-              drag="y"
-              dragControls={sheetDragControls}
-              dragListener={false}
-              dragConstraints={{ top: 0, bottom: 0 }}
-              dragElastic={{ top: 0, bottom: 0.6 }}
-              onDragEnd={(_, info) => {
-                if (info.offset.y > 80 || info.velocity.y > 500) selectDesign(null)
-              }}
-              className="site-sheet xl:hidden fixed bottom-0 left-0 right-0 z-50 bg-background flex flex-col"
+              initial={{ opacity: 0, x: 24 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 24 }}
+              transition={{ type: 'spring', damping: 38, stiffness: 420, mass: 0.8 }}
+              className="site-sheet xl:hidden fixed z-50 flex flex-col overflow-hidden bg-card border border-edge-strong"
               style={{
-                // On a phone this becomes the page: edge to edge, full height,
-                // no handle. From 640 up it stays the sheet you can drag away.
-                height: 'var(--sheet-height, 82svh)',
-                borderRadius: 'var(--sheet-radius, 20px 20px 0 0)',
-                boxShadow: 'var(--sheet-shadow, 0 -12px 40px rgba(0,0,0,0.12))',
+                top: 'var(--sheet-top, 10px)',
+                right: 'var(--sheet-right, 10px)',
+                bottom: 'var(--sheet-bottom, 10px)',
+                width: 'var(--sheet-width, min(636px, calc(100vw - 20px)))',
+                borderRadius: 'var(--sheet-radius, 14px)',
+                boxShadow: 'var(--sheet-shadow, 0 24px 80px -20px rgba(0,0,0,0.45))',
               }}
             >
-              <div
-                className="site-sheet-handle flex justify-center pt-3 pb-1 shrink-0 cursor-grab active:cursor-grabbing select-none"
-                onPointerDown={e => sheetDragControls.start(e)}
-              >
-                <div className="w-10 h-[5px] rounded-full bg-ink-4" />
-              </div>
-
               <div className="flex flex-col flex-1 min-h-0" style={{ touchAction: 'pan-y', paddingBottom: 'var(--safe-bottom)' }}>
                 {renderDetailPanel('mobile')}
               </div>

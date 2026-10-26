@@ -86,6 +86,18 @@ export function releaseAuthors(release: ChangelogRelease): Author[] {
 const changelog: ChangelogRelease[] = [
   {
     date: '2026-10-26',
+    title: 'Every Detail',
+    items: [
+      { type: 'fixed', author: 'damilare', text: 'A site added while its page was still redirecting no longer lands with just an og:image: extraction waits for the document and retries the read when the frame is replaced' },
+      { type: 'fixed', author: 'damilare', text: 'When the browser cannot read a page, the colours and fonts in its HTML are written to the palette and type tabs instead of being thrown away' },
+      { type: 'fixed', author: 'damilare', text: 'An empty extraction record no longer hides palette or type rows that already exist, and the morning backfill now repairs sites missing either' },
+      { type: 'improved', author: 'damilare', text: 'The detail panel leads with the site\u2019s name and heart count, keeps one line of filing, and groups its actions with the prototype\u2019s single divider' },
+      { type: 'improved', author: 'damilare', text: 'From 640 to 1279 the panel is a floating drawer at the edge rather than a bottom sheet; under 640 it remains the page' },
+      { type: 'improved', author: 'damilare', text: 'Colors and Type always show their counts, and the admin can re-extract any site that landed without them' },
+    ],
+  },
+  {
+    date: '2026-10-26',
     title: 'One Key',
     items: [
       { type: 'new', author: 'damilare', text: '⌘K, or /, opens a browse panel with every kind, set and newest arrival, and a search that answers as you type' },

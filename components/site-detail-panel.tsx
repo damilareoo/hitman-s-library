@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
-import { SquaresFour, Link as LinkIcon, Check, BookmarkSimple, Heart, X } from '@phosphor-icons/react'
+import { SquaresFour, Check, BookmarkSimple, Heart, X } from '@phosphor-icons/react'
 import { useCollections, toggleMembership, sanitizeName } from '@/lib/collections'
 import { SIMILAR_ENABLED } from '@/lib/drift'
 import { PanelTabs, type PanelTab } from './panel-tabs'
@@ -23,6 +23,8 @@ interface TypographyRow { font_family: string; role: string; google_fonts_url: s
 interface DetailData {
   id: number
   url: string
+  /** The site's own name, which is what the header leads with. */
+  title?: string | null
   favorite_count?: number
   screenshot_url: string | null
   mobile_screenshot_url: string | null
@@ -56,7 +58,6 @@ interface SiteDetailPanelProps {
 export function SiteDetailPanel({ variant = 'desktop', sourceId, metadata, onClose, onSimilar, initialTab = 'preview', onTabChange }: SiteDetailPanelProps) {
   const isMobile = variant === 'mobile'
   const [activeTab, setActiveTab] = useState<PanelTab>(initialTab)
-  const [linkCopied, setLinkCopied] = useState(false)
   const [saveOpen, setSaveOpen] = useState(false)
   const [newSetName, setNewSetName] = useState('')
   const [collections] = useCollections()
@@ -105,7 +106,6 @@ export function SiteDetailPanel({ variant = 'desktop', sourceId, metadata, onClo
 
   useEffect(() => {
     setActiveTab(initialTab)
-    setLinkCopied(false)
     load()
   }, [load, initialTab])
 
@@ -117,41 +117,38 @@ export function SiteDetailPanel({ variant = 'desktop', sourceId, metadata, onClo
   // offer. Preview already renders the phone layout here, so it stands in.
   const effectiveTab: PanelTab = isMobile && activeTab === 'mobile' ? 'preview' : activeTab
 
-  // The title is usually the domain, so the meta line says what it doesn't:
-  // the kind and one human tag. Motion tags are machine data (one was even
-  // stored cut mid-value), and an unsorted row has no kind worth announcing.
+  // The header is the site's name, its standing, and one line of filing.
+  // Anything more about the row belongs in a tab.
   const kindLabel = metadata?.kind && metadata.kind !== UNSORTED ? metadata.kind : undefined
-  const displayTag = metadata?.tags?.find(
-    t => !t.startsWith('motion:') && t.toLowerCase() !== (kindLabel ?? '').toLowerCase(),
-  )
+  const title = data?.title?.trim() || hostname
+  const favCount = data?.favorite_count ?? 0
 
   return (
     <div className="flex flex-col h-full bg-background">
       {/* Header */}
       <div
-        className="flex items-center gap-2 px-4 py-3.5 border-b border-edge-strong flex-shrink-0"
-        // Only bites when the drawer runs edge to edge on a phone; on desktop
-        // env() is 0 and this is the same 14px the padding already was.
-        style={{ paddingTop: 'max(14px, env(safe-area-inset-top))' }}
+        className="flex items-center gap-2.5 px-3.5 py-3 border-b border-edge-faint flex-shrink-0"
+        // Only bites when the panel runs edge to edge on a phone; elsewhere
+        // env() is 0 and this is the same 12px the padding already was.
+        style={{ paddingTop: 'max(12px, env(safe-area-inset-top))' }}
       >
         <div className="min-w-0 flex-1">
-          <p className="text-titletext text-ink truncate">
-            {hostname}
-          </p>
-          {(kindLabel || displayTag || (data?.favorite_count ?? 0) >= 2) && (
-            <p className="text-micro text-ink-4 mt-0.5 truncate">
-              {[kindLabel, displayTag].filter(Boolean).join(' · ')}
-              {(data?.favorite_count ?? 0) >= 2 && (
-                <span className="inline-flex items-center gap-1 ml-1.5 align-middle">
-                  <Heart className="w-3 h-3" weight="fill" aria-hidden="true" />
-                  <span className="tabular-nums">{data!.favorite_count}</span>
-                  <span className="sr-only">favorites</span>
-                </span>
-              )}
-            </p>
+          <div className="flex items-center gap-2">
+            <p className="text-titletext text-ink truncate">{title}</p>
+            <span
+              className="inline-flex items-center gap-1 shrink-0 text-[12px] text-ink-4 tabular-nums"
+              title={`${favCount} favorite${favCount === 1 ? '' : 's'}`}
+            >
+              <Heart className="w-3 h-3 text-[var(--color-error)]" weight="fill" aria-hidden="true" />
+              {favCount}
+              <span className="sr-only">favorites</span>
+            </span>
+          </div>
+          {kindLabel && (
+            <p className="text-micro text-ink-4 mt-1 truncate">{kindLabel}</p>
           )}
         </div>
-        <div className="flex items-center gap-1 shrink-0">
+        <div className="flex items-center gap-0.5 shrink-0">
           {SIMILAR_ENABLED && onSimilar && (
             <button
               onClick={onSimilar}
@@ -225,25 +222,7 @@ export function SiteDetailPanel({ variant = 'desktop', sourceId, metadata, onClo
               </div>
             )}
           </div>
-          <button
-            onClick={async () => {
-              try {
-                const url = new URL(window.location.href)
-                url.searchParams.set('site', String(sourceId))
-                url.searchParams.set('tab', activeTab)
-                await navigator.clipboard.writeText(url.toString())
-                setLinkCopied(true)
-                setTimeout(() => setLinkCopied(false), 2000)
-              } catch { /* clipboard unavailable */ }
-            }}
-            aria-label="Copy link to this site"
-            title="Copy link to this site"
-            className="w-8 h-8 flex items-center justify-center rounded-[4px] text-ink-3 hover:text-ink hover:bg-muted transition-colors"
-          >
-            {linkCopied
-              ? <Check className="w-4 h-4" weight="bold" />
-              : <LinkIcon className="w-4 h-4" weight="bold" />}
-          </button>
+          <span aria-hidden="true" className="panel-head-divider w-px h-4 bg-edge mx-0.5" />
           {onClose && (
             <button
               onClick={() => { playClose(); onClose() }}

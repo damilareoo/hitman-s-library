@@ -44,6 +44,31 @@ export async function GET(req: NextRequest) {
       `
     }
 
+    // Palette and type counts in one round trip. The admin needs to see which
+    // sites landed without them, and a per-row subselect in each of the four
+    // queries above would be four copies of the same thing.
+    const ids = results.map((r: any) => r.id)
+    const colorCounts = new Map<string, number>()
+    const typeCounts = new Map<string, number>()
+    if (ids.length > 0) {
+      const [palette, type] = await Promise.all([
+        sql`
+          SELECT source_id, COUNT(*)::int AS n
+          FROM design_colors
+          WHERE source_id = ANY(${ids}) AND hex_value IS NOT NULL
+          GROUP BY source_id
+        `,
+        sql`
+          SELECT source_id, COUNT(*)::int AS n
+          FROM design_typography
+          WHERE source_id = ANY(${ids}) AND role != 'legacy'
+          GROUP BY source_id
+        `,
+      ])
+      for (const row of palette) colorCounts.set(String(row.source_id), Number(row.n))
+      for (const row of type) typeCounts.set(String(row.source_id), Number(row.n))
+    }
+
     const designs = results.map((row: any) => {
       let metadata: any = {}
       if (row.metadata) {
@@ -64,6 +89,8 @@ export async function GET(req: NextRequest) {
         mobile_screenshot_url: toHttps(row.mobile_screenshot_url),
         thumbnail_url: toHttps(row.thumbnail_url),
         extraction_error: metadata.extraction_error ?? null,
+        color_count: colorCounts.get(String(row.id)) ?? 0,
+        type_count: typeCounts.get(String(row.id)) ?? 0,
       }
     })
 

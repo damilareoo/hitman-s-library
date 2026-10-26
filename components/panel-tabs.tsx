@@ -162,7 +162,7 @@ export function PanelTabs({ active, onChange, variant = 'desktop', colorsCount, 
               <Icon className="w-3.5 h-3.5 shrink-0" weight={isActive ? 'fill' : 'regular'} />
               <span className="flex items-center gap-1 text-[12px] font-medium leading-none whitespace-nowrap">
                 {label}
-                {typeof count === 'number' && count > 0 && (
+                {typeof count === 'number' && (
                   <span className="text-[11px] text-ink-4 tabular-nums">{count}</span>
                 )}
               </span>

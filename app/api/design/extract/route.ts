@@ -169,6 +169,19 @@ export async function POST(req: NextRequest) {
       colors = extractColors(html)
     }
 
+    // A browser that threw or rendered an empty page is not a reason to file a
+    // colourless site. The HTML still names colours — write those, in the same
+    // hex/oklch shape every reader expects, instead of only returning them in
+    // the response and dropping them on the floor.
+    if (colorFormats.length === 0 && html) {
+      const htmlColors = extractColors(html)
+      colorFormats = deduplicateColors(htmlColors)
+        .map(c => toColorFormats(c))
+        .filter((c): c is { hex: string; oklch: string } => c !== null)
+        .slice(0, 16)
+      if (colorFormats.length > 0) colors = colorFormats.map(c => c.hex)
+    }
+
     // Extraction can also return without throwing and still have captured
     // nothing — an empty screenshot buffer is dropped rather than uploaded.
     // That used to pass silently and land a source with no image.
@@ -374,33 +387,41 @@ export async function POST(req: NextRequest) {
       }
 
       // Typography from the rendered page is authoritative. Where it found
-      // nothing, fall back to what the HTML declared — but write it as
-      // role-tagged rows, which is the only form the detail API will return.
+      // nothing, fall back to what the HTML declared — but in the same
+      // role-tagged shape, which is the only form the detail API returns.
       //
-      // What stood here inserted into an `all_fonts` column that does not exist
-      // on this table. Postgres raised, `.catch(() => null)` swallowed it, and
-      // typography was silently dropped for every site that reached this path.
-      // That is 78 of 281 sources with no type at all.
+      // The fallback used to be written here and then overwritten by the
+      // transactional write below, which only knew about browser roles; and the
+      // snapshot recorded browser roles alone. A site that fell back to HTML
+      // therefore had rows in the table and none in its snapshot, and the
+      // detail API (which reads the snapshot when there is one) showed no type.
       const browserRoles = extractionResult?.typography ?? []
-      if (sourceId && browserRoles.length === 0) {
-        const htmlRoles: Array<[string, string | undefined]> = [
+      const htmlRoleList: Array<{
+        fontFamily: string
+        role: 'heading' | 'body' | 'mono'
+        googleFontsUrl: string | null
+        primaryWeight: number
+        sampleSizePx: number | null
+        sampleLineHeight: string | null
+      }> = []
+      if (browserRoles.length === 0) {
+        for (const [role, family] of [
           ['heading', typographyData.headingFonts[0]?.name],
           ['body', typographyData.bodyFonts[0]?.name],
           ['mono', typographyData.monoFonts[0]?.name],
-        ]
-
-        for (const [role, family] of htmlRoles) {
+        ] as Array<['heading' | 'body' | 'mono', string | undefined]>) {
           if (!family) continue
-          await sql`
-            INSERT INTO design_typography (source_id, font_family, role, primary_weight, sample_size_px, sample_line_height)
-            VALUES (${sourceId}, ${family}, ${role}, ${400}, ${null}, ${null})
-            ON CONFLICT (source_id, role) DO UPDATE SET font_family = EXCLUDED.font_family
-          `.catch(err => {
-            console.error(`[extract] typography fallback insert failed for ${url}:`, err)
-            return null
+          htmlRoleList.push({
+            fontFamily: family,
+            role,
+            googleFontsUrl: null,
+            primaryWeight: 400,
+            sampleSizePx: null,
+            sampleLineHeight: null,
           })
         }
       }
+      const typographyRoles = browserRoles.length > 0 ? browserRoles : htmlRoleList
 
       // Save assets transactionally
       const validAssets = (extractionResult?.assets ?? []).filter(a => a != null && a.type)
@@ -427,8 +448,7 @@ export async function POST(req: NextRequest) {
       }
 
       // Save typography roles transactionally (after getting sourceId)
-      const { typography: typographyRoles } = extractionResult ?? {}
-      if (typographyRoles && typographyRoles.length > 0 && sourceId) {
+      if (typographyRoles.length > 0 && sourceId) {
         const typClient = new Client(process.env.DATABASE_URL!)
         await typClient.connect()
         try {
@@ -471,7 +491,7 @@ export async function POST(req: NextRequest) {
           screenshotUrl: extractionResult?.screenshotUrl ?? null,
           mobileScreenshotUrl: extractionResult?.mobileScreenshotUrl ?? null,
           palette: colorFormats,
-          typography: (extractionResult?.typography ?? []).map(t => ({
+          typography: typographyRoles.map(t => ({
             fontFamily: t.fontFamily,
             role: t.role,
             googleFontsUrl: t.googleFontsUrl,
