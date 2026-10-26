@@ -90,6 +90,20 @@ export async function GET(req: NextRequest) {
         .filter((c): c is { hex: string; oklch: string } => c !== null)
         .slice(0, 16)
 
+      // A browser that half-loaded the page still reports the two colours it
+      // saw, and that must not replace a fuller palette already on the row.
+      // Repair means fill a gap or improve on it, never shrink it.
+      const [current] = await sql`
+        SELECT
+          (SELECT COUNT(*)::int FROM design_colors
+            WHERE source_id = ${id} AND hex_value IS NOT NULL) AS "colorCount",
+          (SELECT COUNT(*)::int FROM design_typography
+            WHERE source_id = ${id} AND role != 'legacy') AS "typeCount"
+      `
+      const keepPalette = palette.length > 0 && palette.length >= (current?.colorCount ?? 0)
+      const keepType = extraction.typography.length > 0 &&
+        extraction.typography.length >= (current?.typeCount ?? 0)
+
       if (extraction.screenshotUrl) {
         await sql`
           UPDATE design_sources
@@ -106,7 +120,7 @@ export async function GET(req: NextRequest) {
         `
       }
 
-      if (palette.length > 0) {
+      if (keepPalette) {
         await sql`DELETE FROM design_colors WHERE source_id = ${id}`
         for (const color of palette) {
           await sql`
@@ -117,7 +131,7 @@ export async function GET(req: NextRequest) {
         }
       }
 
-      if (extraction.typography.length > 0) {
+      if (keepType) {
         await sql`DELETE FROM design_typography WHERE source_id = ${id}`
         for (const t of extraction.typography) {
           await sql`
@@ -144,26 +158,37 @@ export async function GET(req: NextRequest) {
         siteId: id,
         screenshotUrl: extraction.screenshotUrl ?? null,
         mobileScreenshotUrl: extraction.mobileScreenshotUrl ?? null,
-        palette,
-        typography: extraction.typography.map(t => ({
-          fontFamily: t.fontFamily,
-          role: t.role,
-          googleFontsUrl: t.googleFontsUrl,
-          primaryWeight: t.primaryWeight,
-          sampleSizePx: t.sampleSizePx,
-          sampleLineHeight: t.sampleLineHeight,
-        })),
+        palette: keepPalette ? palette : [],
+        typography: keepType
+          ? extraction.typography.map(t => ({
+              fontFamily: t.fontFamily,
+              role: t.role,
+              googleFontsUrl: t.googleFontsUrl,
+              primaryWeight: t.primaryWeight,
+              sampleSizePx: t.sampleSizePx,
+              sampleLineHeight: t.sampleLineHeight,
+            }))
+          : [],
         assets: extraction.assets ?? [],
       })
 
-      // A completed repair clears whatever the failed add left behind.
-      await sql`
-        UPDATE design_sources
-        SET metadata = COALESCE(metadata, '{}') - 'extraction_error'
-        WHERE id = ${id}
-      `.catch(() => null)
+      // A capture clears the failure the add left behind. Palette or type
+      // alone does not: "screenshot capture returned an empty image" is still
+      // exactly true, and the admin should keep seeing it.
+      if (extraction.screenshotUrl || extraction.mobileScreenshotUrl) {
+        await sql`
+          UPDATE design_sources
+          SET metadata = COALESCE(metadata, '{}') - 'extraction_error'
+          WHERE id = ${id}
+        `.catch(() => null)
+      }
 
-      return { id, ok: true, colors: palette.length, typography: extraction.typography.length }
+      return {
+        id,
+        ok: true,
+        colors: keepPalette ? palette.length : undefined,
+        typography: keepType ? extraction.typography.length : undefined,
+      }
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err)
       console.error(`[cron/backfill] id=${id} failed:`, err)
