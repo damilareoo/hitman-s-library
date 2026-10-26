@@ -532,3 +532,32 @@ dialog::backdrop {
   }
   .site-sheet-handle { display: none; }
 }
+
+/* ============================================================================
+   SMOOTH SCROLL
+   ============================================================================ */
+
+/* Lenis drives the window transform itself. These are the classes it toggles;
+   without them the browser's own smooth scrolling and Lenis fight each frame. */
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+
+.lenis.lenis-stopped {
+  overflow: hidden;
+}
+
+/* A capture frame under the cursor swallows wheel events mid-scroll, which
+   reads as the page snagging. */
+.lenis.lenis-scrolling iframe {
+  pointer-events: none;
+}

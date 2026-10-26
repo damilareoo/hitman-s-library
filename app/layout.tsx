@@ -4,6 +4,7 @@ import { GeistSans } from "geist/font/sans"
 import { GeistMono } from "geist/font/mono"
 import { Analytics } from "@vercel/analytics/next"
 import { MotionProvider } from "@/components/motion-provider"
+import { SmoothScroll } from "@/components/smooth-scroll"
 import { ThemeProvider } from '@/components/theme-provider'
 import { SoundsProvider } from '@/contexts/sounds-context'
 import "./globals.css"
@@ -167,6 +168,7 @@ export default function RootLayout({
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem storageKey="theme">
           <MotionProvider>
             <SoundsProvider>
+              <SmoothScroll />
               {children}
             </SoundsProvider>
           </MotionProvider>

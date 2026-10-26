@@ -317,7 +317,7 @@ export function PreviewTab({
       <div className="flex flex-col flex-1 min-h-0">
         {bar}
         {stage(
-          <div className={`absolute inset-0 overflow-auto ${mode === 'mobile' && !fill ? 'flex justify-center' : ''}`}>
+          <div data-lenis-prevent className={`absolute inset-0 overflow-auto ${mode === 'mobile' && !fill ? 'flex justify-center' : ''}`}>
             <img
               src={optimized(activeScreenshotUrl, 1080)}
               srcSet={WIDTHS.map(w => `${optimized(activeScreenshotUrl, w)} ${w}w`).join(', ')}

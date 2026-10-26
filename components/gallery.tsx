@@ -4,9 +4,12 @@ import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import { useDragControls } from 'motion/react'
 import { useTheme } from 'next-themes'
-import { Sun, Moon, SpeakerHigh, SpeakerSlash, MagnifyingGlass, X, ArrowRight, Plus } from '@phosphor-icons/react'
-import { SiteDetailPanel } from '@/components/site-detail-panel'
+import { Sun, Moon, SpeakerHigh, SpeakerSlash, MagnifyingGlass, X, ArrowRight, Plus, DotsThree } from '@phosphor-icons/react'
+import dynamic from 'next/dynamic'
 import { DesignCard, type Design } from '@/components/design-card'
+import { ViewSwitcher, type LibraryView } from '@/components/view-switcher'
+import { IndexView } from '@/components/index-view'
+import { getLenis } from '@/lib/smooth-scroll'
 import { SIMILAR_ENABLED } from '@/lib/drift'
 import { UNSORTED, displayKind } from '@/lib/categories'
 import { FILTER_TAGS } from '@/lib/tagging'
@@ -42,6 +45,23 @@ const SORT_OPTIONS: { value: SortBy; label: string; slug: string }[] = [
 
 const SLUG_TO_SORT = new Map(SORT_OPTIONS.map(o => [o.slug, o.value]))
 const SORT_TO_SLUG = new Map(SORT_OPTIONS.map(o => [o.value, o.slug]))
+
+/**
+ * The panel carries the preview, the palette math and every tab. None of it is
+ * part of the first paint, so it waits for the first card to be opened instead
+ * of riding along in the gallery bundle.
+ */
+const SiteDetailPanel = dynamic(
+  () => import('@/components/site-detail-panel').then(m => m.SiteDetailPanel),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex flex-1 items-center justify-center">
+        <Spinner />
+      </div>
+    ),
+  },
+)
 
 interface Pagination {
   total: number
@@ -190,6 +210,9 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
   // any neighbor view is shareable and the back button steps out of it.
   const similarTo = searchParams.get('similarTo')
   const similarToId = SIMILAR_ENABLED && similarTo && Number.isFinite(Number(similarTo)) ? similarTo : null
+  // The overview is a view, not a filter: it keeps its own URL so it can be
+  // shared and stepped out of with the back button.
+  const view: LibraryView = searchParams.get('view') === 'index' ? 'index' : 'grid'
 
   const [similarTitle, setSimilarTitle] = useState<string | null>(
     initialSimilar && similarToId && initialSimilar.site ? initialSimilar.site.title : null,
@@ -204,7 +227,9 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
   const [searchInput, setSearchInput] = useState(search)
   const [requestOpen, setRequestOpen] = useState(false)
   const [digestOpen, setDigestOpen] = useState(false)
+  const [moreOpen, setMoreOpen] = useState(false)
   const digestRef = useRef<HTMLDivElement>(null)
+  const moreRef = useRef<HTMLDivElement>(null)
 
   // Dismiss the digest popover on outside click or Escape. One effect for
   // both, torn down with the popover.
@@ -223,6 +248,23 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
       document.removeEventListener('pointerdown', onPointer)
     }
   }, [digestOpen])
+
+  // Same dismissal contract for the phone's folded actions.
+  useEffect(() => {
+    if (!moreOpen) return
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') setMoreOpen(false)
+    }
+    function onPointer(e: PointerEvent) {
+      if (moreRef.current && !moreRef.current.contains(e.target as Node)) setMoreOpen(false)
+    }
+    document.addEventListener('keydown', onKey)
+    document.addEventListener('pointerdown', onPointer)
+    return () => {
+      document.removeEventListener('keydown', onKey)
+      document.removeEventListener('pointerdown', onPointer)
+    }
+  }, [moreOpen])
   // Hearts feed the digest signup only: ids persist in localStorage and the
   // taste vector is recomputed server-side on every subscribe. No view, no
   // route — the Mobbin-style Save without the collection machinery.
@@ -269,8 +311,8 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
 
   // A shared ?site= link may point at a site outside the loaded page. The panel
   // fetches its own detail by id, so it opens regardless; the card metadata is
-  // layered on only when we happen to have it.
-  const isPanelOpen = Boolean(selectedId) && Number.isFinite(Number(selectedId))
+  // layered on only when we happen to have it. Index has no panel of its own.
+  const isPanelOpen = view === 'grid' && Boolean(selectedId) && Number.isFinite(Number(selectedId))
 
   // pagination.total is how many match the current filters, so it cannot label
   // the "All" row — that would read "All 13" while Finance is selected. The
@@ -312,6 +354,8 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
     if (searchInput === search) return
     const t = setTimeout(() => {
       updateParams(p => {
+        // Typing a query is a request for results, so it leaves the overview.
+        p.delete('view')
         if (searchInput) p.set('q', searchInput)
         else p.delete('q')
         p.delete('site')
@@ -500,21 +544,28 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
   // site is open and none was explicitly closed. Desktop only — on a phone
   // this would pop the bottom sheet on every cold load.
   useEffect(() => {
-    if (selectedId || deselected.current || designs.length === 0 || isRefetching) return
+    if (view !== 'grid' || selectedId || deselected.current || designs.length === 0 || isRefetching) return
     if (!window.matchMedia('(min-width: 1280px)').matches) return
     selectDesign(designs[0])
-  }, [designs, selectedId, isRefetching, selectDesign])
+  }, [view, designs, selectedId, isRefetching, selectDesign])
 
   const isNarrow = useIsNarrow()
 
-  // Lock body scroll only for the sheet, which runs up to the 3-pane split.
+  // Lock the page under anything modal: the sheet below the 3-pane split, and
+  // the request dialog at every width. Lenis has to be told as well — an
+  // overflow rule stops the native scrollbar but not a wheel it has already
+  // claimed.
   useEffect(() => {
-    if (!isPanelOpen) return
-    const mobile = window.matchMedia('(max-width: 1279px)')
-    if (!mobile.matches) return
-    document.body.style.overflow = 'hidden'
-    return () => { document.body.style.overflow = '' }
-  }, [isPanelOpen])
+    const lock = requestOpen || (isPanelOpen && window.matchMedia('(max-width: 1279px)').matches)
+    const lenis = getLenis()
+    if (lock) lenis?.stop()
+    else lenis?.start()
+    document.body.style.overflow = lock ? 'hidden' : ''
+    return () => {
+      getLenis()?.start()
+      document.body.style.overflow = ''
+    }
+  }, [isPanelOpen, requestOpen])
 
   // Escape closes the panel at any breakpoint; the focus trap only runs where
   // the sheet does, since that is where the panel is genuinely modal.
@@ -600,6 +651,73 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
     })
   }, [updateParams])
 
+  const scrollToTop = useCallback(() => {
+    const lenis = getLenis()
+    if (lenis) lenis.scrollTo(0, { immediate: true })
+    else window.scrollTo({ top: 0 })
+  }, [])
+
+  const setView = useCallback((next: LibraryView) => {
+    sounds.playFilterClick()
+    updateParams(p => {
+      if (next === 'index') {
+        // The overview is not a place a site is open; carrying ?site= into it
+        // and back out would reopen a panel nobody asked for.
+        p.set('view', 'index')
+        p.delete('site')
+        p.delete('tab')
+        p.delete('similarTo')
+      } else {
+        p.delete('view')
+      }
+    })
+    scrollToTop()
+  }, [sounds, updateParams, scrollToTop])
+
+  // Everything in the overview lands somewhere concrete: a filter result or a
+  // site, never a second overview.
+  const handleIndexKind = useCallback((kind: string) => {
+    sounds.playFilterClick()
+    updateParams(p => {
+      p.delete('view')
+      p.delete('site')
+      p.delete('category')
+      p.delete('tag')
+      p.delete('q')
+      if (kind !== 'All') p.set('category', kind)
+    })
+  }, [sounds, updateParams])
+
+  const handleIndexSet = useCallback((name: string) => {
+    sounds.playFilterClick()
+    updateParams(p => {
+      p.delete('view')
+      p.delete('site')
+      p.delete('similarTo')
+      p.set('collection', name)
+    })
+  }, [sounds, updateParams])
+
+  const handleIndexTag = useCallback((tag: string) => {
+    sounds.playFilterClick()
+    updateParams(p => {
+      p.delete('view')
+      p.delete('site')
+      const current = p.getAll('tag')
+      p.delete('tag')
+      const next = current.includes(tag) ? current.filter(t => t !== tag) : [...current, tag]
+      next.forEach(t => p.append('tag', t))
+    })
+  }, [sounds, updateParams])
+
+  const handleIndexOpen = useCallback((design: Design) => {
+    sounds.playSelect()
+    updateParams(p => {
+      p.delete('view')
+      p.set('site', design.id)
+    })
+  }, [sounds, updateParams])
+
   const hasFilters = kinds.length > 0 || tags.length > 0 || search.length > 0
   const showSkeletons = isRefetching && designs.length === 0
   const galleryHeading =
@@ -662,7 +780,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
         {/* px-5 at every width: the mark sits on the same 20px line as the
             sidebar's text (nav px-2.5 + label px-2.5), so logo and rail read
             as one structured edge rather than two near-misses. */}
-        <div className="h-14 px-5 flex items-center gap-4">
+        <div className="relative h-14 px-5 flex items-center gap-4">
 
           {/* The wordmark used to be this page's h1. With only the mark on
               screen the heading still has to exist for anything that reads
@@ -705,6 +823,13 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
             {search ? pagination.total : ''}
           </span>
 
+          {/* On a phone the switcher sits on the window's centre line, the way
+              the prototype does, rather than in whatever space the mark and
+              the actions happen to leave. From sm it joins the row. */}
+          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 sm:static sm:translate-x-0 sm:translate-y-0 sm:flex-1 xl:flex-none">
+            <ViewSwitcher view={view} onChange={setView} />
+          </div>
+
           <div className="flex items-center gap-1.5 ml-auto">
             {/* Deliberately in the same quiet register as Changelog rather
                 than styled as a call to action. The loud version of this
@@ -715,18 +840,18 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
               aria-expanded={digestOpen}
               aria-label="Weekly digest"
               title="Weekly digest"
-              className="relative flex items-center gap-1 text-meta text-ink-3 hover:text-ink transition-colors mr-1 max-sm:w-9 max-sm:h-9 max-sm:justify-center max-sm:rounded-[10px] max-sm:bg-muted/60 max-sm:hover:bg-muted max-sm:active:scale-[0.98] after:absolute after:inset-x-0 after:top-1/2 after:h-11 after:-translate-y-1/2 after:content-['']"
+              className="relative flex items-center gap-1 text-meta text-ink-3 hover:text-ink transition-colors mr-1 max-sm:hidden after:absolute after:inset-x-0 after:top-1/2 after:h-11 after:-translate-y-1/2 after:content-['']"
             >
-              <EnvelopeSimple className="w-3.5 h-3.5 max-sm:w-4 max-sm:h-4" weight="bold" />
-              <span className="max-sm:sr-only">Digest</span>
+              <EnvelopeSimple className="w-3.5 h-3.5" weight="bold" />
+              <span>Digest</span>
             </button>
             <button
               onClick={() => setRequestOpen(true)}
               aria-label="Request a site"
-              className="relative flex items-center gap-1 text-meta text-ink-3 hover:text-ink transition-colors mr-1 sm:mr-1 max-sm:w-9 max-sm:h-9 max-sm:justify-center max-sm:rounded-[10px] max-sm:bg-muted/60 max-sm:hover:bg-muted max-sm:active:scale-[0.98] after:absolute after:inset-x-0 after:top-1/2 after:h-11 after:-translate-y-1/2 after:content-['']"
+              className="relative flex items-center gap-1 text-meta text-ink-3 hover:text-ink transition-colors mr-1 max-sm:hidden after:absolute after:inset-x-0 after:top-1/2 after:h-11 after:-translate-y-1/2 after:content-['']"
             >
-              <Plus className="w-3 h-3 max-sm:w-4 max-sm:h-4" weight="bold" />
-              <span className="max-sm:sr-only">Request a site</span>
+              <Plus className="w-3 h-3" weight="bold" />
+              <span>Request a site</span>
             </button>
 
             <button
@@ -734,7 +859,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
                 if (!sounds.enabled) sounds.playThemeToggle(true)
                 sounds.setEnabled(p => !p)
               }}
-              className={ICON_BUTTON}
+              className={ICON_BUTTON + ' max-sm:hidden'}
               aria-label={sounds.enabled ? 'Mute sounds' : 'Enable sounds'}
               aria-pressed={sounds.enabled}
             >
@@ -770,6 +895,58 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
                 {mounted && resolvedTheme === 'dark' ? <Sun className="w-3.5 h-3.5" weight="regular" /> : <Moon className="w-3.5 h-3.5" weight="regular" />}
               </motion.span>
             </button>
+
+            {/* On a phone the three secondary actions fold in here so the
+                view switcher has the middle of the bar to itself. */}
+            <div ref={moreRef} className="relative sm:hidden">
+              <button
+                onClick={() => setMoreOpen(v => !v)}
+                aria-expanded={moreOpen}
+                aria-haspopup="menu"
+                aria-label="More"
+                title="More"
+                className={ICON_BUTTON}
+              >
+                <DotsThree className="w-4 h-4" weight="bold" />
+              </button>
+              {moreOpen && (
+                <div
+                  role="menu"
+                  className="absolute right-0 top-[calc(100%+6px)] z-[60] w-[208px] rounded-[10px] border border-edge-strong bg-card p-1 shadow-[0_12px_32px_-8px_rgba(0,0,0,0.28)]"
+                >
+                  <button
+                    role="menuitem"
+                    onClick={() => { setMoreOpen(false); setDigestOpen(true) }}
+                    className="w-full flex items-center gap-2.5 h-9 px-2.5 rounded-[6px] text-bodytext text-ink-2 text-left hover:text-ink hover:bg-muted transition-colors"
+                  >
+                    <EnvelopeSimple className="w-4 h-4" weight="bold" />
+                    <span>Digest</span>
+                  </button>
+                  <button
+                    role="menuitem"
+                    onClick={() => { setMoreOpen(false); setRequestOpen(true) }}
+                    className="w-full flex items-center gap-2.5 h-9 px-2.5 rounded-[6px] text-bodytext text-ink-2 text-left hover:text-ink hover:bg-muted transition-colors"
+                  >
+                    <Plus className="w-4 h-4" weight="bold" />
+                    <span>Request a site</span>
+                  </button>
+                  <button
+                    role="menuitemcheckbox"
+                    aria-checked={sounds.enabled}
+                    onClick={() => {
+                      if (!sounds.enabled) sounds.playThemeToggle(true)
+                      sounds.setEnabled(p => !p)
+                    }}
+                    className="w-full flex items-center gap-2.5 h-9 px-2.5 rounded-[6px] text-bodytext text-ink-2 text-left hover:text-ink hover:bg-muted transition-colors"
+                  >
+                    {sounds.enabled
+                      ? <SpeakerHigh className="w-4 h-4" weight="regular" />
+                      : <SpeakerSlash className="w-4 h-4" weight="regular" />}
+                    <span>{sounds.enabled ? 'Mute sounds' : 'Enable sounds'}</span>
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </header>
@@ -789,16 +966,32 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
         </div>
       )}
 
-      {/* Body — the 3-pane split waits for xl. Below it, phones and tablets
+      {view === 'index' ? (
+        /* The overview owns the whole width. It repeats what the sidebar and
+           the sheet would say anyway, so the 3-pane shell steps aside. */
+        <main id="gallery" tabIndex={-1} className="min-h-[calc(100vh-56px)] focus:outline-none">
+          <IndexView
+            total={libraryTotal}
+            categories={categories}
+            collections={collections}
+            designs={designs}
+            favorites={favorites}
+            activeTags={tags}
+            onKind={handleIndexKind}
+            onOpenSet={handleIndexSet}
+            onOpenDesign={handleIndexOpen}
+            onTag={handleIndexTag}
+          />
+        </main>
+      ) : (
+      /* Body — the 3-pane split waits for xl. Below it, phones and tablets
           share one layout: a tablet gets the mobile treatment with more room,
-          not the desktop one squeezed into it. At lg the panes technically fit
-          but leave the grid half the window, which meant 222px cards — narrower
-          than the phone gets. The three tracks are fixed: the panel is part of
-          the layout, not something the grid borrows while you are not looking. */}
+          not the desktop one squeezed into it. The three tracks are fixed: the
+          panel is part of the layout, not something the grid borrows. */
       <div className="grid grid-cols-1 xl:grid-cols-12 min-h-[calc(100vh-56px)]">
 
         {/* Sidebar */}
-        <aside className="hidden xl:flex xl:col-span-2 flex-col sticky top-14 h-[calc(100vh-56px)] border-r border-edge-strong bg-background overflow-y-auto">
+        <aside data-lenis-prevent className="hidden xl:flex xl:col-span-2 flex-col sticky top-14 h-[calc(100vh-56px)] border-r border-edge-strong bg-background overflow-y-auto">
           <nav className="flex-1 py-5 px-2.5" aria-label="Library">
             <p className="px-2.5 pb-2.5 text-micro text-ink-4 select-none">Library</p>
 
@@ -1082,19 +1275,6 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
 
         </main>
 
-        {/* The sheet covers this corner on a phone, so the links hide only
-            there. On desktop the sidebar corner stays visible and reachable
-            with a card open — hiding them there stranded About/Changelog
-            behind the panel. */}
-        <SiteLinks hidden={isPanelOpen && isNarrow} variant="sidebar" />
-
-      <RequestSiteDialog
-        open={requestOpen}
-        onClose={() => setRequestOpen(false)}
-        initialUrl={search.trim()}
-        onOpenSite={selectDesignById}
-      />
-
       {/* Detail panel — the column is always here. The empty state names
             what the panel holds, which is how you learn the tabs exist. */}
         <div className="hidden xl:flex xl:col-span-4 track-panel flex-col sticky top-14 h-[calc(100vh-56px)] border-l border-edge-strong bg-background">
@@ -1129,6 +1309,20 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
         </div>
 
       </div>
+      )}
+
+      {/* The sheet covers this corner on a phone, so the links hide only
+          there. On desktop the sidebar corner stays visible and reachable
+          with a card open — hiding them there stranded About/Changelog
+          behind the panel. */}
+      <SiteLinks hidden={isPanelOpen && isNarrow} variant={view === 'index' ? 'page' : 'sidebar'} />
+
+      <RequestSiteDialog
+        open={requestOpen}
+        onClose={() => setRequestOpen(false)}
+        initialUrl={search.trim()}
+        onOpenSite={selectDesignById}
+      />
 
       {/* Mobile bottom sheet */}
       <AnimatePresence>

@@ -157,7 +157,7 @@ export function ColorsTab({ colors, extractionError }: { colors: ColorRow[]; ext
   }
 
   return (
-    <div className="flex flex-col flex-1 min-h-0 overflow-y-auto">
+    <div className="flex flex-col flex-1 min-h-0 overflow-y-auto" data-lenis-prevent>
 
       <div className="sticky top-0 bg-background border-b border-edge px-4 py-2 flex items-center justify-between gap-2 shrink-0 z-10">
         <div

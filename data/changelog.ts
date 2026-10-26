@@ -85,6 +85,24 @@ export function releaseAuthors(release: ChangelogRelease): Author[] {
 // only case where the question is actually being asked.
 const changelog: ChangelogRelease[] = [
   {
+    date: '2026-10-25',
+    title: 'Both Views',
+    items: [
+      { type: 'new', author: 'damilare', text: 'Index view: every kind, set and recent arrival on one page, with no images to wait for' },
+      { type: 'new', author: 'damilare', text: 'Grid and Index switch from the header, and each view keeps its own address' },
+      { type: 'improved', author: 'damilare', text: 'On a phone the header folds Digest, Request and sound into More, so the switcher fits' },
+    ],
+  },
+  {
+    date: '2026-10-25',
+    title: 'Silk',
+    items: [
+      { type: 'improved', author: 'damilare', text: 'Scrolling glides instead of stepping, and stays native where reduced motion is on' },
+      { type: 'improved', author: 'damilare', text: 'The site panel loads when a card is opened — the gallery no longer carries it up front' },
+      { type: 'improved', author: 'damilare', text: 'One way out of the panel, in the preview bar, instead of two buttons saying the same thing' },
+    ],
+  },
+  {
     date: '2026-10-16',
     title: 'Ask for Many',
     items: [

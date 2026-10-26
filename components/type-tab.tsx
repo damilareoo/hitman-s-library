@@ -18,7 +18,7 @@ export function TypeTab({ typography, extractionError }: { typography: Typograph
     return <TabEmptyState message="No typography extracted" extractionError={extractionError} />
   }
   return (
-    <div className="p-4 overflow-y-auto flex flex-col gap-0">
+    <div className="p-4 overflow-y-auto flex flex-col gap-0" data-lenis-prevent>
       {typography.map((t, i) => (
         <TypeSpecimenCard key={`${t.role}-${i}`} typography={t} index={i} />
       ))}

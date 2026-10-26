@@ -138,7 +138,7 @@ export function HistoryTab({ siteId }: { siteId: number }) {
   const snapB = snapshots.find(s => s.id === bId) ?? null
 
   return (
-    <div className="flex flex-col flex-1 min-h-0 overflow-y-auto">
+    <div className="flex flex-col flex-1 min-h-0 overflow-y-auto" data-lenis-prevent>
       {/* Scrubber */}
       <div className="shrink-0 border-b border-edge px-4 py-3">
         <div className="flex items-center justify-between mb-2">
@@ -242,7 +242,7 @@ export function HistoryTab({ siteId }: { siteId: number }) {
                 { snap: snapB, label: 'B' },
               ].map(({ snap, label }) => (
                 <figure key={label} className="min-w-0">
-                  <div className="rounded-[4px] overflow-hidden border border-edge bg-muted max-h-72 overflow-y-auto">
+                  <div data-lenis-prevent className="rounded-[4px] overflow-hidden border border-edge bg-muted max-h-72 overflow-y-auto">
                     {snap.screenshot_url ? (
                       <img src={snap.screenshot_url} alt={`${label} — ${formatDate(snap.captured_at)}`} loading="lazy" className="w-full object-top" />
                     ) : (
