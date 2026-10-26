@@ -99,25 +99,6 @@ export async function getBrowser() {
   return browserInitPromise
 }
 
-/**
- * Kill the shared browser and forget it.
- *
- * A page that never settles keeps its Chromium busy with no way to interrupt
- * it, so every job queued behind it waits on the same hang. Closing is the
- * only way to hand the next job a clean browser; the abandoned extraction's
- * own promises then reject and land in their caller's catch.
- */
-export async function resetBrowser(): Promise<void> {
-  const doomed = browser
-  browser = null
-  browserInitPromise = null
-  try {
-    await doomed?.close()
-  } catch {
-    /* already gone */
-  }
-}
-
 // Getting the document is what must succeed. Waiting for a quiet network is a
 // courtesy we extend briefly and then withdraw.
 const NAV_TIMEOUT = 20000
@@ -998,6 +979,12 @@ export interface ExtractionOptions {
    * On by default so adds and re-extracts keep their clip.
    */
   motion?: boolean
+  /**
+   * Aborted when the caller's own deadline passes. Closing the page is the
+   * only way to interrupt a read that is already inside the browser: the
+   * pending evaluate rejects, and the page stops holding the run.
+   */
+  signal?: AbortSignal
 }
 
 export async function extractFullDesignData(url: string, options: ExtractionOptions = {}): Promise<FullExtractionResult> {
@@ -1010,6 +997,12 @@ export async function extractFullDesignData(url: string, options: ExtractionOpti
     throw new Error('Browser unavailable')
   }
   const page = await browser.newPage()
+
+  // A page that never settles cannot be interrupted from the outside; closing
+  // it is what rejects the reads in flight and lets the caller move on.
+  const closeOnAbort = () => { page.close().catch(() => {}) }
+  if (options.signal?.aborted) closeOnAbort()
+  else options.signal?.addEventListener('abort', closeOnAbort, { once: true })
 
   try {
     await page.setBypassCSP(true)
@@ -1128,6 +1121,7 @@ export async function extractFullDesignData(url: string, options: ExtractionOpti
 
     return { colors, screenshotUrl, mobileScreenshotUrl, assets, typography, motionClipUrl, motionBytes, motionError, motionTags }
   } finally {
+    options.signal?.removeEventListener('abort', closeOnAbort)
     await page.close().catch(() => {})
   }
 }
