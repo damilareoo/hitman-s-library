@@ -30,6 +30,13 @@ export function SmoothScroll() {
     lenisRef.current = lenis
     setLenis(lenis)
 
+    // Lenis takes the wheel but does not advance itself; without this loop it
+    // swallows the gesture and the page never moves.
+    let frame = requestAnimationFrame(function raf(time) {
+      lenis.raf(time)
+      frame = requestAnimationFrame(raf)
+    })
+
     // The skip link is the only in-page anchor. The browser's own jump would
     // move focus to the target, so the replacement has to do that too.
     function onAnchorClick(e: MouseEvent) {
@@ -47,6 +54,7 @@ export function SmoothScroll() {
 
     return () => {
       document.removeEventListener('click', onAnchorClick)
+      cancelAnimationFrame(frame)
       setLenis(null)
       lenisRef.current = null
       lenis.destroy()

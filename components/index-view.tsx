@@ -53,19 +53,24 @@ export function IndexView({
 }: IndexViewProps) {
   const setNames = Object.keys(collections)
   const recent = designs.slice(0, 8)
+  // Kinds are a ranking here, not a rail: the biggest shelf comes first.
+  const ranked = [...categories].sort((a, b) => b.count - a.count)
 
   return (
     <div className="mx-auto w-full max-w-[1440px] px-5 xl:px-8 pt-8 pb-28">
 
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-8 gap-y-6 pb-10">
+      <div className="flex flex-wrap gap-x-9 gap-y-6 pb-10">
         <Stat value={total} label="Sites" />
         <Stat value={categories.length} label="Kinds" />
-        <Stat value={setNames.length} label="Sets" />
-        <Stat value={favorites.length} label="Favorites" />
+        {/* Personal numbers stay out of the way until there are any. A fresh
+            visitor reading "0 sets · 0 favorites" learns nothing and the page
+            looks emptier than the library is. */}
+        {setNames.length > 0 && <Stat value={setNames.length} label="Sets" />}
+        {favorites.length > 0 && <Stat value={favorites.length} label="Favorites" />}
       </div>
 
       <div className="border-t border-edge">
-        {categories.map(({ name, count }) => (
+        {ranked.map(({ name, count }) => (
           <button
             key={name}
             onClick={() => onKind(name)}
@@ -79,8 +84,10 @@ export function IndexView({
         ))}
       </div>
 
-      <div className="grid sm:grid-cols-2 gap-x-12 gap-y-10 pt-10">
-        <section>
+      {/* grid-cols-1 is load-bearing: without it the single implicit column
+          sizes to the longest title and the page slides sideways on a phone. */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-12 gap-y-10 pt-10">
+        <section className="min-w-0">
           <SectionLabel>Sets</SectionLabel>
           {setNames.length === 0 ? (
             <p className="text-meta text-ink-4">
@@ -105,7 +112,7 @@ export function IndexView({
           )}
         </section>
 
-        <section>
+        <section className="min-w-0">
           <SectionLabel>Recently added</SectionLabel>
           <ul className="border-t border-edge" role="list">
             {recent.map(design => (
