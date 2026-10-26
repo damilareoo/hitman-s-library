@@ -1061,7 +1061,24 @@ export async function extractFullDesignData(url: string, options: ExtractionOpti
     // colour bound only separates "the page was empty" from "both extractors
     // threw"; an outage notice yields a handful, a rendered page yields dozens.
     if (typography.length === 0 && assets.length === 0 && colors.length <= EMPTY_PAGE_MAX_COLORS) {
-      console.warn(`[extract] ${url}: page rendered nothing readable — leaving existing data alone`)
+      // One line of evidence for why. A challenge wall, a redirect to a locale,
+      // a page that crashed mid-read and a genuine outage all arrive here and
+      // each needs a different answer.
+      const diag = await readPage(
+        page,
+        `diagnostics for ${url}`,
+        () => page.evaluate(() => ({
+          title: document.title.slice(0, 80),
+          ready: document.readyState,
+          text: (document.body?.innerText ?? '').length,
+          frames: window.frames.length,
+        })),
+        null as null | { title: string; ready: string; text: number; frames: number },
+      )
+      console.warn(
+        `[extract] ${url}: page rendered nothing readable — leaving existing data alone` +
+        (diag ? ` (title="${diag.title}" ready=${diag.ready} text=${diag.text} frames=${diag.frames})` : ' (no document to inspect)')
+      )
       return {
         colors: [],
         screenshotUrl: null,
