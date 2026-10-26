@@ -65,8 +65,26 @@ async function readHtmlDetails(url: string): Promise<{
     if (!response.ok || !(response.headers.get('content-type') ?? '').includes('html')) return null
 
     const html = await response.text()
-    const colors = Array.from(new Set(html.match(/#[0-9A-Fa-f]{6}|#[0-9A-Fa-f]{3}/g) ?? []))
-    const type = extractTypographyEnhanced(html)
+    const stylesheetUrls = Array.from(html.matchAll(/<link\b[^>]*>/gi))
+      .filter(([tag]) => /\brel\s*=\s*["'][^"']*stylesheet/i.test(tag))
+      .map(([tag]) => tag.match(/\bhref\s*=\s*["']([^"']+)["']/i)?.[1])
+      .filter((href): href is string => Boolean(href))
+      .slice(0, 8)
+      .map(href => new URL(href.replace(/&amp;/g, '&'), response.url).href)
+    const stylesheets = await Promise.all(stylesheetUrls.map(async stylesheetUrl => {
+      try {
+        const stylesheet = await safeFetch(stylesheetUrl, {
+          headers: { Accept: 'text/css,*/*;q=0.1' },
+          signal: AbortSignal.timeout(6000),
+        })
+        return stylesheet.ok ? await stylesheet.text() : ''
+      } catch {
+        return ''
+      }
+    }))
+    const source = [html, ...stylesheets].join('\n')
+    const colors = Array.from(new Set(source.match(/#[0-9A-Fa-f]{6}|#[0-9A-Fa-f]{3}/g) ?? []))
+    const type = extractTypographyEnhanced(source)
     const typography: FullExtractionResult['typography'] = []
     for (const [role, family] of [
       ['heading', type.headingFonts[0]?.name],
