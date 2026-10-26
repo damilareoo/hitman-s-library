@@ -5,7 +5,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { revalidateTag } from 'next/cache'
 import { getSql } from '@/lib/db'
-import { extractFullDesignData } from '@/lib/browser-extraction'
+import { extractFullDesignData, resetBrowser } from '@/lib/browser-extraction'
 import { deduplicateColors, toColorFormats } from '@/lib/color-utils'
 import { recordExtraction } from '@/lib/extraction-history'
 
@@ -13,6 +13,7 @@ export const maxDuration = 60
 
 const sql = getSql()
 const BUDGET_MS = 40_000 // stop starting new sites after 40s, leave cleanup time
+const PER_SITE_MS = 22_000 // one page cannot eat the run
 const PER_RUN = 12
 
 interface RepairResult {
@@ -21,6 +22,25 @@ interface RepairResult {
   error?: string
   colors?: number
   typography?: number
+}
+
+class SiteTimeoutError extends Error {}
+
+// A site whose frame detaches mid-read retries every read three times, which
+// on Vercel ran past the function's own 60s limit and killed the run before a
+// single repair was written. The extraction is left to reject into its own
+// catch; all that matters here is that the queue moves on.
+function withDeadline<T>(promise: Promise<T>, ms: number): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(
+      () => reject(new SiteTimeoutError(`Extraction did not finish within ${Math.round(ms / 1000)}s`)),
+      ms
+    )
+    promise.then(
+      value => { clearTimeout(timer); resolve(value) },
+      err => { clearTimeout(timer); reject(err) }
+    )
+  })
 }
 
 export async function GET(req: NextRequest) {
@@ -71,7 +91,10 @@ export async function GET(req: NextRequest) {
       // No motion take: it is the last ~8 seconds of the run and no backfill
       // writes it. A repair fills palette, type and captures; a clip comes
       // back the next time the site is re-extracted by hand.
-      const extraction = await extractFullDesignData(source_url, { motion: false })
+      const extraction = await withDeadline(
+        extractFullDesignData(source_url, { motion: false }),
+        PER_SITE_MS
+      )
 
       // Nothing rendered: the site is down or challenging us. Leave what is
       // already on the row alone rather than overwriting it with nothing.
@@ -190,6 +213,10 @@ export async function GET(req: NextRequest) {
         typography: keepType ? extraction.typography.length : undefined,
       }
     } catch (err) {
+      // The page is still running inside that browser. Closing it releases
+      // the hang so the next site is not queued behind it.
+      if (err instanceof SiteTimeoutError) await resetBrowser()
+
       const message = err instanceof Error ? err.message : String(err)
       console.error(`[cron/backfill] id=${id} failed:`, err)
       // Visible in the admin instead of a silent miss, and out of this queue's
@@ -208,7 +235,9 @@ export async function GET(req: NextRequest) {
   // The motion take is skipped instead — it is the last ~8 seconds of a run
   // and no backfill writes it.
   for (const job of pending) {
-    if (Date.now() - start > BUDGET_MS) break
+    // Only start a site that can still finish — a job begun with less than a
+    // full deadline left is a job that dies with the function.
+    if (Date.now() - start + PER_SITE_MS > BUDGET_MS) break
     results.push(await repairOne(job.id, job.source_url))
   }
 

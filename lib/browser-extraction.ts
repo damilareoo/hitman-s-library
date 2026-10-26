@@ -90,6 +90,25 @@ export async function getBrowser() {
   return browserInitPromise
 }
 
+/**
+ * Kill the shared browser and forget it.
+ *
+ * A page that never settles keeps its Chromium busy with no way to interrupt
+ * it, so every job queued behind it waits on the same hang. Closing is the
+ * only way to hand the next job a clean browser; the abandoned extraction's
+ * own promises then reject and land in their caller's catch.
+ */
+export async function resetBrowser(): Promise<void> {
+  const doomed = browser
+  browser = null
+  browserInitPromise = null
+  try {
+    await doomed?.close()
+  } catch {
+    /* already gone */
+  }
+}
+
 // Getting the document is what must succeed. Waiting for a quiet network is a
 // courtesy we extend briefly and then withdraw.
 const NAV_TIMEOUT = 20000
