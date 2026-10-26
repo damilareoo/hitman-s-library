@@ -26,7 +26,7 @@ import { Brand } from '@/components/brand'
 import { SiteLinks } from '@/components/site-links'
 import { EASE, DUR } from '@/lib/motion'
 import Link from 'next/link'
-import { useIsNarrow } from '@/lib/use-is-narrow'
+import { useIsNarrow, useIsPhone } from '@/lib/use-is-narrow'
 
 const gridVariants = {
   hidden: {},
@@ -491,6 +491,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
   }, [view, designs, selectedId, isRefetching, selectDesign])
 
   const isNarrow = useIsNarrow()
+  const isPhone = useIsPhone()
 
   // Lock the page under anything modal: the sheet below the 3-pane split, the
   // request dialog at every width, and the browse layer. Lenis has to be told
@@ -735,7 +736,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
   // hiding one in CSS meant two live previews per site, and the invisible one
   // could take the visible one down with it.
   const renderDetailPanel = (variant: 'desktop' | 'mobile') =>
-    isPanelOpen && (variant === 'mobile') === isNarrow && (
+    isPanelOpen && (
     <SiteDetailPanel
       variant={variant}
       sourceId={Number(selectedId)}
@@ -1200,7 +1201,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
             what the panel holds, which is how you learn the tabs exist. */}
         <div className="hidden xl:flex xl:col-span-4 track-panel flex-col sticky top-14 h-[calc(100vh-56px)] border-l border-edge-strong bg-background">
           <AnimatePresence mode="wait">
-            {isPanelOpen ? (
+            {isPanelOpen && !isNarrow ? (
               <motion.div
                 key={selectedId}
                 initial={{ opacity: 0 }}
@@ -1262,7 +1263,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
           drawer the prototype draws: a card floating 10px inside the viewport,
           not a sheet bolted to the bottom. Under 640 it becomes the page. */}
       <AnimatePresence>
-        {isPanelOpen && (
+        {isNarrow && isPanelOpen && (
           <>
             <motion.div
               key="sheet-backdrop"
@@ -1295,7 +1296,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
               }}
             >
               <div className="flex flex-col flex-1 min-h-0" style={{ touchAction: 'pan-y', paddingBottom: 'var(--safe-bottom)' }}>
-                {renderDetailPanel('mobile')}
+                {renderDetailPanel(isPhone ? 'mobile' : 'desktop')}
               </div>
             </motion.div>
           </>
