@@ -1007,8 +1007,11 @@ export async function extractFullDesignData(url: string, options: ExtractionOpti
   try {
     await page.setBypassCSP(true)
     await page.setUserAgent(DESKTOP_UA)
-    // 2× device pixel ratio — crisp on retina displays, equivalent to ~2880px effective width
-    await page.setViewport({ width: 1440, height: 900, deviceScaleFactor: 2 })
+    // Navigate at 1×. A 2880×1800 surface (1440 at 2×) is four times the
+    // framebuffer memory, and on a heavy page that is what takes the renderer
+    // down — once it goes, every later read on that page is detached and the
+    // site lands hollow. The captures raise the density themselves.
+    await page.setViewport({ width: 1440, height: 900, deviceScaleFactor: 1 })
 
     await gotoResilient(page, url)
     await waitPastInterstitial(page, url)
@@ -1100,6 +1103,8 @@ export async function extractFullDesignData(url: string, options: ExtractionOpti
       : await extractMotionTags(page)
 
     // Captures scroll and resize the viewport, so they come after every read.
+    // Density is raised only now: the picture is worth 2×, the navigation is not.
+    await page.setViewport({ width: 1440, height: 900, deviceScaleFactor: 2 })
     const screenshotUrl = await captureFullPageScreenshot(page, url, { scroll: false })
     const mobileScreenshotUrl = await captureMobileScreenshot(page, url)
 
