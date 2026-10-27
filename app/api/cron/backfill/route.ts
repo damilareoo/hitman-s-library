@@ -5,7 +5,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { revalidateTag } from 'next/cache'
 import { getSql } from '@/lib/db'
-import { extractFullDesignData, type FullExtractionResult } from '@/lib/browser-extraction'
+import { extractFullDesignData, captureMobileOnly, restartBrowser, type FullExtractionResult } from '@/lib/browser-extraction'
 import { deduplicateColors, toColorFormats } from '@/lib/color-utils'
 import { recordExtraction } from '@/lib/extraction-history'
 import { withDeadline } from '@/lib/extraction-deadline'
@@ -87,8 +87,51 @@ export async function GET(req: NextRequest) {
         (SELECT COUNT(*)::int FROM design_colors
           WHERE source_id = ${id} AND hex_value IS NOT NULL) AS "colorCount",
         (SELECT COUNT(*)::int FROM design_typography
-          WHERE source_id = ${id} AND role != 'legacy') AS "typeCount"
+          WHERE source_id = ${id} AND role != 'legacy') AS "typeCount",
+        screenshot_url AS "shotUrl",
+        mobile_screenshot_url AS "mobileUrl"
     `
+
+    // Palette, type and desktop capture already done — only the mobile shot is
+    // missing. The full pipeline wastes most of the window on reads this row
+    // does not need, and a shared instance poisoned by a previous page fails
+    // every capture after it. A fresh browser and one mobile frame is the job.
+    if (current?.colorCount > 0 && current?.typeCount > 0 && current?.shotUrl && !current?.mobileUrl) {
+      const deadline = new AbortController()
+      const timer = setTimeout(() => deadline.abort(), deadlineMs)
+      try {
+        await restartBrowser()
+        const mobile = await withDeadline(captureMobileOnly(source_url, deadline.signal), deadlineMs)
+        if (!mobile) throw new Error('Mobile capture returned an empty image')
+        await sql`
+          UPDATE design_sources
+          SET mobile_screenshot_url = ${mobile},
+              metadata = COALESCE(metadata, '{}') - 'extraction_error'
+          WHERE id = ${id}
+        `.catch(() => null)
+        await recordExtraction({
+          siteId: id,
+          screenshotUrl: null,
+          mobileScreenshotUrl: mobile,
+          palette: [],
+          typography: [],
+          assets: [],
+        })
+        return { id, ok: true }
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err)
+        console.error(`[cron/backfill] id=${id} mobile capture failed:`, err)
+        await sql`
+          UPDATE design_sources
+          SET metadata = COALESCE(metadata, '{}') || jsonb_build_object('extraction_error', ${message}::text)
+          WHERE id = ${id}
+        `.catch(() => null)
+        return { id, ok: false, error: message }
+      } finally {
+        clearTimeout(timer)
+      }
+    }
+
     const htmlDetailsPromise = current?.colorCount === 0 || current?.typeCount === 0
       ? extractStaticDesignData(source_url)
       : Promise.resolve(null)

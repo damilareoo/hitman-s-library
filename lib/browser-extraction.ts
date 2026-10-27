@@ -676,6 +676,72 @@ export async function captureFullPageScreenshot(
   }
 }
 
+export async function restartBrowser(): Promise<void> {
+  if (!browser) return
+  const current = browser
+  browser = null
+  try {
+    await current.close()
+  } catch {}
+}
+
+/**
+ * Mobile capture alone, on a fresh page. Used by the backfill for rows that
+ * already have palette, type and a desktop capture: the shared instance may be
+ * poisoned by an earlier page, and this path is light enough to recover from
+ * a restart without the full read pipeline.
+ */
+export async function captureMobileOnly(siteUrl: string, signal?: AbortSignal): Promise<string | null> {
+  const instance = await getBrowser()
+  if (!instance) return null
+  const page = await instance.newPage()
+  const closeOnAbort = () => { page.close().catch(() => {}) }
+  if (signal?.aborted) closeOnAbort()
+  else signal?.addEventListener('abort', closeOnAbort, { once: true })
+
+  try {
+    await page.setBypassCSP(true)
+    await page.setUserAgent(DESKTOP_UA)
+    await page.setViewport({ width: 1440, height: 900, deviceScaleFactor: 1 })
+    await gotoResilient(page, siteUrl)
+    await settleNavigation(page, 4000)
+
+    // 2× keeps the retina render readable without the 3× framebuffer that
+    // exhausts single-process Chromium on heavy pages.
+    await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 2, isMobile: true, hasTouch: true })
+    await new Promise(r => setTimeout(r, 1200))
+    await autoScroll(page, 300)
+    await new Promise(r => setTimeout(r, 600))
+
+    const capture = await captureWithRetry(page, `${siteUrl} mobile-only`, () => captureClamped(page, 92))
+    const buffer = capture?.buffer
+
+    if (!buffer || buffer.length === 0) {
+      console.error(`[screenshot] empty mobile-only buffer for ${siteUrl} — not uploading`)
+      return null
+    }
+
+    const hostname = new URL(siteUrl).hostname.replace(/\./g, '-')
+    const filename = `screenshots/${hostname}-${Date.now()}-mobile.webp`
+
+    const blob = await put(filename, buffer, {
+      access: 'public',
+      contentType: 'image/webp',
+    })
+
+    return blob.url
+  } catch (err) {
+    console.error('[screenshot] mobile-only capture failed:', err)
+    return null
+  } finally {
+    signal?.removeEventListener('abort', closeOnAbort)
+    await Promise.race([
+      page.close().catch(() => {}),
+      new Promise(resolve => setTimeout(resolve, 3000)),
+    ])
+  }
+}
+
 export async function captureMobileScreenshot(
   page: Page,
   siteUrl: string
