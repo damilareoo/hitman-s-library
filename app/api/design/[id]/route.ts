@@ -1,6 +1,6 @@
 // app/api/design/[id]/route.ts
 import { getSql } from '@/lib/db'
-import { getHistoriesByIds } from '@/lib/extraction-history'
+import { getHistoriesByIds, type ExtractionSnapshot } from '@/lib/extraction-history'
 import { favoriteCounts } from '@/lib/taste'
 import { toHttps } from '@/lib/secure-url'
 import { requireAdmin } from '@/lib/admin-auth'
@@ -33,22 +33,25 @@ export async function GET(
       return NextResponse.json({ error: 'Not found' }, { status: 404 })
     }
 
-    const [colors, typographyRows] = await Promise.all([
+    const source = sources[0]
+
+    // Resolve through the current-extraction pointer (Phase 0). The snapshot
+    // is written identically to the legacy tables, so this changes nothing
+    // visible — it only makes the pointer the source of truth. Everything
+    // here is independent once the row is known, so one round trip for all
+    // of it instead of four serialized ones.
+    const pointer = source.current_extraction_id
+    const [colors, typographyRows, favCounts, histories] = await Promise.all([
       sql`SELECT hex_value, oklch, area_share FROM design_colors WHERE source_id = ${id} ORDER BY id`,
       sql`
         SELECT font_family, role, google_fonts_url, primary_weight, sample_size_px, sample_line_height
         FROM design_typography WHERE source_id = ${id} AND role != 'legacy'
         ORDER BY CASE role WHEN 'heading' THEN 1 WHEN 'body' THEN 2 WHEN 'mono' THEN 3 ELSE 4 END
       `,
+      favoriteCounts([id]),
+      typeof pointer === 'number' ? getHistoriesByIds([pointer]) : Promise.resolve(new Map<number, ExtractionSnapshot>()),
     ])
 
-    const source = sources[0]
-    const favCounts = await favoriteCounts([id])
-
-    // Resolve through the current-extraction pointer (Phase 0). The snapshot
-    // is written identically to the legacy tables, so this changes nothing
-    // visible — it only makes the pointer the source of truth.
-    const pointer = source.current_extraction_id
     let snapshotColors = colors
     const typography = typographyRows.map((t: any) => ({
       font_family: t.font_family,
@@ -61,34 +64,31 @@ export async function GET(
     let snapshotTypography = typography
     let screenshotUrl = source.screenshot_url
     let mobileScreenshotUrl = source.mobile_screenshot_url
-    if (typeof pointer === 'number') {
-      const histories = await getHistoriesByIds([pointer])
-      const snapshot = histories.get(pointer)
-      if (snapshot) {
-        // An empty snapshot is a record of a run that found nothing, not a
-        // statement that the site has no palette. Prefer whatever the legacy
-        // tables hold in that case — otherwise an og:image fallback run hides
-        // colours and type that are sitting right there.
-        if (snapshot.palette.length > 0) {
-          snapshotColors = snapshot.palette.map(p => ({
-            hex_value: p.hex,
-            oklch: p.oklch,
-            area_share: typeof p.area_share === 'number' ? p.area_share : null,
-          }))
-        }
-        if (snapshot.typography.length > 0) {
-          snapshotTypography = snapshot.typography.map(t => ({
-            font_family: t.fontFamily,
-            role: t.role,
-            google_fonts_url: t.googleFontsUrl,
-            primary_weight: t.primaryWeight,
-            sample_size_px: t.sampleSizePx ?? null,
-            sample_line_height: t.sampleLineHeight ?? null,
-          }))
-        }
-        screenshotUrl = snapshot.screenshot_url ?? screenshotUrl
-        mobileScreenshotUrl = snapshot.mobile_screenshot_url ?? mobileScreenshotUrl
+    const snapshot = typeof pointer === 'number' ? histories.get(pointer) : undefined
+    if (snapshot) {
+      // An empty snapshot is a record of a run that found nothing, not a
+      // statement that the site has no palette. Prefer whatever the legacy
+      // tables hold in that case — otherwise an og:image fallback run hides
+      // colours and type that are sitting right there.
+      if (snapshot.palette.length > 0) {
+        snapshotColors = snapshot.palette.map(p => ({
+          hex_value: p.hex,
+          oklch: p.oklch,
+          area_share: typeof p.area_share === 'number' ? p.area_share : null,
+        }))
       }
+      if (snapshot.typography.length > 0) {
+        snapshotTypography = snapshot.typography.map(t => ({
+          font_family: t.fontFamily,
+          role: t.role,
+          google_fonts_url: t.googleFontsUrl,
+          primary_weight: t.primaryWeight,
+          sample_size_px: t.sampleSizePx ?? null,
+          sample_line_height: t.sampleLineHeight ?? null,
+        }))
+      }
+      screenshotUrl = snapshot.screenshot_url ?? screenshotUrl
+      mobileScreenshotUrl = snapshot.mobile_screenshot_url ?? mobileScreenshotUrl
     }
 
     return NextResponse.json({

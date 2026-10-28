@@ -1,7 +1,7 @@
 // components/site-detail-panel.tsx
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
 import { SquaresFour, Check, BookmarkSimple, Heart, X } from '@phosphor-icons/react'
 import { useCollections, toggleMembership, sanitizeName } from '@/lib/collections'
@@ -17,6 +17,8 @@ import { DRIFT_ENABLED } from '@/lib/drift'
 import { UNSORTED } from '@/lib/categories'
 import { Spinner } from './ui/spinner'
 import { EASE, DUR } from '@/lib/motion'
+import type { Design } from './design-card'
+import { fetchDetail, getCachedDetail } from '@/lib/detail-cache'
 import posthog from 'posthog-js'
 interface ColorRow { hex_value: string; oklch: string | null; area_share: number | null }
 interface TypographyRow { font_family: string; role: string; google_fonts_url: string | null; primary_weight: number | null; sample_size_px?: number | null; sample_line_height?: string | null }
@@ -49,6 +51,9 @@ interface SiteDetailPanelProps {
   variant?: 'desktop' | 'mobile'
   sourceId: number
   metadata?: SiteMetadata
+  /** The card this panel opened from, when the grid had it loaded. The panel
+   *  paints from it on the same frame and lets the API fill in the rest. */
+  initialDesign?: Design | null
   onClose?: () => void
   onSimilar?: () => void
   /** Tab from ?tab= — deep links restore the exact tab, not just the site. */
@@ -56,7 +61,7 @@ interface SiteDetailPanelProps {
   onTabChange?: (tab: PanelTab) => void
 }
 
-export function SiteDetailPanel({ variant = 'desktop', sourceId, metadata, onClose, onSimilar, initialTab = 'preview', onTabChange }: SiteDetailPanelProps) {
+export function SiteDetailPanel({ variant = 'desktop', sourceId, metadata, initialDesign, onClose, onSimilar, initialTab = 'preview', onTabChange }: SiteDetailPanelProps) {
   const isMobile = variant === 'mobile'
   const [activeTab, setActiveTab] = useState<PanelTab>(initialTab)
   const [saveOpen, setSaveOpen] = useState(false)
@@ -79,8 +84,13 @@ export function SiteDetailPanel({ variant = 'desktop', sourceId, metadata, onClo
       document.removeEventListener('pointerdown', onPointer)
     }
   }, [saveOpen])
-  const [data, setData] = useState<DetailData | null>(null)
-  const [loading, setLoading] = useState(true)
+  // The panel paints from the card on the opening frame and upgrades in place
+  // when the API row lands — `server` is the full row, `data` is what we have
+  // right now. Fields only the server knows (favorite count, mobile capture,
+  // measured swatch shares) stay hidden until then rather than flashing zeros.
+  const [server, setServer] = useState<DetailData | null>(null)
+  const [failed, setFailed] = useState(false)
+  const loadSeq = useRef(0)
   const { playPanelOpen, playClose } = useSoundsContext()
 
   useEffect(() => {
@@ -88,21 +98,49 @@ export function SiteDetailPanel({ variant = 'desktop', sourceId, metadata, onClo
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  const provisional = useMemo<DetailData | null>(() => {
+    if (!initialDesign) return null
+    return {
+      id: Number(initialDesign.id),
+      url: initialDesign.url,
+      title: initialDesign.title,
+      screenshot_url: initialDesign.thumbnail_url ?? null,
+      mobile_screenshot_url: null,
+      live_preview: true,
+      extraction_error: null,
+      colors: initialDesign.colors.map(hex => ({ hex_value: hex, oklch: null, area_share: null })),
+      typography: initialDesign.typography.map((family, i) => ({
+        font_family: family,
+        role: (['heading', 'body', 'mono'] as const)[i] ?? 'body',
+        google_fonts_url: null,
+        primary_weight: null,
+      })),
+    }
+  }, [initialDesign])
+
+  const data = server ?? provisional
+
+  const normalize = (raw: any): DetailData => ({
+    ...raw,
+    colors: Array.isArray(raw.colors) ? raw.colors : [],
+    typography: Array.isArray(raw.typography) ? raw.typography : [],
+  })
+
   const load = useCallback(() => {
-    setLoading(true)
-    setData(null)
-    fetch(`/api/design/${sourceId}`)
-      .then(r => r.json())
+    const seq = ++loadSeq.current
+    setFailed(false)
+    setServer(null)
+    // The last fetch for this site is better than a spinner while the fresh
+    // row is on the wire — favorites and counts update when it lands.
+    const cached = getCachedDetail(sourceId)
+    if (cached && !cached.error) setServer(normalize(cached))
+    fetchDetail(sourceId)
       .then(raw => {
-        if (!raw || raw.error) return
-        setData({
-          ...raw,
-          colors: Array.isArray(raw.colors) ? raw.colors : [],
-          typography: Array.isArray(raw.typography) ? raw.typography : [],
-        })
+        if (seq !== loadSeq.current) return
+        if (!raw || raw.error) { setFailed(true); return }
+        setServer(normalize(raw))
       })
-      .catch(console.error)
-      .finally(() => setLoading(false))
+      .catch(() => { if (seq === loadSeq.current) setFailed(true) })
   }, [sourceId])
 
   useEffect(() => {
@@ -122,7 +160,7 @@ export function SiteDetailPanel({ variant = 'desktop', sourceId, metadata, onClo
   // Anything more about the row belongs in a tab.
   const kindLabel = metadata?.kind && metadata.kind !== UNSORTED ? metadata.kind : undefined
   const title = data?.title?.trim() || hostname
-  const favCount = data?.favorite_count ?? 0
+  const favCount = server?.favorite_count
 
   function updateCollectionMembership(name: string, wasSaved: boolean) {
     posthog.capture('collection_membership_updated', {
@@ -144,14 +182,16 @@ export function SiteDetailPanel({ variant = 'desktop', sourceId, metadata, onClo
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
             <p className="text-titletext text-ink truncate">{title}</p>
-            <span
-              className="inline-flex items-center gap-1 shrink-0 text-[12px] text-ink-4 tabular-nums"
-              title={`${favCount} favorite${favCount === 1 ? '' : 's'}`}
-            >
-              <Heart className="w-3 h-3 text-[var(--color-error)]" weight="fill" aria-hidden="true" />
-              {favCount}
-              <span className="sr-only">favorites</span>
-            </span>
+            {typeof favCount === 'number' && (
+              <span
+                className="inline-flex items-center gap-1 shrink-0 text-[12px] text-ink-4 tabular-nums"
+                title={`${favCount} favorite${favCount === 1 ? '' : 's'}`}
+              >
+                <Heart className="w-3 h-3 text-[var(--color-error)]" weight="fill" aria-hidden="true" />
+                {favCount}
+                <span className="sr-only">favorites</span>
+              </span>
+            )}
           </div>
           {kindLabel && (
             <p className="text-micro text-ink-4 mt-1 truncate">{kindLabel}</p>
@@ -257,17 +297,7 @@ export function SiteDetailPanel({ variant = 'desktop', sourceId, metadata, onClo
 
       {/* Content */}
       <AnimatePresence mode="wait">
-        {loading ? (
-          <motion.div
-            key="loading"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="flex items-center justify-center flex-1"
-          >
-            <Spinner />
-          </motion.div>
-        ) : data ? (
+        {data ? (
           <motion.div
             key={`data-${sourceId}`}
             initial={{ opacity: 0, y: 4 }}
@@ -333,7 +363,7 @@ export function SiteDetailPanel({ variant = 'desktop', sourceId, metadata, onClo
               )}
             </AnimatePresence>
           </motion.div>
-        ) : (
+        ) : failed ? (
           <motion.div
             key="error"
             initial={{ opacity: 0 }}
@@ -348,12 +378,22 @@ export function SiteDetailPanel({ variant = 'desktop', sourceId, metadata, onClo
               Retry
             </button>
           </motion.div>
+        ) : (
+          <motion.div
+            key="loading"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="flex items-center justify-center flex-1"
+          >
+            <Spinner />
+          </motion.div>
         )}
       </AnimatePresence>
 
       {/* Token kit footer: copy the site's theme out. Persistent across tabs;
           it only needs the palette and type the panel already holds. */}
-      {data && !loading && (
+      {data && (
         <div className="flex-shrink-0 border-t border-edge-faint px-4 py-2 flex items-center justify-between gap-2">
           <span className="text-micro text-ink-4 max-[359px]:hidden">Copy theme</span>
           <ThemeExport

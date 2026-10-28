@@ -86,6 +86,16 @@ export function releaseAuthors(release: ChangelogRelease): Author[] {
 const changelog: ChangelogRelease[] = [
   {
     date: '2026-10-28',
+    title: 'Instant',
+    items: [
+      { type: 'improved', author: 'damilare', text: 'Opening a site paints from the card on the same frame — header, capture and palette appear at once and the rest of the detail row fills in behind them' },
+      { type: 'improved', author: 'damilare', text: 'Clicks no longer re-run the page on the server: filters, tabs and site opens write the URL directly, so the view moves in the same frame instead of waiting on a fetch' },
+      { type: 'improved', author: 'damilare', text: 'The detail panel is fetched while the page is idle, and a site\u2019s detail row while its card is hovered — the first open usually has nothing left to download' },
+      { type: 'improved', author: 'damilare', text: 'Reopening a site is instant: its detail row stays ready for half a minute and refreshes silently, and the detail API answers in one database round trip instead of four' },
+    ],
+  },
+  {
+    date: '2026-10-28',
     title: 'Measured',
     items: [
       { type: 'new', author: 'damilare', text: 'The library now reports to PostHog: opens from every surface, favourites, collection changes, theme exports, digest sign-ups and app errors' },

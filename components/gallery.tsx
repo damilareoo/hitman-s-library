@@ -1,7 +1,6 @@
 'use client'
 
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
-import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import { useTheme } from 'next-themes'
 import { Sun, Moon, SpeakerHigh, SpeakerSlash, MagnifyingGlass, X, ArrowRight, Plus, DotsThree } from '@phosphor-icons/react'
 import dynamic from 'next/dynamic'
@@ -27,6 +26,8 @@ import { SiteLinks } from '@/components/site-links'
 import { EASE, DUR } from '@/lib/motion'
 import Link from 'next/link'
 import { useIsNarrow, useIsPhone } from '@/lib/use-is-narrow'
+import { useUrlParams } from '@/lib/use-url-params'
+import { prefetchDetail } from '@/lib/detail-cache'
 import posthog from 'posthog-js'
 
 const gridVariants = {
@@ -75,6 +76,7 @@ interface GalleryProps {
   initialPagination: Pagination
   initialCategories: { name: string; count: number }[]
   initialSimilar: { site: Design | null; neighbors: Design[] } | null
+  initialParams: Record<string, string | string[] | undefined>
 }
 
 // Direction H keeps active rows obvious through fill, not a leading rule.
@@ -127,13 +129,13 @@ function SkeletonCard() {
   )
 }
 
-export function Gallery({ initialDesigns, initialPagination, initialCategories, initialSimilar }: GalleryProps) {
-  const router = useRouter()
-  const pathname = usePathname()
-  const searchParams = useSearchParams()
-
+export function Gallery({ initialDesigns, initialPagination, initialCategories, initialSimilar, initialParams }: GalleryProps) {
   // The URL is the source of truth for every filter, so views are shareable
-  // and the back button steps through them.
+  // and the back button steps through them. It is written through the history
+  // API, not the router: this page is force-dynamic, so a router.push would
+  // re-run every gallery query server-side before React even moves.
+  const { params: searchParams, push: pushParams, replace: replaceParams } = useUrlParams(initialParams)
+
   const kinds = useMemo(() => searchParams.getAll('category'), [searchParams])
   const tags = useMemo(() => searchParams.getAll('tag'), [searchParams])
   const search = searchParams.get('q') ?? ''
@@ -266,26 +268,26 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
 
   useEffect(() => { hasAnimated.current = true; setMounted(true) }, [])
 
-  // Router navigation is async, so two quick clicks would both read the same
-  // useSearchParams snapshot and the second would overwrite the first — picking
-  // one category dropped the other. This holds the pending query string so
-  // consecutive edits compose.
-  const pendingParams = useRef<string | null>(null)
-  useEffect(() => { pendingParams.current = null }, [searchParams])
+  // The panel chunk is the one part of opening a site that has to download.
+  // Fetch it while the page is idle so the first open mounts instantly —
+  // preload() hits the same chunk the dynamic() above would load on demand.
+  useEffect(() => {
+    const warm = () => (SiteDetailPanel as unknown as { preload: () => void }).preload()
+    if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
+      const id = window.requestIdleCallback(warm, { timeout: 2500 })
+      return () => window.cancelIdleCallback(id)
+    }
+    const t = setTimeout(warm, 1200)
+    return () => clearTimeout(t)
+  }, [])
 
   /** Rewrites the query string; every filter interaction goes through here. */
   const updateParams = useCallback(
     (mutate: (p: URLSearchParams) => void, opts: { replace?: boolean } = {}) => {
-      const base = pendingParams.current ?? searchParams.toString()
-      const params = new URLSearchParams(base)
-      mutate(params)
-      const qs = params.toString()
-      pendingParams.current = qs
-      const url = qs ? `${pathname}?${qs}` : pathname
-      if (opts.replace) router.replace(url, { scroll: false })
-      else router.push(url, { scroll: false })
+      if (opts.replace) replaceParams(mutate)
+      else pushParams(mutate)
     },
-    [router, pathname, searchParams],
+    [pushParams, replaceParams],
   )
 
   // Keep the input in step when the URL changes from outside (back/forward).
@@ -740,6 +742,9 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
     <SiteDetailPanel
       variant={variant}
       sourceId={Number(selectedId)}
+      // The card already holds the header, the capture and the palette the
+      // panel paints — it opens on those while the API fills in the rest.
+      initialDesign={selectedDesign}
       metadata={selectedDesign ? {
         tags: selectedDesign.tags,
         designStyle: selectedDesign.designStyle,
@@ -1086,7 +1091,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
                 </h2>
                 {(hasFilters || similarToId) && (
                   <Link
-                    href={pathname}
+                    href="/"
                     scroll={false}
                     className="text-meta text-ink-4 hover:text-ink transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-foreground/25 rounded-[4px]"
                   >
@@ -1190,7 +1195,9 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
                         index={i}
                         isSelected={selectedId === design.id}
                         onClick={() => handleCardClick(design)}
-                        onHover={() => sounds.playHover()}
+                        // Hover is the look before the leap: warm the detail
+                        // row so the click opens on data, not a spinner.
+                        onHover={() => { sounds.playHover(); prefetchDetail(design.id) }}
                         onTagClick={handleTagClick}
                         hasAnimated={hasAnimated.current}
                         isFavorite={favorites.includes(Number(design.id))}

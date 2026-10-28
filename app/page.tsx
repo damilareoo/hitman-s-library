@@ -78,6 +78,10 @@ export default async function Page(
   return (
     <Suspense fallback={null}>
       <Gallery
+        // The client rewrites the query string through the history API so a
+        // click never costs a server round trip; these are the params the
+        // first (server) render was painted from.
+        initialParams={params}
         initialDesigns={initialSimilar && initialSimilar.site ? [initialSimilar.site, ...initialSimilar.neighbors] : designs}
         initialPagination={
           initialSimilar && initialSimilar.site
