@@ -88,7 +88,7 @@ export function SiteDetailPanel({ variant = 'desktop', sourceId, metadata, initi
   // when the API row lands — `server` is the full row, `data` is what we have
   // right now. Fields only the server knows (favorite count, mobile capture,
   // measured swatch shares) stay hidden until then rather than flashing zeros.
-  const [server, setServer] = useState<DetailData | null>(null)
+  const [serverState, setServerState] = useState<{ id: number; data: DetailData } | null>(null)
   const [failed, setFailed] = useState(false)
   const loadSeq = useRef(0)
   const { playPanelOpen, playClose } = useSoundsContext()
@@ -118,6 +118,9 @@ export function SiteDetailPanel({ variant = 'desktop', sourceId, metadata, initi
     }
   }, [initialDesign])
 
+  // The previous site's row must never stand in for this one, even for the
+  // single frame before the effect below clears it.
+  const server = serverState && serverState.id === sourceId ? serverState.data : null
   const data = server ?? provisional
 
   const normalize = (raw: any): DetailData => ({
@@ -129,16 +132,16 @@ export function SiteDetailPanel({ variant = 'desktop', sourceId, metadata, initi
   const load = useCallback(() => {
     const seq = ++loadSeq.current
     setFailed(false)
-    setServer(null)
+    setServerState(null)
     // The last fetch for this site is better than a spinner while the fresh
     // row is on the wire — favorites and counts update when it lands.
     const cached = getCachedDetail(sourceId)
-    if (cached && !cached.error) setServer(normalize(cached))
+    if (cached && !cached.error) setServerState({ id: sourceId, data: normalize(cached) })
     fetchDetail(sourceId)
       .then(raw => {
         if (seq !== loadSeq.current) return
         if (!raw || raw.error) { setFailed(true); return }
-        setServer(normalize(raw))
+        setServerState({ id: sourceId, data: normalize(raw) })
       })
       .catch(() => { if (seq === loadSeq.current) setFailed(true) })
   }, [sourceId])
