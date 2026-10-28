@@ -20,8 +20,6 @@ build/
 .env.local
 .env.*.local
 .env.production
-# .env.production is un-ignored below: it holds only NEXT_PUBLIC_* client tokens, safe to ship
-!.env.production
 .env.development
 .env.*.sh
 hitmans-library-setup.md

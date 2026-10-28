@@ -90,6 +90,7 @@ const changelog: ChangelogRelease[] = [
     items: [
       { type: 'new', author: 'damilare', text: 'The library now reports to PostHog: opens from every surface, favourites, collection changes, theme exports, digest sign-ups and app errors' },
       { type: 'new', author: 'damilare', text: 'Site requests log to PostHog from the server as well, with a batch\u2019s accepted count attached' },
+      { type: 'fixed', author: 'damilare', text: 'The PostHog keys stay out of the repo and come from the Vercel environment, and a missing key now says so instead of silently switching analytics off' },
     ],
   },
   {
