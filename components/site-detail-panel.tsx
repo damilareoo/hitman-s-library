@@ -17,6 +17,7 @@ import { DRIFT_ENABLED } from '@/lib/drift'
 import { UNSORTED } from '@/lib/categories'
 import { Spinner } from './ui/spinner'
 import { EASE, DUR } from '@/lib/motion'
+import posthog from 'posthog-js'
 interface ColorRow { hex_value: string; oklch: string | null; area_share: number | null }
 interface TypographyRow { font_family: string; role: string; google_fonts_url: string | null; primary_weight: number | null; sample_size_px?: number | null; sample_line_height?: string | null }
 
@@ -123,6 +124,14 @@ export function SiteDetailPanel({ variant = 'desktop', sourceId, metadata, onClo
   const title = data?.title?.trim() || hostname
   const favCount = data?.favorite_count ?? 0
 
+  function updateCollectionMembership(name: string, wasSaved: boolean) {
+    posthog.capture('collection_membership_updated', {
+      source_id: sourceId,
+      is_saved: !wasSaved,
+    })
+    toggleMembership(name, sourceId)
+  }
+
   return (
     <div className="flex flex-col h-full bg-background">
       {/* Header */}
@@ -179,7 +188,7 @@ export function SiteDetailPanel({ variant = 'desktop', sourceId, metadata, onClo
                   return (
                     <button
                       key={name}
-                      onClick={() => toggleMembership(name, sourceId)}
+                      onClick={() => updateCollectionMembership(name, saved)}
                       aria-pressed={saved}
                       className="w-full flex items-center gap-2 px-2 py-1.5 rounded-[6px] text-left hover:bg-muted transition-colors"
                     >
@@ -197,7 +206,7 @@ export function SiteDetailPanel({ variant = 'desktop', sourceId, metadata, onClo
                       if (e.key === 'Enter') {
                         const clean = sanitizeName(newSetName)
                         if (clean) {
-                          toggleMembership(clean, sourceId)
+                          updateCollectionMembership(clean, false)
                           setNewSetName('')
                         }
                       }
@@ -210,7 +219,7 @@ export function SiteDetailPanel({ variant = 'desktop', sourceId, metadata, onClo
                     onClick={() => {
                       const clean = sanitizeName(newSetName)
                       if (clean) {
-                        toggleMembership(clean, sourceId)
+                        updateCollectionMembership(clean, false)
                         setNewSetName('')
                       }
                     }}

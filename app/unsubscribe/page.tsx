@@ -5,6 +5,7 @@ import { Suspense, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { Brand } from '@/components/brand'
+import posthog from 'posthog-js'
 
 function UnsubscribeForm() {
   const token = useSearchParams().get('token') ?? ''
@@ -20,7 +21,12 @@ function UnsubscribeForm() {
         body: JSON.stringify({ token }),
       })
       const data = await res.json()
-      setState(res.ok ? 'done' : { error: data.error ?? 'That did not go through.' })
+      if (res.ok) {
+        posthog.capture('digest_unsubscribed')
+        setState('done')
+      } else {
+        setState({ error: data.error ?? 'That did not go through.' })
+      }
     } catch {
       setState({ error: 'Could not reach the server.' })
     }

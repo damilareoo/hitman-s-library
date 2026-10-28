@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect } from "react"
+import posthog from "posthog-js"
 import { Button } from "@/components/ui/button"
 import { WarningCircle, ArrowsClockwise } from "@phosphor-icons/react"
 
@@ -12,6 +13,7 @@ export default function Error({
   reset: () => void
 }) {
   useEffect(() => {
+    posthog.captureException(error)
     console.error("Application error:", error)
   }, [error])
 

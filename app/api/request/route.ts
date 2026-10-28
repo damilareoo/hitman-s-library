@@ -3,7 +3,8 @@
 // The one public write path in the application. It writes a row and nothing
 // else — no extraction, no headless browser, no blob storage. Approving a
 // request is what starts real work, and that is behind the admin session.
-import { NextResponse } from 'next/server'
+import { after, NextResponse } from 'next/server'
+import { flushPostHogLogs, logPostHogInfo } from '@/instrumentation'
 import { getSql } from '@/lib/db'
 import { assertPublicUrl, BlockedUrlError } from '@/lib/safe-url'
 import { normalizeUrl, toAbsoluteUrl } from '@/lib/normalize-url'
@@ -148,6 +149,12 @@ export async function POST(req: Request) {
     if (single.state === 'invalid') {
       return NextResponse.json({ state: 'invalid', message: single.message }, { status: 400 })
     }
+    logPostHogInfo('site request accepted', {
+      submission_type: 'single',
+      candidate_count: 1,
+    })
+    after(flushPostHogLogs)
+
     return NextResponse.json({
       state: 'received',
       id: single.id,
@@ -160,5 +167,13 @@ export async function POST(req: Request) {
   for (const raw of candidates) {
     results.push(await handleOne(raw))
   }
+
+  logPostHogInfo('site request batch processed', {
+    submission_type: 'batch',
+    candidate_count: candidates.length,
+    accepted_count: results.filter(result => result.state === 'received').length,
+  })
+  after(flushPostHogLogs)
+
   return NextResponse.json({ state: 'batch', results })
 }

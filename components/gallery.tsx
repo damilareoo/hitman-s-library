@@ -27,6 +27,7 @@ import { SiteLinks } from '@/components/site-links'
 import { EASE, DUR } from '@/lib/motion'
 import Link from 'next/link'
 import { useIsNarrow, useIsPhone } from '@/lib/use-is-narrow'
+import posthog from 'posthog-js'
 
 const gridVariants = {
   hidden: {},
@@ -547,6 +548,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
 
   const handleCardClick = useCallback((design: Design) => {
     sounds.playSelect()
+    posthog.capture('design_opened', { source_id: design.id, opening_surface: 'gallery' })
     selectDesign(design)
   }, [sounds, selectDesign])
 
@@ -660,6 +662,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
 
   const handleIndexOpen = useCallback((design: Design) => {
     sounds.playSelect()
+    posthog.capture('design_opened', { source_id: design.id, opening_surface: 'index' })
     updateParams(p => {
       p.delete('view')
       p.set('site', design.id)
@@ -681,6 +684,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
 
   const handleBrowseOpen = useCallback((id: string) => {
     sounds.playSelect()
+    posthog.capture('design_opened', { source_id: id, opening_surface: 'browse_panel' })
     updateParams(p => {
       p.delete('view')
       p.delete('collection')
@@ -1190,7 +1194,14 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
                         onTagClick={handleTagClick}
                         hasAnimated={hasAnimated.current}
                         isFavorite={favorites.includes(Number(design.id))}
-                        onToggleFavorite={() => toggleFavorite(design.id)}
+                        onToggleFavorite={() => {
+                          const isFavorited = favorites.includes(Number(design.id))
+                          posthog.capture('design_favorite_toggled', {
+                            source_id: design.id,
+                            is_favorited: !isFavorited,
+                          })
+                          toggleFavorite(design.id)
+                        }}
                       />
                     ))
                 }

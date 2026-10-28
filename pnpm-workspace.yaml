@@ -2,6 +2,11 @@ allowBuilds:
   '@ffmpeg-installer/darwin-arm64': true
   '@ffmpeg-installer/linux-x64': true
   bufferutil: true
+  core-js: true
   protobufjs: true
   puppeteer: true
   sharp: true
+minimumReleaseAgeExclude:
+  - '@posthog/core@1.61.1'
+  - '@posthog/types@1.417.0'
+  - posthog-js@1.440.0

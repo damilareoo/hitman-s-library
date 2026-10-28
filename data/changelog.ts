@@ -85,6 +85,14 @@ export function releaseAuthors(release: ChangelogRelease): Author[] {
 // only case where the question is actually being asked.
 const changelog: ChangelogRelease[] = [
   {
+    date: '2026-10-28',
+    title: 'Measured',
+    items: [
+      { type: 'new', author: 'damilare', text: 'The library now reports to PostHog: opens from every surface, favourites, collection changes, theme exports, digest sign-ups and app errors' },
+      { type: 'new', author: 'damilare', text: 'Site requests log to PostHog from the server as well, with a batch\u2019s accepted count attached' },
+    ],
+  },
+  {
     date: '2026-10-26',
     title: 'Every Detail',
     items: [

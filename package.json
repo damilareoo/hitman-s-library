@@ -12,6 +12,10 @@
   "dependencies": {
     "@ffmpeg-installer/ffmpeg": "^1.1.0",
     "@neondatabase/serverless": "1.0.2",
+    "@opentelemetry/api-logs": "^0.57.0",
+    "@opentelemetry/exporter-logs-otlp-http": "^0.57.0",
+    "@opentelemetry/resources": "^1.30.0",
+    "@opentelemetry/sdk-logs": "^0.57.0",
     "@phosphor-icons/react": "^2.1.10",
     "@radix-ui/react-label": "2.1.1",
     "@radix-ui/react-scroll-area": "1.2.2",
@@ -31,6 +35,7 @@
     "motion": "^12.38.0",
     "next": "16.0.10",
     "next-themes": "^0.4.6",
+    "posthog-js": "^1.440.0",
     "puppeteer": "^22.0.0",
     "react": "19.2.0",
     "react-dom": "19.2.0",

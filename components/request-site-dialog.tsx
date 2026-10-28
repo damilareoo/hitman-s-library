@@ -7,6 +7,7 @@ import { Spinner } from '@/components/ui/spinner'
 import { EASE, DUR } from '@/lib/motion'
 import { normalizeUrl } from '@/lib/normalize-url'
 import { useSiteRequests, type RememberedRequest } from '@/lib/use-site-requests'
+import posthog from 'posthog-js'
 
 type PreviewState =
   | { kind: 'idle' }
@@ -182,10 +183,15 @@ export function RequestSiteDialog({ open, onClose, initialUrl = '', onOpenSite }
         setPreview({ kind: 'existing', id: data.site.id, title: data.site.title, image: null })
       } else if (data.state === 'received') {
         remember(url.trim(), previewTitle)
+        posthog.capture('site_request_submitted', { request_count: 1, is_batch: false })
         setSubmitted({ title: previewTitle, count: data.requestCount ?? 1 })
       } else if (data.state === 'batch' && Array.isArray(data.results)) {
+        const receivedCount = data.results.filter((r: { state: string }) => r.state === 'received').length
         for (const r of data.results) {
           if (r.state === 'received') remember(r.url, null)
+        }
+        if (receivedCount > 0) {
+          posthog.capture('site_request_submitted', { request_count: receivedCount, is_batch: true })
         }
         setBatchResults(data.results)
       } else {
