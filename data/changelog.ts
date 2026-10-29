@@ -85,6 +85,13 @@ export function releaseAuthors(release: ChangelogRelease): Author[] {
 // only case where the question is actually being asked.
 const changelog: ChangelogRelease[] = [
   {
+    date: '2026-10-29',
+    title: 'Clean Addresses',
+    items: [
+      { type: 'fixed', author: 'damilare', text: 'Closing a site — or leaving it through a filter, collection or the index — no longer leaves a stale tab marker in the address bar' },
+    ],
+  },
+  {
     date: '2026-10-28',
     title: 'Instant',
     items: [

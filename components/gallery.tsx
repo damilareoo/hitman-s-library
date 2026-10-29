@@ -479,7 +479,10 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
   const selectDesign = useCallback((design: Design | null) => {
     updateParams(p => {
       if (design) p.set('site', design.id)
-      else p.delete('site')
+      else {
+        p.delete('site')
+        p.delete('tab')
+      }
     })
   }, [updateParams])
 
@@ -558,6 +561,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
     sounds.playFilterClick()
     updateParams(p => {
       p.delete('site')
+      p.delete('tab')
       p.delete('category')
       p.delete('tag')
       p.delete('q')
@@ -574,6 +578,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
     sounds.playFilterClick()
     updateParams(p => {
       p.delete('site')
+      p.delete('tab')
       const current = p.getAll('tag')
       p.delete('tag')
       const next = current.includes(tag) ? current.filter(t => t !== tag) : [...current, tag]
@@ -595,6 +600,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
       p.delete('tag')
       p.delete('q')
       p.delete('site')
+      p.delete('tab')
       p.delete('sort')
       p.delete('collection')
       p.delete('similarTo')
@@ -631,6 +637,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
     updateParams(p => {
       p.delete('view')
       p.delete('site')
+      p.delete('tab')
       p.delete('category')
       p.delete('tag')
       p.delete('q')
@@ -645,6 +652,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
     updateParams(p => {
       p.delete('view')
       p.delete('site')
+      p.delete('tab')
       p.delete('similarTo')
       p.set('collection', name)
     })
@@ -655,6 +663,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
     updateParams(p => {
       p.delete('view')
       p.delete('site')
+      p.delete('tab')
       const current = p.getAll('tag')
       p.delete('tag')
       const next = current.includes(tag) ? current.filter(t => t !== tag) : [...current, tag]
