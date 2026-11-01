@@ -2,10 +2,10 @@
 // Shared empty/error state used by Colors, Type, and Assets tabs.
 'use client'
 
-import { ShieldWarning, LockSimple, Clock, FileDashed, Warning } from '@phosphor-icons/react'
+import { ShieldWarning, LockSimple, Clock, FileDashed, WifiSlash, Warning } from '@phosphor-icons/react'
 import { classifyExtractionError } from '@/lib/classify-extraction-error'
 
-const ICONS = { ShieldWarning, LockSimple, Clock, FileDashed, Warning }
+const ICONS = { ShieldWarning, LockSimple, Clock, FileDashed, WifiSlash, Warning }
 
 interface Props {
   message: string

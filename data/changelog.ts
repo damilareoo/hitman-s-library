@@ -85,6 +85,14 @@ export function releaseAuthors(release: ChangelogRelease): Author[] {
 // only case where the question is actually being asked.
 const changelog: ChangelogRelease[] = [
   {
+    date: '2026-11-01',
+    title: 'Honest Failures',
+    items: [
+      { type: 'new', author: 'damilare', text: 'A site that is down or serving a failing certificate is now reported as unreachable, with a try-again suggestion' },
+      { type: 'fixed', author: 'damilare', text: 'The word \u201clogin\u201d in a failed address no longer brands a site as login-gated — only genuine sign-in evidence does' },
+    ],
+  },
+  {
     date: '2026-10-29',
     title: 'Clean Addresses',
     items: [

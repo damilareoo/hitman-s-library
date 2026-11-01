@@ -2,12 +2,12 @@
 'use client'
 
 import { useEffect, useRef, useState, type ReactNode } from 'react'
-import { ShieldWarning, LockSimple, Clock, FileDashed, Warning, ArrowClockwise, ArrowUpRight } from '@phosphor-icons/react'
+import { ShieldWarning, LockSimple, Clock, FileDashed, WifiSlash, Warning, ArrowClockwise, ArrowUpRight } from '@phosphor-icons/react'
 import { classifyExtractionError } from '@/lib/classify-extraction-error'
 import { getDomain } from '@/lib/get-domain'
 import { previewOrigin } from '@/lib/preview-origin'
 
-const ICONS = { ShieldWarning, LockSimple, Clock, FileDashed, Warning }
+const ICONS = { ShieldWarning, LockSimple, Clock, FileDashed, WifiSlash, Warning }
 type PreviewMode = 'live' | 'screenshot' | 'mobile'
 
 /**
