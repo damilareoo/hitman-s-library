@@ -682,7 +682,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
         p.delete('trail')
       } else {
         const trail = (p.get('trail') ?? '').split(',').map(s => s.trim().replace(/^#/, '')).filter(s => s)
-        const at = trail.findIndex(t => t.toLowerCase() === target)
+        const at = trail.findIndex(t => t.toLowerCase() === target.replace(/^#/, ''))
         if (at > -1) {
           const rewind = trail.slice(0, at)
           if (rewind.length) p.set('trail', rewind.join(','))
