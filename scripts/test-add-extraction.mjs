@@ -48,6 +48,7 @@ function loadAddRoute() {
     '@/lib/tagging': { computeTags: () => [] },
     '@/lib/extraction-history': { recordExtraction: async () => {} },
     '@/lib/thumbnail-optimize': { optimizeThumbnail: async () => null },
+    '@/lib/external-capture': { captureExternally: async () => ({ desktopUrl: null, mobileUrl: null, palette: [] }) },
     '@/lib/similarity': { SIMILAR_ENABLED: false, embedSite: async () => [], toVectorLiteral: () => '' },
     '@/lib/admin-auth': { requireAdmin: async () => null },
     '@/lib/safe-url': {

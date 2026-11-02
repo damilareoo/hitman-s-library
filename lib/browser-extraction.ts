@@ -231,12 +231,12 @@ const INTERSTITIAL_WAIT_MS = 20000
 
 /**
  * True when there is no interstitial or the one there cleared; false when the
- * wait expired and the challenge is still showing. A wall that will not clear
- * is reported as exactly that — the wall's own colours and type must never be
- * filed as the site's design, and the run must not spend its remaining budget
- * photographing it.
+ * wait expired — or the caller's deadline aborted it — and the challenge is
+ * still showing. A wall that will not clear is reported as exactly that: the
+ * wall's own colours and type must never be filed as the site's design, and
+ * the run must not spend its remaining budget photographing it.
  */
-async function waitPastInterstitial(page: Page, siteUrl: string): Promise<boolean> {
+async function waitPastInterstitial(page: Page, siteUrl: string, signal?: AbortSignal): Promise<boolean> {
   let title = ''
   try {
     title = await page.title()
@@ -246,6 +246,9 @@ async function waitPastInterstitial(page: Page, siteUrl: string): Promise<boolea
   const deadline = Date.now() + INTERSTITIAL_WAIT_MS
   while (Date.now() < deadline) {
     await new Promise(r => setTimeout(r, 1000))
+    // The caller has run out of budget; answer now so the challengeBlocked
+    // result still arrives instead of a deadline rejection.
+    if (signal?.aborted) return false
     try {
       title = await page.title()
     } catch {}
@@ -1096,7 +1099,7 @@ export async function extractFullDesignData(url: string, options: ExtractionOpti
     await page.setViewport({ width: 1440, height: 900, deviceScaleFactor: 1 })
 
     await gotoResilient(page, url)
-    if (!(await waitPastInterstitial(page, url))) {
+    if (!(await waitPastInterstitial(page, url, options.signal))) {
       // The challenge page has been polling the whole time, so the run is
       // already ~25s in. Bailing here is what keeps it inside the caller's
       // deadline at all — and the capture of a "Just a moment" wall is not a

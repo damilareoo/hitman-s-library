@@ -86,6 +86,13 @@ export function releaseAuthors(release: ChangelogRelease): Author[] {
 const changelog: ChangelogRelease[] = [
   {
     date: '2026-11-03',
+    title: 'Walled Gardens, Part Two',
+    items: [
+      { type: 'new', author: 'damilare', text: 'Sites whose bot wall the browser cannot pass are now captured by an external renderer instead — desktop and mobile shots, with a palette measured from the capture, so a walled site lands in the library looking like itself' },
+    ],
+  },
+  {
+    date: '2026-11-03',
     title: 'Walled Gardens',
     items: [
       { type: 'fixed', author: 'damilare', text: 'Sites behind a bot check (Cloudflare\u2019s \u201cJust a moment\u201d and friends) now answer quickly and honestly — the row says the preview is blocked instead of burning the full minute and failing with a shrug, and the wall\u2019s own colors are never filed as the site\u2019s palette' },

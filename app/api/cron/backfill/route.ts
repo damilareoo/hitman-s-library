@@ -10,6 +10,7 @@ import { deduplicateColors, toColorFormats } from '@/lib/color-utils'
 import { recordExtraction } from '@/lib/extraction-history'
 import { withDeadline } from '@/lib/extraction-deadline'
 import { extractStaticDesignData } from '@/lib/static-extraction'
+import { captureExternally } from '@/lib/external-capture'
 
 export const maxDuration = 60
 
@@ -141,7 +142,10 @@ export async function GET(req: NextRequest) {
       : Promise.resolve(null)
 
     const deadline = new AbortController()
-    const timer = setTimeout(() => deadline.abort(), deadlineMs)
+    // Fired a little early so a walled page answers "challenge never cleared"
+    // before the deadline rejection wins the race — that answer is what lets
+    // the external-renderer fallback below run at all.
+    const timer = setTimeout(() => deadline.abort(), Math.max(0, deadlineMs - 3000))
 
     try {
       // No motion take: it is the last ~8 seconds of the run and no backfill
@@ -163,9 +167,42 @@ export async function GET(req: NextRequest) {
 
       // The wall will not clear: record the specific reason and mark the
       // preview unavailable. The static read above is equally blocked, so
-      // there is nothing real to file — never the wall's own colours.
+      // there is nothing real to file — never the wall's own colours. The one
+      // repair available is the external renderer: its capture and a palette
+      // measured off that capture.
       if (extraction?.challengeBlocked) {
-        const reason = 'Cloudflare bot protection: the site serves a challenge the headless browser cannot pass'
+        // Whatever is left of the run, minus time to write and answer.
+        const externalBudget = Math.max(8_000, Math.min(30_000, RUN_MS - (Date.now() - start) - 4_000))
+        const external = await withDeadline(captureExternally(source_url), externalBudget).catch(() => null)
+        const reason = external?.desktopUrl || external?.mobileUrl
+          ? 'Cloudflare bot protection: captured by an external renderer — palette sampled from the capture'
+          : 'Cloudflare bot protection: the site serves a challenge the headless browser cannot pass'
+
+        if (external?.desktopUrl || external?.mobileUrl) {
+          await sql`
+            UPDATE design_sources
+            SET screenshot_url        = COALESCE(${external.desktopUrl}, screenshot_url),
+                mobile_screenshot_url = COALESCE(${external.mobileUrl}, mobile_screenshot_url)
+            WHERE id = ${id}
+          `.catch(() => null)
+          const palette = deduplicateColors(external.palette)
+            .map(c => toColorFormats(c))
+            .filter((c): c is { hex: string; oklch: string } => c !== null)
+            .slice(0, 16)
+          // Repairs fill gaps, never shrink them: sampled swatches only land
+          // where the row has none.
+          if (palette.length > 0 && (current?.colorCount ?? 0) === 0) {
+            await sql`DELETE FROM design_colors WHERE source_id = ${id}`.catch(() => null)
+            for (const color of palette) {
+              await sql`
+                INSERT INTO design_colors (source_id, hex_value, oklch)
+                VALUES (${id}, ${color.hex}, ${color.oklch})
+                ON CONFLICT DO NOTHING
+              `.catch(() => null)
+            }
+          }
+        }
+
         await sql`
           UPDATE design_sources
           SET metadata = COALESCE(metadata, '{}') || jsonb_build_object('extraction_error', ${reason}::text, 'live_preview', false)
