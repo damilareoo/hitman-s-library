@@ -50,6 +50,10 @@ export async function GET(req: NextRequest) {
             SELECT 1 FROM design_typography t
             WHERE t.source_id = design_sources.id AND t.role != 'legacy'
           )
+    -- A bot-walled site cannot be repaired by this worker, and each attempt
+    -- spends ~25s of the run's budget on a wall that will not move. The admin
+    -- is the correction surface for those.
+    AND COALESCE(metadata->>'extraction_error', '') NOT ILIKE '%bot protection%'
     -- Least recently attempted first, then newest. A single site the browser
     -- cannot read used to sit at the head of this queue every morning, so the
     -- one or two repairs a run could afford went to the same failure forever.
