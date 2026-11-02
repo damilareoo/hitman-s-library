@@ -85,6 +85,14 @@ export function releaseAuthors(release: ChangelogRelease): Author[] {
 // only case where the question is actually being asked.
 const changelog: ChangelogRelease[] = [
   {
+    date: '2026-11-03',
+    title: 'Fonts in Use',
+    items: [
+      { type: 'improved', author: 'damilare', text: 'The Type tab is now a single quiet list — each face\u2019s name set in itself with its provider right on the name line, the way type directories do it' },
+      { type: 'fixed', author: 'damilare', text: 'Sources are now read off the stylesheet the site actually serves (Google Fonts, Adobe Fonts, Bunny, Fontshare) instead of guessed from the family name — no evidence, no attribution' },
+    ],
+  },
+  {
     date: '2026-11-02',
     title: 'Color Trail',
     items: [

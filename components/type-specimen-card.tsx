@@ -1,10 +1,6 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { ArrowSquareOut, Check } from '@phosphor-icons/react'
-import { getFontSource } from '@/lib/font-sources'
-import { useSoundsContext } from '@/contexts/sounds-context'
-import { useCopied } from '@/lib/use-copied'
 
 interface TypographyRow {
   font_family: string
@@ -15,27 +11,11 @@ interface TypographyRow {
   sample_line_height?: string | null
 }
 
-const ROLE_LABEL: Record<string, string> = {
-  heading: 'Display',
-  body: 'Text',
-  mono: 'Mono',
-  legacy: 'Detected',
-}
-
 const FALLBACK: Record<string, string> = {
   heading: 'sans-serif',
   body: 'sans-serif',
   mono: 'monospace',
 }
-
-/**
- * A pangram earns its place over a lorem line: every letter appears, so the
- * shapes that distinguish one face from another are all on screen.
- */
-const PANGRAM = 'Sphinx of black quartz, judge my vow.'
-const MONO_LINE = 'const design = () => "visual language"'
-const CHARSET = 'AaBbCcDdEeFfGg 0123456789 &@#$%'
-const MONO_CHARSET = '{ } [ ] ( ) => !== 0O1lI'
 
 /** Long enough for a webfont on a slow connection, short enough not to stall. */
 const FONT_TIMEOUT_MS = 4000
@@ -51,6 +31,19 @@ const GENERIC = new Set([
   'sans-serif', 'serif', 'monospace', 'cursive', 'fantasy',
 ])
 
+/**
+ * The provider is read off the stylesheet URL the extraction captured, never
+ * guessed from the family name. A family whose stylesheet is not a known
+ * provider gets no attribution at all — a guessed source is worse than none.
+ */
+function providerOf(url: string): string | null {
+  if (url.includes('fonts.googleapis.com')) return 'Google Fonts'
+  if (url.includes('fonts.bunny.net')) return 'Bunny Fonts'
+  if (url.includes('use.typekit') || url.includes('fonts.net')) return 'Adobe Fonts'
+  if (url.includes('fontshare.com')) return 'Fontshare'
+  return null
+}
+
 export function TypeSpecimenCard({ typography, index }: { typography: TypographyRow; index: number }) {
   const hasWebfont = Boolean(typography.google_fonts_url)
   /**
@@ -63,11 +56,8 @@ export function TypeSpecimenCard({ typography, index }: { typography: Typography
   const [state, setState] = useState<'loading' | 'checking' | 'loaded' | 'unavailable'>(
     hasWebfont ? 'loading' : 'checking',
   )
-  const copied = useCopied()
-  const { playCopy } = useSoundsContext()
 
   const weight = typography.primary_weight ?? (typography.role === 'heading' ? 700 : 400)
-  const isMono = typography.role === 'mono'
   const fontFamily = `"${typography.font_family}", ${FALLBACK[typography.role] ?? 'sans-serif'}`
 
   useEffect(() => {
@@ -92,9 +82,7 @@ export function TypeSpecimenCard({ typography, index }: { typography: Typography
     /**
      * A stylesheet that loads is not a face that renders — the sheet can 404,
      * or name a family the site does not actually serve. document.fonts.check
-     * asks the only question worth asking. The specimen used to sit at 6%
-     * opacity forever when this went wrong, which read as a rendering bug
-     * rather than a missing font.
+     * asks the only question worth asking.
      */
     function settle() {
       if (done) return
@@ -119,124 +107,48 @@ export function TypeSpecimenCard({ typography, index }: { typography: Typography
     return () => clearTimeout(timer)
   }, [typography.google_fonts_url, typography.font_family, weight])
 
-  const isGoogleFont = hasWebfont
-  const source = isGoogleFont
-    ? { name: 'Google Fonts', url: typography.google_fonts_url!, type: 'free' as const }
-    : getFontSource(typography.font_family)
-
-  const displaySize = isMono ? 30 : typography.role === 'heading' ? 46 : 38
-
-  async function copyCss() {
-    const css = [
-      `font-family: "${typography.font_family}", ${FALLBACK[typography.role] ?? 'sans-serif'};`,
-      `font-weight: ${weight};`,
-    ].join('\n')
-    try {
-      await navigator.clipboard.writeText(css)
-      playCopy()
-      copied.markCopied(typography.role)
-    } catch { /* clipboard unavailable */ }
-  }
+  const provider = typography.google_fonts_url ? providerOf(typography.google_fonts_url) : null
 
   return (
     <div
-      className="px-5 pt-5 pb-5 border-b border-edge-faint last:border-0"
+      className={index > 0 ? 'mt-9' : undefined}
       style={{ opacity: 0, animation: `fade-in-up 0.45s var(--ease-sig) ${index * 70}ms both` }}
     >
-      {/* The role is what you are scanning for when a site has three faces, so
-          it leads rather than sitting in a footer under the specimen. */}
-      <div className="flex items-baseline justify-between gap-3 mb-3">
-        <span className="text-micro text-ink-4 tracking-[0.06em] uppercase">
-          {ROLE_LABEL[typography.role] ?? typography.role}
-        </span>
-        <button
-          onClick={copyCss}
-          className="text-micro text-ink-4 hover:text-ink-2 transition-colors flex items-center gap-1"
-        >
-          {copied.copiedId === typography.role
-            ? <><Check className="w-3 h-3" weight="bold" /> copied</>
-            : 'copy CSS'}
-        </button>
-      </div>
-
-      {/* The face set in itself, which is the whole point of a specimen. */}
-      <div
-        className="leading-[1.05] mb-3 break-words transition-opacity duration-300"
+      {/* The name set in itself is the whole specimen. The attribution sits
+          inline on the name line, in the UI voice, and only when the stylesheet
+          URL proves a provider — the directory pattern, minus the guessing. */}
+      <p
+        className="m-0 break-words"
         style={{
           fontFamily,
-          fontSize: displaySize,
+          fontSize: 32,
+          lineHeight: 1.15,
           fontWeight: weight,
-          letterSpacing: '-0.025em',
+          letterSpacing: '-0.015em',
           color: 'var(--foreground)',
         }}
       >
         {typography.font_family}
-      </div>
-
-      <div
-        className="leading-snug mb-2.5 transition-opacity duration-300"
-        style={{
-          fontFamily,
-          fontSize: isMono ? 13 : 16,
-          fontWeight: Math.min(weight, 450),
-          letterSpacing: isMono ? '0.01em' : '-0.01em',
-          color: 'oklch(from var(--foreground) l c h / 0.55)',
-        }}
-      >
-        {isMono ? MONO_LINE : PANGRAM}
-      </div>
-
-      <div
-        className="mb-4 transition-opacity duration-300"
-        style={{
-          fontFamily,
-          fontSize: 12,
-          fontWeight: 400,
-          letterSpacing: '0.02em',
-          color: 'oklch(from var(--foreground) l c h / 0.28)',
-        }}
-      >
-        {isMono ? MONO_CHARSET : CHARSET}
-      </div>
-
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
-          {/* Measured sample from the extraction row — what the role actually
-              renders at — not the specimen's display size above it. */}
-          <span className="text-meta text-ink-4 tabular-nums">
-            {weight}
-            {typography.sample_size_px != null && ` · ${Math.round(typography.sample_size_px)}px`}
-            {typography.sample_line_height && ` / ${typography.sample_line_height}`}
+        {provider && (
+          <span className="font-sans text-[14px] tracking-[0.01em] text-ink-4">
+            {' '}by{' '}
+            <a
+              href={typography.google_fonts_url!}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-ink-3 hover:text-ink no-underline hover:underline transition-colors"
+            >
+              {provider}
+            </a>
           </span>
-          {/* Rendering a fallback while naming the real face is a quiet lie,
-              and the reader has no way to tell from the shapes alone. */}
-          {state === 'unavailable' && (
-            <span className="text-micro text-ink-4">shown in a fallback</span>
-          )}
-        </div>
-
-        {source && (
-          <a
-            href={source.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-1.5 group/src"
-          >
-            <span className={[
-              'text-micro px-1.5 py-[3px] rounded-[4px]',
-              source.type === 'free'
-                ? 'bg-[var(--color-success)]/10 text-[var(--color-success)]/60'
-                : 'bg-muted/60 text-ink-4',
-            ].join(' ')}>
-              {source.type === 'free' ? 'free' : 'paid'}
-            </span>
-            <span className="text-meta text-ink-4 group-hover/src:text-ink-2 transition-colors truncate">
-              {source.name}
-            </span>
-            <ArrowSquareOut className="w-2.5 h-2.5 shrink-0 text-ink-4 group-hover/src:text-ink-3 transition-colors" weight="regular" />
-          </a>
         )}
-      </div>
+      </p>
+
+      {/* Rendering a fallback while naming the real face is a quiet lie,
+          and the reader has no way to tell from the shapes alone. */}
+      {state === 'unavailable' && (
+        <p className="m-0 mt-1.5 font-sans text-[12px] text-ink-4">shown in a fallback</p>
+      )}
     </div>
   )
 }

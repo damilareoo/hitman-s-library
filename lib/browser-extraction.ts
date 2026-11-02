@@ -911,7 +911,7 @@ export async function extractTypographyWithRoles(page: Page): Promise<Array<{
 
     const fontLinks = Array.from(
       document.querySelectorAll(
-        'link[href*="fonts.googleapis.com"], link[href*="use.typekit"], link[href*="fonts.bunny.net"]',
+        'link[href*="fonts.googleapis.com"], link[href*="use.typekit"], link[href*="fonts.bunny.net"], link[href*="fontshare.com"]',
       ),
     ).map(l => (l as HTMLLinkElement).href)
 

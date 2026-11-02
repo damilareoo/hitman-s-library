@@ -18,10 +18,14 @@ export function TypeTab({ typography, extractionError }: { typography: Typograph
     return <TabEmptyState message="No typography extracted" extractionError={extractionError} />
   }
   return (
-    <div className="p-4 overflow-y-auto flex flex-col gap-0" data-lenis-prevent>
+    <div className="p-6 overflow-y-auto flex flex-col" data-lenis-prevent>
+      <p className="m-0 mb-6 font-sans text-[12px] text-ink-4">Fonts in use</p>
       {typography.map((t, i) => (
         <TypeSpecimenCard key={`${t.role}-${i}`} typography={t} index={i} />
       ))}
+      <p className="m-0 mt-8 pt-3.5 border-t border-edge-faint font-sans text-[12px] leading-relaxed text-ink-4">
+        Each name is set in the face that rendered on the live site.
+      </p>
     </div>
   )
 }
