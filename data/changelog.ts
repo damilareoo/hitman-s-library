@@ -86,6 +86,14 @@ export function releaseAuthors(release: ChangelogRelease): Author[] {
 const changelog: ChangelogRelease[] = [
   {
     date: '2026-11-02',
+    title: 'Color Trail',
+    items: [
+      { type: 'new', author: 'damilare', text: 'Every color hop leaves a crumb — the swatches you came through line up above the grid, tapping one rewinds the journey and the back button steps it' },
+      { type: 'new', author: 'damilare', text: 'The trail keeps your last five stops, and it rides in the link so any color view can be shared mid-journey' },
+    ],
+  },
+  {
+    date: '2026-11-02',
     title: 'House Colors',
     items: [
       { type: 'improved', author: 'damilare', text: 'The weekly digest email now wears the library\u2019s own dark flat look — the books mark, ink-scaled type and every site\u2019s palette dots — instead of a borrowed white template' },

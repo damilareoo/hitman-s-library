@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
+import React, { useState, useEffect, useRef, useCallback, useMemo, Fragment } from 'react'
 import { useTheme } from 'next-themes'
 import { Sun, Moon, SpeakerHigh, SpeakerSlash, MagnifyingGlass, X, ArrowRight, Plus, DotsThree } from '@phosphor-icons/react'
 import dynamic from 'next/dynamic'
@@ -165,6 +165,19 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
   // everything is ranked by palette proximity, nothing else filters.
   const rawColor = searchParams.get('color') ?? ''
   const colorFilter = COLOR_FILTER_RE.test(rawColor) ? rawColor.toLowerCase() : null
+  // The color trail (?trail=e90865,dce700): the journey of swatches that led
+  // to the current color view, oldest first. Every hop pushes a history
+  // entry, so the back button steps the journey one swatch at a time, and
+  // tapping a chip rewinds to it.
+  const TRAIL_MAX = 5
+  const trailFilter = useMemo(() => {
+    if (!colorFilter) return []
+    return (searchParams.get('trail') ?? '')
+      .split(',').map(s => s.trim().replace(/^#/, '')).filter(s => s)
+      .filter(s => COLOR_FILTER_RE.test('#' + s))
+      .slice(0, TRAIL_MAX)
+      .map(s => '#' + s.toLowerCase())
+  }, [searchParams, colorFilter])
 
   const [similarTitle, setSimilarTitle] = useState<string | null>(
     initialSimilar && similarToId && initialSimilar.site ? initialSimilar.site.title : null,
@@ -314,6 +327,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
         else p.delete('q')
         p.delete('site')
         p.delete('color')
+        p.delete('trail')
       }, { replace: true })
     }, 300)
     return () => clearTimeout(t)
@@ -643,7 +657,14 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
   // A swatch anywhere — card dot or panel color row — lands here. Color is a
   // mode, not an extra filter: it owns the grid and steps on every other
   // filter, the way similar and collection views do.
+  // Inside a color view each click is a hop: the color left behind joins the
+  // trail, and revisiting a color already on it rewinds the journey to that
+  // point instead of appending. The same swatch twice is a no-op.
   const handleColorClick = useCallback((hex: string) => {
+    const target = hex.toLowerCase()
+    const currentRaw = searchParams.get('color') ?? ''
+    const current = COLOR_FILTER_RE.test(currentRaw) ? currentRaw.toLowerCase() : null
+    if (current === target) return
     sounds.playFilterClick()
     posthog.capture('color_filter_applied', { color: hex })
     updateParams(p => {
@@ -656,9 +677,23 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
       p.delete('collection')
       p.delete('similarTo')
       p.delete('view')
+      if (!current) {
+        // First hop: the journey starts here, with nothing behind it.
+        p.delete('trail')
+      } else {
+        const trail = (p.get('trail') ?? '').split(',').map(s => s.trim().replace(/^#/, '')).filter(s => s)
+        const at = trail.findIndex(t => t.toLowerCase() === target)
+        if (at > -1) {
+          const rewind = trail.slice(0, at)
+          if (rewind.length) p.set('trail', rewind.join(','))
+          else p.delete('trail')
+        } else {
+          p.set('trail', [...trail, current.replace(/^#/, '')].slice(-TRAIL_MAX).join(','))
+        }
+      }
       p.set('color', hex)
     })
-  }, [sounds, updateParams])
+  }, [sounds, updateParams, searchParams])
 
   const handleFilterChange = useCallback((kind: string) => {
     sounds.playFilterClick()
@@ -671,6 +706,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
       p.delete('collection')
       p.delete('similarTo')
       p.delete('color')
+      p.delete('trail')
       if (kind === 'All') {
         return
       }
@@ -684,6 +720,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
       p.delete('site')
       p.delete('tab')
       p.delete('color')
+      p.delete('trail')
       const current = p.getAll('tag')
       p.delete('tag')
       const next = current.includes(tag) ? current.filter(t => t !== tag) : [...current, tag]
@@ -710,6 +747,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
       p.delete('collection')
       p.delete('similarTo')
       p.delete('color')
+      p.delete('trail')
     })
   }, [updateParams])
 
@@ -730,6 +768,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
         p.delete('tab')
         p.delete('similarTo')
         p.delete('color')
+        p.delete('trail')
       } else {
         p.delete('view')
       }
@@ -751,6 +790,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
       p.delete('collection')
       p.delete('similarTo')
       p.delete('color')
+      p.delete('trail')
       if (kind !== 'All') p.set('category', kind)
     })
   }, [sounds, updateParams])
@@ -763,6 +803,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
       p.delete('tab')
       p.delete('similarTo')
       p.delete('color')
+      p.delete('trail')
       p.set('collection', name)
     })
   }, [sounds, updateParams])
@@ -774,6 +815,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
       p.delete('site')
       p.delete('tab')
       p.delete('color')
+      p.delete('trail')
       const current = p.getAll('tag')
       p.delete('tag')
       const next = current.includes(tag) ? current.filter(t => t !== tag) : [...current, tag]
@@ -811,6 +853,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
       p.delete('collection')
       p.delete('similarTo')
       p.delete('color')
+      p.delete('trail')
       p.set('site', id)
     })
   }, [sounds, updateParams])
@@ -1209,6 +1252,38 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
           {/* pb-20 below xl clears the floating page links, which are centred
               over the last row on phones and tablets. */}
           <div className="flex-1 p-5 xl:p-6 max-xl:pb-20">
+            {/* The color trail: the swatches that led here, oldest first.
+                Tapping one rewinds the journey; the back button steps it. */}
+            {trailFilter.length > 0 && colorFilter && (
+              <div role="group" className="flex items-center gap-1.5 pb-3 xl:-mt-1 overflow-x-auto no-scrollbar" aria-label="Color trail">
+                {trailFilter.map((hex, i) => (
+                  <Fragment key={`${hex}:${i}`}>
+                    {i > 0 && <span aria-hidden="true" className="shrink-0 text-micro text-ink-4">→</span>}
+                    <button
+                      onClick={() => handleColorClick(hex)}
+                      aria-label={`Back to ${hex}`}
+                      className="shrink-0 inline-flex items-center gap-1.5 h-6 pl-1.5 pr-2.5 rounded-full border border-edge bg-card text-[11.5px] font-medium tracking-[0.01em] text-ink-3 hover:text-ink hover:border-edge-strong transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-foreground/25"
+                    >
+                      <span
+                        aria-hidden="true"
+                        className="w-3 h-3 rounded-full border border-black/[0.06] dark:border-white/[0.22]"
+                        style={{ backgroundColor: hex }}
+                      />
+                      {hex}
+                    </button>
+                  </Fragment>
+                ))}
+                <span aria-hidden="true" className="shrink-0 text-micro text-ink-4">→</span>
+                <span className="shrink-0 inline-flex items-center gap-1.5 h-6 pl-1.5 pr-2.5 rounded-full border border-edge-strong bg-card text-[11.5px] font-medium tracking-[0.01em] text-ink cursor-default">
+                  <span
+                    aria-hidden="true"
+                    className="w-3 h-3 rounded-full border border-black/[0.06] dark:border-white/[0.22]"
+                    style={{ backgroundColor: colorFilter }}
+                  />
+                  {colorFilter}
+                </span>
+              </div>
+            )}
             <div className="hidden xl:flex items-center justify-between gap-4 pb-3 mb-5 border-b border-edge">
               <div className="flex items-center gap-2 min-w-0">
                 <h2 className="flex items-center gap-1.5 text-meta text-ink font-medium">
