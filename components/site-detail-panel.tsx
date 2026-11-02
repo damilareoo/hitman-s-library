@@ -56,12 +56,14 @@ interface SiteDetailPanelProps {
   initialDesign?: Design | null
   onClose?: () => void
   onSimilar?: () => void
+  /** A color row's find-near action: opens that color's neighborhood. */
+  onFindColor?: (hex: string) => void
   /** Tab from ?tab= — deep links restore the exact tab, not just the site. */
   initialTab?: PanelTab
   onTabChange?: (tab: PanelTab) => void
 }
 
-export function SiteDetailPanel({ variant = 'desktop', sourceId, metadata, initialDesign, onClose, onSimilar, initialTab = 'preview', onTabChange }: SiteDetailPanelProps) {
+export function SiteDetailPanel({ variant = 'desktop', sourceId, metadata, initialDesign, onClose, onSimilar, onFindColor, initialTab = 'preview', onTabChange }: SiteDetailPanelProps) {
   const isMobile = variant === 'mobile'
   const [activeTab, setActiveTab] = useState<PanelTab>(initialTab)
   const [saveOpen, setSaveOpen] = useState(false)
@@ -345,7 +347,7 @@ export function SiteDetailPanel({ variant = 'desktop', sourceId, metadata, initi
                   initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: DUR.move, ease: EASE }}
                   exit={{ opacity: 0, y: -4, transition: { duration: DUR.exit } }}>
-                  <ColorsTab colors={data.colors} extractionError={data.extraction_error} />
+                  <ColorsTab colors={data.colors} extractionError={data.extraction_error} onFindColor={onFindColor} />
                 </motion.div>
               )}
               {effectiveTab === 'type' && (

@@ -9,6 +9,7 @@ import {
 } from '@/lib/design-queries'
 import { getDomain } from '@/lib/get-domain'
 import { SIMILAR_ENABLED, querySimilar } from '@/lib/similarity'
+import { rankDesignsByColor, COLOR_RADIUS, COLOR_CAP, isHexColor } from '@/lib/color-distance'
 
 // Rendered per request so the grid ships as HTML — crawlers and first paint
 // both get real content instead of an empty shell.
@@ -37,12 +38,14 @@ export async function generateMetadata(
   const params = await searchParams
   const categories = toArray(params.category)
   const q = typeof params.q === 'string' ? params.q : ''
+  const colorHex = typeof params.color === 'string' && isHexColor(params.color) ? params.color.toLowerCase() : null
 
   // Filtered views are near-duplicates of the index — describe them, don't index them.
-  const isFiltered = categories.length > 0 || Boolean(q) || Boolean(params.tag) || Boolean(params.site) || Boolean(params.similarTo)
+  const isFiltered = categories.length > 0 || Boolean(q) || Boolean(params.tag) || Boolean(params.site) || Boolean(params.similarTo) || Boolean(colorHex)
 
   let title = "Hitman's Library"
   if (q) title = `Search: ${q}`
+  else if (colorHex) title = `Near ${colorHex}`
   else if (categories.length === 1) title = `${categories[0]} design references`
 
   return {
@@ -60,8 +63,12 @@ export default async function Page(
   const sortParam = typeof params.sort === 'string' ? params.sort : ''
   const similarToRaw = typeof params.similarTo === 'string' ? params.similarTo : ''
   const similarToId = SIMILAR_ENABLED ? parseInt(similarToRaw, 10) : NaN
+  const rawColor = typeof params.color === 'string' ? params.color : ''
+  const colorHex = isHexColor(rawColor) ? rawColor.toLowerCase() : null
   const [{ designs, pagination }, categories, initialSimilar] = await Promise.all([
-    queryDesigns({
+    // A color view ships ranked as HTML, like every other view — the same
+    // rows the client-side ranking would land on.
+    colorHex ? queryColorRanked(colorHex) : queryDesigns({
       kinds: toArray(params.category),
       tags: toArray(params.tag),
       search: typeof params.q === 'string' ? params.q : '',
@@ -94,6 +101,7 @@ export default async function Page(
         }
         initialCategories={categories}
         initialSimilar={initialSimilar}
+        initialColor={colorHex}
       />
 
       {/* Crawlable index of the full collection. The gallery above paginates as
@@ -101,6 +109,21 @@ export default async function Page(
       <AllSitesIndex />
     </Suspense>
   )
+}
+
+/** The whole library, ranked by palette proximity to one color. */
+async function queryColorRanked(hex: string) {
+  type DesignRow = Awaited<ReturnType<typeof queryDesigns>>['designs'][number]
+  const seen = new Map<string, DesignRow>()
+  let offset = 0
+  for (let page = 0; page < 4; page++) {
+    const { designs: batch, pagination } = await queryDesigns({ sortBy: 'recent', limit: 100, offset })
+    for (const d of batch) seen.set(d.id, d)
+    if (!batch.length || !pagination.hasMore) break
+    offset += batch.length
+  }
+  const ranked = rankDesignsByColor([...seen.values()], hex, COLOR_RADIUS, COLOR_CAP)
+  return { designs: ranked, pagination: { total: ranked.length, hasMore: false, offset: 0, limit: LIMIT } }
 }
 
 async function AllSitesIndex() {

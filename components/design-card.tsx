@@ -45,9 +45,10 @@ interface DesignCardProps {
   hasAnimated: boolean
   isFavorite?: boolean
   onToggleFavorite?: () => void
+  onColorClick?: (hex: string) => void
 }
 
-export function DesignCard({ design, index, isSelected, onClick, onHover, onTagClick, hasAnimated, isFavorite = false, onToggleFavorite }: DesignCardProps) {
+export function DesignCard({ design, index, isSelected, onClick, onHover, onTagClick, hasAnimated, isFavorite = false, onToggleFavorite, onColorClick }: DesignCardProps) {
   const [imgSrc, setImgSrc] = useState<string | null>(design.thumbnail_url ?? null)
   const [imgStatus, setImgStatus] = useState<'loading' | 'loaded' | 'error'>('loading')
   // Hover clip (Phase 3): the <video> mounts only while hovered, so no clip
@@ -223,23 +224,23 @@ export function DesignCard({ design, index, isSelected, onClick, onHover, onTagC
 
         <div className="flex items-center justify-between gap-2">
           {design.colors.length > 0 ? (
-            // One label for the row — five separate hex announcements per card
-            // made the grid unusable with a screen reader.
-            <div
-              // The palette is the stronger signal, so it holds its width and
-              // the label beside it gives way.
-              className="flex gap-[3px] shrink-0"
-              role="img"
-              aria-label={`Palette: ${design.colors.slice(0, 5).join(', ')}`}
-            >
+            // Each dot is a door into that color's neighborhood. Out of the
+            // tab order — 60 cards × 5 dots would bury keyboard users — but
+            // still named, and the same action lives in the panel's Colors
+            // tab at full touch size.
+            <div className="flex gap-[3px] shrink-0">
               {design.colors.slice(0, 5).map((color, i) => (
-                <div
+                <button
                   key={i}
-                  aria-hidden="true"
-                  // A near-black swatch on the dark background needs a real
-                  // ring to read as a swatch at all, so dark mode carries more
-                  // than the hairline light mode wants.
-                  className="w-4 h-4 rounded-full border border-black/[0.06] dark:border-white/[0.22]"
+                  type="button"
+                  tabIndex={-1}
+                  onClick={e => { e.stopPropagation(); onColorClick?.(color) }}
+                  aria-label={`Find sites near ${color}`}
+                  title={`Find sites near ${color}`}
+                  // The ::before widens the touch target without growing the
+                  // row; neighbors' targets overlap slightly, and the panel's
+                  // Colors tab is the precise surface on a thumb.
+                  className="relative before:absolute before:-inset-1 before:content-[''] w-4 h-4 rounded-full border border-black/[0.06] dark:border-white/[0.22] transition-transform duration-[var(--dur-1)] ease-[var(--ease-hover)] hover:scale-[1.25] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-foreground/40"
                   style={{ backgroundColor: color }}
                 />
               ))}

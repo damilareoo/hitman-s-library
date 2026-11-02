@@ -2,7 +2,7 @@
 'use client'
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
-import { Check } from '@phosphor-icons/react'
+import { Check, MagnifyingGlass } from '@phosphor-icons/react'
 import { parse, oklch as toOklch, clampChroma } from 'culori'
 import { useSoundsContext } from '@/contexts/sounds-context'
 import { TabEmptyState } from './tab-empty-state'
@@ -71,7 +71,12 @@ function inkOn(c: ColorRow): string {
 const MIN_BAND = 34
 const MAX_BAND = 132
 
-export function ColorsTab({ colors, extractionError }: { colors: ColorRow[]; extractionError?: string | null }) {
+export function ColorsTab({ colors, extractionError, onFindColor }: {
+  colors: ColorRow[]
+  extractionError?: string | null
+  /** Opens this color's neighborhood in the grid. */
+  onFindColor?: (hex: string) => void
+}) {
   const [format, setFormat] = useState<'hex' | 'oklch'>('hex')
   const rowCopy = useCopied()
   const exportCopy = useCopied()
@@ -218,7 +223,9 @@ export function ColorsTab({ colors, extractionError }: { colors: ColorRow[]; ext
       </div>
 
       {/* One object, not a list of rows: the bands meet with no gap and the
-          palette is read as a whole, the way it is on the site itself. */}
+          palette is read as a whole, the way it is on the site itself. Each
+          band carries a find-near action — a color here is a door into the
+          grid, just like the dots on a card. */}
       <div className="p-3">
         <div className="overflow-hidden rounded-[5px] border border-edge">
           {sorted.map((color, i) => {
@@ -226,28 +233,40 @@ export function ColorsTab({ colors, extractionError }: { colors: ColorRow[]; ext
             const copied = rowCopy.copiedId === i
             const share = measured && total > 0 ? (color.area_share ?? 0) / total : null
             return (
-              <button
+              <div
                 key={`${color.hex_value}-${i}`}
-                onClick={() => copy(value, () => rowCopy.markCopied(i))}
-                title={`Copy ${value}`}
                 style={{ background: color.hex_value, height: bandHeight(color), color: inkOn(color) }}
-                className="group relative w-full flex items-center justify-between px-3.5 text-left transition-[filter] duration-[var(--dur-2)] ease-[var(--ease-sig)] hover:brightness-[1.06] focus-visible:outline-none focus-visible:brightness-[1.06]"
+                className="group relative w-full flex items-stretch text-left transition-[filter] duration-[var(--dur-2)] ease-[var(--ease-sig)] hover:brightness-[1.06] focus-within:brightness-[1.06]"
               >
-                <span className="text-meta tabular-nums opacity-90">{value}</span>
-                <span className="flex items-center gap-2.5">
-                  {share !== null && share >= 0.01 && (
-                    <span className="text-micro tabular-nums opacity-55">
-                      {Math.round(share * 100)}%
+                <button
+                  onClick={() => copy(value, () => rowCopy.markCopied(i))}
+                  title={`Copy ${value}`}
+                  className="flex-1 min-w-0 flex items-center justify-between px-3.5 focus-visible:outline-none"
+                >
+                  <span className="text-meta tabular-nums opacity-90">{value}</span>
+                  <span className="flex items-center gap-2.5">
+                    {share !== null && share >= 0.01 && (
+                      <span className="text-micro tabular-nums opacity-55">
+                        {Math.round(share * 100)}%
+                      </span>
+                    )}
+                    <span className={[
+                      'text-micro transition-opacity duration-150',
+                      copied ? 'opacity-90' : 'opacity-0 group-hover:opacity-70',
+                    ].join(' ')}>
+                      {copied ? 'copied' : 'copy'}
                     </span>
-                  )}
-                  <span className={[
-                    'text-micro transition-opacity duration-150',
-                    copied ? 'opacity-90' : 'opacity-0 group-hover:opacity-70',
-                  ].join(' ')}>
-                    {copied ? 'copied' : 'copy'}
                   </span>
-                </span>
-              </button>
+                </button>
+                <button
+                  onClick={() => onFindColor?.(color.hex_value)}
+                  aria-label={`Find sites near ${color.hex_value}`}
+                  title="Find sites near this color"
+                  className="w-10 shrink-0 flex items-center justify-center border-l border-black/[0.08] dark:border-white/[0.14] transition-colors hover:bg-black/[0.06] dark:hover:bg-white/[0.1] focus-visible:outline-none focus-visible:bg-black/[0.08] dark:focus-visible:bg-white/[0.12]"
+                >
+                  <MagnifyingGlass className="w-3.5 h-3.5 opacity-75 group-hover:opacity-100 transition-opacity" weight="regular" />
+                </button>
+              </div>
             )
           })}
         </div>

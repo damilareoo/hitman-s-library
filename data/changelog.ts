@@ -85,6 +85,14 @@ export function releaseAuthors(release: ChangelogRelease): Author[] {
 // only case where the question is actually being asked.
 const changelog: ChangelogRelease[] = [
   {
+    date: '2026-11-02',
+    title: 'Color Doors',
+    items: [
+      { type: 'new', author: 'damilare', text: 'Every palette dot is a door — click a swatch on any card to see the sites whose palettes sit nearest it, ordered by closeness' },
+      { type: 'new', author: 'damilare', text: 'Each color inside a site\u2019s Colors tab carries a find-near action, and every color view is a link you can share and back out of' },
+    ],
+  },
+  {
     date: '2026-11-01',
     title: 'Honest Failures',
     items: [

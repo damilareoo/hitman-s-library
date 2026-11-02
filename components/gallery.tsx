@@ -77,7 +77,13 @@ interface GalleryProps {
   initialCategories: { name: string; count: number }[]
   initialSimilar: { site: Design | null; neighbors: Design[] } | null
   initialParams: Record<string, string | string[] | undefined>
+  /** The ?color= the server already ranked this first paint around. */
+  initialColor?: string | null
 }
+
+// Local regex rather than lib/color-distance's — that import would drag
+// culori into the gallery bundle, and the ranking is loaded on demand.
+const COLOR_FILTER_RE = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i
 
 // Direction H keeps active rows obvious through fill, not a leading rule.
 function sortButton(isActive: boolean): string {
@@ -129,7 +135,7 @@ function SkeletonCard() {
   )
 }
 
-export function Gallery({ initialDesigns, initialPagination, initialCategories, initialSimilar, initialParams }: GalleryProps) {
+export function Gallery({ initialDesigns, initialPagination, initialCategories, initialSimilar, initialParams, initialColor }: GalleryProps) {
   // The URL is the source of truth for every filter, so views are shareable
   // and the back button steps through them. It is written through the history
   // API, not the router: this page is force-dynamic, so a router.push would
@@ -155,6 +161,10 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
   // The overview is a view, not a filter: it keeps its own URL so it can be
   // shared and stepped out of with the back button.
   const view: LibraryView = searchParams.get('view') === 'index' ? 'index' : 'grid'
+  // A color view owns the grid the way similar and collection modes do:
+  // everything is ranked by palette proximity, nothing else filters.
+  const rawColor = searchParams.get('color') ?? ''
+  const colorFilter = COLOR_FILTER_RE.test(rawColor) ? rawColor.toLowerCase() : null
 
   const [similarTitle, setSimilarTitle] = useState<string | null>(
     initialSimilar && similarToId && initialSimilar.site ? initialSimilar.site.title : null,
@@ -303,6 +313,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
         if (searchInput) p.set('q', searchInput)
         else p.delete('q')
         p.delete('site')
+        p.delete('color')
       }, { replace: true })
     }, 300)
     return () => clearTimeout(t)
@@ -386,6 +397,9 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
       if (!showingSimilar.current) return
       showingSimilar.current = false
       setSimilarTitle(null)
+      // A color view owns the grid; leaving similar for it must not fetch the
+      // plain page over the top of the ranking about to land.
+      if (colorRef.current) return
       setIsRefetching(true)
       loadDesigns(0, false).finally(() => setIsRefetching(false))
       return
@@ -408,6 +422,74 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
     })
   }, [similarToId, loadDesigns])
 
+  // Color view (?color=#hex): every palette in the library is ranked by how
+  // close it sits to the target in OKLCH. The first paint ships server-ranked
+  // (initialColor); back/forward between color views ranks client-side over a
+  // full-library fetch. Ranked by proximity, so paging and sorting step aside.
+  const colorRef = useRef<string | null>(colorFilter)
+  colorRef.current = colorFilter
+  const showingColor = useRef(Boolean(initialColor))
+  const colorSeq = useRef(0)
+  const lastColor = useRef<string | null>(initialColor ?? null)
+
+  const fetchAllDesigns = useCallback(async (): Promise<Design[]> => {
+    const seen = new Map<string, Design>()
+    let offset = 0
+    for (let page = 0; page < 4; page++) {
+      const params = new URLSearchParams()
+      params.append('sortBy', 'recent')
+      params.append('limit', '100')
+      params.append('offset', String(offset))
+      const data = await fetch('/api/design/filter-advanced?' + params).then(r => r.json())
+      const batch: Design[] = data.designs || []
+      for (const d of batch) seen.set(d.id, d)
+      if (!batch.length || !data.pagination?.hasMore) break
+      offset += batch.length
+    }
+    return [...seen.values()]
+  }, [])
+
+  useEffect(() => {
+    if (lastColor.current === colorFilter) return
+    lastColor.current = colorFilter
+    if (!colorFilter) {
+      if (!showingColor.current) return
+      showingColor.current = false
+      setIsRefetching(true)
+      loadDesigns(0, false).finally(() => setIsRefetching(false))
+      return
+    }
+    showingColor.current = true
+    const seq = ++colorSeq.current
+    setIsRefetching(true)
+    if (window.scrollY > 0) {
+      window.scrollTo({
+        top: 0,
+        behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+      })
+    }
+    const height = gridRef.current?.offsetHeight ?? 0
+    if (height > 0) setMinGridHeight(height)
+    ;(async () => {
+      try {
+        // Culori rides in here so the main bundle never pays for it.
+        const { rankDesignsByColor, COLOR_RADIUS, COLOR_CAP } = await import('@/lib/color-distance')
+        const all = await fetchAllDesigns()
+        if (seq !== colorSeq.current) return
+        const ranked = rankDesignsByColor(all, colorFilter, COLOR_RADIUS, COLOR_CAP)
+        setDesigns(ranked)
+        setPagination({ total: ranked.length, hasMore: false, offset: 0 })
+      } catch {
+        if (seq !== colorSeq.current) return
+        setDesigns([])
+        setPagination({ total: 0, hasMore: false, offset: 0 })
+      } finally {
+        if (seq === colorSeq.current) setIsRefetching(false)
+        requestAnimationFrame(() => requestAnimationFrame(() => setMinGridHeight(null)))
+      }
+    })()
+  }, [colorFilter, loadDesigns, fetchAllDesigns])
+
   // Collection view (?collection=name): ids resolve client-side from the
   // named set, rows come from the same ids filter as favorites did. An empty
   // or foreign set renders the honest empty state, never someone else's grid.
@@ -426,6 +508,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
       if (!showingCollection.current) return
       showingCollection.current = false
       setCollectionTitle(null)
+      if (colorRef.current) return
       setIsRefetching(true)
       loadDesigns(0, false).finally(() => setIsRefetching(false))
       return
@@ -456,7 +539,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
     if (!sentinel) return
     const obs = new IntersectionObserver(
       ([entry]) => {
-        if (entry.isIntersecting && pagination.hasMore && !isLoadingMore && !isRefetching && !showingSimilar.current && !showingCollection.current) {
+        if (entry.isIntersecting && pagination.hasMore && !isLoadingMore && !isRefetching && !showingSimilar.current && !showingCollection.current && !showingColor.current) {
           setIsLoadingMore(true)
           loadDesigns(pagination.offset + LIMIT, true).finally(() => setIsLoadingMore(false))
         }
@@ -557,6 +640,26 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
     selectDesign(design)
   }, [sounds, selectDesign])
 
+  // A swatch anywhere — card dot or panel color row — lands here. Color is a
+  // mode, not an extra filter: it owns the grid and steps on every other
+  // filter, the way similar and collection views do.
+  const handleColorClick = useCallback((hex: string) => {
+    sounds.playFilterClick()
+    posthog.capture('color_filter_applied', { color: hex })
+    updateParams(p => {
+      p.delete('site')
+      p.delete('tab')
+      p.delete('category')
+      p.delete('tag')
+      p.delete('q')
+      p.delete('sort')
+      p.delete('collection')
+      p.delete('similarTo')
+      p.delete('view')
+      p.set('color', hex)
+    })
+  }, [sounds, updateParams])
+
   const handleFilterChange = useCallback((kind: string) => {
     sounds.playFilterClick()
     updateParams(p => {
@@ -567,6 +670,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
       p.delete('q')
       p.delete('collection')
       p.delete('similarTo')
+      p.delete('color')
       if (kind === 'All') {
         return
       }
@@ -579,6 +683,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
     updateParams(p => {
       p.delete('site')
       p.delete('tab')
+      p.delete('color')
       const current = p.getAll('tag')
       p.delete('tag')
       const next = current.includes(tag) ? current.filter(t => t !== tag) : [...current, tag]
@@ -604,6 +709,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
       p.delete('sort')
       p.delete('collection')
       p.delete('similarTo')
+      p.delete('color')
     })
   }, [updateParams])
 
@@ -623,6 +729,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
         p.delete('site')
         p.delete('tab')
         p.delete('similarTo')
+        p.delete('color')
       } else {
         p.delete('view')
       }
@@ -643,6 +750,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
       p.delete('q')
       p.delete('collection')
       p.delete('similarTo')
+      p.delete('color')
       if (kind !== 'All') p.set('category', kind)
     })
   }, [sounds, updateParams])
@@ -654,6 +762,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
       p.delete('site')
       p.delete('tab')
       p.delete('similarTo')
+      p.delete('color')
       p.set('collection', name)
     })
   }, [sounds, updateParams])
@@ -664,6 +773,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
       p.delete('view')
       p.delete('site')
       p.delete('tab')
+      p.delete('color')
       const current = p.getAll('tag')
       p.delete('tag')
       const next = current.includes(tag) ? current.filter(t => t !== tag) : [...current, tag]
@@ -700,6 +810,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
       p.delete('view')
       p.delete('collection')
       p.delete('similarTo')
+      p.delete('color')
       p.set('site', id)
     })
   }, [sounds, updateParams])
@@ -710,17 +821,19 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
     setRequestOpen(true)
   }, [])
 
-  const hasFilters = kinds.length > 0 || tags.length > 0 || search.length > 0
+  const hasFilters = kinds.length > 0 || tags.length > 0 || search.length > 0 || Boolean(colorFilter)
   const showSkeletons = isRefetching && designs.length === 0
-  const galleryHeading =
-    !hasFilters ? 'All sites' :
+  const galleryHeading = colorFilter
+    ? `Near ${colorFilter}`
+    : !hasFilters ? 'All sites' :
     kinds.length === 1 && tags.length === 0 && !search ? displayKind(kinds[0]) :
     search && kinds.length === 0 && tags.length === 0 ? 'Search results' :
     'Filtered sites'
   // Phones have no chip row, so a filtered grid names what it is showing and
   // offers the way back. Search has its own field and count above.
-  const phoneFilterLabel =
-    kinds.length > 0 ? kinds.map(displayKind).join(' · ') :
+  const phoneFilterLabel = colorFilter
+    ? `Near ${colorFilter}`
+    : kinds.length > 0 ? kinds.map(displayKind).join(' · ') :
     tags.length > 0 ? tags.join(' · ') :
     ''
 
@@ -763,6 +876,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
       } : undefined}
       onClose={() => selectDesign(null)}
       onSimilar={() => updateParams(p => { if (selectedId) p.set('similarTo', selectedId) })}
+      onFindColor={handleColorClick}
       initialTab={panelTab}
       onTabChange={tab => updateParams(p => {
         if (tab === 'preview') p.delete('tab')
@@ -1055,10 +1169,12 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
                     )
                   })}
                 </div>
-                <span aria-hidden="true" className="shrink-0 w-px self-stretch bg-edge" />
+                {!colorFilter && <span aria-hidden="true" className="shrink-0 w-px self-stretch bg-edge" />}
                 {/* overflow-x-auto clips vertically, which would cut the sort
                     buttons' touch overlays off — same compensation as before,
-                    scoped to the sort group now. */}
+                    scoped to the sort group now. Ranking owns the order in a
+                    color view, so the sort group steps aside. */}
+                {!colorFilter && (
                 <div className="flex items-center gap-1.5 shrink-0 py-3 -my-3" role="group" aria-label="Sort sites">
                   <span className="text-micro text-ink-4 shrink-0">Sort</span>
                   {SORT_OPTIONS.map(({ value, label }) => (
@@ -1072,6 +1188,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
                     </button>
                   ))}
                 </div>
+                )}
               </div>
             </div>
 
@@ -1094,7 +1211,14 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
           <div className="flex-1 p-5 xl:p-6 max-xl:pb-20">
             <div className="hidden xl:flex items-center justify-between gap-4 pb-3 mb-5 border-b border-edge">
               <div className="flex items-center gap-2 min-w-0">
-                <h2 className="text-meta text-ink font-medium">
+                <h2 className="flex items-center gap-1.5 text-meta text-ink font-medium">
+                  {colorFilter && (
+                    <span
+                      aria-hidden="true"
+                      className="inline-block w-3.5 h-3.5 rounded-full border border-black/[0.06] dark:border-white/[0.22] shrink-0"
+                      style={{ backgroundColor: colorFilter }}
+                    />
+                  )}
                   {similarToId ? `Similar to ${similarTitle ?? '…'}` : collectionName ? collectionTitle ?? collectionName : galleryHeading}{' '}
                   <span className="text-ink-4 tabular-nums">{pagination.total}</span>
                 </h2>
@@ -1109,6 +1233,12 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
                 )}
               </div>
 
+              {colorFilter ? (
+                // Ranking is the sort here; naming it keeps the grid honest.
+                <span className="text-micro text-ink-4 shrink-0">
+                  Ordered by how close each palette sits
+                </span>
+              ) : (
               <div
                 className="flex items-center gap-0.5"
                 role="group"
@@ -1126,6 +1256,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
                   </button>
                 ))}
               </div>
+              )}
             </div>
 
             {/* One line of value proposition: nothing above the fold says
@@ -1208,6 +1339,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
                         // row so the click opens on data, not a spinner.
                         onHover={() => { sounds.playHover(); prefetchDetail(design.id) }}
                         onTagClick={handleTagClick}
+                        onColorClick={handleColorClick}
                         hasAnimated={hasAnimated.current}
                         isFavorite={favorites.includes(Number(design.id))}
                         onToggleFavorite={() => {
