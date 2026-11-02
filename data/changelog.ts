@@ -86,6 +86,13 @@ export function releaseAuthors(release: ChangelogRelease): Author[] {
 const changelog: ChangelogRelease[] = [
   {
     date: '2026-11-02',
+    title: 'House Colors',
+    items: [
+      { type: 'improved', author: 'damilare', text: 'The weekly digest email now wears the library\u2019s own dark flat look — the books mark, ink-scaled type and every site\u2019s palette dots — instead of a borrowed white template' },
+    ],
+  },
+  {
+    date: '2026-11-02',
     title: 'Color Doors',
     items: [
       { type: 'new', author: 'damilare', text: 'Every palette dot is a door — click a swatch on any card to see the sites whose palettes sit nearest it, ordered by closeness' },
