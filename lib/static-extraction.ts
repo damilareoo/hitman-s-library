@@ -2,6 +2,33 @@ import type { FullExtractionResult } from './browser-extraction'
 import { extractTypographyEnhanced } from './typography-extraction'
 import { safeFetch } from './safe-url'
 
+/**
+ * A challenge page is real HTML, so length alone cannot identify it. The
+ * previous test rejected any document containing the word "blocked" anywhere
+ * in its source — a CSS class, a variable name, a sentence of marketing copy —
+ * and took perfectly good sites out with it. Walls are recognised by their
+ * machinery rather than by their prose.
+ */
+export function looksLikeChallengePage(html: string): boolean {
+  if (html.length < 500) return true
+
+  const markers = [
+    'cf-browser-verification',
+    'cf_chl_opt',
+    '__cf_chl',
+    'Checking your browser before accessing',
+    'Just a moment...',
+    'Security Checkpoint',
+    'Please enable JS and disable any ad blocker',
+    'Attention Required! | Cloudflare',
+    'ddos-guard',
+    'Access denied | ',
+    '/_Incapsula_Resource',
+  ]
+
+  return markers.some(marker => html.includes(marker))
+}
+
 export interface StaticDesignDetails {
   colors: string[]
   typography: FullExtractionResult['typography']
@@ -30,6 +57,13 @@ export async function extractStaticDesignData(
       }
       html = await response.text()
       baseUrl = response.url
+    }
+
+    // A bot wall's own colours and font stack are not the site's design, and
+    // every caller downstream would file them as if they were.
+    if (looksLikeChallengePage(html)) {
+      console.warn(`[extract] ${url} served a challenge page to the static read — returning no details`)
+      return null
     }
 
     const stylesheetUrls = Array.from(html.matchAll(/<link\b[^>]*>/gi))

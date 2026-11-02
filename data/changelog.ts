@@ -86,6 +86,14 @@ export function releaseAuthors(release: ChangelogRelease): Author[] {
 const changelog: ChangelogRelease[] = [
   {
     date: '2026-11-03',
+    title: 'Walled Gardens',
+    items: [
+      { type: 'fixed', author: 'damilare', text: 'Sites behind a bot check (Cloudflare\u2019s \u201cJust a moment\u201d and friends) now answer quickly and honestly — the row says the preview is blocked instead of burning the full minute and failing with a shrug, and the wall\u2019s own colors are never filed as the site\u2019s palette' },
+      { type: 'fixed', author: 'damilare', text: 'Adding a site that\u2019s already in the library says so instantly, instead of re-running the whole extraction first' },
+    ],
+  },
+  {
+    date: '2026-11-03',
     title: 'Fonts in Use',
     items: [
       { type: 'improved', author: 'damilare', text: 'The Type tab is now a single quiet list — each face\u2019s name set in itself with its provider right on the name line, the way type directories do it' },

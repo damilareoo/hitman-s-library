@@ -229,12 +229,19 @@ const INTERSTITIAL_TITLE_MARKERS = [
 ]
 const INTERSTITIAL_WAIT_MS = 20000
 
-async function waitPastInterstitial(page: Page, siteUrl: string): Promise<void> {
+/**
+ * True when there is no interstitial or the one there cleared; false when the
+ * wait expired and the challenge is still showing. A wall that will not clear
+ * is reported as exactly that — the wall's own colours and type must never be
+ * filed as the site's design, and the run must not spend its remaining budget
+ * photographing it.
+ */
+async function waitPastInterstitial(page: Page, siteUrl: string): Promise<boolean> {
   let title = ''
   try {
     title = await page.title()
   } catch {}
-  if (!INTERSTITIAL_TITLE_MARKERS.some(m => title.toLowerCase().includes(m))) return
+  if (!INTERSTITIAL_TITLE_MARKERS.some(m => title.toLowerCase().includes(m))) return true
 
   const deadline = Date.now() + INTERSTITIAL_WAIT_MS
   while (Date.now() < deadline) {
@@ -242,11 +249,12 @@ async function waitPastInterstitial(page: Page, siteUrl: string): Promise<void> 
     try {
       title = await page.title()
     } catch {}
-    if (!INTERSTITIAL_TITLE_MARKERS.some(m => title.toLowerCase().includes(m))) return
+    if (!INTERSTITIAL_TITLE_MARKERS.some(m => title.toLowerCase().includes(m))) return true
     try {
-      if (page.url() !== siteUrl && !page.url().includes('cloudflare.com')) return
+      if (page.url() !== siteUrl && !page.url().includes('cloudflare.com')) return true
     } catch {}
   }
+  return false
 }
 
 /** One pass to the bottom and back, slow enough for lazy-loading observers to follow. */
@@ -977,6 +985,13 @@ export interface FullExtractionResult {
    * of somebody's PHP error, filed as their design.
    */
   renderedNothing?: boolean
+  /**
+   * The page served a bot check (Cloudflare "Just a moment" and the like) that
+   * never cleared within the interstitial wait. Distinct from renderedNothing:
+   * the wall was rendered, but it is not the site, and its data must not be
+   * filed. Callers write a bot_protection error and leave existing data alone.
+   */
+  challengeBlocked?: boolean
   assets: import('./asset-extraction').ExtractedAsset[]
   typography: Array<{
     fontFamily: string
@@ -1081,7 +1096,26 @@ export async function extractFullDesignData(url: string, options: ExtractionOpti
     await page.setViewport({ width: 1440, height: 900, deviceScaleFactor: 1 })
 
     await gotoResilient(page, url)
-    await waitPastInterstitial(page, url)
+    if (!(await waitPastInterstitial(page, url))) {
+      // The challenge page has been polling the whole time, so the run is
+      // already ~25s in. Bailing here is what keeps it inside the caller's
+      // deadline at all — and the capture of a "Just a moment" wall is not a
+      // capture of the site.
+      console.warn(`[extract] ${url}: bot challenge never cleared — reporting the wall, not the page behind it`)
+      return {
+        colors: [],
+        screenshotUrl: null,
+        mobileScreenshotUrl: null,
+        assets: [],
+        typography: [],
+        challengeBlocked: true,
+        renderedNothing: true,
+        motionClipUrl: null,
+        motionBytes: null,
+        motionError: null,
+        motionTags: { hasTransitions: false, hasAnimations: false, easings: [] },
+      }
+    }
     await settleNavigation(page)
     await settlePage(page)
 

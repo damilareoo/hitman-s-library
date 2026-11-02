@@ -68,6 +68,7 @@ function loadAddRoute() {
       }),
     },
     '@/lib/static-extraction': {
+      looksLikeChallengePage: html => html.length < 500,
       extractStaticDesignData: async (url, document) => ({
         colors: ['#123456'],
         typography: [typeRow],

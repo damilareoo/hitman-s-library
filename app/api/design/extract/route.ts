@@ -15,7 +15,7 @@ import { normalizeUrl } from '@/lib/normalize-url'
 import { inferKind } from '@/lib/site-kind'
 import { KINDS, type Kind } from '@/lib/categories'
 import { withDeadline } from '@/lib/extraction-deadline'
-import { extractStaticDesignData } from '@/lib/static-extraction'
+import { extractStaticDesignData, looksLikeChallengePage } from '@/lib/static-extraction'
 
 const sql = getSql()
 
@@ -74,6 +74,28 @@ export async function POST(req: NextRequest) {
     const hostname = validUrl.hostname
     const normalizedUrl = normalizeUrl(url)
     const normalizedUrlNoQuery = normalizedUrl.split('?')[0]
+
+    // Check if URL already exists before any extraction runs. This used to sit
+    // after the 45s browser stage, so re-adding a site already in the library
+    // burned the whole deadline and then said "already added" — the user could
+    // only read that as the add failing.
+    const existing = await sql`
+      SELECT id FROM design_sources
+      WHERE regexp_replace(
+        regexp_replace(lower(split_part(source_url, '?', 1)), '^https?://(www\\.)?', ''),
+        '/$',
+        ''
+      ) = ${normalizedUrlNoQuery}
+      LIMIT 1
+    `
+    if (existing.length > 0) {
+      return NextResponse.json({
+        success: false,
+        error: 'This website has already been added to your collection',
+        isDuplicate: true,
+        url
+      }, { status: 200 })
+    }
 
     // Fetch the webpage. safeFetch revalidates every redirect hop, so a URL
     // that bounces somewhere private is refused here exactly like the first hop.
@@ -150,6 +172,14 @@ export async function POST(req: NextRequest) {
     }
     const staticDetails = await staticDetailsPromise
 
+    // The browser made it to the page and found a bot wall it cannot pass.
+    // Cloudflare's challenge never clears for a headless browser on a
+    // datacenter IP; the honest row says so, and the wall's own colours and
+    // type are never filed as the site's design.
+    if (extractionResult?.challengeBlocked) {
+      extractionError = 'Cloudflare bot protection: the site serves a challenge the headless browser cannot pass'
+    }
+
     // A browser that threw or rendered an empty page is not a reason to file a
     // colourless site. The HTML and its stylesheets still name colours — write
     // those, in the same hex/oklch shape every reader expects, instead of only
@@ -216,25 +246,6 @@ export async function POST(req: NextRequest) {
     // Calculate quality score
     const quality = Math.min(10, Math.max(1, Math.round((colors.length + typography.length) / 2)))
 
-    // Check if URL already exists
-    const existing = await sql`
-      SELECT id FROM design_sources
-      WHERE regexp_replace(
-        regexp_replace(lower(split_part(source_url, '?', 1)), '^https?://(www\\.)?', ''),
-        '/$',
-        ''
-      ) = ${normalizedUrlNoQuery}
-      LIMIT 1
-    `
-    if (existing.length > 0) {
-      return NextResponse.json({
-        success: false,
-        error: 'This website has already been added to your collection',
-        isDuplicate: true,
-        url
-      }, { status: 200 })
-    }
-
     // Extract OG image from HTML
     let thumbnailUrl = ''
     try {
@@ -286,6 +297,9 @@ export async function POST(req: NextRequest) {
             // row that is neither finished nor failed.
             ...(screenshotSource ? { screenshot_source: screenshotSource } : {}),
             ...(unrecoverableError ? { extraction_error: unrecoverableError } : {}),
+            // The proxy can never render a bot-walled site, so the panel says
+            // so up front instead of offering a preview that will fail.
+            ...(extractionResult?.challengeBlocked ? { live_preview: false } : {}),
           })},
           ${tags},
           ${thumbnailUrl},
@@ -518,7 +532,9 @@ export async function POST(req: NextRequest) {
         success: Boolean(sourceId),
         partial: Boolean(unrecoverableError || extractionError),
         error: unrecoverableError ?? undefined,
-        warning: sourceId && unrecoverableError
+        warning: sourceId && extractionResult?.challengeBlocked
+          ? 'Saved, but the site\u2019s bot protection (Cloudflare) blocks automated previews — filed without a capture'
+          : sourceId && unrecoverableError
           ? 'Saved, but the page capture could not be taken — the repair worker will retry it'
           : undefined,
         screenshotSource,
@@ -558,34 +574,6 @@ export async function POST(req: NextRequest) {
       error: 'Failed to extract design details'
     }, { status: 500 })
   }
-}
-
-/**
- * Identify an interstitial served in place of the real page.
- *
- * These are short documents whose whole job is to run a script and redirect, so
- * they are recognised by their machinery rather than by their prose. The test
- * this replaces was `html.includes('blocked')`, which fired on any page that
- * used the word anywhere — including sites merely describing what they block.
- */
-function looksLikeChallengePage(html: string): boolean {
-  if (html.length < 500) return true
-
-  const markers = [
-    'cf-browser-verification',
-    'cf_chl_opt',
-    '__cf_chl',
-    'Checking your browser before accessing',
-    'Just a moment...',
-    'Security Checkpoint',
-    'Please enable JS and disable any ad blocker',
-    'Attention Required! | Cloudflare',
-    'ddos-guard',
-    'Access denied | ',
-    '/_Incapsula_Resource',
-  ]
-
-  return markers.some(marker => html.includes(marker))
 }
 
 function extractColors(html: string): string[] {

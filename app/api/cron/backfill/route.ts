@@ -157,6 +157,19 @@ export async function GET(req: NextRequest) {
       const htmlDetails = await htmlDetailsPromise
       if (!extraction && !htmlDetails) throw browserError ?? new Error('Extraction produced no details')
 
+      // The wall will not clear: record the specific reason and mark the
+      // preview unavailable. The static read above is equally blocked, so
+      // there is nothing real to file — never the wall's own colours.
+      if (extraction?.challengeBlocked) {
+        const reason = 'Cloudflare bot protection: the site serves a challenge the headless browser cannot pass'
+        await sql`
+          UPDATE design_sources
+          SET metadata = COALESCE(metadata, '{}') || jsonb_build_object('extraction_error', ${reason}::text, 'live_preview', false)
+          WHERE id = ${id}
+        `.catch(() => null)
+        return { id, ok: false, error: 'bot protection' }
+      }
+
       // Nothing rendered: the site is down or challenging us. Leave what is
       // already on the row alone rather than overwriting it with nothing.
       if (extraction?.renderedNothing && !htmlDetails) {

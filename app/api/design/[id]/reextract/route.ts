@@ -36,6 +36,18 @@ export async function POST(
   try {
     const extractionResult = await extractFullDesignData(url)
 
+    // The wall will not clear. Record the specific reason and mark the preview
+    // unavailable; everything else is left exactly as it is.
+    if (extractionResult.challengeBlocked) {
+      const reason = 'Cloudflare bot protection: the site serves a challenge the headless browser cannot pass'
+      await sql`
+        UPDATE design_sources
+        SET metadata = COALESCE(metadata, '{}') || jsonb_build_object('extraction_error', ${reason}::text, 'live_preview', false)
+        WHERE id = ${id}
+      `.catch(() => null)
+      return NextResponse.json({ error: reason, unchanged: true }, { status: 422 })
+    }
+
     // Nothing rendered: the site is down, parked, or challenging us. Clearing
     // the error and writing empty results over a site that was fine yesterday
     // is the worse outcome, so this returns the reason and touches nothing.
