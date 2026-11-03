@@ -1,5 +1,5 @@
-// Prototype: card data comes from the live public API, so the local app
-// needs no database credentials. One fetch, cached for an hour.
+// The card reads the public design API rather than the database directly, so
+// it renders wherever the app runs — including a checkout with no credentials.
 export interface CardSite {
   id: number
   url: string
@@ -59,6 +59,31 @@ export function hostnameOf(url: string): string {
   } catch {
     return url
   }
+}
+
+const ENTITIES: Record<string, string> = {
+  '&amp;': '&',
+  '&lt;': '<',
+  '&gt;': '>',
+  '&quot;': '"',
+  '&#39;': "'",
+  '&#x27;': "'",
+  '&nbsp;': ' ',
+  '&mdash;': '—',
+  '&ndash;': '–',
+  '&rsquo;': '’',
+  '&lsquo;': '‘',
+  '&ldquo;': '“',
+  '&rdquo;': '”',
+}
+
+/**
+ * Titles arrive from the sites' own <title> tags, entities and all. Left
+ * escaped they show as literal "&#x27;" on the card, and get escaped a second
+ * time into "&amp;#x27;" in the link-preview metadata.
+ */
+export function cleanTitle(raw: string): string {
+  return raw.replace(/&(#x27|#39|[a-zA-Z]+);/g, m => ENTITIES[m] ?? m).trim()
 }
 
 /**

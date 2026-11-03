@@ -3,7 +3,7 @@
 // what kind of site it is, what it is built with, and what its typeface
 // actually looks like. Satori subset — flex only, all styles inline, every
 // multi-child div explicitly flex.
-import { hostnameOf, type CardFacts, type CardSite } from './data'
+import { cleanTitle, hostnameOf, type CardFacts, type CardSite } from './data'
 
 const INK = '#111111'
 const MUTED = '#737370'
@@ -27,28 +27,6 @@ const MARK_URI =
       '<g transform="rotate(15 54 54)"><rect x="43" y="10" width="11" height="44" rx="1.6"/></g>' +
       '</svg>',
   )
-
-// Titles arrive from the sites' own <title> tags, entities and all. Satori
-// renders text literally, so an escaped apostrophe shows as "&#x27;".
-const ENTITIES: Record<string, string> = {
-  '&amp;': '&',
-  '&lt;': '<',
-  '&gt;': '>',
-  '&quot;': '"',
-  '&#39;': "'",
-  '&#x27;': "'",
-  '&nbsp;': ' ',
-  '&mdash;': '—',
-  '&ndash;': '–',
-  '&rsquo;': '’',
-  '&lsquo;': '‘',
-  '&ldquo;': '“',
-  '&rdquo;': '”',
-}
-
-function cleanTitle(raw: string): string {
-  return raw.replace(/&(#x27|#39|[a-zA-Z]+);/g, m => ENTITIES[m] ?? m).trim()
-}
 
 /**
  * Two lines is the whole budget. The column is 544px, so the characters that

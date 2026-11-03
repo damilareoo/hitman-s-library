@@ -1,10 +1,10 @@
 import type { Metadata } from 'next'
-import { getCardFacts, getCardSite, hostnameOf } from './data'
+import { cleanTitle, getCardFacts, getCardSite, hostnameOf } from './data'
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params
   const [site, facts] = await Promise.all([getCardSite(id), getCardFacts(id)])
-  const title = site ? `${site.title ?? hostnameOf(site.url)} — Hitman’s Library` : 'Hitman’s Library'
+  const title = site ? `${cleanTitle(site.title ?? hostnameOf(site.url))} — Hitman’s Library` : 'Hitman’s Library'
   const faces = site?.typography.map(t => t.font_family).filter(Boolean).slice(0, 3).join(', ')
   const description = site
     ? [facts?.kind, facts?.architecture, faces && `type: ${faces}`].filter(Boolean).join(' · ')
