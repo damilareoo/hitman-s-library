@@ -89,6 +89,7 @@ const changelog: ChangelogRelease[] = [
     title: 'Walled Gardens, Part Two',
     items: [
       { type: 'new', author: 'damilare', text: 'A walled site can now be captured from your own machine — one command rides real Chrome through the challenge and files the shots, with a palette measured off the capture, on the row' },
+      { type: 'improved', author: 'damilare', text: 'The local capture also files the site\u2019s typography — the same honest rendered-face read the server pipeline runs, possible because your machine is the one renderer the wall admits' },
       { type: 'fixed', author: 'damilare', text: 'The wall is now spotted by its own machinery, not just its title — a challenge page whose title never painted was slipping through and being filed as an unreadable site' },
     ],
   },

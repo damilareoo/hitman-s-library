@@ -38,6 +38,35 @@ async function readCapture(form: FormData, name: string): Promise<Buffer | null>
   return buf
 }
 
+interface TypeRow {
+  fontFamily: string
+  role: 'heading' | 'body' | 'mono'
+  googleFontsUrl: string | null
+  primaryWeight: number
+  sampleSizePx: number | null
+  sampleLineHeight: string | null
+}
+
+function parseTypography(raw: string | null): TypeRow[] {
+  if (!raw) return []
+  try {
+    const parsed = JSON.parse(raw)
+    if (!Array.isArray(parsed)) return []
+    return parsed
+      .filter(t => t && typeof t.fontFamily === 'string' && ['heading', 'body', 'mono'].includes(t.role))
+      .map(t => ({
+        fontFamily: t.fontFamily,
+        role: t.role,
+        googleFontsUrl: typeof t.googleFontsUrl === 'string' ? t.googleFontsUrl : null,
+        primaryWeight: Number.isFinite(Number(t.primaryWeight)) ? Number(t.primaryWeight) : 400,
+        sampleSizePx: Number.isFinite(Number(t.sampleSizePx)) ? Number(t.sampleSizePx) : null,
+        sampleLineHeight: typeof t.sampleLineHeight === 'string' ? t.sampleLineHeight : null,
+      }))
+  } catch {
+    return []
+  }
+}
+
 async function uploadCapture(buf: Buffer, name: string): Promise<string | null> {
   try {
     const blob = await put(`screenshots/${name}`, buf, {
@@ -101,6 +130,7 @@ export async function POST(req: Request) {
 
   const hostname = new URL(row.source_url).hostname.replace(/\./g, '-')
   const ts = Date.now()
+  const typography = parseTypography(String(form.get('typography') ?? '').trim() || null)
   const desktopUrl = desktop ? await uploadCapture(desktop, `${hostname}-${ts}-local.jpg`) : null
   const mobileUrl = mobile ? await uploadCapture(mobile, `${hostname}-${ts}-local-mobile.jpg`) : null
   if (!desktopUrl && !mobileUrl) {
@@ -135,6 +165,25 @@ export async function POST(req: Request) {
     }
   }
 
+  // The walled site's type was never read server-side — only this machine can
+  // see the page, so the script sends the honest read along. Same write shape
+  // as re-extract: replace per role.
+  if (typography.length > 0) {
+    await sql`DELETE FROM design_typography WHERE source_id = ${row.id}`.catch(() => null)
+    for (const t of typography) {
+      await sql`
+        INSERT INTO design_typography (source_id, font_family, role, google_fonts_url, primary_weight, sample_size_px, sample_line_height)
+        VALUES (${row.id}, ${t.fontFamily}, ${t.role}, ${t.googleFontsUrl}, ${t.primaryWeight}, ${t.sampleSizePx}, ${t.sampleLineHeight})
+        ON CONFLICT (source_id, role) DO UPDATE SET
+          font_family = EXCLUDED.font_family,
+          google_fonts_url = EXCLUDED.google_fonts_url,
+          primary_weight = EXCLUDED.primary_weight,
+          sample_size_px = EXCLUDED.sample_size_px,
+          sample_line_height = EXCLUDED.sample_line_height
+      `.catch(() => null)
+    }
+  }
+
   await sql`
     UPDATE design_sources
     SET metadata = COALESCE(metadata, '{}') || jsonb_build_object(
@@ -156,23 +205,25 @@ export async function POST(req: Request) {
   }
 
   const [finalRow] = await sql`SELECT screenshot_url, mobile_screenshot_url FROM design_sources WHERE id = ${row.id}` as any
-  const typeRows = await sql`
-    SELECT font_family, role, google_fonts_url, primary_weight, sample_size_px, sample_line_height
-    FROM design_typography WHERE source_id = ${row.id}
-  `
+  const existingType = typography.length > 0
+    ? typography
+    : (await sql`
+        SELECT font_family, role, google_fonts_url, primary_weight, sample_size_px, sample_line_height
+        FROM design_typography WHERE source_id = ${row.id}
+      `).map((t: any) => ({
+        fontFamily: t.font_family,
+        role: t.role,
+        googleFontsUrl: t.google_fonts_url,
+        primaryWeight: t.primary_weight,
+        sampleSizePx: t.sample_size_px,
+        sampleLineHeight: t.sample_line_height,
+      }))
   await recordExtraction({
     siteId: row.id,
     screenshotUrl: finalRow?.screenshot_url ?? null,
     mobileScreenshotUrl: finalRow?.mobile_screenshot_url ?? null,
     palette,
-    typography: (typeRows ?? []).map((t: any) => ({
-      fontFamily: t.font_family,
-      role: t.role,
-      googleFontsUrl: t.google_fonts_url,
-      primaryWeight: t.primary_weight,
-      sampleSizePx: t.sample_size_px,
-      sampleLineHeight: t.sample_line_height,
-    })),
+    typography: existingType,
     assets: [],
   })
 
@@ -184,5 +235,6 @@ export async function POST(req: Request) {
     screenshot_url: finalRow?.screenshot_url ?? null,
     mobile_screenshot_url: finalRow?.mobile_screenshot_url ?? null,
     colors: palette.length,
+    typography: typography.length,
   })
 }

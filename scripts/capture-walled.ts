@@ -5,17 +5,20 @@
  *   ADMIN_PASSWORD=… bun run scripts/capture-walled.ts <id-or-url>
  *
  * Real Chrome on a residential IP is admitted by the wall; Vercel's headless
- * browser on a datacenter IP never is. The captures are resized locally
- * (1600px desktop, 800px mobile) and POSTed — one request per capture, to
- * stay under Vercel's body ceiling — to the admin capture-upload endpoint,
- * which uploads them to Blob and measures the palette off the desktop frame.
- * The passcode is read from ADMIN_PASSWORD and never printed.
+ * browser on a datacenter IP never is. Because this machine can read the
+ * page, the script files everything the server pipeline would have: the
+ * honest typography read, captures resized locally (1600px desktop, 800px
+ * mobile) and a palette measured off the desktop frame — POSTed one request
+ * per capture, to stay under Vercel's body ceiling, to the admin
+ * capture-upload endpoint. The passcode is read from ADMIN_PASSWORD and
+ * never printed.
  */
 import puppeteer, { type Page } from 'puppeteer'
 import sharp from 'sharp'
 import {
   autoScroll,
   DESKTOP_UA,
+  extractTypographyWithRoles,
   gotoResilient,
   settlePage,
   waitPastInterstitial,
@@ -83,6 +86,12 @@ async function main() {
       }
       await settlePage(page)
 
+      // The same honest read the server pipeline runs — rendered faces via
+      // computed styles, sources from document.fonts and the stylesheets.
+      // Only this machine can see the page, so only it can name its fonts.
+      const typography = await extractTypographyWithRoles(page).catch(() => [] as Awaited<ReturnType<typeof extractTypographyWithRoles>>)
+      console.log(`type: ${typography.map(t => `${t.role}:${t.fontFamily}`).join(' ') || '(none)'}`)
+
       // Desktop at 2×, so the 1600px resize stays crisp instead of stretching
       // a 1440px render. The panel never asks the optimizer for more than
       // 1080px, so 1600 is headroom, not loss.
@@ -111,6 +120,10 @@ async function main() {
         if (id) form.append('id', String(id))
         form.append('url', url)
         form.append(name, new Blob([new Uint8Array(buf)], { type: 'image/jpeg' }), `${name}.jpg`)
+        // Type rides the desktop request — one write, not two.
+        if (name === 'desktop' && typography.length > 0) {
+          form.append('typography', JSON.stringify(typography))
+        }
         const res = await fetch(`${BASE}/api/design/capture-upload`, {
           method: 'POST',
           headers: { authorization: `Bearer ${passcode}` },
@@ -137,7 +150,7 @@ async function main() {
       if (!desktopRes && !mobileRes) throw new Error('nothing was filed')
       console.log(`filed: ${String(desktopRes?.screenshot_url ?? '(no desktop)')}`)
       console.log(`       ${String(mobileRes?.mobile_screenshot_url ?? '(no mobile)')}`)
-      console.log(`       ${desktopRes?.colors ?? 0} colors`)
+      console.log(`       ${desktopRes?.colors ?? 0} colors, ${desktopRes?.typography ?? 0} type rows`)
       if (!ok) process.exitCode = 1
     } finally {
       await page.close().catch(() => {})
