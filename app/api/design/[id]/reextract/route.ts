@@ -8,8 +8,6 @@ import { toColorFormats, deduplicateColors } from '@/lib/color-utils'
 import { recordExtraction } from '@/lib/extraction-history'
 import { SIMILAR_ENABLED, embedSite, toVectorLiteral } from '@/lib/similarity'
 import { requireAdmin } from '@/lib/admin-auth'
-import { withDeadline } from '@/lib/extraction-deadline'
-import { captureExternally } from '@/lib/external-capture'
 
 const sql = getSql()
 
@@ -34,55 +32,21 @@ export async function POST(
     return NextResponse.json({ error: 'Not found' }, { status: 404 })
   }
   const { source_url: url } = sources[0]
-  const startedAt = Date.now()
 
   try {
     const extractionResult = await extractFullDesignData(url)
 
-    // The wall will not clear. The one repair available is the external
-    // renderer: capture and a palette measured off that capture. Type stays
-    // empty — a picture cannot name its fonts. Everything else is left alone.
+    // The wall will not clear, not even from here. A capture is still
+    // possible from the user's own machine — scripts/capture-walled.ts — but
+    // that is a deliberate local step. Nothing is written over the row.
     if (extractionResult.challengeBlocked) {
-      // Whatever is left of the function's 60s ceiling, minus the writes.
-      const externalBudget = Math.max(8_000, 60_000 - (Date.now() - startedAt) - 5_000)
-      const external = await withDeadline(captureExternally(url), externalBudget).catch(() => null)
-      const reason = external?.desktopUrl || external?.mobileUrl
-        ? 'Cloudflare bot protection: captured by an external renderer — palette sampled from the capture'
-        : 'Cloudflare bot protection: the site serves a challenge the headless browser cannot pass'
-
-      if (external?.desktopUrl || external?.mobileUrl) {
-        await sql`
-          UPDATE design_sources
-          SET screenshot_url        = COALESCE(${external.desktopUrl}, screenshot_url),
-              mobile_screenshot_url = COALESCE(${external.mobileUrl}, mobile_screenshot_url)
-          WHERE id = ${id}
-        `.catch(() => null)
-        const palette = deduplicateColors(external.palette)
-          .map(c => toColorFormats(c))
-          .filter((c): c is { hex: string; oklch: string } => c !== null)
-          .slice(0, 16)
-        if (palette.length > 0) {
-          await sql`DELETE FROM design_colors WHERE source_id = ${id}`.catch(() => null)
-          for (const color of palette) {
-            await sql`
-              INSERT INTO design_colors (source_id, hex_value, oklch)
-              VALUES (${id}, ${color.hex}, ${color.oklch})
-              ON CONFLICT DO NOTHING
-            `.catch(() => null)
-          }
-        }
-      }
-
+      const reason = 'Cloudflare bot protection: the site serves a challenge the headless browser cannot pass'
       await sql`
         UPDATE design_sources
         SET metadata = COALESCE(metadata, '{}') || jsonb_build_object('extraction_error', ${reason}::text, 'live_preview', false)
         WHERE id = ${id}
       `.catch(() => null)
-      return NextResponse.json({
-        error: reason,
-        unchanged: true,
-        captured: Boolean(external?.desktopUrl || external?.mobileUrl),
-      }, { status: 422 })
+      return NextResponse.json({ error: reason, unchanged: true }, { status: 422 })
     }
 
     // Nothing rendered: the site is down, parked, or challenging us. Clearing

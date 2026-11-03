@@ -103,7 +103,7 @@ const IDLE_TIMEOUT = 8000
 // Headless Chrome announces itself as "HeadlessChrome" in its default UA, which
 // is the cheapest bot signal there is. Sites that would happily render for a
 // browser turned us away on the strength of that string alone.
-const DESKTOP_UA =
+export const DESKTOP_UA =
   'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 ' +
   '(KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
 
@@ -236,7 +236,7 @@ const INTERSTITIAL_WAIT_MS = 20000
  * wall's own colours and type must never be filed as the site's design, and
  * the run must not spend its remaining budget photographing it.
  */
-async function waitPastInterstitial(page: Page, siteUrl: string, signal?: AbortSignal): Promise<boolean> {
+export async function waitPastInterstitial(page: Page, siteUrl: string, signal?: AbortSignal): Promise<boolean> {
   let title = ''
   try {
     title = await page.title()
@@ -261,7 +261,7 @@ async function waitPastInterstitial(page: Page, siteUrl: string, signal?: AbortS
 }
 
 /** One pass to the bottom and back, slow enough for lazy-loading observers to follow. */
-async function autoScroll(page: Page, step = 400, maxMs = 15000): Promise<void> {
+export async function autoScroll(page: Page, step = 400, maxMs = 15000): Promise<void> {
   await page
     .evaluate(async (step: number, maxMs: number) => {
       await new Promise<void>(resolve => {

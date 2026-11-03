@@ -16,7 +16,6 @@ import { inferKind } from '@/lib/site-kind'
 import { KINDS, type Kind } from '@/lib/categories'
 import { withDeadline } from '@/lib/extraction-deadline'
 import { extractStaticDesignData, looksLikeChallengePage } from '@/lib/static-extraction'
-import { captureExternally } from '@/lib/external-capture'
 
 const sql = getSql()
 
@@ -33,7 +32,6 @@ const ADD_BROWSER_MS = 45_000
 export async function POST(req: NextRequest) {
   const denied = await requireAdmin(req)
   if (denied) return denied
-  const startedAt = Date.now()
 
   try {
     let { url, kind: requestedKind } = await req.json()
@@ -177,30 +175,11 @@ export async function POST(req: NextRequest) {
     // The browser made it to the page and found a bot wall it cannot pass.
     // Cloudflare's challenge never clears for a headless browser on a
     // datacenter IP; the honest row says so, and the wall's own colours and
-    // type are never filed as the site's design. One honest out remains: an
-    // external renderer with a real browser on a network the wall admits.
-    // Its capture is the site, and the palette is measured off that capture.
-    // Type stays empty — a picture cannot name its fonts.
+    // type are never filed as the site's design. A capture can still be made
+    // from the user's own machine — scripts/capture-walled.ts — but that is a
+    // deliberate local step, not something this function can do.
     if (extractionResult?.challengeBlocked) {
-      // The function's ceiling is 60s and the browser stage has spent ~30s of
-      // it; give the external renderer whatever is left, minus the DB writes
-      // and the response.
-      const externalBudget = Math.max(8_000, 60_000 - (Date.now() - startedAt) - 5_000)
-      const external = await withDeadline(captureExternally(url), externalBudget).catch(() => null)
-      if (external?.desktopUrl || external?.mobileUrl) {
-        extractionResult.screenshotUrl = external.desktopUrl ?? null
-        extractionResult.mobileScreenshotUrl = external.mobileUrl ?? null
-        if (external.palette.length > 0) {
-          colorFormats = deduplicateColors(external.palette)
-            .map(c => toColorFormats(c))
-            .filter((c): c is { hex: string; oklch: string } => c !== null)
-            .slice(0, 16)
-          colors = colorFormats.map(c => c.hex)
-        }
-        extractionError = 'Cloudflare bot protection: captured by an external renderer — palette sampled from the capture'
-      } else {
-        extractionError = 'Cloudflare bot protection: the site serves a challenge the headless browser cannot pass'
-      }
+      extractionError = 'Cloudflare bot protection: the site serves a challenge the headless browser cannot pass'
     }
 
     // A browser that threw or rendered an empty page is not a reason to file a
@@ -293,11 +272,10 @@ export async function POST(req: NextRequest) {
     // instead of leaving every failure looking identical.
     const capturedScreenshot = extractionResult?.screenshotUrl || null
     const effectiveScreenshot = capturedScreenshot || thumbnailUrl || null
-    // 'external' marks captures taken by the walled-site fallback, so the admin
-    // can tell them apart from in-house captures at a glance.
-    const screenshotSource = extractionResult?.challengeBlocked && capturedScreenshot
-      ? 'external'
-      : capturedScreenshot
+    // 'external' marks captures filed by the local walled-site script
+    // (scripts/capture-walled.ts), so the admin can tell them apart from
+    // in-house captures at a glance.
+    const screenshotSource = capturedScreenshot
       ? 'capture'
       : (thumbnailUrl ? 'og' : null)
     const unrecoverableError = effectiveScreenshot ? null : (extractionError ?? 'Extraction produced no image')
@@ -326,9 +304,8 @@ export async function POST(req: NextRequest) {
             // row that is neither finished nor failed.
             ...(screenshotSource ? { screenshot_source: screenshotSource } : {}),
             ...(unrecoverableError ? { extraction_error: unrecoverableError } : {}),
-            // With an external capture the row has an image, so unrecoverableError
-            // stays null — but the wall still blocked the in-house renderer, and
-            // the row should say so.
+            // A walled row has no image, so unrecoverableError carries the wall
+            // error — but the row should say the specific thing that happened.
             ...(extractionResult?.challengeBlocked && extractionError ? { extraction_error: extractionError } : {}),
             // The proxy can never render a bot-walled site, so the panel says
             // so up front instead of offering a preview that will fail.
@@ -566,9 +543,7 @@ export async function POST(req: NextRequest) {
         partial: Boolean(unrecoverableError || extractionError),
         error: unrecoverableError ?? undefined,
         warning: sourceId && extractionResult?.challengeBlocked
-          ? extractionResult.screenshotUrl
-            ? 'Saved — the site\u2019s bot protection (Cloudflare) blocks our renderer, so it was captured by an external service'
-            : 'Saved, but the site\u2019s bot protection (Cloudflare) blocks automated previews — filed without a capture'
+          ? 'Saved, but the site\u2019s bot protection (Cloudflare) blocks automated previews — filed without a capture'
           : sourceId && unrecoverableError
           ? 'Saved, but the page capture could not be taken — the repair worker will retry it'
           : undefined,

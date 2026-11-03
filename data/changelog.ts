@@ -88,7 +88,7 @@ const changelog: ChangelogRelease[] = [
     date: '2026-11-03',
     title: 'Walled Gardens, Part Two',
     items: [
-      { type: 'new', author: 'damilare', text: 'Sites whose bot wall the browser cannot pass are now captured by an external renderer instead — desktop and mobile shots, with a palette measured from the capture, so a walled site lands in the library looking like itself' },
+      { type: 'new', author: 'damilare', text: 'A walled site can now be captured from your own machine — one command rides real Chrome through the challenge and files the shots, with a palette measured off the capture, on the row' },
     ],
   },
   {
