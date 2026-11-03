@@ -230,29 +230,52 @@ const INTERSTITIAL_TITLE_MARKERS = [
 const INTERSTITIAL_WAIT_MS = 20000
 
 /**
+ * Is the wall showing right now? Title first — the cheapest signal — then the
+ * challenge's own DOM: Cloudflare names its machinery loudly. The body-text
+ * check catches walls whose title never painted in a headless renderer.
+ */
+async function pageShowsChallenge(page: Page): Promise<boolean> {
+  try {
+    return await page.evaluate((markers: string[]) => {
+      const title = document.title.toLowerCase()
+      if (markers.some(m => title.includes(m))) return true
+      if (document.querySelector('#challenge-running, #challenge-form, #challenge-stage, .cf-browser-verification, script[src*="challenge-platform"], script[src*="cf-chl"]')) return true
+      const text = (document.body?.innerText ?? '').slice(0, 4000).toLowerCase()
+      return text.includes('checking your browser before accessing') || text.includes('enable javascript and cookies')
+    }, INTERSTITIAL_TITLE_MARKERS)
+  } catch {
+    // Detached mid-probe — the next probe tick reads whatever replaced it.
+    return false
+  }
+}
+
+/**
  * True when there is no interstitial or the one there cleared; false when the
  * wait expired — or the caller's deadline aborted it — and the challenge is
- * still showing. A wall that will not clear is reported as exactly that: the
- * wall's own colours and type must never be filed as the site's design, and
- * the run must not spend its remaining budget photographing it.
+ * still showing.
+ *
+ * The wall does not always paint its title by the time navigation reports
+ * done, and an unreadable title is exactly how the check missed the wall on
+ * Vercel — the run read the challenge page as the site and filed "rendered
+ * nothing". So the probe retries for a few seconds before deciding there is
+ * no wall at all, and the renderedNothing branch probes once more before
+ * declaring the page empty.
  */
 export async function waitPastInterstitial(page: Page, siteUrl: string, signal?: AbortSignal): Promise<boolean> {
-  let title = ''
-  try {
-    title = await page.title()
-  } catch {}
-  if (!INTERSTITIAL_TITLE_MARKERS.some(m => title.toLowerCase().includes(m))) return true
+  const probeDeadline = Date.now() + 4000
+  let wall = await pageShowsChallenge(page)
+  while (!wall && Date.now() < probeDeadline) {
+    if (signal?.aborted) return true
+    await new Promise(r => setTimeout(r, 1000))
+    wall = await pageShowsChallenge(page)
+  }
+  if (!wall) return true
 
   const deadline = Date.now() + INTERSTITIAL_WAIT_MS
   while (Date.now() < deadline) {
     await new Promise(r => setTimeout(r, 1000))
-    // The caller has run out of budget; answer now so the challengeBlocked
-    // result still arrives instead of a deadline rejection.
     if (signal?.aborted) return false
-    try {
-      title = await page.title()
-    } catch {}
-    if (!INTERSTITIAL_TITLE_MARKERS.some(m => title.toLowerCase().includes(m))) return true
+    if (!(await pageShowsChallenge(page))) return true
     try {
       if (page.url() !== siteUrl && !page.url().includes('cloudflare.com')) return true
     } catch {}
@@ -1072,6 +1095,26 @@ export interface ExtractionOptions {
   signal?: AbortSignal
 }
 
+/**
+ * The wall was rendered, but it is not the site — its colours, type and
+ * capture must never be filed as the site's design.
+ */
+function challengeWallResult(): FullExtractionResult {
+  return {
+    colors: [],
+    screenshotUrl: null,
+    mobileScreenshotUrl: null,
+    assets: [],
+    typography: [],
+    challengeBlocked: true,
+    renderedNothing: true,
+    motionClipUrl: null,
+    motionBytes: null,
+    motionError: null,
+    motionTags: { hasTransitions: false, hasAnimations: false, easings: [] },
+  }
+}
+
 export async function extractFullDesignData(url: string, options: ExtractionOptions = {}): Promise<FullExtractionResult> {
   const browser = await getBrowser()
   if (!browser) {
@@ -1105,19 +1148,7 @@ export async function extractFullDesignData(url: string, options: ExtractionOpti
       // deadline at all — and the capture of a "Just a moment" wall is not a
       // capture of the site.
       console.warn(`[extract] ${url}: bot challenge never cleared — reporting the wall, not the page behind it`)
-      return {
-        colors: [],
-        screenshotUrl: null,
-        mobileScreenshotUrl: null,
-        assets: [],
-        typography: [],
-        challengeBlocked: true,
-        renderedNothing: true,
-        motionClipUrl: null,
-        motionBytes: null,
-        motionError: null,
-        motionTags: { hasTransitions: false, hasAnimations: false, easings: [] },
-      }
+      return challengeWallResult()
     }
     await settleNavigation(page)
     await settlePage(page)
@@ -1168,6 +1199,13 @@ export async function extractFullDesignData(url: string, options: ExtractionOpti
     // colour bound only separates "the page was empty" from "both extractors
     // threw"; an outage notice yields a handful, a rendered page yields dozens.
     if (typography.length === 0 && assets.length === 0 && colors.length <= EMPTY_PAGE_MAX_COLORS) {
+      // The empty page may be the wall that the probe above missed — its
+      // title can stay unpainted in a headless renderer. Ask the page itself
+      // once more before calling it unreadable.
+      if (await pageShowsChallenge(page)) {
+        console.warn(`[extract] ${url}: empty read is a bot challenge — reporting the wall, not the page behind it`)
+        return challengeWallResult()
+      }
       // One line of evidence for why. A challenge wall, a redirect to a locale,
       // a page that crashed mid-read and a genuine outage all arrive here and
       // each needs a different answer.
