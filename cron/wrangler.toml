@@ -1,0 +1,12 @@
+name = "hitmans-library-cron"
+main = "worker.ts"
+compatibility_date = "2026-11-04"
+
+# Calls the app worker directly; no public URL, no DNS dependency.
+[[services]]
+binding = "APP"
+service = "hitmans-library"
+
+[triggers]
+# Mondays 08:00 UTC — the weekly taste-radar digest.
+crons = ["0 8 * * 1"]
