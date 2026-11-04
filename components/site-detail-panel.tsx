@@ -13,7 +13,6 @@ import { ColorsTab } from './colors-tab'
 import { TypeTab } from './type-tab'
 import { HistoryTab } from './history-tab'
 import { ThemeExport } from './theme-export'
-import { ShareMenu } from './share-menu'
 import { DRIFT_ENABLED } from '@/lib/drift'
 import { UNSORTED } from '@/lib/categories'
 import { Spinner } from './ui/spinner'
@@ -277,7 +276,6 @@ export function SiteDetailPanel({ variant = 'desktop', sourceId, metadata, initi
               </div>
             )}
           </div>
-          <ShareMenu siteId={sourceId} siteTitle={title} />
           <span aria-hidden="true" className="panel-head-divider w-px h-4 bg-edge mx-0.5" />
           {onClose && (
             <button

@@ -86,16 +86,6 @@ export function releaseAuthors(release: ChangelogRelease): Author[] {
 const changelog: ChangelogRelease[] = [
   {
     date: '2026-11-03',
-    title: 'Cards Worth Sharing',
-    items: [
-      { type: 'new', author: 'damilare', text: 'Every site now has a shareable card — a 1200×630 breakdown of its filing, faces, palette and stack that previews inline when you post the link on X, WhatsApp or Slack' },
-      { type: 'new', author: 'damilare', text: 'The Share action sits in the detail panel: the card itself, the link ready to copy, a PNG download, and the native sheet on phones' },
-      { type: 'new', author: 'damilare', text: 'A card sets its specimen in the site\u2019s own heading face when that font is publicly fetchable — and when it isn\u2019t, it says nothing about the face rather than dressing it up in a substitute' },
-      { type: 'fixed', author: 'damilare', text: 'A site title carrying an apostrophe no longer shows as &#x27; in the link preview — the entity is decoded once, where it used to be escaped a second time on top of itself' },
-    ],
-  },
-  {
-    date: '2026-11-03',
     title: 'Walled Gardens, Part Two',
     items: [
       { type: 'new', author: 'damilare', text: 'A walled site can now be captured from your own machine — one command rides real Chrome through the challenge and files the shots, with a palette measured off the capture, on the row' },
