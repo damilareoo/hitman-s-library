@@ -67,6 +67,25 @@ function parseTypography(raw: string | null): TypeRow[] {
   }
 }
 
+/**
+ * Colours measured on the machine that took the capture. sharp has no loader
+ * under workerd, so a palette sampled server-side is silently empty there —
+ * the capture files with zero colours and nothing says so. The client sends
+ * what it measured; sampling here is only the Node fallback.
+ */
+function parsePalette(raw: string | null): string[] {
+  if (!raw) return []
+  try {
+    const parsed = JSON.parse(raw)
+    if (!Array.isArray(parsed)) return []
+    return parsed
+      .filter((c): c is string => typeof c === 'string' && /^#[0-9a-f]{6}$/i.test(c.trim()))
+      .slice(0, 32)
+  } catch {
+    return []
+  }
+}
+
 async function uploadCapture(buf: Buffer, name: string): Promise<string | null> {
   try {
     const blob = await put(`screenshots/${name}`, buf, {
@@ -146,14 +165,15 @@ export async function POST(req: Request) {
     `.catch(() => null)
   }
 
-  // The palette is measured off the desktop frame; a palette without its
-  // capture on the row would be evidence with nothing to point at.
-  const palette = desktopUrl
-    ? deduplicateColors(await samplePalette(desktop!))
-        .map(c => toColorFormats(c))
-        .filter((c): c is { hex: string; oklch: string } => c !== null)
-        .slice(0, 16)
-    : []
+  // The palette is measured off the desktop frame — by the client when it can
+  // be, since a Worker cannot. A palette without its capture on the row would
+  // be evidence with nothing to point at.
+  const sent = parsePalette(String(form.get('palette') ?? '').trim() || null)
+  const measured = sent.length > 0 ? sent : (desktop ? await samplePalette(desktop) : [])
+  const palette = deduplicateColors(measured)
+    .map(c => toColorFormats(c))
+    .filter((c): c is { hex: string; oklch: string } => c !== null)
+    .slice(0, 16)
   if (palette.length > 0) {
     await sql`DELETE FROM design_colors WHERE source_id = ${row.id}`.catch(() => null)
     for (const color of palette) {

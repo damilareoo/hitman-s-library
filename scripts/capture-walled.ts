@@ -23,8 +23,11 @@ import {
   settlePage,
   waitPastInterstitial,
 } from '../lib/browser-extraction'
+import { samplePalette } from '../lib/palette-from-image'
 
-const BASE = process.env.LIBRARY_URL ?? 'https://www.hitmanslibrary.xyz'
+// The apex, not www: www is a 301 now, and a POST that follows a redirect
+// loses its body.
+const BASE = (process.env.LIBRARY_URL ?? 'https://hitmanslibrary.xyz').replace(/\/+$/, '')
 
 function usage(): never {
   console.error('usage: ADMIN_PASSWORD=… bun run scripts/capture-walled.ts <id-or-url>')
@@ -101,6 +104,11 @@ async function main() {
         .jpeg({ quality: 75 })
         .toBuffer()
 
+      // Measured here because the Worker cannot: sharp has no loader under
+      // workerd, so a palette sampled server-side arrives as zero colours.
+      const colors = await samplePalette(desktop)
+      console.log(`palette: ${colors.join(' ') || '(none)'}`)
+
       await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 2, isMobile: true, hasTouch: true })
       await new Promise(r => setTimeout(r, 1500))
       await autoScroll(page, 300)
@@ -120,9 +128,12 @@ async function main() {
         if (id) form.append('id', String(id))
         form.append('url', url)
         form.append(name, new Blob([new Uint8Array(buf)], { type: 'image/jpeg' }), `${name}.jpg`)
-        // Type rides the desktop request — one write, not two.
+        // Type and palette ride the desktop request — one write, not two.
         if (name === 'desktop' && typography.length > 0) {
           form.append('typography', JSON.stringify(typography))
+        }
+        if (name === 'desktop' && colors.length > 0) {
+          form.append('palette', JSON.stringify(colors))
         }
         const res = await fetch(`${BASE}/api/design/capture-upload`, {
           method: 'POST',
