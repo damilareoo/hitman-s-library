@@ -2,7 +2,6 @@ import type React from "react"
 import type { Metadata, Viewport } from "next"
 import { GeistSans } from "geist/font/sans"
 import { GeistMono } from "geist/font/mono"
-import { Analytics } from "@vercel/analytics/next"
 import { MotionProvider } from "@/components/motion-provider"
 import { SmoothScroll } from "@/components/smooth-scroll"
 import { ThemeProvider } from '@/components/theme-provider'
@@ -173,7 +172,6 @@ export default function RootLayout({
             </SoundsProvider>
           </MotionProvider>
         </ThemeProvider>
-        <Analytics />
       </body>
     </html>
   )
