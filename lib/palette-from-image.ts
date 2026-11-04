@@ -5,10 +5,13 @@
 // This is measurement, not guessing — the same principle the browser
 // extraction uses for area shares, applied to a capture taken elsewhere
 // (an external renderer, or the user's own machine behind a bot wall).
-import sharp from 'sharp'
+import { loadRuntimeDep } from './runtime-deps'
 
 export async function samplePalette(buf: Buffer, maxColors = 8): Promise<string[]> {
   try {
+    const sharp = await loadRuntimeDep('sharp')
+    if (!sharp) return []
+
     const { data, info } = await sharp(buf)
       .resize(64, 64, { fit: 'fill' })
       .removeAlpha()

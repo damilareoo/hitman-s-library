@@ -63,3 +63,11 @@ sweep-flagged.json
 recheck-done.json
 panel-done.json
 *.tmp.mjs
+
+# OpenNext
+.open-next
+
+# wrangler files
+.wrangler
+.dev.vars*
+!.dev.vars.example

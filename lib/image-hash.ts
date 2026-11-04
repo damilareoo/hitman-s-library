@@ -9,8 +9,11 @@
 // guard for similarity search (Phase 2): failed captures sit under ~35KB
 // while the library median is ~426KB.
 //
-// sharp is imported dynamically so this module never loads native code on
-// import — only when a hash is actually computed, inside nodejs routes.
+// sharp is loaded through loadRuntimeDep so this module never loads native
+// code on import — only when a hash is actually computed, inside nodejs
+// routes.
+import { loadRuntimeDep } from './runtime-deps'
+
 export interface ImageInfo {
   hash: string | null
   /** Capture file size in bytes, null when the fetch failed. */
@@ -36,7 +39,8 @@ export async function dhashFromUrl(url: string): Promise<string | null> {
 
 export async function dhashFromBuffer(buf: Buffer): Promise<string | null> {
   try {
-    const { default: sharp } = await import('sharp')
+    const sharp = await loadRuntimeDep('sharp')
+    if (!sharp) return null
     const raw = await sharp(buf).resize(9, 8, { fit: 'fill' }).grayscale().raw().toBuffer()
     if (raw.length < 72) return null
     let hi = 0

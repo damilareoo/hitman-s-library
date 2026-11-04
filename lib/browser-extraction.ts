@@ -1,15 +1,21 @@
-import chromium from '@sparticuz/chromium'
-import puppeteer from 'puppeteer'
 import type { Page } from 'puppeteer'
 import { put } from '@vercel/blob'
 import { existsSync, unlinkSync } from 'fs'
 import { extractAssets } from './asset-extraction'
 import { measureColorAreaShares } from './color-area.js'
 import { recordMotionClip, extractMotionTags, resolveFfmpegPath, type MotionTags } from './motion-capture'
+import { loadRuntimeDep } from './runtime-deps'
 
-// For serverless environments, use the lightweight Chromium from Sparticuz
 let browser: any = null
 let browserInitPromise: Promise<any> | null = null
+
+async function loadBrowserDeps(): Promise<{ puppeteer: any; chromium: any }> {
+  const [puppeteer, chromium] = await Promise.all([
+    loadRuntimeDep('puppeteer'),
+    loadRuntimeDep('@sparticuz/chromium'),
+  ])
+  return { puppeteer, chromium }
+}
 
 export async function getBrowser() {
   if (browser) {
@@ -21,11 +27,22 @@ export async function getBrowser() {
   if (browserInitPromise) return browserInitPromise
   browserInitPromise = (async () => {
   try {
+    // For serverless environments, use the lightweight Chromium from Sparticuz
+    const { puppeteer, chromium } = await loadBrowserDeps()
+    if (!puppeteer) {
+      console.warn('[v0] Browser unavailable: puppeteer cannot load on this runtime')
+      return null
+    }
+
     const isServerless = process.platform === 'linux' && (
       process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME || process.env.AWS_EXECUTION_ENV
     )
 
     if (isServerless) {
+      if (!chromium) {
+        console.warn('[v0] Browser unavailable: chromium binary unavailable on this runtime')
+        return null
+      }
       // @sparticuz/chromium sets LD_LIBRARY_PATH at MODULE LOAD TIME only when
       // isRunningInAwsLambda() is true. On Vercel, AWS_EXECUTION_ENV is not set
       // by default, so that top-level setup was skipped. We must:

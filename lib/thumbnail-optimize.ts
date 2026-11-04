@@ -7,6 +7,7 @@
 // frame: sharp decodes only frame one of an animated input, so GIFs freeze
 // for the grid while the detail panel and hover clips keep the motion.
 import { put } from '@vercel/blob'
+import { loadRuntimeDep } from './runtime-deps'
 
 /** Card slots render at ~283px; 640px is generous headroom for DPR 2. */
 export const THUMBNAIL_WIDTH = 640
@@ -23,7 +24,8 @@ export async function optimizeThumbnail(
     if (!contentType.startsWith('image/')) return null
     const buf = Buffer.from(await res.arrayBuffer())
     if (!buf.length) return null
-    const { default: sharp } = await import('sharp')
+    const sharp = await loadRuntimeDep('sharp')
+    if (!sharp) return null
     // Cover to the card ratio (16:10) at 640 wide: og-images arrive in every
     // aspect and the grid must read as one thing. withoutEnlargement alone
     // cannot normalize small inputs, so the crop is explicit: center-cut a

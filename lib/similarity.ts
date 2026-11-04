@@ -18,6 +18,7 @@ import { KINDS, UNSORTED } from './categories'
 // Single source for the flag is lib/drift (client-safe); re-exported here
 // so server callers keep one import.
 import { SIMILAR_ENABLED } from './drift'
+import { loadRuntimeDep } from './runtime-deps'
 export { SIMILAR_ENABLED }
 
 export const IMG_DIMS = 512
@@ -140,11 +141,15 @@ export function toVectorLiteral(v: number[]): string {
 
 let pipelinePromise: Promise<any> | null = null
 
+// Loaded through loadRuntimeDep: @xenova/transformers pulls onnxruntime-node,
+// whose native .node binary has no loader in the Worker bundle. Node runtimes
+// load it lazily; Workers get null and getImageFeatures returns null.
 function getPipeline(): Promise<any> {
   if (!pipelinePromise) {
     pipelinePromise = (async () => {
-      const { pipeline } = await import('@xenova/transformers')
-      return pipeline('image-feature-extraction', 'Xenova/clip-vit-base-patch32')
+      const transformers = await loadRuntimeDep('@xenova/transformers')
+      if (!transformers?.pipeline) throw new Error('transformers unavailable on this runtime')
+      return transformers.pipeline('image-feature-extraction', 'Xenova/clip-vit-base-patch32')
     })().catch(err => {
       pipelinePromise = null
       throw err
