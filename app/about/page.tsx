@@ -12,10 +12,12 @@ export const metadata: Metadata = {
   description: "How a spreadsheet of links became Hitman's Library.",
 }
 
-// The count below is the real one — refreshed hourly rather than per request.
-// A per-request render costs more CPU than the free Worker's ceiling allows,
-// and an hour-stale count is cheaper than a 503.
-export const revalidate = 3600
+// The count below is the real one, so the page has to be rendered per request
+// rather than baked at build time and left to drift. It cannot be given
+// `revalidate` either: without a dynamic input Next prerenders it during
+// `next build`, and the build machine has no DATABASE_URL — the build fails
+// with "Error occurred prerendering page /about".
+export const dynamic = 'force-dynamic'
 
 const PEOPLE = [
   {
