@@ -85,6 +85,14 @@ export function releaseAuthors(release: ChangelogRelease): Author[] {
 // only case where the question is actually being asked.
 const changelog: ChangelogRelease[] = [
   {
+    date: '2026-11-06',
+    title: 'Served, Not Rendered',
+    items: [
+      { type: 'fixed', author: 'damilare', text: 'The library is back up. The grid and About re-rendered on every single visit, which costs more than the new host allows per request — a share of visitors were getting an error page. They are now served from the edge cache and refreshed on a timer' },
+      { type: 'fixed', author: 'damilare', text: 'Sites captured from your own machine now file their colours alongside the screenshots. The palette was being measured by a tool the new host cannot run, so those sites landed with a picture and no colours at all' },
+    ],
+  },
+  {
     date: '2026-11-03',
     title: 'Walled Gardens, Part Two',
     items: [

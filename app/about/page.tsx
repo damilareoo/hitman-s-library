@@ -12,9 +12,10 @@ export const metadata: Metadata = {
   description: "How a spreadsheet of links became Hitman's Library.",
 }
 
-// The count below is the real one, so the page has to be rendered per request
-// rather than baked at build time and left to drift.
-export const dynamic = 'force-dynamic'
+// The count below is the real one — refreshed hourly rather than per request.
+// A per-request render costs more CPU than the free Worker's ceiling allows,
+// and an hour-stale count is cheaper than a 503.
+export const revalidate = 3600
 
 const PEOPLE = [
   {

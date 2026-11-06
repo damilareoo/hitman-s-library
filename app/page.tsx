@@ -11,9 +11,12 @@ import { getDomain } from '@/lib/get-domain'
 import { SIMILAR_ENABLED, querySimilar } from '@/lib/similarity'
 import { rankDesignsByColor, COLOR_RADIUS, COLOR_CAP, isHexColor } from '@/lib/color-distance'
 
-// Rendered per request so the grid ships as HTML — crawlers and first paint
-// both get real content instead of an empty shell.
-export const dynamic = 'force-dynamic'
+// The grid ships as HTML for crawlers and first paint either way, but
+// `force-dynamic` made *every* visit pay a full SSR inside the Worker. On the
+// free plan that render exceeds the per-request CPU ceiling and Cloudflare
+// answers 503 "error code: 1102" for a share of visitors. Cached at the edge,
+// one request per interval pays it and the rest never reach the Worker.
+export const revalidate = 300
 
 const LIMIT = 32
 
