@@ -1,4 +1,4 @@
-export type ChangeType = 'new' | 'improved' | 'fixed'
+export type ChangeType = 'new' | 'improved' | 'fixed' | 'open'
 
 export type Author = 'damilare' | 'florence' | 'judie'
 
@@ -85,10 +85,18 @@ export function releaseAuthors(release: ChangelogRelease): Author[] {
 // only case where the question is actually being asked.
 const changelog: ChangelogRelease[] = [
   {
-    date: '2026-11-06',
-    title: 'Served, Not Rendered',
+    date: '2026-11-07',
+    title: 'A Front Door for Submissions',
     items: [
-      { type: 'fixed', author: 'damilare', text: 'The library is back up. The grid and About re-rendered on every single visit, which costs more than the new host allows per request — a share of visitors were getting an error page. They are now served from the edge cache and refreshed on a timer' },
+      { type: 'new', author: 'damilare', text: 'Submit has its own page. One address is the whole form — the library checks it against the shelf right there, and you can leave your name, email and a note so a person can credit you and answer you back' },
+      { type: 'improved', author: 'damilare', text: 'Request a site is now Submit, in the header and in the corner of every page. Same queue, same review — just addressed to the person who made the thing instead of the person who wants it saved' },
+    ],
+  },
+  {
+    date: '2026-11-06',
+    title: 'One Fix Held, One Didn\u2019t',
+    items: [
+      { type: 'open', author: 'damilare', text: 'The grid and About re-render on every single visit, which costs more than the new host allows per request — a share of visitors get an error page. This release was meant to end that by serving those pages from the edge cache on a five-minute timer, but it did not take: the home page reads its filters from the address, so it still renders per visit. The error stays quiet only while traffic is light. The real fix is still in flight' },
       { type: 'fixed', author: 'damilare', text: 'Sites captured from your own machine now file their colours alongside the screenshots. The palette was being measured by a tool the new host cannot run, so those sites landed with a picture and no colours at all' },
     ],
   },

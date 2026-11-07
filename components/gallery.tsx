@@ -19,7 +19,6 @@ import { HISTORY_TAB_ENABLED } from '@/components/panel-tabs'
 import { Spinner } from '@/components/ui/spinner'
 import { motion, AnimatePresence } from 'motion/react'
 import { useSoundsContext } from '@/contexts/sounds-context'
-import { RequestSiteDialog } from '@/components/request-site-dialog'
 import { BrowsePanel } from '@/components/browse-panel'
 import { Brand } from '@/components/brand'
 import { SiteLinks } from '@/components/site-links'
@@ -190,10 +189,6 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
   const [isLoadingMore, setIsLoadingMore] = useState(false)
   const [isRefetching, setIsRefetching] = useState(false)
   const [searchInput, setSearchInput] = useState(search)
-  const [requestOpen, setRequestOpen] = useState(false)
-  // Opening Request from the browse panel carries the query it found nothing
-  // for, so the person does not retype what they just searched.
-  const [requestPrefill, setRequestPrefill] = useState('')
   const [browseOpen, setBrowseOpen] = useState(false)
   const [digestOpen, setDigestOpen] = useState(false)
   const [moreOpen, setMoreOpen] = useState(false)
@@ -586,12 +581,11 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
   const isNarrow = useIsNarrow()
   const isPhone = useIsPhone()
 
-  // Lock the page under anything modal: the sheet below the 3-pane split, the
-  // request dialog at every width, and the browse layer. Lenis has to be told
-  // as well — an overflow rule stops the native scrollbar but not a wheel it
-  // has already claimed.
+  // Lock the page under anything modal: the sheet below the 3-pane split and
+  // the browse layer. Lenis has to be told as well — an overflow rule stops
+  // the native scrollbar but not a wheel it has already claimed.
   useEffect(() => {
-    const lock = requestOpen || browseOpen || (isPanelOpen && window.matchMedia('(max-width: 1279px)').matches)
+    const lock = browseOpen || (isPanelOpen && window.matchMedia('(max-width: 1279px)').matches)
     const lenis = getLenis()
     if (lock) lenis?.stop()
     else lenis?.start()
@@ -600,7 +594,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
       getLenis()?.start()
       document.body.style.overflow = ''
     }
-  }, [isPanelOpen, requestOpen, browseOpen])
+  }, [isPanelOpen, browseOpen])
 
   // Escape closes the panel at any breakpoint; the focus trap only runs where
   // the sheet does, since that is where the panel is genuinely modal.
@@ -860,8 +854,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
 
   const handleBrowseRequest = useCallback((query: string) => {
     setBrowseOpen(false)
-    setRequestPrefill(query)
-    setRequestOpen(true)
+    window.location.assign(`/submit?url=${encodeURIComponent(query)}`)
   }, [])
 
   const hasFilters = kinds.length > 0 || tags.length > 0 || search.length > 0 || Boolean(colorFilter)
@@ -990,14 +983,17 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
               <EnvelopeSimple className="w-3.5 h-3.5" weight="bold" />
               <span>Digest</span>
             </button>
-            <button
-              onClick={() => setRequestOpen(true)}
-              aria-label="Request a site"
+            {/* Submit sits in the same quiet register as Digest — the loud
+                version belongs in the zero-results state, where it is an
+                answer to something the person just asked for. */}
+            <Link
+              href="/submit"
+              aria-label="Submit your work"
               className="relative flex items-center gap-1 text-meta text-ink-3 hover:text-ink transition-colors mr-1 max-sm:hidden after:absolute after:inset-x-0 after:top-1/2 after:h-11 after:-translate-y-1/2 after:content-['']"
             >
               <Plus className="w-3 h-3" weight="bold" />
-              <span>Request a site</span>
-            </button>
+              <span>Submit</span>
+            </Link>
 
             <button
               onClick={() => {
@@ -1067,14 +1063,15 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
                     <EnvelopeSimple className="w-4 h-4" weight="bold" />
                     <span>Digest</span>
                   </button>
-                  <button
+                  <Link
                     role="menuitem"
-                    onClick={() => { setMoreOpen(false); setRequestOpen(true) }}
+                    href="/submit"
+                    onClick={() => setMoreOpen(false)}
                     className="w-full flex items-center gap-2.5 h-9 px-2.5 rounded-[6px] text-bodytext text-ink-2 text-left hover:text-ink hover:bg-muted transition-colors"
                   >
                     <Plus className="w-4 h-4" weight="bold" />
-                    <span>Request a site</span>
-                  </button>
+                    <span>Submit</span>
+                  </Link>
                   <button
                     role="menuitemcheckbox"
                     aria-checked={sounds.enabled}
@@ -1370,13 +1367,13 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
                             <p className="text-reading text-ink-2 max-w-[280px]">
                               Want <span className="text-ink">{search.trim()}</span> in the library?
                             </p>
-                            <button
-                              onClick={() => setRequestOpen(true)}
+                            <Link
+                              href={`/submit?url=${encodeURIComponent(search.trim())}`}
                               className="mt-1 h-9 px-4 inline-flex items-center gap-2 rounded-[6px] bg-foreground text-background text-bodytext font-medium hover:opacity-90 transition-opacity"
                             >
-                              Request it
+                              Submit it
                               <ArrowRight className="w-3.5 h-3.5" weight="bold" />
-                            </button>
+                            </Link>
                           </>
                         )}
 
@@ -1499,13 +1496,6 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
         onDeleteSet={deleteCollection}
         onOpenSite={handleBrowseOpen}
         onRequest={handleBrowseRequest}
-      />
-
-      <RequestSiteDialog
-        open={requestOpen}
-        onClose={() => { setRequestOpen(false); setRequestPrefill('') }}
-        initialUrl={requestPrefill || search.trim()}
-        onOpenSite={selectDesignById}
       />
 
       {/* The panel below the three-pane split. On a tablet it is the same

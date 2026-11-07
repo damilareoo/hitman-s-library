@@ -7,6 +7,7 @@ const PAGES = [
   { href: '/', label: 'Gallery' },
   { href: '/about', label: 'About' },
   { href: '/changelog', label: 'Changelog' },
+  { href: '/submit', label: 'Submit' },
 ]
 
 interface SiteLinksProps {

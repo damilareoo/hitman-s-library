@@ -17,12 +17,17 @@ const DOT_COLOR: Record<ChangeItem['type'], string> = {
   new:      'bg-[var(--color-success)]',
   improved: 'bg-[var(--color-running)]',
   fixed:    'bg-ink-4',
+  // Shipped but not working as claimed: a hollow dot, the fixed dot's
+  // outline. Same register as Fixed so the page's colour grammar stays
+  // three words, not four.
+  open:     'bg-transparent border border-ink-4',
 }
 
 const TYPE_LABEL: Record<ChangeItem['type'], string> = {
   new:      'New',
   improved: 'Improved',
   fixed:    'Fixed',
+  open:     'Open',
 }
 
 const TYPE_TEXT: Record<ChangeItem['type'], string> = {
@@ -31,6 +36,7 @@ const TYPE_TEXT: Record<ChangeItem['type'], string> = {
   new:      'text-[var(--color-success)]',
   improved: 'text-[var(--color-running)]',
   fixed:    'text-ink-4',
+  open:     'text-ink-4',
 }
 
 /**

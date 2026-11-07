@@ -20,6 +20,8 @@ export async function POST(req: Request) {
   let url = ''
   let honeypot = ''
   let email: string | null = null
+  let note: string | null = null
+  let credit: string | null = null
   let preview: { title?: string; image?: string } = {}
 
   try {
@@ -32,6 +34,16 @@ export async function POST(req: Request) {
     if (typeof body?.email === 'string') {
       const candidate = body.email.trim().slice(0, 254)
       email = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(candidate) ? candidate : null
+    }
+    // The maker's own words, capped. Reviewer surface, not a publication.
+    if (typeof body?.note === 'string') {
+      const candidate = body.note.trim().slice(0, 280)
+      note = candidate || null
+    }
+    // Who to credit, when it makes the shelf. Capped; anything else dropped.
+    if (typeof body?.credit === 'string') {
+      const candidate = body.credit.trim().slice(0, 120)
+      credit = candidate || null
     }
     if (body?.preview && typeof body.preview === 'object') preview = body.preview
   } catch {
@@ -107,21 +119,26 @@ export async function POST(req: Request) {
     // anything previously dismissed, so a site that gets asked for repeatedly
     // comes back rather than staying buried.
     // The live preview only resolves the single address the visitor typed, so
-    // batch rows carry no preview — the reviewer sees the address itself.
+    // batch rows carry no preview — the reviewer sees the address itself. Note
+    // and credit travel the same way: they belong to the single form.
     const single = candidates.length === 1
     const rows = await sql`
-      INSERT INTO design_requests (url, normalized_url, preview_title, preview_image, ip_hash, email)
+      INSERT INTO design_requests (url, normalized_url, preview_title, preview_image, ip_hash, email, note, credit)
       VALUES (
         ${toAbsoluteUrl(raw)},
         ${normalized},
         ${single ? preview.title ?? null : null},
         ${single ? preview.image ?? null : null},
         ${ipHash},
-        ${email}
+        ${email},
+        ${single ? note : null},
+        ${single ? credit : null}
       )
       ON CONFLICT (normalized_url) DO UPDATE SET
         request_count = design_requests.request_count + 1,
         email = COALESCE(design_requests.email, EXCLUDED.email),
+        note = COALESCE(design_requests.note, EXCLUDED.note),
+        credit = COALESCE(design_requests.credit, EXCLUDED.credit),
         status = CASE WHEN design_requests.status = 'dismissed' THEN 'pending' ELSE design_requests.status END,
         preview_title = COALESCE(design_requests.preview_title, EXCLUDED.preview_title),
         preview_image = COALESCE(design_requests.preview_image, EXCLUDED.preview_image),

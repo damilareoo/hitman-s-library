@@ -14,6 +14,8 @@ interface RequestRow {
   requestCount: number
   createdAt: string
   email: string | null
+  note: string | null
+  credit: string | null
 }
 
 type Tab = 'pending' | 'added' | 'dismissed'
@@ -149,8 +151,13 @@ export function AdminRequests() {
                 <div className="min-w-0 flex-1">
                   <p className="text-bodytext text-ink truncate">{row.title ?? host}</p>
                   <p className="text-meta text-ink-4 truncate">
-                    {host} · {formatDate(row.createdAt)}{row.email ? ` · ${row.email}` : ''}
+                    {host} · {formatDate(row.createdAt)}{row.email ? ` · ${row.email}` : ''}{row.credit ? ` · by ${row.credit}` : ''}
                   </p>
+                  {row.note && (
+                    <p className="text-meta text-ink-3 truncate mt-0.5" title={row.note}>
+                      {row.note}
+                    </p>
+                  )}
                 </div>
 
                 {row.requestCount > 1 && (

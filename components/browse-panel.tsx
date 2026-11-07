@@ -248,7 +248,7 @@ export function BrowsePanel({
                         onClick={() => { onClose(); onRequest(query.trim()) }}
                         className="mt-3 h-8 px-3 rounded-[8px] text-meta bg-foreground text-background font-medium hover:opacity-90 transition-opacity"
                       >
-                        Request it
+                        Submit it
                       </button>
                     </div>
                   ) : (

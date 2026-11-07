@@ -15,7 +15,8 @@ export async function GET(req: NextRequest) {
 
   const rows = await sql`
     SELECT id, url, normalized_url, status, source_id,
-           preview_title, preview_image, request_count, created_at, email
+           preview_title, preview_image, request_count, created_at, email,
+           note, credit
     FROM design_requests
     WHERE status = ${status}
     ORDER BY request_count DESC, created_at DESC
@@ -41,6 +42,8 @@ export async function GET(req: NextRequest) {
       requestCount: r.request_count,
       createdAt: r.created_at,
       email: r.email ?? null,
+      note: r.note ?? null,
+      credit: r.credit ?? null,
     })),
     counts,
   })
