@@ -85,6 +85,15 @@ export function releaseAuthors(release: ChangelogRelease): Author[] {
 // only case where the question is actually being asked.
 const changelog: ChangelogRelease[] = [
   {
+    date: '2026-11-08',
+    title: 'Snap, Don\u2019t Fade',
+    items: [
+      { type: 'improved', author: 'damilare', text: 'Popovers and menus now land like they weigh something — the digest, the more menu, the save-a-site list and the \u2318K browser snap in on a spring instead of fading or just appearing' },
+      { type: 'improved', author: 'damilare', text: 'The weekly digest email now opens with the mark and the date, leads with one featured pick at full width, then sets the rest two-up — every card in the gallery\u2019s own voice: the whisper border, the 16:10 capture, the palette dots with their kind line in the corner' },
+      { type: 'improved', author: 'damilare', text: 'The similar-sites button is gone from the site panel' },
+    ],
+  },
+  {
     date: '2026-11-07',
     title: 'A Front Door for Submissions',
     items: [

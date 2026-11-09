@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import { MagnifyingGlass } from '@phosphor-icons/react'
+import { POP_IN, POP_OUT } from '@/lib/motion'
 import { displayKind } from '@/lib/categories'
 import type { CollectionMap } from '@/lib/collections'
 import type { Design } from '@/components/design-card'
@@ -204,10 +205,10 @@ export function BrowsePanel({
               role="dialog"
               aria-modal="true"
               aria-label="Browse the library"
-              initial={{ opacity: 0, y: -8, scale: 0.99 }}
+              initial={{ opacity: 0, y: -12, scale: 0.98 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: -8, scale: 0.99 }}
-              transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+              exit={{ opacity: 0, y: -8, scale: 0.99, transition: POP_OUT }}
+              transition={POP_IN}
               onKeyDown={onKeyDown}
               className="pointer-events-auto mt-[12vh] w-full max-w-[824px] max-h-[min(70vh,640px)] flex flex-col rounded-[12px] border border-edge-strong bg-popover text-popover-foreground shadow-[0_24px_64px_-16px_rgba(0,0,0,0.35)] overflow-hidden"
             >

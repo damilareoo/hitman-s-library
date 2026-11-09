@@ -14,3 +14,9 @@ export const DUR = {
   move: 0.3,
   reveal: 0.45,
 } as const
+
+// A modal's first breath: a stiff spring that lands with a hair of overshoot
+// so the surface reads as a physical thing snapping into place. The exit is
+// the other half of the pair — fast and dead, no bounce on the way out.
+export const POP_IN = { type: 'spring', stiffness: 500, damping: 34, mass: 0.85 } as const
+export const POP_OUT = { duration: 0.13, ease: EASE } as const

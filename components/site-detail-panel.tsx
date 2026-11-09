@@ -3,9 +3,8 @@
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
-import { SquaresFour, Check, BookmarkSimple, Heart, X } from '@phosphor-icons/react'
+import { Check, BookmarkSimple, Heart, X } from '@phosphor-icons/react'
 import { useCollections, toggleMembership, sanitizeName } from '@/lib/collections'
-import { SIMILAR_ENABLED } from '@/lib/drift'
 import { PanelTabs, type PanelTab } from './panel-tabs'
 import { useSoundsContext } from '@/contexts/sounds-context'
 import { PreviewTab } from './preview-tab'
@@ -16,7 +15,7 @@ import { ThemeExport } from './theme-export'
 import { DRIFT_ENABLED } from '@/lib/drift'
 import { UNSORTED } from '@/lib/categories'
 import { Spinner } from './ui/spinner'
-import { EASE, DUR } from '@/lib/motion'
+import { EASE, DUR, POP_IN, POP_OUT } from '@/lib/motion'
 import type { Design } from './design-card'
 import { fetchDetail, getCachedDetail } from '@/lib/detail-cache'
 import posthog from 'posthog-js'
@@ -55,7 +54,6 @@ interface SiteDetailPanelProps {
    *  paints from it on the same frame and lets the API fill in the rest. */
   initialDesign?: Design | null
   onClose?: () => void
-  onSimilar?: () => void
   /** A color row's find-near action: opens that color's neighborhood. */
   onFindColor?: (hex: string) => void
   /** Tab from ?tab= — deep links restore the exact tab, not just the site. */
@@ -63,7 +61,7 @@ interface SiteDetailPanelProps {
   onTabChange?: (tab: PanelTab) => void
 }
 
-export function SiteDetailPanel({ variant = 'desktop', sourceId, metadata, initialDesign, onClose, onSimilar, onFindColor, initialTab = 'preview', onTabChange }: SiteDetailPanelProps) {
+export function SiteDetailPanel({ variant = 'desktop', sourceId, metadata, initialDesign, onClose, onFindColor, initialTab = 'preview', onTabChange }: SiteDetailPanelProps) {
   const isMobile = variant === 'mobile'
   const [activeTab, setActiveTab] = useState<PanelTab>(initialTab)
   const [saveOpen, setSaveOpen] = useState(false)
@@ -203,16 +201,6 @@ export function SiteDetailPanel({ variant = 'desktop', sourceId, metadata, initi
           )}
         </div>
         <div className="flex items-center gap-0.5 shrink-0">
-          {SIMILAR_ENABLED && onSimilar && (
-            <button
-              onClick={onSimilar}
-              aria-label="Show similar sites"
-              title="Show similar sites"
-              className="w-8 h-8 flex items-center justify-center rounded-[4px] text-ink-3 hover:text-ink hover:bg-muted transition-colors"
-            >
-              <SquaresFour className="w-4 h-4" weight="bold" />
-            </button>
-          )}
           <div ref={saveRef} className="relative">
             <button
               onClick={() => setSaveOpen(v => !v)}
@@ -223,8 +211,17 @@ export function SiteDetailPanel({ variant = 'desktop', sourceId, metadata, initi
             >
               <BookmarkSimple className="w-4 h-4" weight={Object.values(collections).some(ids => ids.includes(sourceId)) ? 'fill' : 'bold'} />
             </button>
-            {saveOpen && (
-              <div className="absolute right-0 top-[calc(100%+6px)] z-50 w-[220px] rounded-[10px] border border-edge-strong bg-card shadow-[0_12px_32px_-8px_rgba(0,0,0,0.28)] p-1.5">
+            <AnimatePresence>
+              {saveOpen && (
+                <motion.div
+                  key="save-popover"
+                  initial={{ opacity: 0, scale: 0.96, y: -4 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.98, y: -2, transition: POP_OUT }}
+                  transition={POP_IN}
+                  style={{ transformOrigin: 'top right' }}
+                  className="absolute right-0 top-[calc(100%+6px)] z-50 w-[220px] rounded-[10px] border border-edge-strong bg-card shadow-[0_12px_32px_-8px_rgba(0,0,0,0.28)] p-1.5"
+                >
                 {Object.keys(collections).length === 0 && (
                   <p className="px-2 py-1.5 text-meta text-ink-4">No sets yet — name one below.</p>
                 )}
@@ -273,8 +270,9 @@ export function SiteDetailPanel({ variant = 'desktop', sourceId, metadata, initi
                     Add
                   </button>
                 </div>
-              </div>
-            )}
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
           <span aria-hidden="true" className="panel-head-divider w-px h-4 bg-edge mx-0.5" />
           {onClose && (

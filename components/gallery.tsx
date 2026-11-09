@@ -22,7 +22,7 @@ import { useSoundsContext } from '@/contexts/sounds-context'
 import { BrowsePanel } from '@/components/browse-panel'
 import { Brand } from '@/components/brand'
 import { SiteLinks } from '@/components/site-links'
-import { EASE, DUR } from '@/lib/motion'
+import { EASE, DUR, POP_IN, POP_OUT } from '@/lib/motion'
 import Link from 'next/link'
 import { useIsNarrow, useIsPhone } from '@/lib/use-is-narrow'
 import { useUrlParams } from '@/lib/use-url-params'
@@ -911,7 +911,6 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
         kind: selectedDesign.kind,
       } : undefined}
       onClose={() => selectDesign(null)}
-      onSimilar={() => updateParams(p => { if (selectedId) p.set('similarTo', selectedId) })}
       onFindColor={handleColorClick}
       initialTab={panelTab}
       onTabChange={tab => updateParams(p => {
@@ -1050,11 +1049,18 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
               >
                 <DotsThree className="w-4 h-4" weight="bold" />
               </button>
-              {moreOpen && (
-                <div
-                  role="menu"
-                  className="absolute right-0 top-[calc(100%+6px)] z-[60] w-[208px] rounded-[10px] border border-edge-strong bg-card p-1 shadow-[0_12px_32px_-8px_rgba(0,0,0,0.28)]"
-                >
+              <AnimatePresence>
+                {moreOpen && (
+                  <motion.div
+                    key="more-menu"
+                    role="menu"
+                    initial={{ opacity: 0, scale: 0.96, y: -4 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.98, y: -2, transition: POP_OUT }}
+                    transition={POP_IN}
+                    style={{ transformOrigin: 'top right' }}
+                    className="absolute right-0 top-[calc(100%+6px)] z-[60] w-[208px] rounded-[10px] border border-edge-strong bg-card p-1 shadow-[0_12px_32px_-8px_rgba(0,0,0,0.28)]"
+                  >
                   <button
                     role="menuitem"
                     onClick={() => { setMoreOpen(false); setDigestOpen(true) }}
@@ -1086,27 +1092,39 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
                       : <SpeakerSlash className="w-4 h-4" weight="regular" />}
                     <span>{sounds.enabled ? 'Mute sounds' : 'Enable sounds'}</span>
                   </button>
-                </div>
-              )}
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           </div>
         </div>
       </header>
 
-      {digestOpen && (
-        <div ref={digestRef} className="fixed z-[60] top-14 right-4 left-4 sm:left-auto sm:w-[320px] rounded-[10px] border border-edge-strong bg-card shadow-[0_12px_32px_-8px_rgba(0,0,0,0.28)] p-1">
-          <div className="flex items-center justify-end pl-3 pr-1 py-1">
-            <button
-              onClick={() => setDigestOpen(false)}
-              aria-label="Close digest signup"
-              className="w-7 h-7 flex items-center justify-center rounded-[4px] text-ink-4 hover:text-ink hover:bg-muted transition-colors"
-            >
-              <X className="w-3.5 h-3.5" weight="bold" />
-            </button>
-          </div>
-          <TasteSignup />
-        </div>
-      )}
+      <AnimatePresence>
+        {digestOpen && (
+          <motion.div
+            key="digest-popover"
+            ref={digestRef}
+            initial={{ opacity: 0, scale: 0.96, y: -6 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.98, y: -4, transition: POP_OUT }}
+            transition={POP_IN}
+            style={{ transformOrigin: 'top right' }}
+            className="fixed z-[60] top-14 right-4 left-4 sm:left-auto sm:w-[320px] rounded-[10px] border border-edge-strong bg-card shadow-[0_12px_32px_-8px_rgba(0,0,0,0.28)] p-1"
+          >
+            <div className="flex items-center justify-end pl-3 pr-1 py-1">
+              <button
+                onClick={() => setDigestOpen(false)}
+                aria-label="Close digest signup"
+                className="w-7 h-7 flex items-center justify-center rounded-[4px] text-ink-4 hover:text-ink hover:bg-muted transition-colors"
+              >
+                <X className="w-3.5 h-3.5" weight="bold" />
+              </button>
+            </div>
+            <TasteSignup />
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {view === 'index' ? (
         /* The overview owns the whole width. It repeats what the sidebar and
