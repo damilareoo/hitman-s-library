@@ -91,7 +91,7 @@ export async function GET(req: NextRequest) {
       const { error } = await resend!.emails.send({
         from,
         to: sub.email as string,
-        subject: `New sites you'll like (${sites.length})`,
+        subject: 'New in the library this week',
         html: digestHtml(name, sites, unsubUrl),
         text: digestText(name, sites, unsubUrl),
         // List-unsubscribe + one-click: inbox providers weigh these heavily,

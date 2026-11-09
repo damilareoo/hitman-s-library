@@ -85,6 +85,13 @@ export function releaseAuthors(release: ChangelogRelease): Author[] {
 // only case where the question is actually being asked.
 const changelog: ChangelogRelease[] = [
   {
+    date: '2026-11-09',
+    title: 'The Weekly, Framed',
+    items: [
+      { type: 'improved', author: 'damilare', text: 'The weekly digest email now reads like a directory\u2019s mail — a \u201cNew in the library this week\u201d headline whose featuring line links the picks by name, featured captures framed in browser chrome and washed with their own palette, the rest as index rows wearing each site\u2019s favicon, a full-width \u201cOpen the library\u201d pill, and a proper sign-off' },
+    ],
+  },
+  {
     date: '2026-11-08',
     title: 'Snap, Don\u2019t Fade',
     items: [
