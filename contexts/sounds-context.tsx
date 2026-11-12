@@ -33,6 +33,9 @@ export function SoundsProvider({ children }: { children: React.ReactNode }) {
 
   function ac(): AudioContext | null {
     if (typeof window === 'undefined') return null
+    // Browsers only let audio start after the visitor has clicked or typed on
+    // the page; before that a hover sound would just log a warning. Stay quiet.
+    if (navigator.userActivation && !navigator.userActivation.hasBeenActive) return null
     try {
       if (!ctxRef.current) ctxRef.current = new AudioContext()
       if (ctxRef.current.state === 'suspended') ctxRef.current.resume()

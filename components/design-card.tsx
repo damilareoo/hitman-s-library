@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
 import { motion } from 'motion/react'
 import { ArrowUpRight, Heart } from '@phosphor-icons/react'
@@ -50,7 +50,11 @@ interface DesignCardProps {
 
 export function DesignCard({ design, index, isSelected, onClick, onHover, onTagClick, hasAnimated, isFavorite = false, onToggleFavorite, onColorClick }: DesignCardProps) {
   const [imgSrc, setImgSrc] = useState<string | null>(design.thumbnail_url ?? null)
-  const [imgStatus, setImgStatus] = useState<'loading' | 'loaded' | 'error'>('loading')
+  // 'ssr': rendered on the server, shown as it streams in — never hidden
+  // behind JavaScript. Only an image still loading once the page is
+  // interactive switches to 'loading' and fades in.
+  const [imgStatus, setImgStatus] = useState<'ssr' | 'loading' | 'loaded' | 'error'>('ssr')
+  const imgRef = useRef<HTMLImageElement>(null)
   // Hover clip (Phase 3): the <video> mounts only while hovered, so no clip
   // bytes load on first paint — the URL rides in the card data (~100 bytes)
   // and the network starts on hover. Honors reduced-motion by staying still.
@@ -67,6 +71,15 @@ export function DesignCard({ design, index, isSelected, onClick, onHover, onTagC
   // on the internet. Serve them as-is instead.
   const isOptimizable = Boolean(imgSrc && imgSrc.includes('.public.blob.vercel-storage.com'))
 
+  useEffect(() => {
+    const img = imgRef.current
+    if (!img) return
+    if (img.complete) img.naturalWidth > 0 ? setImgStatus('loaded') : handleImgError()
+    else setImgStatus(s => (s === 'ssr' ? 'loading' : s))
+    // Mount only: later loads report through onLoad.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   function handleImgError() {
     if (design.fallback_thumbnail && imgSrc !== design.fallback_thumbnail) {
       setImgSrc(design.fallback_thumbnail)
@@ -82,17 +95,21 @@ export function DesignCard({ design, index, isSelected, onClick, onHover, onTagC
       // only ever new because the result set changed, so it crossfades in on
       // its own rather than queueing behind 31 others.
       variants={cardVariants}
-      initial={hasAnimated ? { opacity: 0, y: 6 } : 'hidden'}
+      // First paint enters with the CSS .card-enter animation, which runs from
+      // the server HTML; waiting for JavaScript held the grid invisible for
+      // seconds on a phone. Later cards crossfade in through motion.
+      initial={hasAnimated ? { opacity: 0, y: 6 } : false}
       animate={hasAnimated ? { opacity: 1, y: 0 } : 'show'}
       transition={hasAnimated ? { duration: DUR.color, ease: EASE } : undefined}
       exit={{ opacity: 0, transition: { duration: DUR.exit } }}
       onHoverStart={() => { onHover(); if (design.motion_clip_url) setPlaying(true) }}
       onHoverEnd={() => setPlaying(false)}
-      style={{ contain: 'layout paint style' }}
+      style={{ contain: 'layout paint style', ...(hasAnimated ? null : { ['--i' as string]: Math.min(index, 31) }) }}
       // :active propagates from the title button, so pressing anywhere in the
       // card lights the border. A card is too large to scale — that reads as
       // cheap — so the press registers in the card's own language instead.
       className={
+        (hasAnimated ? '' : 'card-enter ') +
         'group relative flex flex-col rounded-[4px] overflow-hidden border cursor-pointer ' +
         'transition-[background-color,border-color] duration-[var(--dur-1)] ease-[var(--ease-hover)] ' +
         (isSelected
@@ -102,11 +119,12 @@ export function DesignCard({ design, index, isSelected, onClick, onHover, onTagC
     >
       {/* Screenshot */}
       <div className="relative overflow-hidden bg-muted aspect-[16/10]">
-        {imgStatus === 'loading' && (
+        {(imgStatus === 'loading' || imgStatus === 'ssr') && (
           <div className="absolute inset-0 bg-muted animate-pulse" />
         )}
         {imgSrc && (
           <Image
+            ref={imgRef}
             src={imgSrc}
             alt=""
             fill
@@ -114,10 +132,11 @@ export function DesignCard({ design, index, isSelected, onClick, onHover, onTagC
             // the optimizer never serves wider than 640. The old breakpoints
             // (up to 25vw) asked for 3840px files for these slots.
             sizes="(max-width: 640px) 100vw, 320px"
-            // Only the first row preloads. Everything else is explicitly
-            // lazy — the default eager would fetch a dozen full screenshots
-            // before the visitor scrolls.
-            priority={index < 6}
+            // Only the first two preload: on a phone that is the whole first
+            // screen, and six full-size preloads (some from other sites,
+            // unoptimised) starved the page of bandwidth. The rest of the
+            // first rows load eagerly; everything below is lazy.
+            priority={index < 2}
             loading={index < 6 ? undefined : 'lazy'}
             onLoad={e => {
               const img = e.currentTarget as HTMLImageElement
@@ -125,7 +144,7 @@ export function DesignCard({ design, index, isSelected, onClick, onHover, onTagC
             }}
             onError={handleImgError}
             unoptimized={!isOptimizable}
-            className={"hover-zoom object-cover object-top transition-[opacity,transform] duration-[450ms] ease-[var(--ease-sig)] " + (imgStatus === 'loaded' ? 'opacity-100' : 'opacity-0')}
+            className={"hover-zoom object-cover object-top transition-[opacity,transform] duration-[450ms] ease-[var(--ease-sig)] " + (imgStatus === 'loading' ? 'opacity-0' : 'opacity-100')}
           />
         )}
         {imgStatus === 'error' && (

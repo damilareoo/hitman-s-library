@@ -24,6 +24,7 @@ export { DOQueueHandler, DOShardedTagCache, BucketCachePurge } from './.open-nex
 import { matchFastPath } from './lib/edge/fast-path'
 import { getSiteDetail } from './lib/read/site-detail'
 import { queryDesigns } from './lib/design-queries'
+import { securityHeaders, withSecurityHeaders } from './lib/edge/security-headers'
 
 interface Ctx {
   waitUntil(promise: Promise<unknown>): void
@@ -33,6 +34,7 @@ interface Env {
   CF_VERSION_METADATA?: { id?: string }
   DATABASE_URL?: string
   DEV_BYPASS?: string
+  CSP_ENFORCE?: string
   [key: string]: unknown
 }
 
@@ -115,35 +117,52 @@ async function origin(request: Request, env: Env, ctx: Ctx, url: URL): Promise<R
   }
 }
 
+/** The host that serves live previews for the site at `url` ('' when there is none). */
+function previewOriginFor(url: URL): string {
+  const host = url.hostname
+  if (host === 'localhost') return `${url.protocol}//127.0.0.1${url.port ? `:${url.port}` : ''}`
+  const apex = host.replace(/^www\./, '')
+  return apex === 'hitmanslibrary.xyz' ? `${url.protocol}//preview.${apex}` : ''
+}
+
 export default {
   async fetch(request: Request, env: Env, ctx: Ctx): Promise<Response> {
     const url = new URL(request.url)
-    const k = kind(request, url)
-    if (!k) return origin(request, env, ctx, url)
-
-    const cache = (caches as unknown as { default: Cache }).default
-    const key = cacheKey(url, env.CF_VERSION_METADATA?.id ?? 'dev')
-
-    let hit: Response | undefined
-    try { hit = await cache.match(key) } catch { hit = undefined }
-
-    if (hit) {
-      const age = (Date.now() - Number(hit.headers.get(STORED_AT) ?? 0)) / 1000
-      if (age <= FRESH_SECONDS[k]) return forBrowser(hit, 'HIT')
-      // Stale: answer now, refresh once in the background.
-      ctx.waitUntil((async () => {
-        try {
-          const fresh: Response = await origin(new Request(request), env, ctx, url)
-          await store(cache, key, fresh)
-        } catch { /* keep serving the stale copy */ }
-      })())
-      return forBrowser(hit, 'STALE')
-    }
-
-    const res: Response = await origin(request, env, ctx, url)
-    if (res.status === 200 && !res.headers.has('set-cookie')) {
-      ctx.waitUntil(store(cache, key, res.clone()).catch(() => {}))
-    }
-    return forBrowser(res, 'MISS')
+    const res = await handle(request, env, ctx, url)
+    return withSecurityHeaders(res, securityHeaders({
+      enforceCsp: env.CSP_ENFORCE === '1',
+      previewOrigin: previewOriginFor(url),
+      host: url.host,
+    }))
   },
+}
+
+async function handle(request: Request, env: Env, ctx: Ctx, url: URL): Promise<Response> {
+  const k = kind(request, url)
+  if (!k) return origin(request, env, ctx, url)
+
+  const cache = (caches as unknown as { default: Cache }).default
+  const key = cacheKey(url, env.CF_VERSION_METADATA?.id ?? 'dev')
+
+  let hit: Response | undefined
+  try { hit = await cache.match(key) } catch { hit = undefined }
+
+  if (hit) {
+    const age = (Date.now() - Number(hit.headers.get(STORED_AT) ?? 0)) / 1000
+    if (age <= FRESH_SECONDS[k]) return forBrowser(hit, 'HIT')
+    // Stale: answer now, refresh once in the background.
+    ctx.waitUntil((async () => {
+      try {
+        const fresh: Response = await origin(new Request(request), env, ctx, url)
+        await store(cache, key, fresh)
+      } catch { /* keep serving the stale copy */ }
+    })())
+    return forBrowser(hit, 'STALE')
+  }
+
+  const res: Response = await origin(request, env, ctx, url)
+  if (res.status === 200 && !res.headers.has('set-cookie')) {
+    ctx.waitUntil(store(cache, key, res.clone()).catch(() => {}))
+  }
+  return forBrowser(res, 'MISS')
 }

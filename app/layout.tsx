@@ -1,7 +1,5 @@
 import type React from "react"
 import type { Metadata, Viewport } from "next"
-import { GeistSans } from "geist/font/sans"
-import { GeistMono } from "geist/font/mono"
 import { MotionProvider } from "@/components/motion-provider"
 import { SmoothScroll } from "@/components/smooth-scroll"
 import { ThemeProvider } from '@/components/theme-provider'
@@ -125,7 +123,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className={`${GeistSans.variable} ${GeistMono.variable}`} suppressHydrationWarning data-scroll-behavior="smooth">
+    <html lang="en" suppressHydrationWarning data-scroll-behavior="smooth">
       <head>
         <script
           dangerouslySetInnerHTML={{

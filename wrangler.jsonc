@@ -28,6 +28,8 @@
 		"binding": "CF_VERSION_METADATA"
 	},
 	"vars": {
+		// 1 enforces the Content-Security-Policy; anything else sends it report-only.
+		"CSP_ENFORCE": "1",
 		"NEXT_PUBLIC_POSTHOG_HOST": "https://us.i.posthog.com"
 	}
 }

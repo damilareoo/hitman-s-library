@@ -1361,7 +1361,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
             <motion.div
               className={`grid ${cardColumns} gap-4 xl:gap-5`}
               variants={gridVariants}
-              initial={hasAnimated.current ? false : 'hidden'}
+              initial={false}
               animate="show"
               aria-busy={isRefetching || similarLoading}
               style={minGridHeight ? { minHeight: minGridHeight } : undefined}
