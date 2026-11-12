@@ -86,6 +86,15 @@ export function releaseAuthors(release: ChangelogRelease): Author[] {
 const changelog: ChangelogRelease[] = [
   {
     date: '2026-11-12',
+    title: 'Quicker on a Slow Phone',
+    items: [
+      { type: 'improved', author: 'damilare', text: 'The grid now shows up the moment the page arrives instead of waiting for scripts, so the first sites appear in about a second and a half on a slow phone instead of six' },
+      { type: 'improved', author: 'damilare', text: 'Opening a site and paging through the grid are answered without starting the whole app, and the type loads at less than half its old size' },
+      { type: 'improved', author: 'damilare', text: 'Sign-ups, submissions and the admin door are now rate limited, and every page is sent with strict security headers' },
+    ],
+  },
+  {
+    date: '2026-11-12',
     title: 'Faster to Open, Nothing Broken',
     items: [
       { type: 'improved', author: 'damilare', text: 'Pages and site details now come straight from the edge on repeat visits instead of being rebuilt each time, so the library opens faster and stops timing out under load' },

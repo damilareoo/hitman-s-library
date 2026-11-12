@@ -398,6 +398,8 @@ Touch targets are expanded with pseudo-element overlays rather than padding, so 
 - **Storage:** Vercel Blob (screenshots)
 - **Capture:** sites behind bot walls are captured by real Chrome on your own machine (`scripts/capture-walled.ts`) and uploaded
 - **Analytics:** PostHog, loaded in the browser only (`lib/analytics.ts`)
+- **Fast path:** `/api/design/:id` and `/api/design/filter-advanced` are answered in `cloudflare-worker.ts` straight from Neon, without loading Next. Both paths share `lib/read/site-detail.ts` and `lib/design-queries.ts`, so the JSON is identical
+- **Security headers:** `lib/edge/security-headers.ts` adds HSTS, nosniff, referrer and permissions policies and an enforced CSP (`CSP_ENFORCE` in `wrangler.jsonc`). The preview host gets transport headers only
 - **Package manager:** bun
 
 ---
@@ -415,6 +417,17 @@ Touch targets are expanded with pseudo-element overlays rather than padding, so 
 | `NEXT_PUBLIC_PREVIEW_ORIGIN` | Optional. Host that serves the live preview. Derived from the current hostname when unset |
 
 ---
+
+## Checks
+
+```bash
+bun run check                                # types, tests, write-endpoint guards and raw-SQL check
+node scripts/check-bundle.mjs                # Worker size budget and forbidden code (after a build)
+node scripts/audit-errors.mjs <base-url>     # console errors, CSP violations, LCP/CLS on a throttled phone
+node scripts/compare-fast-path.mjs <dev-url> # fast path and Next return identical JSON
+node scripts/measure-cpu.mjs                 # real Worker CPU per route on production
+node scripts/page-weight.mjs                 # HTML weight per page
+```
 
 ## Development
 
