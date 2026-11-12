@@ -28,13 +28,14 @@ function contentSecurityPolicy(previewOrigin: string): string {
   return [
     "default-src 'self'",
     // Next's App Router ships its payload as inline scripts.
-    "script-src 'self' 'unsafe-inline' https://us-assets.i.posthog.com",
+    // Cloudflare injects its Web Analytics beacon into every page at the edge.
+    "script-src 'self' 'unsafe-inline' https://us-assets.i.posthog.com https://static.cloudflareinsights.com",
     `style-src 'self' 'unsafe-inline' ${FONT_CSS}`,
     `font-src 'self' data: ${FONT_FILES}`,
     // Captures, favicons and thumbnails come from many hosts, always over https.
     "img-src 'self' data: blob: https:",
     "media-src 'self' blob: https:",
-    `connect-src 'self' ${POSTHOG}`,
+    `connect-src 'self' ${POSTHOG} https://cloudflareinsights.com`,
     `frame-src 'self' ${previewOrigin}`.trim(),
     "frame-ancestors 'none'",
     "worker-src 'self' blob:",

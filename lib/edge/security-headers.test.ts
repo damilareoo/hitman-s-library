@@ -34,6 +34,11 @@ describe('securityHeaders on the main site', () => {
     expect(p['X-Frame-Options']).toBeUndefined()
     expect(p['Content-Security-Policy']).toBe("frame-ancestors 'self'")
   })
+  test("Cloudflare's own Web Analytics beacon may load and report", () => {
+    const csp = h['Content-Security-Policy-Report-Only']
+    expect(csp).toMatch(/script-src [^;]*https:\/\/static\.cloudflareinsights\.com/)
+    expect(csp).toMatch(/connect-src [^;]*https:\/\/cloudflareinsights\.com/)
+  })
   test('enforcing moves the same policy to the real header', () => {
     const e = securityHeaders({ enforceCsp: true, previewOrigin: PREVIEW, host: 'hitmanslibrary.xyz' })
     expect(e['Content-Security-Policy']).toBe(h['Content-Security-Policy-Report-Only'])

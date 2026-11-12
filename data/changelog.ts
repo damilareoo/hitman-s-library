@@ -91,6 +91,7 @@ const changelog: ChangelogRelease[] = [
       { type: 'improved', author: 'damilare', text: 'The first sites now appear in about a second on slow phones, not six' },
       { type: 'improved', author: 'damilare', text: 'Opening sites and scrolling the grid are faster, and the typeface is half the size' },
       { type: 'improved', author: 'damilare', text: 'Sign-ups and submissions are protected from abuse, and every page ships strict security headers' },
+      { type: 'fixed', author: 'damilare', text: 'Cloudflare visitor analytics load again under the new security rules' },
     ],
   },
   {
