@@ -6,7 +6,7 @@
 // the same union on every device. Later changes sync after a short pause.
 'use client'
 
-import { useSyncExternalStore } from 'react'
+import { useEffect, useSyncExternalStore } from 'react'
 import { COLLECTIONS_EVENT } from '@/lib/collections'
 
 export const FAVORITES_EVENT = 'hl:favorites-changed'
@@ -15,11 +15,13 @@ export const SIGN_IN_EVENT = 'hl:sign-in'
 export interface AccountUser { email: string; name: string | null; avatar: string | null; memberNo: number }
 type State = { status: 'loading' | 'signed-out' | 'signed-in'; user: AccountUser | null }
 
-let state: State = { status: 'loading', user: null }
+const LOADING: State = { status: 'loading', user: null }
+let state: State = LOADING
 const listeners = new Set<() => void>()
 const set = (next: State) => { state = next; listeners.forEach(l => l()) }
 
-function readLocal(): { favorite_ids: number[]; collections: Record<string, number[]> } {
+type Saved = { favorite_ids: number[]; collections: Record<string, number[]> }
+function readLocal(): Saved {
   const parse = (key: string, fallback: unknown) => {
     try { const raw = localStorage.getItem(key); return raw ? JSON.parse(raw) : fallback } catch { return fallback }
   }
@@ -27,7 +29,7 @@ function readLocal(): { favorite_ids: number[]; collections: Record<string, numb
 }
 
 let adopting = false
-function adopt(data: { favorite_ids: number[]; collections: Record<string, number[]> }) {
+function adopt(data: Saved) {
   adopting = true
   try {
     localStorage.setItem('hl:favorites', JSON.stringify(data.favorite_ids))
@@ -38,11 +40,32 @@ function adopt(data: { favorite_ids: number[]; collections: Record<string, numbe
   adopting = false
 }
 
+// Bumped on sign-out and delete, so a sync already in flight can't write back.
+let generation = 0
+let lastSent = ''
+const mergedKey = () => `hl:merged:${state.user?.memberNo ?? ''}`
+
 async function sync(): Promise<void> {
+  if (state.status !== 'signed-in') return
+  const data = readLocal()
+  const body = JSON.stringify(data)
+  if (body === lastSent) return
+  // The first sync on this device merges with the account; after that this
+  // device's state is the truth, so removals stick.
+  let mode: 'merge' | 'replace' = 'replace'
+  try { mode = localStorage.getItem(mergedKey()) ? 'replace' : 'merge' } catch { /* storage unavailable */ }
+  const gen = generation
   const res = await fetch('/api/me/sync', {
-    method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(readLocal()),
+    method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ data, mode }),
   }).catch(() => null)
-  if (res?.ok) adopt((await res.json()).data)
+  if (gen !== generation) return
+  if (res?.status === 401) return set({ status: 'signed-out', user: null })
+  if (!res?.ok) return
+  const merged: Saved = (await res.json()).data
+  if (gen !== generation) return
+  try { localStorage.setItem(mergedKey(), '1') } catch { /* storage unavailable */ }
+  lastSent = JSON.stringify(merged)
+  if (mode === 'merge') adopt(merged)
 }
 
 let syncTimer: ReturnType<typeof setTimeout> | undefined
@@ -52,43 +75,66 @@ function scheduleSync() {
   syncTimer = setTimeout(() => { void sync() }, 1500)
 }
 
+const signedInHint = () => /(?:^|;\s*)hl_signed_in=1/.test(document.cookie)
+
+async function load() {
+  // Signed-out visitors never make a request: the hint cookie says whether to ask.
+  if (!signedInHint()) return set({ status: 'signed-out', user: null })
+  const body = await fetch('/api/me', { credentials: 'same-origin' }).then(r => r.json()).catch(() => ({ user: null }))
+  if (!body.user) return set({ status: 'signed-out', user: null })
+  set({ status: 'signed-in', user: body.user })
+  await sync()
+}
+
 let started = false
 function start() {
   if (started || typeof window === 'undefined') return
   started = true
-  fetch('/api/me', { credentials: 'same-origin' })
-    .then(r => r.json())
-    .then(async (body: { user: AccountUser | null }) => {
-      if (!body.user) return set({ status: 'signed-out', user: null })
-      set({ status: 'signed-in', user: body.user })
-      await sync()
-    })
-    .catch(() => set({ status: 'signed-out', user: null }))
+  void load()
   window.addEventListener(FAVORITES_EVENT, scheduleSync)
   window.addEventListener(COLLECTIONS_EVENT, scheduleSync)
+  // Back/forward cache and other tabs: re-check when the page comes back.
+  window.addEventListener('pageshow', e => { if ((e as PageTransitionEvent).persisted) void load() })
 }
 
 export function useAccount(): State {
-  start()
+  useEffect(start, [])
   return useSyncExternalStore(
     l => { listeners.add(l); return () => listeners.delete(l) },
     () => state,
-    () => state,
+    () => LOADING,
   )
 }
 
-/** Open the sign-in sheet. `next` is where to land afterwards. */
-export function openSignIn(reason?: string) {
-  window.dispatchEvent(new CustomEvent(SIGN_IN_EVENT, { detail: { reason } }))
+/**
+ * Open the sign-in sheet. 'join' frames it for someone new (from a save);
+ * 'signin' for someone returning (from the header). Same flow either way —
+ * an email link or Google signs in or creates the account.
+ */
+export function openSignIn(mode: 'signin' | 'join' = 'signin') {
+  window.dispatchEvent(new CustomEvent(SIGN_IN_EVENT, { detail: { mode } }))
+}
+
+/** Forget this account's saves on this device: they live in the account now. */
+function forgetLocal() {
+  generation++
+  clearTimeout(syncTimer)
+  lastSent = ''
+  adopt({ favorite_ids: [], collections: {} })
 }
 
 export async function signOut(): Promise<void> {
+  clearTimeout(syncTimer)
+  await sync() // the last change reaches the account first
   await fetch('/api/auth/sign-out', { method: 'POST' }).catch(() => null)
+  forgetLocal()
   set({ status: 'signed-out', user: null })
 }
 
 export async function deleteAccount(): Promise<boolean> {
   const res = await fetch('/api/me', { method: 'DELETE' }).catch(() => null)
-  if (res?.ok) set({ status: 'signed-out', user: null })
-  return Boolean(res?.ok)
+  if (!res?.ok) return false
+  forgetLocal()
+  set({ status: 'signed-out', user: null })
+  return true
 }

@@ -17,6 +17,8 @@ export function AccountButton() {
   const { status, user } = useAccount()
   const [open, setOpen] = useState(false)
   const [confirming, setConfirming] = useState(false)
+  const [armedAt, setArmedAt] = useState(0)
+  const [failed, setFailed] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -45,7 +47,7 @@ export function AccountButton() {
     <div ref={ref} className="relative mr-1">
       <button
         onClick={() => { setOpen(v => !v); setConfirming(false) }}
-        aria-expanded={open} aria-label="Your account"
+        aria-expanded={open} aria-haspopup="menu" aria-label="Your account"
         className="w-7 h-7 rounded-full grid place-items-center text-[12px] font-[640] bg-foreground text-background hover:opacity-90 transition-opacity"
       >
         {initial}
@@ -67,11 +69,19 @@ export function AccountButton() {
             </div>
             <div className="border-t border-edge">
               {confirming ? (
-                <button className={item + ' text-[#c8382f] dark:text-[#ff8a80] hover:text-[#c8382f]'} onClick={async () => { if (await deleteAccount()) setOpen(false) }}>
-                  Delete for good — tap again <Trash className="w-3.5 h-3.5" weight="bold" />
+                <button
+                  className={item + ' text-[#c8382f] dark:text-[#ff8a80] hover:text-[#c8382f]'}
+                  onClick={async () => {
+                    // A double-click must never delete: the confirm only arms after a beat.
+                    if (Date.now() - armedAt < 600) return
+                    if (await deleteAccount()) setOpen(false)
+                    else setFailed(true)
+                  }}
+                >
+                  {failed ? "Couldn't delete. Try again" : 'Delete for good — tap again'} <Trash className="w-3.5 h-3.5" weight="bold" />
                 </button>
               ) : (
-                <button className={item} onClick={() => setConfirming(true)}>Delete account <Trash className="w-3.5 h-3.5" weight="bold" /></button>
+                <button className={item} onClick={() => { setConfirming(true); setArmedAt(Date.now()); setFailed(false) }}>Delete account <Trash className="w-3.5 h-3.5" weight="bold" /></button>
               )}
             </div>
           </motion.div>

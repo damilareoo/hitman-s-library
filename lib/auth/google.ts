@@ -6,11 +6,18 @@
 import { Google, decodeIdToken, generateCodeVerifier, generateState } from 'arctic'
 import type { NeonQueryFunction } from '@neondatabase/serverless'
 
-export const OAUTH_STATE_COOKIE = 'hl_oauth_state'
-export const OAUTH_VERIFIER_COOKIE = 'hl_oauth_verifier'
-export const OAUTH_NEXT_COOKIE = 'hl_oauth_next'
+// __Host-: a subdomain (the preview host runs other people's scripts) cannot set these.
+export const OAUTH_STATE_COOKIE = '__Host-hl_oauth_state'
+export const OAUTH_VERIFIER_COOKIE = '__Host-hl_oauth_verifier'
+export const OAUTH_NEXT_COOKIE = '__Host-hl_oauth_next'
 
-export interface GoogleProfile { sub: string; email: string; name: string | null; avatar: string | null }
+/**
+ * `authoritative`: Google owns the address (gmail.com, or a Workspace domain
+ * via the hd claim). For other addresses email_verified can be stale — someone
+ * once verified alice@company.com and has since left — so those never take
+ * over an existing account automatically.
+ */
+export interface GoogleProfile { sub: string; email: string; name: string | null; avatar: string | null; authoritative: boolean }
 
 export function googleConfigured(): boolean {
   return Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET)
@@ -34,17 +41,24 @@ export async function finishGoogle(origin: string, code: string, verifier: strin
 
 export function profileFromClaims(claims: Record<string, unknown>): GoogleProfile | null {
   if (typeof claims.sub !== 'string' || typeof claims.email !== 'string' || claims.email_verified !== true) return null
+  const email = claims.email.toLowerCase()
   return {
     sub: claims.sub,
-    email: claims.email.toLowerCase(),
+    email,
     name: typeof claims.name === 'string' ? claims.name : null,
     avatar: typeof claims.picture === 'string' ? claims.picture : null,
+    authoritative: email.endsWith('@gmail.com') || (typeof claims.hd === 'string' && claims.hd.length > 0),
   }
 }
 
+/** The account id, or 'needs-email-link' when the email belongs to an account Google can't vouch for. */
 export async function linkOrCreateUser(p: GoogleProfile, sql: NeonQueryFunction<false, false>): Promise<string> {
   const byGoogle = await sql`SELECT id FROM users WHERE google_sub = ${p.sub}`
   if (byGoogle.length) return (byGoogle[0] as { id: string }).id
+  if (!p.authoritative) {
+    const byEmail = await sql`SELECT id FROM users WHERE email = ${p.email}`
+    if (byEmail.length) return 'needs-email-link'
+  }
   // Same verified email already has an account: attach Google to it.
   const linked = await sql`
     UPDATE users SET google_sub = ${p.sub}, name = COALESCE(name, ${p.name}), avatar_url = COALESCE(avatar_url, ${p.avatar})
@@ -52,9 +66,11 @@ export async function linkOrCreateUser(p: GoogleProfile, sql: NeonQueryFunction<
     RETURNING id
   `
   if (linked.length) return (linked[0] as { id: string }).id
+  // The email may already belong to a different Google account: say so, don't crash.
   const created = await sql`
     INSERT INTO users (email, name, avatar_url, google_sub) VALUES (${p.email}, ${p.name}, ${p.avatar}, ${p.sub})
+    ON CONFLICT (email) DO NOTHING
     RETURNING id
   `
-  return (created[0] as { id: string }).id
+  return created.length ? (created[0] as { id: string }).id : 'needs-email-link'
 }

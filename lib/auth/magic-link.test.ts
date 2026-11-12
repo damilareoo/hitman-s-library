@@ -5,7 +5,7 @@ import { hashToken } from './session'
 describe('safeNext', () => {
   test('same-origin paths pass; anything that could leave the site becomes /', () => {
     expect(safeNext('/?site=798')).toBe('/?site=798')
-    for (const bad of ['//evil.com', 'https://evil.com', '/\\evil.com', 'javascript:alert(1)', '', undefined]) expect(safeNext(bad as any)).toBe('/')
+    for (const bad of ['//evil.com', 'https://evil.com', '/\\evil.com', 'javascript:alert(1)', '', undefined, '/\t/evil.com', '/\n/evil.com', '/\r\n\\evil.com', '/%09/evil.com'.replace('%09', '\t')]) expect(safeNext(bad as any)).toBe('/')
   })
 })
 
@@ -22,6 +22,8 @@ function fakeDeps(now = 0) {
   const sent: { to: string; url: string }[] = []
   const sql: any = (strings: TemplateStringsArray, ...v: any[]) => {
     const q = strings.join('?').trim()
+    if (q.startsWith('DELETE FROM login_tokens')) { for (const [k, t] of tokens) if (t.email === v[0]) tokens.delete(k); return Promise.resolve([]) }
+    if (q.startsWith('SELECT id FROM users WHERE email')) { const u = users.get(v[0]); return Promise.resolve(u ? [{ id: u.id }] : []) }
     if (q.startsWith('INSERT INTO login_tokens')) { tokens.set(v[0], { id: v[0], email: v[1], next: v[2], expires_at: v[3], used_at: null }); return Promise.resolve([]) }
     if (q.startsWith('UPDATE login_tokens')) {
       const t = tokens.get(v[1]); if (!t || t.used_at || new Date(t.expires_at).getTime() <= v[2].getTime()) return Promise.resolve([])
@@ -79,6 +81,20 @@ describe('consumeLink', () => {
     const token = await linkFor(f)
     f.deps.now = () => 16 * 60_000
     expect(await consumeLink(token, f.deps)).toEqual({ error: 'expired' })
+  })
+  test('asking again retires the older link', async () => {
+    const f = fakeDeps()
+    await requestLink('a@b.co', '/', f.deps); await requestLink('a@b.co', '/', f.deps)
+    const first = new URL(f.sent[0].url).searchParams.get('token')!
+    expect(await consumeLink(first, f.deps)).toEqual({ error: 'invalid' })
+  })
+  test('a returning person signs into the same account', async () => {
+    const f = fakeDeps()
+    await requestLink('a@b.co', '/', f.deps); const t1 = new URL(f.sent[0].url).searchParams.get('token')!
+    const a = await consumeLink(t1, f.deps)
+    await requestLink('a@b.co', '/', f.deps); const t2 = new URL(f.sent[1].url).searchParams.get('token')!
+    const b = await consumeLink(t2, f.deps)
+    expect('userId' in a && 'userId' in b && a.userId === b.userId).toBe(true)
   })
   test('an unknown link is invalid', async () => {
     const f = fakeDeps()

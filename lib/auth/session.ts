@@ -6,7 +6,12 @@
 import type { NeonQueryFunction } from '@neondatabase/serverless'
 import { getSql } from '@/lib/db'
 
-export const SESSION_COOKIE = 'hl_session'
+// __Host-: only this exact host can set it; the preview subdomain, which runs
+// other people's scripts, cannot plant or overwrite a session.
+export const SESSION_COOKIE = '__Host-hl_session'
+// Readable by the page, holds no secret: it only tells the browser whether
+// asking /api/me is worth a request. Signed-out visitors never make one.
+export const HINT_COOKIE = 'hl_signed_in'
 const DAY = 86_400_000
 const LIFETIME = 30 * DAY
 const RENEW_UNDER = 15 * DAY
@@ -37,6 +42,8 @@ export async function hashToken(token: string): Promise<string> {
 export async function createSession(userId: string, deps: SessionDeps = defaultDeps()): Promise<{ token: string; expiresAt: Date }> {
   const token = generateToken()
   const expiresAt = new Date(deps.now() + LIFETIME)
+  // Sessions nobody presents again would otherwise live forever.
+  await deps.sql`DELETE FROM sessions WHERE user_id = ${userId} AND expires_at < ${new Date(deps.now())}`
   await deps.sql`INSERT INTO sessions (id, user_id, expires_at) VALUES (${await hashToken(token)}, ${userId}, ${expiresAt})`
   return { token, expiresAt }
 }
@@ -84,8 +91,20 @@ export function blankSessionCookie(): string {
   return `${SESSION_COOKIE}=; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=0`
 }
 
+export function hintCookie(expiresAt: Date): string {
+  return `${HINT_COOKIE}=1; Secure; SameSite=Lax; Path=/; Expires=${expiresAt.toUTCString()}`
+}
+
+export function blankHintCookie(): string {
+  return `${HINT_COOKIE}=; Secure; SameSite=Lax; Path=/; Max-Age=0`
+}
+
+/** Both cookies for a live session, or both cleared. */
+export const signedInCookies = (token: string, expiresAt: Date) => [sessionCookie(token, expiresAt), hintCookie(expiresAt)]
+export const signedOutCookies = () => [blankSessionCookie(), blankHintCookie()]
+
 /** The session token from a request's cookies, or ''. */
 export function readSessionToken(req: Request): string {
-  const m = /(?:^|;\s*)hl_session=([a-z2-7]+)/.exec(req.headers.get('cookie') ?? '')
+  const m = /(?:^|;\s*)__Host-hl_session=([a-z2-7]+)/.exec(req.headers.get('cookie') ?? '')
   return m ? m[1] : ''
 }

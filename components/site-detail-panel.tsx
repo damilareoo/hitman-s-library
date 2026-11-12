@@ -276,7 +276,7 @@ export function SiteDetailPanel({ variant = 'desktop', sourceId, metadata, initi
                 {account.status === 'signed-out' && (
                   // Saving works without an account; this only says how to keep it everywhere.
                   <button
-                    onClick={() => openSignIn()}
+                    onClick={() => openSignIn('join')}
                     className="mt-1.5 w-full text-left px-2 py-1.5 text-micro text-ink-3 hover:text-ink transition-colors"
                   >
                     Sign in to keep your sets on every device

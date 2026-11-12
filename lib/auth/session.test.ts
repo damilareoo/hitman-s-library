@@ -9,6 +9,7 @@ function fakeDb(now: number) {
   const sql: any = (strings: TemplateStringsArray, ...v: any[]) => {
     const q = strings.join('?')
     if (q.startsWith('INSERT INTO sessions')) { sessions.set(v[0], { id: v[0], user_id: v[1], expires_at: v[2] }); return Promise.resolve([]) }
+    if (q.startsWith('DELETE FROM sessions WHERE user_id')) { for (const [k, s] of sessions) if (s.user_id === v[0] && s.expires_at.getTime() < v[1].getTime()) sessions.delete(k); return Promise.resolve([]) }
     if (q.startsWith('DELETE FROM sessions')) { sessions.delete(v[0]); return Promise.resolve([]) }
     if (q.includes('FROM sessions')) {
       const s = sessions.get(v[0]); if (!s) return Promise.resolve([])

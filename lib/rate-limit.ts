@@ -51,6 +51,7 @@ export async function checkRateLimit(
   kind: string,
   limit: number,
   windowSeconds: number,
+  opts: { failClosed?: boolean } = {},
 ): Promise<RateLimitResult> {
   try {
     const rows = await sql`
@@ -78,8 +79,9 @@ export async function checkRateLimit(
     // A limiter that fails closed would take the whole feature down with the
     // database hiccup. Log loudly and let the request through — the SSRF guard
     // and the honeypot are still in front of everything that matters.
-    console.error('[rate-limit] check failed, allowing request:', err)
-    return { ok: true, remaining: 0, retryAfterSeconds: 0 }
+    console.error('[rate-limit] check failed:', err)
+    // Most routes fail open; a few (anything that spends a quota) fail closed.
+    return opts.failClosed ? { ok: false, remaining: 0, retryAfterSeconds: 60 } : { ok: true, remaining: 0, retryAfterSeconds: 0 }
   }
 }
 

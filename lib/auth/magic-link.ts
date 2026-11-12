@@ -20,8 +20,14 @@ export interface MagicDeps {
 
 /** Only same-origin paths; anything that could leave the site becomes '/'. */
 export function safeNext(next: string | null | undefined): string {
-  if (typeof next !== 'string' || !next.startsWith('/') || next.startsWith('//') || next.startsWith('/\\')) return '/'
-  return next.slice(0, 500)
+  if (typeof next !== 'string' || !next.startsWith('/') || next.length > 500) return '/'
+  // URL parsing strips tabs and newlines, so '/\t/evil.com' would resolve
+  // off-site. Refuse control characters and backslashes outright, then check
+  // that the path really resolves to this site.
+  if (/[\x00-\x1f\x7f\\]/.test(next)) return '/'
+  const base = 'https://hitmanslibrary.invalid'
+  const u = new URL(next, base)
+  return u.origin === base ? u.pathname + u.search + u.hash : '/'
 }
 
 export function isEmail(email: string): boolean {
@@ -37,6 +43,8 @@ export async function requestLink(
   if (!isEmail(email)) return { ok: false, error: 'invalid-email' }
   if (!(await deps.allow(email))) return { ok: false, error: 'rate-limited' }
   const token = generateToken()
+  // One live link per address, and old rows cleaned as we go (no cron needed).
+  await deps.sql`DELETE FROM login_tokens WHERE email = ${email} OR expires_at < ${new Date(deps.now() - 86_400_000)}`
   await deps.sql`INSERT INTO login_tokens (id, email, next, expires_at) VALUES (${await hashToken(token)}, ${email}, ${safeNext(next)}, ${new Date(deps.now() + LINK_LIFETIME)})`
   await deps.send(email, `${deps.origin}/api/auth/email/callback?token=${token}`)
   return { ok: true }
@@ -62,12 +70,12 @@ export async function consumeLink(
     return { error: t.used_at ? 'used' : 'expired' }
   }
   const { email, next } = claimed[0] as { email: string; next: string }
-  const users = await deps.sql`
-    INSERT INTO users (email) VALUES (${email})
-    ON CONFLICT (email) DO UPDATE SET email = EXCLUDED.email
-    RETURNING id
-  `
-  return { userId: (users[0] as { id: string }).id, next }
+  // Look first: an upsert would spend a member number on every returning sign-in.
+  const found = await deps.sql`SELECT id FROM users WHERE email = ${email}`
+  if (found.length) return { userId: (found[0] as { id: string }).id, next }
+  const made = await deps.sql`INSERT INTO users (email) VALUES (${email}) ON CONFLICT (email) DO NOTHING RETURNING id`
+  const row = made.length ? made : await deps.sql`SELECT id FROM users WHERE email = ${email}`
+  return { userId: (row[0] as { id: string }).id, next }
 }
 
 /** The sign-in email: the lens mark, one line, one button. */

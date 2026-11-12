@@ -1,29 +1,40 @@
 // app/api/me/sync/route.ts
-// Merge this device's hearts and collections into the account and return the
-// union, which the device then adopts. Nothing anyone saved is lost.
+//
+// The first sync on a device merges its saves into the account (a union), so
+// signing in never loses anything. After that the device's state replaces the
+// account's, so un-hearting or deleting a set sticks.
 import { getSql } from '@/lib/db'
 import { checkRateLimit, hashIp } from '@/lib/rate-limit'
-import { mergeUserData, sanitizeUserData } from '@/lib/auth/user-data'
-import { currentUser, NO_STORE } from '@/lib/auth/request'
-
-const json = (body: unknown, status = 200) =>
-  new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json', ...NO_STORE } })
+import { nextUserData, sanitizeUserData } from '@/lib/auth/user-data'
+import { signedOutCookies } from '@/lib/auth/session'
+import { currentUser, NO_STORE, problem, renewedCookies, sameOriginWrite } from '@/lib/auth/request'
 
 export async function POST(req: Request) {
+  const refused = sameOriginWrite(req, { json: true })
+  if (refused) return refused
   const me = await currentUser(req)
-  if (!me) return json({ error: 'signed-out' }, 401)
+  if (!me) return problem(401, 'signed-out', signedOutCookies())
   const limit = await checkRateLimit(hashIp('user:' + me.user.id), 'me-sync', 240, 60 * 60)
-  if (!limit.ok) return json({ error: 'rate-limited' }, 429)
+  if (!limit.ok) return problem(429, 'rate-limited')
 
-  let local
-  try { local = sanitizeUserData(await req.json()) } catch { return json({ error: 'invalid-request' }, 400) }
-  const sql = getSql()
-  const rows = await sql`SELECT favorite_ids, collections FROM user_data WHERE user_id = ${me.user.id}`
-  const merged = mergeUserData(sanitizeUserData(rows[0] ?? {}), local)
-  await sql`
-    INSERT INTO user_data (user_id, favorite_ids, collections, updated_at)
-    VALUES (${me.user.id}, ${merged.favorite_ids}, ${JSON.stringify(merged.collections)}::jsonb, now())
-    ON CONFLICT (user_id) DO UPDATE SET favorite_ids = EXCLUDED.favorite_ids, collections = EXCLUDED.collections, updated_at = now()
-  `
-  return json({ data: merged })
+  let body: { data?: unknown; mode?: unknown }
+  try { body = await req.json() } catch { return problem(400, 'invalid-request') }
+  const local = sanitizeUserData(body.data)
+  const mode = body.mode === 'replace' ? 'replace' : 'merge'
+  try {
+    const sql = getSql()
+    const rows = await sql`SELECT favorite_ids, collections FROM user_data WHERE user_id = ${me.user.id}`
+    const next = nextUserData(sanitizeUserData(rows[0] ?? {}), local, mode)
+    await sql`
+      INSERT INTO user_data (user_id, favorite_ids, collections, updated_at)
+      VALUES (${me.user.id}, ${next.favorite_ids}, ${JSON.stringify(next.collections)}::jsonb, now())
+      ON CONFLICT (user_id) DO UPDATE SET favorite_ids = EXCLUDED.favorite_ids, collections = EXCLUDED.collections, updated_at = now()
+    `
+    const headers = new Headers({ 'content-type': 'application/json', ...NO_STORE })
+    for (const c of renewedCookies(req, me)) headers.append('Set-Cookie', c)
+    return new Response(JSON.stringify({ data: next }), { headers })
+  } catch (err) {
+    console.error('[me/sync]', err)
+    return problem(500, 'unavailable')
+  }
 }

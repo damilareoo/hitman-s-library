@@ -7,7 +7,8 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
-import { GoogleLogo, EnvelopeSimple, ArrowRight, X } from '@phosphor-icons/react'
+import { GoogleLogo, ArrowRight, X } from '@phosphor-icons/react'
+import { LibraryMosaic } from '@/components/library-mosaic'
 import { POP_IN, POP_OUT } from '@/lib/motion'
 import { SIGN_IN_EVENT } from '@/lib/account-client'
 
@@ -18,6 +19,8 @@ const ERRORS: Record<string, string> = {
   unverified: 'Google needs a verified email to sign in.',
   unavailable: 'Google sign-in is not set up yet. Use your email.',
   failed: "Sign-in didn't finish. Try again.",
+  cancelled: 'Google sign-in was cancelled.',
+  'link-email': 'This email already has an account. Sign in with an email link once to connect Google.',
 }
 
 type Step = 'choose' | 'sending' | 'sent'
@@ -28,11 +31,13 @@ export function SignInSheet() {
   const [email, setEmail] = useState('')
   const [note, setNote] = useState<string | null>(null)
   const [toast, setToast] = useState<string | null>(null)
+  const [mode, setMode] = useState<'signin' | 'join'>('signin')
   const inputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     const onOpen = (e: Event) => {
-      setNote((e as CustomEvent).detail?.reason ?? null)
+      setMode((e as CustomEvent).detail?.mode === 'join' ? 'join' : 'signin')
+      setNote(null)
       setStep('choose')
       setOpen(true)
     }
@@ -55,11 +60,24 @@ export function SignInSheet() {
     return () => clearTimeout(t)
   }, [toast])
 
+  // Focus moves into the sheet, stays there while it's open, and goes back to
+  // whatever opened it afterwards.
+  const sheetRef = useRef<HTMLDivElement>(null)
   useEffect(() => {
     if (!open) return
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false) }
+    const opener = document.activeElement as HTMLElement | null
+    const focusFirst = setTimeout(() => (inputRef.current ?? sheetRef.current?.querySelector<HTMLElement>('a,button'))?.focus({ preventScroll: true }), 60)
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') return setOpen(false)
+      if (e.key !== 'Tab' || !sheetRef.current) return
+      const items = [...sheetRef.current.querySelectorAll<HTMLElement>('a[href],button:not([disabled]),input')]
+      if (!items.length) return
+      const first = items[0], last = items[items.length - 1]
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus() }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus() }
+    }
     window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
+    return () => { clearTimeout(focusFirst); window.removeEventListener('keydown', onKey); opener?.focus?.({ preventScroll: true }) }
   }, [open])
 
   const next = () => (typeof window === 'undefined' ? '/' : window.location.pathname + window.location.search)
@@ -76,7 +94,8 @@ export function SignInSheet() {
     setNote(error === 'invalid-email' ? 'That email address looks off.' : error === 'rate-limited' ? 'A few too many links. Try again in a while.' : "Couldn't send the link. Try again.")
   }
 
-  const row = 'w-full flex items-center justify-between gap-3 h-[52px] px-5 text-[14px] tracking-[-0.01em] transition-colors hover:bg-foreground/[0.03] active:bg-foreground/[0.06] focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[#E8A04A]'
+  const stub = 'flex-1 flex items-center justify-center gap-2 h-[52px] text-[14px] tracking-[-0.01em] transition-colors hover:bg-foreground/[0.03] active:bg-foreground/[0.06] focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[#E8A04A]'
+  const field = 'w-full h-11 rounded-[12px] border border-edge-strong bg-transparent text-[15px] tracking-[-0.005em] transition-colors'
 
   return (
     <>
@@ -95,52 +114,64 @@ export function SignInSheet() {
                 role="dialog" aria-modal="true" aria-labelledby="signin-title"
                 initial={{ opacity: 0, y: 16, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: 10, transition: POP_OUT }} transition={POP_IN}
-                onAnimationComplete={() => { if (step === 'choose') inputRef.current?.focus({ preventScroll: true }) }}
-                className="pointer-events-auto w-full sm:max-w-[380px] bg-popover text-popover-foreground border border-edge-strong rounded-t-[20px] sm:rounded-[20px] shadow-[0_24px_64px_-16px_rgba(0,0,0,0.35)] overflow-hidden"
+                ref={sheetRef}
+                className="pointer-events-auto relative w-full sm:max-w-[400px] bg-popover text-popover-foreground border border-edge-strong rounded-t-[22px] sm:rounded-[22px] shadow-[0_24px_64px_-16px_rgba(0,0,0,0.35)] overflow-hidden"
               >
-                <div className="relative px-5 pt-5 pb-4">
-                  <h2 id="signin-title" className="text-[22px] font-[620] tracking-[-0.03em] leading-none">
-                    {step === 'sent' ? 'Check your inbox.' : 'Sign in.'}
+                <button onClick={() => setOpen(false)} aria-label="Close" className="absolute top-3.5 right-3.5 z-10 w-8 h-8 grid place-items-center rounded-[9px] text-ink-3 hover:text-ink hover:bg-foreground/[0.05] transition-colors">
+                  <X className="w-3.5 h-3.5" weight="bold" />
+                </button>
+
+                {/* The mark, in the newest sites' colours. */}
+                <div className="flex justify-center pt-9 pb-6">
+                  <LibraryMosaic />
+                </div>
+
+                <div className="px-7 pb-6 text-center">
+                  <h2 id="signin-title" className="text-[21px] font-[620] tracking-[-0.03em] leading-tight">
+                    {step === 'sent' ? 'Check your inbox' : mode === 'join' ? "Join Hitman's Library" : "Sign in to Hitman's Library"}
                   </h2>
-                  <p className="mt-2 text-[14px] leading-[1.45] text-ink-3">
+                  <p className="mt-2 text-[14px] leading-[1.45] text-ink-3 text-balance">
                     {step === 'sent'
                       ? <>A link is on its way to <span className="text-ink">{email}</span>. It works once, for 15 minutes.</>
-                      : 'Keep your saves on every device. No password.'}
+                      : mode === 'join'
+                        ? 'Keep your hearts and sets on every device. Free, and no password.'
+                        : 'Pick up your hearts and sets where you left them.'}
                   </p>
                   {note && step !== 'sent' && <p role="status" className="mt-3 text-[13px] leading-[1.45] text-[#c8382f] dark:text-[#ff8a80]">{note}</p>}
-                  <button onClick={() => setOpen(false)} aria-label="Close" className="absolute top-3.5 right-3.5 w-8 h-8 grid place-items-center rounded-[9px] text-ink-3 hover:text-ink hover:bg-foreground/[0.05] transition-colors">
-                    <X className="w-3.5 h-3.5" weight="bold" />
-                  </button>
                 </div>
 
                 {step === 'sent' ? (
-                  <div className="border-t border-edge">
-                    <button className={row + ' text-ink-3'} onClick={() => { setStep('choose'); setNote(null) }}>
-                      Use a different email <ArrowRight className="w-3.5 h-3.5" weight="bold" />
-                    </button>
+                  <div className="flex border-t border-edge">
+                    <button className={stub + ' text-ink-3'} onClick={() => { setStep('choose'); setNote(null) }}>Use a different email</button>
+                    <span className="w-px bg-edge" aria-hidden />
+                    <button className={stub + ' font-[620] text-ink'} onClick={() => setOpen(false)}>Done</button>
                   </div>
                 ) : (
-                  <>
-                    <div className="border-t border-edge">
-                      <a href={`/api/auth/google?next=${encodeURIComponent(next())}`} className={row + ' font-[620] text-ink'}>
-                        Continue with Google <GoogleLogo className="w-4 h-4" weight="bold" />
+                  <form onSubmit={sendLink}>
+                    <div className="px-7 pb-6 space-y-4">
+                      <a href={`/api/auth/google?next=${encodeURIComponent(next())}`} className={field + ' flex items-center justify-center gap-2.5 font-[600] text-ink hover:bg-foreground/[0.03] active:bg-foreground/[0.06]'}>
+                        <GoogleLogo className="w-4 h-4" weight="bold" /> Continue with Google
                       </a>
-                    </div>
-                    <form onSubmit={sendLink} className="border-t border-edge">
-                      <label className="flex items-center gap-3 h-[52px] px-5">
-                        <EnvelopeSimple className="w-4 h-4 text-ink-3 shrink-0" weight="bold" />
+                      <div className="flex items-center gap-3 text-[12px] text-ink-4" aria-hidden>
+                        <span className="flex-1 h-px bg-edge" />or use email<span className="flex-1 h-px bg-edge" />
+                      </div>
+                      <label className="block">
                         <span className="sr-only">Email</span>
                         <input
                           ref={inputRef} type="email" required autoComplete="email" inputMode="email"
                           value={email} onChange={e => setEmail(e.target.value)} placeholder="you@studio.com"
-                          className="flex-1 min-w-0 bg-transparent outline-none text-[16px] tracking-[-0.005em] placeholder:text-ink-4"
+                          className={field + ' px-3.5 outline-none placeholder:text-ink-4 focus:border-foreground/40'}
                         />
                       </label>
-                      <button type="submit" disabled={step === 'sending'} className={row + ' border-t border-edge font-[620] text-ink disabled:text-ink-4'}>
-                        {step === 'sending' ? 'Sending…' : 'Email me a link'} <ArrowRight className="w-3.5 h-3.5" weight="bold" />
+                    </div>
+                    <div className="flex border-t border-edge">
+                      <button type="button" className={stub + ' text-ink-3'} onClick={() => setOpen(false)}>Cancel</button>
+                      <span className="w-px bg-edge" aria-hidden />
+                      <button type="submit" disabled={step === 'sending'} className={stub + ' font-[620] text-ink disabled:text-ink-4'}>
+                        {step === 'sending' ? 'Sending…' : <>Email me a link <ArrowRight className="w-3.5 h-3.5" weight="bold" /></>}
                       </button>
-                    </form>
-                  </>
+                    </div>
+                  </form>
                 )}
               </motion.div>
             </div>

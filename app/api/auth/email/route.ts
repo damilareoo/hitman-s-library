@@ -4,9 +4,14 @@
 import { NextResponse } from 'next/server'
 import { requestLink, defaultMagicDeps } from '@/lib/auth/magic-link'
 import { checkRateLimit, clientIp, hashIp } from '@/lib/rate-limit'
-import { NO_STORE } from '@/lib/auth/request'
+import { NO_STORE, sameOriginWrite } from '@/lib/auth/request'
+
+// Resend's free tier sends 100 a day; keep room for the digest. Fails closed.
+const DAILY_SENDS = 80
 
 export async function POST(req: Request) {
+  const refused = sameOriginWrite(req, { json: true })
+  if (refused) return refused
   const ip = await checkRateLimit(hashIp(clientIp(req)), 'signin-ip', 20, 60 * 60)
   if (!ip.ok) return NextResponse.json({ error: 'rate-limited' }, { status: 429, headers: { ...NO_STORE, 'Retry-After': String(ip.retryAfterSeconds) } })
 
@@ -14,7 +19,9 @@ export async function POST(req: Request) {
   try { body = await req.json() } catch { return NextResponse.json({ error: 'invalid-request' }, { status: 400, headers: NO_STORE }) }
 
   const origin = new URL(req.url).origin
-  const allow = async (email: string) => (await checkRateLimit(hashIp('email:' + email), 'signin-email', 5, 60 * 60)).ok
+  const allow = async (email: string) =>
+    (await checkRateLimit(hashIp('email:' + email), 'signin-email', 5, 60 * 60)).ok &&
+    (await checkRateLimit('all', 'signin-sends', DAILY_SENDS, 24 * 60 * 60, { failClosed: true })).ok
   try {
     const r = await requestLink(String(body.email ?? ''), String(body.next ?? '/'), defaultMagicDeps(origin, allow))
     if (!r.ok) return NextResponse.json({ error: r.error }, { status: r.error === 'rate-limited' ? 429 : 400, headers: NO_STORE })
