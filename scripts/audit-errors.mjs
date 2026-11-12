@@ -28,7 +28,14 @@ for (const [w, h] of SIZES) for (const theme of THEMES) {
   const page = await ctx.newPage()
   let route = ''
   const note = (kind, text) => { if (!IGNORE.some(r => r.test(text))) findings.push(`${route} ${w}px ${theme}: ${kind}: ${text.slice(0, 220)}`) }
-  page.on('console', m => { if (m.type() === 'error' || m.type() === 'warning') note(m.type(), m.text()) })
+  page.on('console', m => {
+    if (m.type() !== 'error' && m.type() !== 'warning') return
+    // A third-party resource failing (inside a previewed site, or its own
+    // beacon) is that site's problem, not ours; same-origin failures still count.
+    const at = m.location()?.url ?? ''
+    if (/Failed to load resource/.test(m.text()) && at && !at.startsWith(origin)) return
+    note(m.type(), m.text())
+  })
   page.on('pageerror', e => note('pageerror', e.message))
   page.on('response', r => { if (r.url().startsWith(origin) && r.status() >= 400) note('http ' + r.status(), r.url()) })
   page.on('requestfailed', r => { if (r.url().startsWith(origin) && !/net::ERR_ABORTED/.test(r.failure()?.errorText ?? '')) note('failed', r.url()) })
