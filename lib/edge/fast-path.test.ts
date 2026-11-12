@@ -28,6 +28,10 @@ describe('matchFastPath', () => {
       expect(r.query.sortBy).toBe('recent')
     }
   })
+  test('the preview host serves the proxy and nothing else', () => {
+    expect(matchFastPath('GET', new URL('https://preview.hitmanslibrary.xyz/api/design/798'))).toBeNull()
+    expect(matchFastPath('GET', new URL('https://preview.hitmanslibrary.xyz/api/design/filter-advanced'))).toBeNull()
+  })
   test('other design routes are not fast-pathed', () => {
     expect(matchFastPath('GET', u('/api/design/browse-index'))).toBeNull()
   })
@@ -53,6 +57,9 @@ describe('parseListQuery (same rules as the live route)', () => {
     expect(p('ids=').ids).toEqual([])
     expect(p('ids=1,,x,3').ids).toEqual([1, 3])
     expect(p('ids=' + Array.from({ length: 250 }, (_, i) => i + 1).join(',')).ids.length).toBe(200)
+  })
+  test('ids that are not database integers are dropped instead of failing the query', () => {
+    expect(p('ids=1.5,3000000000,0,-2,7').ids).toEqual([7])
   })
   test('kind and tag repeat; search defaults to empty', () => {
     const q = p('kind=Studio&kind=SaaS&tag=dark')

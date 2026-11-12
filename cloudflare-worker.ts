@@ -25,6 +25,7 @@ import { matchFastPath } from './lib/edge/fast-path'
 import { getSiteDetail } from './lib/read/site-detail'
 import { queryDesigns } from './lib/design-queries'
 import { securityHeaders, withSecurityHeaders } from './lib/edge/security-headers'
+import { STORED_AT, browserHeaders, storedHeaders } from './lib/edge/edge-cache'
 
 interface Ctx {
   waitUntil(promise: Promise<unknown>): void
@@ -39,8 +40,6 @@ interface Env {
 }
 
 const FRESH_SECONDS = { page: 300, api: 60 } as const
-const KEEP_SECONDS = 60 * 60 * 24 // stale copies may be served while refreshing, up to a day
-const STORED_AT = 'x-hl-stored-at'
 
 const NEVER = [
   '/admin', '/api/admin', '/api/cron', '/api/proxy', '/api/proxy-asset',
@@ -71,26 +70,22 @@ function cacheKey(url: URL, version: string): Request {
 
 async function store(cache: Cache, key: Request, res: Response): Promise<void> {
   if (res.status !== 200 || res.headers.has('set-cookie')) return
-  const headers = new Headers(res.headers)
-  headers.set('cache-control', `public, max-age=${KEEP_SECONDS}`)
-  headers.set(STORED_AT, String(Date.now()))
-  headers.delete('vary') // the key already separates everything that varies
-  await cache.put(key, new Response(res.body, { status: 200, headers }))
+  await cache.put(key, new Response(res.body, { status: 200, headers: storedHeaders(res.headers, Date.now()) }))
 }
 
 function forBrowser(res: Response, state: 'HIT' | 'STALE' | 'MISS'): Response {
-  const headers = new Headers(res.headers)
-  headers.delete(STORED_AT)
-  headers.set('x-hl-cache', state)
-  // Browsers revalidate HTML each visit; the edge copy is what saves the CPU.
-  if ((headers.get('content-type') ?? '').includes('text/html')) headers.set('cache-control', 'public, max-age=0, must-revalidate')
-  return new Response(res.body, { status: res.status, statusText: res.statusText, headers })
+  return new Response(res.body, { status: res.status, statusText: res.statusText, headers: browserHeaders(res.headers, state) })
 }
 
+// Next marks every error response from a dynamic route as uncacheable; match it.
+const NEXT_NO_STORE = 'private, no-cache, no-store, max-age=0, must-revalidate'
 const json = (body: unknown, status: number, cacheControl?: string) =>
   new Response(JSON.stringify(body), {
     status,
-    headers: { 'content-type': 'application/json', ...(cacheControl ? { 'cache-control': cacheControl } : {}) },
+    headers: {
+      'content-type': 'application/json',
+      ...(cacheControl ? { 'cache-control': cacheControl } : status >= 400 ? { 'cache-control': NEXT_NO_STORE } : {}),
+    },
   })
 
 /**
@@ -133,6 +128,7 @@ export default {
       enforceCsp: env.CSP_ENFORCE === '1',
       previewOrigin: previewOriginFor(url),
       host: url.host,
+      path: url.pathname,
     }))
   },
 }

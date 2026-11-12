@@ -6,6 +6,7 @@
 // the same way.
 import type { SortBy } from '@/lib/design-queries'
 import { parseId } from '@/lib/parse-id'
+import { isPreviewHost } from './security-headers'
 
 export interface ListQuery {
   ids: number[]
@@ -37,7 +38,8 @@ export function parseListQuery(params: URLSearchParams): ListQuery {
       .map(s => s.trim())
       .filter(s => s !== '')
       .map(Number)
-      .filter(Number.isFinite)
+      // Postgres int range only: 1.5 or 3000000000 would fail the ::int[] cast.
+      .filter(n => Number.isSafeInteger(n) && n > 0 && n <= 2_147_483_647)
       .slice(0, 200),
     kinds: params.getAll('kind'),
     tags: params.getAll('tag'),
@@ -50,6 +52,9 @@ export function parseListQuery(params: URLSearchParams): ListQuery {
 
 export function matchFastPath(method: string, url: URL): FastRoute | null {
   if (method !== 'GET') return null
+  // The preview host serves the proxy and nothing else (middleware.ts);
+  // leave it to Next so that rule holds here too.
+  if (isPreviewHost(url.host)) return null
   if (url.pathname === '/api/design/filter-advanced') return { kind: 'list', query: parseListQuery(url.searchParams) }
   const site = SITE.exec(url.pathname)
   const id = site ? parseId(site[1]) : null

@@ -88,17 +88,17 @@ const changelog: ChangelogRelease[] = [
     date: '2026-11-12',
     title: 'Quicker on a Slow Phone',
     items: [
-      { type: 'improved', author: 'damilare', text: 'The grid now shows up the moment the page arrives instead of waiting for scripts, so the first sites appear in about a second and a half on a slow phone instead of six' },
-      { type: 'improved', author: 'damilare', text: 'Opening a site and paging through the grid are answered without starting the whole app, and the type loads at less than half its old size' },
-      { type: 'improved', author: 'damilare', text: 'Sign-ups, submissions and the admin door are now rate limited, and every page is sent with strict security headers' },
+      { type: 'improved', author: 'damilare', text: 'The first sites now appear in about a second on slow phones, not six' },
+      { type: 'improved', author: 'damilare', text: 'Opening sites and scrolling the grid are faster, and the typeface is half the size' },
+      { type: 'improved', author: 'damilare', text: 'Sign-ups and submissions are protected from abuse, and every page ships strict security headers' },
     ],
   },
   {
     date: '2026-11-12',
     title: 'Faster to Open, Nothing Broken',
     items: [
-      { type: 'improved', author: 'damilare', text: 'Pages and site details now come straight from the edge on repeat visits instead of being rebuilt each time, so the library opens faster and stops timing out under load' },
-      { type: 'fixed', author: 'damilare', text: 'Two errors that fired in the background on every page load are gone, and the site panel now loads ahead of your first click as intended' },
+      { type: 'improved', author: 'damilare', text: 'Pages now load from the edge on repeat visits, so the library stops timing out' },
+      { type: 'fixed', author: 'damilare', text: 'Two background errors on every page load are gone, and the site panel preloads again' },
     ],
   },
   {

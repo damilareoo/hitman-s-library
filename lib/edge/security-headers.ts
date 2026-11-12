@@ -10,6 +10,8 @@ export interface SecurityOptions {
   enforceCsp: boolean
   previewOrigin: string
   host: string
+  /** Request path; the same-origin proxy may be framed by the site itself. */
+  path?: string
 }
 
 const POSTHOG = 'https://us.i.posthog.com https://us-assets.i.posthog.com'
@@ -18,13 +20,17 @@ export function isPreviewHost(host: string): boolean {
   return host.startsWith('preview.') || host.startsWith('127.0.0.1')
 }
 
+// Webfont services whose stylesheets extraction records for type specimens.
+const FONT_CSS = 'https://fonts.googleapis.com https://fonts.bunny.net https://api.fontshare.com https://use.typekit.net https://p.typekit.net'
+const FONT_FILES = 'https://fonts.gstatic.com https://fonts.bunny.net https://cdn.fontshare.com https://use.typekit.net'
+
 function contentSecurityPolicy(previewOrigin: string): string {
   return [
     "default-src 'self'",
     // Next's App Router ships its payload as inline scripts.
     "script-src 'self' 'unsafe-inline' https://us-assets.i.posthog.com",
-    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-    "font-src 'self' data: https://fonts.gstatic.com",
+    `style-src 'self' 'unsafe-inline' ${FONT_CSS}`,
+    `font-src 'self' data: ${FONT_FILES}`,
     // Captures, favicons and thumbnails come from many hosts, always over https.
     "img-src 'self' data: blob: https:",
     "media-src 'self' blob: https:",
@@ -41,13 +47,20 @@ function contentSecurityPolicy(previewOrigin: string): string {
 export function securityHeaders(opts: SecurityOptions): Record<string, string> {
   const headers: Record<string, string> = {
     'Strict-Transport-Security': 'max-age=31536000; includeSubDomains',
-    'X-Content-Type-Options': 'nosniff',
     'Referrer-Policy': 'strict-origin-when-cross-origin',
     'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
   }
+  // Proxied pages arrive with whatever content type their own host sent;
+  // nosniff would block their scripts inside the preview.
   if (isPreviewHost(opts.host)) return headers
-  headers['X-Frame-Options'] = 'DENY'
-  headers[opts.enforceCsp ? 'Content-Security-Policy' : 'Content-Security-Policy-Report-Only'] = contentSecurityPolicy(opts.previewOrigin)
+  headers['X-Content-Type-Options'] = 'nosniff'
+  // Where there is no separate preview host, the site frames its own proxy.
+  const ownProxy = (opts.path ?? '').startsWith('/api/proxy')
+  if (!ownProxy) headers['X-Frame-Options'] = 'DENY'
+  // The proxied page runs its own scripts and styles, so it gets only the
+  // framing rule; the site's own policy would break it.
+  headers[opts.enforceCsp ? 'Content-Security-Policy' : 'Content-Security-Policy-Report-Only'] =
+    ownProxy ? "frame-ancestors 'self'" : contentSecurityPolicy(opts.previewOrigin)
   return headers
 }
 

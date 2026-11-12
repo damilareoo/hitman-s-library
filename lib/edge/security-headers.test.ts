@@ -20,6 +20,20 @@ describe('securityHeaders on the main site', () => {
     expect(csp).toContain("connect-src 'self' https://us.i.posthog.com https://us-assets.i.posthog.com")
     expect(csp).toContain("img-src 'self' data: blob: https:")
   })
+  test('type specimens can load fonts from every service extraction records', () => {
+    const csp = h['Content-Security-Policy-Report-Only']
+    for (const host of ['https://fonts.bunny.net', 'https://api.fontshare.com', 'https://use.typekit.net', 'https://p.typekit.net']) {
+      expect(csp).toMatch(new RegExp(`style-src [^;]*${host.replace(/[.]/g, '\\.')}`))
+    }
+    for (const host of ['https://fonts.bunny.net', 'https://cdn.fontshare.com', 'https://use.typekit.net']) {
+      expect(csp).toMatch(new RegExp(`font-src [^;]*${host.replace(/[.]/g, '\\.')}`))
+    }
+  })
+  test('the same-origin proxy may be framed by the site itself (hosts without a preview host)', () => {
+    const p = securityHeaders({ enforceCsp: true, previewOrigin: '', host: 'hitmans-library.example.workers.dev', path: '/api/proxy' })
+    expect(p['X-Frame-Options']).toBeUndefined()
+    expect(p['Content-Security-Policy']).toBe("frame-ancestors 'self'")
+  })
   test('enforcing moves the same policy to the real header', () => {
     const e = securityHeaders({ enforceCsp: true, previewOrigin: PREVIEW, host: 'hitmanslibrary.xyz' })
     expect(e['Content-Security-Policy']).toBe(h['Content-Security-Policy-Report-Only'])
@@ -33,7 +47,9 @@ describe('securityHeaders on the preview host', () => {
     expect(h['X-Frame-Options']).toBeUndefined()
     expect(h['Content-Security-Policy']).toBeUndefined()
     expect(h['Content-Security-Policy-Report-Only']).toBeUndefined()
-    expect(h['X-Content-Type-Options']).toBe('nosniff')
+    // Proxied pages arrive with whatever content type their host sent.
+    expect(h['X-Content-Type-Options']).toBeUndefined()
+    expect(h['Strict-Transport-Security']).toBe('max-age=31536000; includeSubDomains')
   })
 })
 

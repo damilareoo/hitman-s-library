@@ -15,7 +15,12 @@ const stamp = Date.now()
 async function get(path) {
   const sep = path.includes('?') ? '&' : '?'
   const res = await fetch(`${BASE}${path}${sep}__c=${stamp}`)
-  return { status: res.status, body: await res.json() }
+  return {
+    status: res.status,
+    type: res.headers.get('content-type')?.split(';')[0],
+    cache: res.headers.get('cache-control'),
+    body: await res.json(),
+  }
 }
 
 const newest = await get('/api/design/filter-advanced?limit=20&offset=0&sortBy=recent&__nofast=1')
@@ -28,14 +33,17 @@ const cases = [
   '/api/design/filter-advanced?kind=Studio&limit=20',
   '/api/design/filter-advanced?search=studio&limit=20',
   '/api/design/filter-advanced?ids=798,797,1',
+  '/api/design/filter-advanced?ids=1.5,3000000000',
+  '/api/design/999999999',
 ]
 
 let same = 0
 for (const path of cases) {
   const sep = path.includes('?') ? '&' : '?'
   const [fast, next] = await Promise.all([get(path), get(`${path}${sep}__nofast=1`)])
-  if (fast.status === next.status && isDeepStrictEqual(fast.body, next.body)) same++
-  else console.log('DIFFERENT', path, fast.status, next.status)
+  const ok = fast.status === next.status && fast.type === next.type && fast.cache === next.cache && isDeepStrictEqual(fast.body, next.body)
+  if (ok) same++
+  else console.log('DIFFERENT', path, { fast: [fast.status, fast.type, fast.cache], next: [next.status, next.type, next.cache] })
 }
 console.log(`${same}/${cases.length} identical`)
 process.exit(same === cases.length ? 0 : 1)

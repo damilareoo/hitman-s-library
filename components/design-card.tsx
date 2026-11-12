@@ -55,6 +55,9 @@ export function DesignCard({ design, index, isSelected, onClick, onHover, onTagC
   // interactive switches to 'loading' and fades in.
   const [imgStatus, setImgStatus] = useState<'ssr' | 'loading' | 'loaded' | 'error'>('ssr')
   const imgRef = useRef<HTMLImageElement>(null)
+  // Latched at mount: the gallery flips hasAnimated right after hydration,
+  // which would strip the entrance mid-stagger and snap later cards in.
+  const [cssEnter] = useState(!hasAnimated)
   // Hover clip (Phase 3): the <video> mounts only while hovered, so no clip
   // bytes load on first paint — the URL rides in the card data (~100 bytes)
   // and the network starts on hover. Honors reduced-motion by staying still.
@@ -75,7 +78,9 @@ export function DesignCard({ design, index, isSelected, onClick, onHover, onTagC
     const img = imgRef.current
     if (!img) return
     if (img.complete) img.naturalWidth > 0 ? setImgStatus('loaded') : handleImgError()
-    else setImgStatus(s => (s === 'ssr' ? 'loading' : s))
+    // A server-rendered image still streaming stays visible; hiding it to fade
+    // back in would blink the first screen. Only client-mounted cards fade.
+    else if (!cssEnter) setImgStatus(s => (s === 'ssr' ? 'loading' : s))
     // Mount only: later loads report through onLoad.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
@@ -104,12 +109,12 @@ export function DesignCard({ design, index, isSelected, onClick, onHover, onTagC
       exit={{ opacity: 0, transition: { duration: DUR.exit } }}
       onHoverStart={() => { onHover(); if (design.motion_clip_url) setPlaying(true) }}
       onHoverEnd={() => setPlaying(false)}
-      style={{ contain: 'layout paint style', ...(hasAnimated ? null : { ['--i' as string]: Math.min(index, 31) }) }}
+      style={{ contain: 'layout paint style', ...(cssEnter ? { ['--i' as string]: Math.min(index, 31) } : null) }}
       // :active propagates from the title button, so pressing anywhere in the
       // card lights the border. A card is too large to scale — that reads as
       // cheap — so the press registers in the card's own language instead.
       className={
-        (hasAnimated ? '' : 'card-enter ') +
+        (cssEnter ? 'card-enter ' : '') +
         'group relative flex flex-col rounded-[4px] overflow-hidden border cursor-pointer ' +
         'transition-[background-color,border-color] duration-[var(--dur-1)] ease-[var(--ease-hover)] ' +
         (isSelected

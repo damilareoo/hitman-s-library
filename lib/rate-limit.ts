@@ -14,10 +14,21 @@ export function hashIp(ip: string): string {
   return createHash('sha256').update(salt + ':' + ip).digest('hex').slice(0, 32)
 }
 
+/**
+ * The visitor's address, as far as it can be trusted. Cloudflare sets
+ * cf-connecting-ip itself and the client cannot override it. X-Forwarded-For
+ * is the opposite: Cloudflare keeps whatever the client sent and appends the
+ * real address, so its first entry is attacker-controlled and only its last
+ * entry is ours.
+ */
 export function clientIp(req: Request): string {
+  const cf = req.headers.get('cf-connecting-ip')
+  if (cf) return cf.trim()
+  const real = req.headers.get('x-real-ip')
+  if (real) return real.trim()
   const forwarded = req.headers.get('x-forwarded-for')
-  if (forwarded) return forwarded.split(',')[0].trim()
-  return req.headers.get('x-real-ip') ?? 'unknown'
+  if (forwarded) return forwarded.split(',').at(-1)!.trim()
+  return 'unknown'
 }
 
 export interface RateLimitResult {

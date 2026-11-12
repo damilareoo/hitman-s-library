@@ -14,10 +14,12 @@ export async function POST(req: NextRequest) {
   // Ten tries per quarter hour per address: plenty for a person, useless for
   // guessing. Runs before the passcode is even read.
   const limit = await checkRateLimit(hashIp(clientIp(req)), 'admin-login', 10, 15 * 60)
-  if (!limit.ok) {
+  // And a ceiling across every address, against guessing spread over many.
+  const overall = limit.ok ? await checkRateLimit('all', 'admin-login-all', 100, 60 * 60) : limit
+  if (!limit.ok || !overall.ok) {
     return NextResponse.json(
       { error: 'Too many attempts. Try again shortly.' },
-      { status: 429, headers: { 'Retry-After': String(limit.retryAfterSeconds) } },
+      { status: 429, headers: { 'Retry-After': String(Math.max(limit.retryAfterSeconds, overall.retryAfterSeconds)) } },
     )
   }
   try {
