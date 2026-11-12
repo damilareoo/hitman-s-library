@@ -13,6 +13,8 @@ import { UNSORTED, displayKind } from '@/lib/categories'
 import { FILTER_TAGS } from '@/lib/tagging'
 import { TasteSignup } from '@/components/taste-signup'
 import { useCollections, deleteCollection } from '@/lib/collections'
+import { FAVORITES_EVENT } from '@/lib/account-client'
+import { AccountButton } from '@/components/account-button'
 import { EnvelopeSimple } from '@phosphor-icons/react'
 import type { PanelTab } from '@/components/panel-tabs'
 import { HISTORY_TAB_ENABLED } from '@/components/panel-tabs'
@@ -249,8 +251,20 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
       try {
         window.localStorage.setItem('hl:favorites', JSON.stringify(next))
       } catch { /* storage unavailable */ }
+      queueMicrotask(() => window.dispatchEvent(new CustomEvent(FAVORITES_EVENT)))
       return next
     })
+  }, [])
+  // A sign-in on this device merges hearts from the account; read them back.
+  useEffect(() => {
+    const reload = () => {
+      try {
+        const parsed: unknown = JSON.parse(window.localStorage.getItem('hl:favorites') ?? '[]')
+        if (Array.isArray(parsed)) setFavorites(parsed.map(Number).filter(Number.isFinite))
+      } catch { /* storage unavailable */ }
+    }
+    window.addEventListener(FAVORITES_EVENT, reload)
+    return () => window.removeEventListener(FAVORITES_EVENT, reload)
   }, [])
 
 
@@ -994,6 +1008,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
               <Plus className="w-3 h-3" weight="bold" />
               <span>Submit</span>
             </Link>
+            <AccountButton />
 
             <button
               onClick={() => {

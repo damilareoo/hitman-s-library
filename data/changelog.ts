@@ -85,6 +85,15 @@ export function releaseAuthors(release: ChangelogRelease): Author[] {
 // only case where the question is actually being asked.
 const changelog: ChangelogRelease[] = [
   {
+    date: '2026-11-13',
+    title: 'Your Saves, Everywhere',
+    items: [
+      { type: 'new', author: 'damilare', text: 'Sign in with Google or an email link to keep hearts and sets on every device' },
+      { type: 'new', author: 'damilare', text: 'No passwords, and the library stays fully open without an account' },
+      { type: 'new', author: 'damilare', text: 'Download everything stored about you, or delete your account, from the account menu' },
+    ],
+  },
+  {
     date: '2026-11-12',
     title: 'Quicker on a Slow Phone',
     items: [

@@ -399,6 +399,7 @@ Touch targets are expanded with pseudo-element overlays rather than padding, so 
 - **Capture:** sites behind bot walls are captured by real Chrome on your own machine (`scripts/capture-walled.ts`) and uploaded
 - **Analytics:** PostHog, loaded in the browser only (`lib/analytics.ts`)
 - **Fast path:** `/api/design/:id` and `/api/design/filter-advanced` are answered in `cloudflare-worker.ts` straight from Neon, without loading Next. Both paths share `lib/read/site-detail.ts` and `lib/design-queries.ts`, so the JSON is identical
+- **Accounts:** optional. Google (Arctic, PKCE) or a single-use email link (Resend). Sessions follow the Lucia guide: the cookie holds a random token and the database only its SHA-256. Pages never read cookies and stay edge-cached; the browser asks `/api/me`. Hearts and collections merge as a union across devices (`lib/auth/user-data.ts`). Migrations: `node scripts/apply-sql.mjs scripts/025-accounts.sql`
 - **Security headers:** `lib/edge/security-headers.ts` adds HSTS, nosniff, referrer and permissions policies and an enforced CSP (`CSP_ENFORCE` in `wrangler.jsonc`). The preview host gets transport headers only
 - **Package manager:** bun
 
@@ -414,6 +415,8 @@ Touch targets are expanded with pseudo-element overlays rather than padding, so 
 | `ADMIN_SESSION_SECRET` | Optional. Signs session cookies; falls back to `ADMIN_PASSWORD`. Set it so rotating the passcode does not invalidate the signing key |
 | `CRON_SECRET` | Bearer token for the cron routes. The weekly digest runs from the `cron/` worker; the nightly `/api/cron/backfill` is not scheduled on Cloudflare, because capture cannot run in a Worker (see `cron/worker.ts`) |
 | `NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN` | PostHog project key. Needed at build time, or analytics stay off |
+| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Google sign-in (Worker secrets). Without them the sheet offers email only |
+| `RESEND_SIGNIN_FROM` | Optional. Sender for sign-in emails; defaults to signin@hitmanslibrary.xyz |
 | `NEXT_PUBLIC_PREVIEW_ORIGIN` | Optional. Host that serves the live preview. Derived from the current hostname when unset |
 
 ---

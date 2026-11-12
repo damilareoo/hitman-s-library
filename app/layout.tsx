@@ -4,6 +4,7 @@ import { MotionProvider } from "@/components/motion-provider"
 import { SmoothScroll } from "@/components/smooth-scroll"
 import { ThemeProvider } from '@/components/theme-provider'
 import { SoundsProvider } from '@/contexts/sounds-context'
+import { SignInSheet } from '@/components/sign-in-sheet'
 import "./globals.css"
 
 
@@ -167,6 +168,7 @@ export default function RootLayout({
             <SoundsProvider>
               <SmoothScroll />
               {children}
+              <SignInSheet />
             </SoundsProvider>
           </MotionProvider>
         </ThemeProvider>
