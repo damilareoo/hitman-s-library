@@ -13,7 +13,7 @@
     "upload": "opennextjs-cloudflare build && opennextjs-cloudflare upload",
     "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts",
     "test": "bun test",
-    "check": "tsc --noEmit && bun test"
+    "check": "tsc --noEmit && bun test && bun scripts/check-route-guards.ts"
   },
   "dependencies": {
     "@ffmpeg-installer/ffmpeg": "^1.1.0",

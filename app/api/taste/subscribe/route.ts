@@ -3,8 +3,16 @@
 // re-averaged into the taste vector on every call so it tracks taste.
 import { NextResponse } from 'next/server'
 import { subscribe } from '@/lib/taste'
+import { checkRateLimit, clientIp, hashIp } from '@/lib/rate-limit'
 
 export async function POST(req: Request) {
+  const limit = await checkRateLimit(hashIp(clientIp(req)), 'digest-subscribe', 5, 60 * 60)
+  if (!limit.ok) {
+    return NextResponse.json(
+      { error: 'Too many sign-ups from here. Try again later.' },
+      { status: 429, headers: { 'Retry-After': String(limit.retryAfterSeconds) } },
+    )
+  }
   let email = ''
   let favoriteIds: number[] = []
   try {

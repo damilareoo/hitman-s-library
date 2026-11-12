@@ -3,6 +3,7 @@
 // between consecutive runs. Public read data, like the gallery and the
 // detail endpoint — no auth change.
 import { NextResponse } from 'next/server'
+import { parseId } from '@/lib/parse-id'
 import { getSql } from '@/lib/db'
 import { getSiteHistory } from '@/lib/extraction-history'
 import { DRIFT_ENABLED, driftBetween } from '@/lib/drift'
@@ -32,8 +33,8 @@ export async function GET(
   }
 
   const { id: rawId } = await params
-  const id = parseInt(rawId, 10)
-  if (isNaN(id)) {
+  const id = parseId(rawId)
+  if (id === null) {
     return NextResponse.json({ error: 'Invalid id' }, { status: 400 })
   }
 

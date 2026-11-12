@@ -1,6 +1,7 @@
 // app/api/design/[id]/reextract/route.ts
 // Re-runs full design extraction for an existing source, bypassing the duplicate guard.
 import { NextResponse } from 'next/server'
+import { parseId } from '@/lib/parse-id'
 import { Client } from '@neondatabase/serverless'
 import { getSql } from '@/lib/db'
 import { extractFullDesignData } from '@/lib/browser-extraction'
@@ -19,8 +20,8 @@ export async function POST(
   if (denied) return denied
 
   const { id: rawId } = await params
-  const id = parseInt(rawId, 10)
-  if (isNaN(id)) {
+  const id = parseId(rawId)
+  if (id === null) {
     return NextResponse.json({ error: 'Invalid id' }, { status: 400 })
   }
 

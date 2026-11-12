@@ -1,5 +1,6 @@
 // app/api/design/[id]/route.ts
 import { getSql } from '@/lib/db'
+import { parseId } from '@/lib/parse-id'
 import { getSiteDetail } from '@/lib/read/site-detail'
 import { requireAdmin } from '@/lib/admin-auth'
 import { KINDS } from '@/lib/categories'
@@ -13,8 +14,8 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id: rawId } = await params
-  const id = parseInt(rawId, 10)
-  if (isNaN(id)) {
+  const id = parseId(rawId)
+  if (id === null) {
     return NextResponse.json({ error: 'Invalid id' }, { status: 400 })
   }
   try {
@@ -39,8 +40,8 @@ export async function PATCH(
   if (denied) return denied
 
   const { id: rawId } = await params
-  const id = parseInt(rawId, 10)
-  if (isNaN(id)) {
+  const id = parseId(rawId)
+  if (id === null) {
     return NextResponse.json({ error: 'Invalid id' }, { status: 400 })
   }
 

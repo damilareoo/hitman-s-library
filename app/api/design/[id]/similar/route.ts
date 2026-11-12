@@ -2,6 +2,7 @@
 // Visual neighbors (Phase 2): k nearest sites by cosine distance over the
 // fused embedding, self excluded. Public read data — no auth change.
 import { NextResponse } from 'next/server'
+import { parseId } from '@/lib/parse-id'
 import { SIMILAR_ENABLED, querySimilar } from '@/lib/similarity'
 
 function clampInt(raw: string | null, fallback: number, min: number, max: number): number {
@@ -19,8 +20,8 @@ export async function GET(
   }
 
   const { id: rawId } = await params
-  const id = parseInt(rawId, 10)
-  if (isNaN(id)) {
+  const id = parseId(rawId)
+  if (id === null) {
     return NextResponse.json({ error: 'Invalid id' }, { status: 400 })
   }
   const k = clampInt(new URL(req.url).searchParams.get('k'), 12, 1, 24)

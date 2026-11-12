@@ -6,12 +6,18 @@
 // URL into the request form.
 import { NextResponse } from 'next/server'
 import { getSql } from '@/lib/db'
+import { checkRateLimit, clientIp, hashIp } from '@/lib/rate-limit'
 
 const sql = getSql()
 
 const MAX_URLS = 25
 
 export async function POST(req: Request) {
+  // The page polls this, so the allowance is generous; it only stops a loop.
+  const limit = await checkRateLimit(hashIp(clientIp(req)), 'request-status', 120, 60 * 60)
+  if (!limit.ok) {
+    return NextResponse.json({ error: 'Too many checks. Try again shortly.' }, { status: 429, headers: { 'Retry-After': String(limit.retryAfterSeconds) } })
+  }
   let urls: string[] = []
   try {
     const body = await req.json()

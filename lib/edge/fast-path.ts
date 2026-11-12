@@ -5,6 +5,7 @@
 // parseListQuery is also what the Next route uses, so both paths read a query
 // the same way.
 import type { SortBy } from '@/lib/design-queries'
+import { parseId } from '@/lib/parse-id'
 
 export interface ListQuery {
   ids: number[]
@@ -19,7 +20,7 @@ export interface ListQuery {
 export type FastRoute = { kind: 'site'; id: number } | { kind: 'list'; query: ListQuery }
 
 const VALID_SORTS: readonly SortBy[] = ['recent', 'oldest', 'name', 'quality']
-const SITE = /^\/api\/design\/(\d+)$/
+const SITE = /^\/api\/design\/([^/]+)$/
 
 function clampInt(raw: string | null, fallback: number, min: number, max: number): number {
   const n = parseInt(raw ?? '', 10)
@@ -49,8 +50,8 @@ export function parseListQuery(params: URLSearchParams): ListQuery {
 
 export function matchFastPath(method: string, url: URL): FastRoute | null {
   if (method !== 'GET') return null
-  const site = SITE.exec(url.pathname)
-  if (site) return { kind: 'site', id: Number(site[1]) }
   if (url.pathname === '/api/design/filter-advanced') return { kind: 'list', query: parseListQuery(url.searchParams) }
-  return null
+  const site = SITE.exec(url.pathname)
+  const id = site ? parseId(site[1]) : null
+  return id === null ? null : { kind: 'site', id }
 }

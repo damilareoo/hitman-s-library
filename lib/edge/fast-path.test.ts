@@ -10,6 +10,9 @@ describe('matchFastPath', () => {
   test('a partial number is left to Next, which answers 400', () => {
     expect(matchFastPath('GET', u('/api/design/12abc'))).toBeNull()
   })
+  test('an id beyond a safe integer is left to Next', () => {
+    expect(matchFastPath('GET', u('/api/design/99999999999999999999'))).toBeNull()
+  })
   test('writes never take the fast path', () => {
     expect(matchFastPath('PATCH', u('/api/design/798'))).toBeNull()
   })

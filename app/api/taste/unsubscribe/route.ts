@@ -6,6 +6,7 @@ import { getSql } from '@/lib/db'
 
 const sql = getSql()
 
+// guard: none — the unguessable token is the authentication, and providers' one-click POSTs come from shared IPs a limit would block
 export async function POST(req: Request) {
   // Token arrives in the JSON body from our own page, or in the query string
   // from a provider's one-click List-Unsubscribe POST (form-encoded, no body
