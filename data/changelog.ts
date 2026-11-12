@@ -91,6 +91,7 @@ const changelog: ChangelogRelease[] = [
       { type: 'new', author: 'damilare', text: 'Sign in with Google or an email link to keep hearts and sets on every device' },
       { type: 'new', author: 'damilare', text: 'No passwords, and the library stays fully open without an account' },
       { type: 'new', author: 'damilare', text: 'Download everything stored about you, or delete your account, from the account menu' },
+      { type: 'new', author: 'damilare', text: 'A plain privacy page says what we keep, why, and how to remove it' },
     ],
   },
   {

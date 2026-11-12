@@ -164,6 +164,9 @@ export function SignInSheet() {
                         />
                       </label>
                     </div>
+                    <p className="px-7 -mt-2 pb-5 text-center text-[12px] text-ink-4">
+                      By signing in you agree to how we handle your data in our <a href="/privacy" className="underline underline-offset-2 hover:text-ink">privacy notes</a>.
+                    </p>
                     <div className="flex border-t border-edge">
                       <button type="button" className={stub + ' text-ink-3'} onClick={() => setOpen(false)}>Cancel</button>
                       <span className="w-px bg-edge" aria-hidden />
