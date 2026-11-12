@@ -25,7 +25,7 @@ import { matchFastPath } from './lib/edge/fast-path'
 import { getSiteDetail } from './lib/read/site-detail'
 import { queryDesigns } from './lib/design-queries'
 import { securityHeaders, withSecurityHeaders } from './lib/edge/security-headers'
-import { STORED_AT, browserHeaders, storedHeaders } from './lib/edge/edge-cache'
+import { STORED_AT, browserHeaders, cacheKey, cacheKind, storedHeaders } from './lib/edge/edge-cache'
 
 interface Ctx {
   waitUntil(promise: Promise<unknown>): void
@@ -40,33 +40,6 @@ interface Env {
 }
 
 const FRESH_SECONDS = { page: 300, api: 60 } as const
-
-const NEVER = [
-  '/admin', '/api/admin', '/api/cron', '/api/proxy', '/api/proxy-asset',
-  '/api/request', '/api/taste', '/api/design/capture-upload', '/api/design/delete',
-  '/api/design/extract', '/unsubscribe', '/submit',
-]
-const TRACKING = /^(utm_|fbclid$|gclid$|ref$|mc_)/
-
-function kind(req: Request, url: URL): 'page' | 'api' | null {
-  if (req.method !== 'GET') return null
-  if (url.hostname.startsWith('preview.')) return null
-  if (url.searchParams.has('_rsc') || req.headers.has('rsc') || req.headers.has('next-router-prefetch')) return null
-  if (/(?:^|;\s*)hl_admin=/.test(req.headers.get('cookie') ?? '')) return null
-  const path = url.pathname
-  if (NEVER.some(p => path === p || path.startsWith(p + '/'))) return null
-  if (path.startsWith('/_next/') || path.startsWith('/cdn-cgi/')) return null
-  if (path.startsWith('/api/')) return path.startsWith('/api/design/') || path === '/api/changelog' ? 'api' : null
-  return 'page'
-}
-
-function cacheKey(url: URL, version: string): Request {
-  const key = new URL(url.toString())
-  for (const name of [...key.searchParams.keys()]) if (TRACKING.test(name)) key.searchParams.delete(name)
-  key.searchParams.sort()
-  key.searchParams.set('__v', version)
-  return new Request(key.toString(), { method: 'GET' })
-}
 
 async function store(cache: Cache, key: Request, res: Response): Promise<void> {
   if (res.status !== 200 || res.headers.has('set-cookie')) return
@@ -134,11 +107,11 @@ export default {
 }
 
 async function handle(request: Request, env: Env, ctx: Ctx, url: URL): Promise<Response> {
-  const k = kind(request, url)
+  const k = cacheKind(request, url)
   if (!k) return origin(request, env, ctx, url)
 
   const cache = (caches as unknown as { default: Cache }).default
-  const key = cacheKey(url, env.CF_VERSION_METADATA?.id ?? 'dev')
+  const key = cacheKey(request, url, env.CF_VERSION_METADATA?.id ?? 'dev')
 
   let hit: Response | undefined
   try { hit = await cache.match(key) } catch { hit = undefined }
