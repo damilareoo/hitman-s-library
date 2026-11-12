@@ -50,6 +50,11 @@ test('pages and public reads are cacheable; private and write surfaces are not',
   expect(k('/_next/static/a.js')).toBeNull()
 })
 
+test('nothing personal is ever cached: sign-in and account routes always reach the app', () => {
+  const k = (path: string) => { const { req, url } = get(path); return cacheKind(req, url) }
+  for (const p of ['/api/me', '/api/me/export', '/api/auth/google', '/api/auth/google/callback?code=x', '/api/auth/email/callback?token=x', '/account']) expect(k(p)).toBeNull()
+})
+
 test('Next navigation requests are cacheable only when they carry the _rsc key', () => {
   const k = (path: string, h: Record<string, string>) => { const { req, url } = get(path, h); return cacheKind(req, url) }
   expect(k('/about?_rsc=abc12', { rsc: '1', 'next-router-prefetch': '1' })).toBe('page')

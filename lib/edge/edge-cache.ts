@@ -38,6 +38,8 @@ const NEVER = [
   '/admin', '/api/admin', '/api/cron', '/api/proxy', '/api/proxy-asset',
   '/api/request', '/api/taste', '/api/design/capture-upload', '/api/design/delete',
   '/api/design/extract', '/unsubscribe',
+  // Accounts: personal by definition. Pages stay anonymous; these never cache.
+  '/api/auth', '/api/me', '/account',
 ]
 const TRACKING = /^(utm_|fbclid$|gclid$|ref$|mc_)/
 // The request headers a Next navigation (RSC) response varies on.
