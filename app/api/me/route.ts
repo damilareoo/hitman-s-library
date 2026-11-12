@@ -17,8 +17,8 @@ export async function GET(req: Request) {
     // A stale hint cookie with no live session: clear it so the browser stops asking.
     if (!me) return json({ user: null }, signedOutCookies())
     const rows = await getSql()`SELECT favorite_ids, collections FROM user_data WHERE user_id = ${me.user.id}`
-    const { email, name, avatar_url, member_no } = me.user
-    return json({ user: { email, name, avatar: avatar_url, memberNo: member_no }, data: rows[0] ?? null }, renewedCookies(req, me))
+    const { email, name, avatar_url, member_no, created_at, google } = me.user
+    return json({ user: { email, name, avatar: avatar_url, memberNo: member_no, since: created_at, google }, data: rows[0] ?? null }, renewedCookies(req, me))
   } catch (err) {
     console.error('[GET /api/me]', err)
     return problem(500, 'unavailable')

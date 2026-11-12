@@ -54,7 +54,12 @@ export function profileFromClaims(claims: Record<string, unknown>): GoogleProfil
 /** The account id, or 'needs-email-link' when the email belongs to an account Google can't vouch for. */
 export async function linkOrCreateUser(p: GoogleProfile, sql: NeonQueryFunction<false, false>): Promise<string> {
   const byGoogle = await sql`SELECT id FROM users WHERE google_sub = ${p.sub}`
-  if (byGoogle.length) return (byGoogle[0] as { id: string }).id
+  if (byGoogle.length) {
+    const id = (byGoogle[0] as { id: string }).id
+    // Keep the photo current (people change it); keep a name they already have.
+    await sql`UPDATE users SET avatar_url = COALESCE(${p.avatar}, avatar_url), name = COALESCE(name, ${p.name}) WHERE id = ${id}`
+    return id
+  }
   if (!p.authoritative) {
     const byEmail = await sql`SELECT id FROM users WHERE email = ${p.email}`
     if (byEmail.length) return 'needs-email-link'

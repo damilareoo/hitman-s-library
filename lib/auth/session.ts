@@ -16,7 +16,7 @@ const DAY = 86_400_000
 const LIFETIME = 30 * DAY
 const RENEW_UNDER = 15 * DAY
 
-export interface SessionUser { id: string; email: string; name: string | null; avatar_url: string | null; member_no: number }
+export interface SessionUser { id: string; email: string; name: string | null; avatar_url: string | null; member_no: number; created_at: string; google: boolean }
 export interface Session { id: string; userId: string; expiresAt: Date }
 export interface SessionDeps { sql: NeonQueryFunction<false, false>; now: () => number }
 
@@ -55,7 +55,8 @@ export async function validateSession(
   if (!token) return null
   const id = await hashToken(token)
   const rows = await deps.sql`
-    SELECT s.id AS session_id, s.expires_at, u.id AS user_id, u.email, u.name, u.avatar_url, u.member_no
+    SELECT s.id AS session_id, s.expires_at, u.id AS user_id, u.email, u.name, u.avatar_url, u.member_no,
+           u.created_at, (u.google_sub IS NOT NULL) AS google
     FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.id = ${id}
   `
   const row: any = rows[0]
@@ -73,7 +74,10 @@ export async function validateSession(
     fresh = true
   }
   return {
-    user: { id: row.user_id, email: row.email, name: row.name ?? null, avatar_url: row.avatar_url ?? null, member_no: Number(row.member_no) },
+    user: {
+      id: row.user_id, email: row.email, name: row.name ?? null, avatar_url: row.avatar_url ?? null,
+      member_no: Number(row.member_no), created_at: new Date(row.created_at ?? 0).toISOString(), google: Boolean(row.google),
+    },
     session: { id, userId: row.user_id, expiresAt },
     fresh,
   }

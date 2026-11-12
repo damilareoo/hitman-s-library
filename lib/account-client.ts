@@ -12,7 +12,7 @@ import { COLLECTIONS_EVENT } from '@/lib/collections'
 export const FAVORITES_EVENT = 'hl:favorites-changed'
 export const SIGN_IN_EVENT = 'hl:sign-in'
 
-export interface AccountUser { email: string; name: string | null; avatar: string | null; memberNo: number }
+export interface AccountUser { email: string; name: string | null; avatar: string | null; memberNo: number; since: string; google: boolean }
 type State = { status: 'loading' | 'signed-out' | 'signed-in'; user: AccountUser | null }
 
 const LOADING: State = { status: 'loading', user: null }

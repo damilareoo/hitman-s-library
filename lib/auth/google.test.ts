@@ -30,9 +30,10 @@ describe('linkOrCreateUser', () => {
     return { sql, calls }
   }
   const profile = { sub: 'g1', email: 'a@b.co', name: 'Ada', avatar: null, authoritative: true }
-  test('a returning Google user is found by their Google id', async () => {
+  test('a returning Google user is found by their Google id, and their photo and name refresh', async () => {
     const f = fake({ byGoogle: { id: 'u1' } })
-    expect(await linkOrCreateUser(profile, f.sql)).toBe('u1')
+    expect(await linkOrCreateUser({ ...profile, avatar: 'https://lh3.googleusercontent.com/a/new' }, f.sql)).toBe('u1')
+    expect(f.calls).toContain('UPDATE users SET')
   })
   test('an existing email account is linked to Google rather than duplicated', async () => {
     const f = fake({ byEmail: { id: 'u2' } })
