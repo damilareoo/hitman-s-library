@@ -393,9 +393,11 @@ Touch targets are expanded with pseudo-element overlays rather than padding, so 
 - **Framework:** Next.js 16 App Router (React 19)
 - **Styling:** Tailwind CSS v4
 - **Animations:** motion (Framer Motion v11)
+- **Hosting:** Cloudflare Workers via OpenNext. `cloudflare-worker.ts` answers repeat page and API reads from the edge cache before the Next server loads (fresh for 5 minutes for pages and 1 minute for APIs, then served stale while it refreshes)
 - **Database:** Neon PostgreSQL (serverless)
 - **Storage:** Vercel Blob (screenshots)
-- **Browser:** Puppeteer + Sparticuz Chromium (Lambda-compatible)
+- **Capture:** sites behind bot walls are captured by real Chrome on your own machine (`scripts/capture-walled.ts`) and uploaded
+- **Analytics:** PostHog, loaded in the browser only (`lib/analytics.ts`)
 - **Package manager:** bun
 
 ---
@@ -409,6 +411,7 @@ Touch targets are expanded with pseudo-element overlays rather than padding, so 
 | `ADMIN_PASSWORD` | Passcode for `/admin`, and the bearer token for scripts |
 | `ADMIN_SESSION_SECRET` | Optional. Signs session cookies; falls back to `ADMIN_PASSWORD`. Set it so rotating the passcode does not invalidate the signing key |
 | `CRON_SECRET` | Bearer token for the nightly `/api/cron/backfill` job |
+| `NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN` | PostHog project key. Needed at build time, or analytics stay off |
 | `NEXT_PUBLIC_PREVIEW_ORIGIN` | Optional. Host that serves the live preview. Derived from the current hostname when unset |
 
 ---

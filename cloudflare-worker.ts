@@ -1,0 +1,114 @@
+// cloudflare-worker.ts
+//
+// The Worker entry. It answers repeat GETs from Cloudflare's edge cache before
+// the Next.js server is ever loaded.
+//
+// Why: Workers run in front of the CDN cache, so the `s-maxage` headers the
+// routes set were never honoured — every visit started the 9 MB Next server and
+// rendered from scratch. A cold start alone costs 150-400 ms of CPU, past the
+// free plan's ceiling, and Cloudflare answered some visitors with error 1102.
+//
+// What is cached: anonymous GETs of pages and public read APIs, per URL and per
+// deployed version (a new deploy never serves HTML that points at old assets).
+// Fresh for a short window, then served stale while one request refreshes it in
+// the background, so visitors almost never wait on a render.
+//
+// What never is: admin, cron, the preview proxy, forms, unsubscribe, Next's
+// client-navigation (RSC) requests, anything carrying the admin cookie, and any
+// response that sets a cookie or is not a 200.
+
+// @ts-ignore: produced by `opennextjs-cloudflare build` (absent before a build)
+import openNext from './.open-next/worker.js'
+// @ts-ignore: produced by `opennextjs-cloudflare build` (absent before a build)
+export { DOQueueHandler, DOShardedTagCache, BucketCachePurge } from './.open-next/worker.js'
+
+interface Ctx {
+  waitUntil(promise: Promise<unknown>): void
+  passThroughOnException?(): void
+}
+interface Env {
+  CF_VERSION_METADATA?: { id?: string }
+  [key: string]: unknown
+}
+
+const FRESH_SECONDS = { page: 300, api: 60 } as const
+const KEEP_SECONDS = 60 * 60 * 24 // stale copies may be served while refreshing, up to a day
+const STORED_AT = 'x-hl-stored-at'
+
+const NEVER = [
+  '/admin', '/api/admin', '/api/cron', '/api/proxy', '/api/proxy-asset',
+  '/api/request', '/api/taste', '/api/design/capture-upload', '/api/design/delete',
+  '/api/design/extract', '/unsubscribe', '/submit',
+]
+const TRACKING = /^(utm_|fbclid$|gclid$|ref$|mc_)/
+
+function kind(req: Request, url: URL): 'page' | 'api' | null {
+  if (req.method !== 'GET') return null
+  if (url.hostname.startsWith('preview.')) return null
+  if (url.searchParams.has('_rsc') || req.headers.has('rsc') || req.headers.has('next-router-prefetch')) return null
+  if (/(?:^|;\s*)hl_admin=/.test(req.headers.get('cookie') ?? '')) return null
+  const path = url.pathname
+  if (NEVER.some(p => path === p || path.startsWith(p + '/'))) return null
+  if (path.startsWith('/_next/') || path.startsWith('/cdn-cgi/')) return null
+  if (path.startsWith('/api/')) return path.startsWith('/api/design/') || path === '/api/changelog' ? 'api' : null
+  return 'page'
+}
+
+function cacheKey(url: URL, version: string): Request {
+  const key = new URL(url.toString())
+  for (const name of [...key.searchParams.keys()]) if (TRACKING.test(name)) key.searchParams.delete(name)
+  key.searchParams.sort()
+  key.searchParams.set('__v', version)
+  return new Request(key.toString(), { method: 'GET' })
+}
+
+async function store(cache: Cache, key: Request, res: Response): Promise<void> {
+  if (res.status !== 200 || res.headers.has('set-cookie')) return
+  const headers = new Headers(res.headers)
+  headers.set('cache-control', `public, max-age=${KEEP_SECONDS}`)
+  headers.set(STORED_AT, String(Date.now()))
+  headers.delete('vary') // the key already separates everything that varies
+  await cache.put(key, new Response(res.body, { status: 200, headers }))
+}
+
+function forBrowser(res: Response, state: 'HIT' | 'STALE' | 'MISS'): Response {
+  const headers = new Headers(res.headers)
+  headers.delete(STORED_AT)
+  headers.set('x-hl-cache', state)
+  // Browsers revalidate HTML each visit; the edge copy is what saves the CPU.
+  if ((headers.get('content-type') ?? '').includes('text/html')) headers.set('cache-control', 'public, max-age=0, must-revalidate')
+  return new Response(res.body, { status: res.status, statusText: res.statusText, headers })
+}
+
+export default {
+  async fetch(request: Request, env: Env, ctx: Ctx): Promise<Response> {
+    const url = new URL(request.url)
+    const k = kind(request, url)
+    if (!k) return openNext.fetch(request, env, ctx)
+
+    const cache = (caches as unknown as { default: Cache }).default
+    const key = cacheKey(url, env.CF_VERSION_METADATA?.id ?? 'dev')
+
+    let hit: Response | undefined
+    try { hit = await cache.match(key) } catch { hit = undefined }
+
+    if (hit) {
+      const age = (Date.now() - Number(hit.headers.get(STORED_AT) ?? 0)) / 1000
+      if (age <= FRESH_SECONDS[k]) return forBrowser(hit, 'HIT')
+      // Stale: answer now, refresh once in the background.
+      ctx.waitUntil((async () => {
+        try {
+          const fresh: Response = await openNext.fetch(new Request(request), env, ctx)
+          await store(cache, key, fresh)
+        } catch { /* keep serving the stale copy */ }
+      })())
+      return forBrowser(hit, 'STALE')
+    }
+
+    const res: Response = await openNext.fetch(request, env, ctx)
+    if (res.status === 200 && !res.headers.has('set-cookie')) {
+      ctx.waitUntil(store(cache, key, res.clone()).catch(() => {}))
+    }
+    return forBrowser(res, 'MISS')
+  },
+}

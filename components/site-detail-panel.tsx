@@ -18,7 +18,7 @@ import { Spinner } from './ui/spinner'
 import { EASE, DUR, POP_IN, POP_OUT } from '@/lib/motion'
 import type { Design } from './design-card'
 import { fetchDetail, getCachedDetail } from '@/lib/detail-cache'
-import posthog from 'posthog-js'
+import { track } from '@/lib/analytics'
 interface ColorRow { hex_value: string; oklch: string | null; area_share: number | null }
 interface TypographyRow { font_family: string; role: string; google_fonts_url: string | null; primary_weight: number | null; sample_size_px?: number | null; sample_line_height?: string | null }
 
@@ -166,7 +166,7 @@ export function SiteDetailPanel({ variant = 'desktop', sourceId, metadata, initi
   const favCount = server?.favorite_count
 
   function updateCollectionMembership(name: string, wasSaved: boolean) {
-    posthog.capture('collection_membership_updated', {
+    track('collection_membership_updated', {
       source_id: sourceId,
       is_saved: !wasSaved,
     })

@@ -5,7 +5,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import posthog from 'posthog-js'
+import { track } from '@/lib/analytics'
 
 export function TasteSignup() {
   const [email, setEmail] = useState('')
@@ -68,7 +68,7 @@ export function TasteSignup() {
       const data = await res.json()
       if (!res.ok) setState({ error: data.error ?? 'That did not go through.' })
       else {
-        posthog.capture('digest_subscribed', { favorite_count: favoriteIds.length })
+        track('digest_subscribed', { favorite_count: favoriteIds.length })
         setState('done')
         setEmail('')
       }

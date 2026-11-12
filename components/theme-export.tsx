@@ -7,7 +7,7 @@
 
 import { useSoundsContext } from '@/contexts/sounds-context'
 import { useCopied } from '@/lib/use-copied'
-import posthog from 'posthog-js'
+import { track } from '@/lib/analytics'
 import {
   buildCssVars,
   buildTailwindTheme,
@@ -40,7 +40,7 @@ export function ThemeExport({
   async function copyText(text: string, id: string) {
     try {
       await navigator.clipboard.writeText(text)
-      posthog.capture('theme_exported', { format: id })
+      track('theme_exported', { format: id })
       playCopy()
       copy.markCopied(id)
     } catch { /* clipboard unavailable */ }
@@ -59,7 +59,7 @@ export function ThemeExport({
       a.click()
       a.remove()
       setTimeout(() => URL.revokeObjectURL(a.href), 5000)
-      posthog.capture('theme_exported', { format: 'tokens_json' })
+      track('theme_exported', { format: 'tokens_json' })
       playCopy()
       copy.markCopied('json')
     } catch { /* download unavailable */ }

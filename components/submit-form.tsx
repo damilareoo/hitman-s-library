@@ -7,7 +7,7 @@ import Link from 'next/link'
 import { Spinner } from '@/components/ui/spinner'
 import { EASE, DUR } from '@/lib/motion'
 import { useSiteRequests } from '@/lib/use-site-requests'
-import posthog from 'posthog-js'
+import { track } from '@/lib/analytics'
 
 type PreviewState =
   | { kind: 'idle' }
@@ -168,7 +168,7 @@ export function SubmitForm() {
         setPreview({ kind: 'existing', id: data.site.id, title: data.site.title, image: null })
       } else if (data.state === 'received') {
         remember(url.trim(), previewTitle)
-        posthog.capture('site_request_submitted', { request_count: 1, is_batch: false })
+        track('site_request_submitted', { request_count: 1, is_batch: false })
         setSubmitted({ title: previewTitle, count: data.requestCount ?? 1 })
       } else if (data.state === 'batch' && Array.isArray(data.results)) {
         const receivedCount = data.results.filter((r: { state: string }) => r.state === 'received').length
@@ -176,7 +176,7 @@ export function SubmitForm() {
           if (r.state === 'received') remember(r.url, null)
         }
         if (receivedCount > 0) {
-          posthog.capture('site_request_submitted', { request_count: receivedCount, is_batch: true })
+          track('site_request_submitted', { request_count: receivedCount, is_batch: true })
         }
         setBatchResults(data.results)
       } else {

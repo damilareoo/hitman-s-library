@@ -1,8 +1,12 @@
 {
 	"$schema": "node_modules/wrangler/config-schema.json",
-	"main": ".open-next/worker.js",
+	"main": "cloudflare-worker.ts",
 	"name": "hitmans-library",
 	"compatibility_date": "2026-11-04",
+	// Without this, esbuild wraps functions in __name(), and any function whose
+	// source is shipped to the browser as an inline script (the theme script)
+	// throws "__name is not defined" there.
+	"keep_names": false,
 	"compatibility_flags": [
 		"nodejs_compat",
 		"global_fetch_strictly_public"
@@ -19,6 +23,10 @@
 			"service": "hitmans-library"
 		}
 	],
+	// The deployed version id keys the edge cache, so a deploy never serves old HTML.
+	"version_metadata": {
+		"binding": "CF_VERSION_METADATA"
+	},
 	"vars": {
 		"NEXT_PUBLIC_POSTHOG_HOST": "https://us.i.posthog.com"
 	}

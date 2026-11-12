@@ -5,7 +5,7 @@ import { Suspense, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { Brand } from '@/components/brand'
-import posthog from 'posthog-js'
+import { track } from '@/lib/analytics'
 
 function UnsubscribeForm() {
   const token = useSearchParams().get('token') ?? ''
@@ -22,7 +22,7 @@ function UnsubscribeForm() {
       })
       const data = await res.json()
       if (res.ok) {
-        posthog.capture('digest_unsubscribed')
+        track('digest_unsubscribed')
         setState('done')
       } else {
         setState({ error: data.error ?? 'That did not go through.' })

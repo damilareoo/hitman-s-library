@@ -27,7 +27,7 @@ import Link from 'next/link'
 import { useIsNarrow, useIsPhone } from '@/lib/use-is-narrow'
 import { useUrlParams } from '@/lib/use-url-params'
 import { prefetchDetail } from '@/lib/detail-cache'
-import posthog from 'posthog-js'
+import { track } from '@/lib/analytics'
 
 const gridVariants = {
   hidden: {},
@@ -287,10 +287,11 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
   useEffect(() => { hasAnimated.current = true; setMounted(true) }, [])
 
   // The panel chunk is the one part of opening a site that has to download.
-  // Fetch it while the page is idle so the first open mounts instantly —
-  // preload() hits the same chunk the dynamic() above would load on demand.
+  // Fetch it while the page is idle so the first open mounts instantly. The
+  // import is the same one dynamic() above loads on demand, so it fills the
+  // same chunk cache (next/dynamic no longer exposes a preload()).
   useEffect(() => {
-    const warm = () => (SiteDetailPanel as unknown as { preload: () => void }).preload()
+    const warm = () => { import('@/components/site-detail-panel').catch(() => {}) }
     if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
       const id = window.requestIdleCallback(warm, { timeout: 2500 })
       return () => window.cancelIdleCallback(id)
@@ -644,7 +645,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
 
   const handleCardClick = useCallback((design: Design) => {
     sounds.playSelect()
-    posthog.capture('design_opened', { source_id: design.id, opening_surface: 'gallery' })
+    track('design_opened', { source_id: design.id, opening_surface: 'gallery' })
     selectDesign(design)
   }, [sounds, selectDesign])
 
@@ -660,7 +661,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
     const current = COLOR_FILTER_RE.test(currentRaw) ? currentRaw.toLowerCase() : null
     if (current === target) return
     sounds.playFilterClick()
-    posthog.capture('color_filter_applied', { color: hex })
+    track('color_filter_applied', { color: hex })
     updateParams(p => {
       p.delete('site')
       p.delete('tab')
@@ -819,7 +820,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
 
   const handleIndexOpen = useCallback((design: Design) => {
     sounds.playSelect()
-    posthog.capture('design_opened', { source_id: design.id, opening_surface: 'index' })
+    track('design_opened', { source_id: design.id, opening_surface: 'index' })
     updateParams(p => {
       p.delete('view')
       p.set('site', design.id)
@@ -841,7 +842,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
 
   const handleBrowseOpen = useCallback((id: string) => {
     sounds.playSelect()
-    posthog.capture('design_opened', { source_id: id, opening_surface: 'browse_panel' })
+    track('design_opened', { source_id: id, opening_surface: 'browse_panel' })
     updateParams(p => {
       p.delete('view')
       p.delete('collection')
@@ -1434,7 +1435,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
                         isFavorite={favorites.includes(Number(design.id))}
                         onToggleFavorite={() => {
                           const isFavorited = favorites.includes(Number(design.id))
-                          posthog.capture('design_favorite_toggled', {
+                          track('design_favorite_toggled', {
                             source_id: design.id,
                             is_favorited: !isFavorited,
                           })

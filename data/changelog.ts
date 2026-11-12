@@ -85,6 +85,14 @@ export function releaseAuthors(release: ChangelogRelease): Author[] {
 // only case where the question is actually being asked.
 const changelog: ChangelogRelease[] = [
   {
+    date: '2026-11-12',
+    title: 'Faster to Open, Nothing Broken',
+    items: [
+      { type: 'improved', author: 'damilare', text: 'Pages and site details now come straight from the edge on repeat visits instead of being rebuilt each time, so the library opens faster and stops timing out under load' },
+      { type: 'fixed', author: 'damilare', text: 'Two errors that fired in the background on every page load are gone, and the site panel now loads ahead of your first click as intended' },
+    ],
+  },
+  {
     date: '2026-11-09',
     title: 'The Weekly, Framed',
     items: [
