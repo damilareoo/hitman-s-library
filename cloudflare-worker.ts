@@ -21,6 +21,9 @@
 import openNext from './.open-next/worker.js'
 // @ts-ignore: produced by `opennextjs-cloudflare build` (absent before a build)
 export { DOQueueHandler, DOShardedTagCache, BucketCachePurge } from './.open-next/worker.js'
+import { matchFastPath } from './lib/edge/fast-path'
+import { getSiteDetail } from './lib/read/site-detail'
+import { queryDesigns } from './lib/design-queries'
 
 interface Ctx {
   waitUntil(promise: Promise<unknown>): void
@@ -28,6 +31,8 @@ interface Ctx {
 }
 interface Env {
   CF_VERSION_METADATA?: { id?: string }
+  DATABASE_URL?: string
+  DEV_BYPASS?: string
   [key: string]: unknown
 }
 
@@ -80,11 +85,41 @@ function forBrowser(res: Response, state: 'HIT' | 'STALE' | 'MISS'): Response {
   return new Response(res.body, { status: res.status, statusText: res.statusText, headers })
 }
 
+const json = (body: unknown, status: number, cacheControl?: string) =>
+  new Response(JSON.stringify(body), {
+    status,
+    headers: { 'content-type': 'application/json', ...(cacheControl ? { 'cache-control': cacheControl } : {}) },
+  })
+
+/**
+ * Answer the request: the two hottest reads straight from Neon (no Next), all
+ * else through Next. Same JSON either way — both use the same query modules.
+ */
+async function origin(request: Request, env: Env, ctx: Ctx, url: URL): Promise<Response> {
+  const fast = env.DEV_BYPASS === '1' && url.searchParams.has('__nofast') ? null : matchFastPath(request.method, url)
+  if (!fast) return openNext.fetch(request, env, ctx)
+  // lib/db reads process.env lazily; outside Next nothing has copied it over yet.
+  if (env.DATABASE_URL && !process.env.DATABASE_URL) process.env.DATABASE_URL = env.DATABASE_URL
+  try {
+    if (fast.kind === 'site') {
+      const detail = await getSiteDetail(fast.id)
+      return detail ? json(detail, 200) : json({ error: 'Not found' }, 404)
+    }
+    const result = await queryDesigns(fast.query)
+    return json(result, 200, 'public, s-maxage=60, stale-while-revalidate=600')
+  } catch (err) {
+    console.error('[fast-path]', url.pathname, err)
+    return fast.kind === 'site'
+      ? json({ error: 'Internal error' }, 500)
+      : json({ error: 'Failed to load designs', designs: [], pagination: { total: 0, limit: 32, offset: 0, hasMore: false } }, 500)
+  }
+}
+
 export default {
   async fetch(request: Request, env: Env, ctx: Ctx): Promise<Response> {
     const url = new URL(request.url)
     const k = kind(request, url)
-    if (!k) return openNext.fetch(request, env, ctx)
+    if (!k) return origin(request, env, ctx, url)
 
     const cache = (caches as unknown as { default: Cache }).default
     const key = cacheKey(url, env.CF_VERSION_METADATA?.id ?? 'dev')
@@ -98,14 +133,14 @@ export default {
       // Stale: answer now, refresh once in the background.
       ctx.waitUntil((async () => {
         try {
-          const fresh: Response = await openNext.fetch(new Request(request), env, ctx)
+          const fresh: Response = await origin(new Request(request), env, ctx, url)
           await store(cache, key, fresh)
         } catch { /* keep serving the stale copy */ }
       })())
       return forBrowser(hit, 'STALE')
     }
 
-    const res: Response = await openNext.fetch(request, env, ctx)
+    const res: Response = await origin(request, env, ctx, url)
     if (res.status === 200 && !res.headers.has('set-cookie')) {
       ctx.waitUntil(store(cache, key, res.clone()).catch(() => {}))
     }

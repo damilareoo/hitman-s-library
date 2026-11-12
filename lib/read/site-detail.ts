@@ -1,0 +1,112 @@
+// lib/read/site-detail.ts
+//
+// The body of GET /api/design/[id]: one site's capture, palette and type,
+// resolved through its current-extraction pointer. Shared by the Next route and
+// the Worker fast path, so both always answer with the same JSON. Free of
+// next/* imports on purpose: the fast path must not load Next.
+import type { NeonQueryFunction } from '@neondatabase/serverless'
+import { getSql } from '@/lib/db'
+import { getHistoriesByIds, type ExtractionSnapshot } from '@/lib/extraction-history'
+import { favoriteCounts } from '@/lib/taste'
+import { toHttps } from '@/lib/secure-url'
+
+export interface SiteDetailDeps {
+  sql: NeonQueryFunction<false, false>
+  getHistoriesByIds: (ids: number[]) => Promise<Map<number, ExtractionSnapshot>>
+  favoriteCounts: (ids: number[]) => Promise<Map<number, number>>
+}
+
+export interface SiteColor { hex_value: string; oklch: string | null; area_share: number | null }
+export interface SiteType {
+  font_family: string; role: string; google_fonts_url: string | null; primary_weight: number | null
+  sample_size_px: number | null; sample_line_height: number | string | null
+}
+export interface SiteDetail {
+  id: number; url: string; title: string
+  screenshot_url: string | null; mobile_screenshot_url: string | null
+  live_preview: boolean; created_at: string
+  extraction_error: string | null; motion_clip_url: string | null; motion_error: string | null
+  favorite_count: number; colors: SiteColor[]; typography: SiteType[]
+}
+
+const defaultDeps = (): SiteDetailDeps => ({ sql: getSql(), getHistoriesByIds, favoriteCounts })
+
+export async function getSiteDetail(id: number, deps: SiteDetailDeps = defaultDeps()): Promise<SiteDetail | null> {
+  const { sql } = deps
+  const sources = await sql`
+    SELECT id, source_url, source_name, screenshot_url, mobile_screenshot_url, created_at,
+           metadata->>'extraction_error' as extraction_error,
+           COALESCE((metadata->>'live_preview')::boolean, true) as live_preview,
+            metadata->>'motion_error' as motion_error,
+            current_extraction_id, motion_clip_url
+    FROM design_sources WHERE id = ${id}
+  `
+  if (!sources.length) return null
+  const source: any = sources[0]
+
+  // Resolve through the current-extraction pointer. Everything here is
+  // independent once the row is known, so one round trip for all of it.
+  const pointer = source.current_extraction_id
+  const [colors, typographyRows, favCounts, histories] = await Promise.all([
+    sql`SELECT hex_value, oklch, area_share FROM design_colors WHERE source_id = ${id} ORDER BY id`,
+    sql`
+      SELECT font_family, role, google_fonts_url, primary_weight, sample_size_px, sample_line_height
+      FROM design_typography WHERE source_id = ${id} AND role != 'legacy'
+      ORDER BY CASE role WHEN 'heading' THEN 1 WHEN 'body' THEN 2 WHEN 'mono' THEN 3 ELSE 4 END
+    `,
+    deps.favoriteCounts([id]),
+    typeof pointer === 'number' ? deps.getHistoriesByIds([pointer]) : Promise.resolve(new Map<number, ExtractionSnapshot>()),
+  ])
+
+  let snapshotColors = colors as SiteColor[]
+  let snapshotTypography: SiteType[] = (typographyRows as any[]).map(t => ({
+    font_family: t.font_family,
+    role: t.role,
+    google_fonts_url: t.google_fonts_url,
+    primary_weight: t.primary_weight,
+    sample_size_px: t.sample_size_px ?? null,
+    sample_line_height: t.sample_line_height ?? null,
+  }))
+  let screenshotUrl = source.screenshot_url
+  let mobileScreenshotUrl = source.mobile_screenshot_url
+  const snapshot = typeof pointer === 'number' ? histories.get(pointer) : undefined
+  if (snapshot) {
+    // An empty snapshot records a run that found nothing, not a site with no
+    // palette — prefer what the legacy tables hold in that case.
+    if (snapshot.palette.length > 0) {
+      snapshotColors = snapshot.palette.map(p => ({
+        hex_value: p.hex,
+        oklch: p.oklch,
+        area_share: typeof p.area_share === 'number' ? p.area_share : null,
+      }))
+    }
+    if (snapshot.typography.length > 0) {
+      snapshotTypography = snapshot.typography.map(t => ({
+        font_family: t.fontFamily,
+        role: t.role,
+        google_fonts_url: t.googleFontsUrl,
+        primary_weight: t.primaryWeight,
+        sample_size_px: t.sampleSizePx ?? null,
+        sample_line_height: t.sampleLineHeight ?? null,
+      }))
+    }
+    screenshotUrl = snapshot.screenshot_url ?? screenshotUrl
+    mobileScreenshotUrl = snapshot.mobile_screenshot_url ?? mobileScreenshotUrl
+  }
+
+  return {
+    id: source.id,
+    url: source.source_url,
+    title: source.source_name,
+    screenshot_url: toHttps(screenshotUrl),
+    mobile_screenshot_url: toHttps(mobileScreenshotUrl),
+    live_preview: source.live_preview,
+    created_at: source.created_at,
+    extraction_error: source.extraction_error ?? null,
+    motion_clip_url: typeof source.motion_clip_url === 'string' ? source.motion_clip_url : null,
+    motion_error: source.motion_error ?? null,
+    favorite_count: favCounts.get(id) ?? 0,
+    colors: snapshotColors,
+    typography: snapshotTypography,
+  }
+}

@@ -1,37 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { queryDesigns, type SortBy } from '@/lib/design-queries'
-
-const VALID_SORTS: SortBy[] = ['recent', 'oldest', 'name', 'quality']
-
-function clampInt(raw: string | null, fallback: number, min: number, max: number): number {
-  const n = parseInt(raw ?? '', 10)
-  if (!Number.isFinite(n)) return fallback
-  return Math.min(Math.max(n, min), max)
-}
+import { queryDesigns } from '@/lib/design-queries'
+import { parseListQuery } from '@/lib/edge/fast-path'
 
 export async function GET(req: NextRequest) {
   try {
-    const { searchParams } = new URL(req.url)
-
-    const sortParam = searchParams.get('sortBy') as SortBy | null
-    // '' .split(',') is [''], and Number('') is 0 — filter empties first or
-    // every ids-less call short-circuits to site id 0 and returns nothing.
-    const ids = (searchParams.get('ids') ?? '')
-      .split(',')
-      .map(s => s.trim())
-      .filter(s => s !== '')
-      .map(Number)
-      .filter(Number.isFinite)
-      .slice(0, 200)
-    const result = await queryDesigns({
-      ids,
-      kinds: searchParams.getAll('kind'),
-      tags: searchParams.getAll('tag'),
-      search: searchParams.get('search') ?? '',
-      sortBy: sortParam && VALID_SORTS.includes(sortParam) ? sortParam : 'recent',
-      limit: clampInt(searchParams.get('limit'), 32, 1, 100),
-      offset: clampInt(searchParams.get('offset'), 0, 0, 100_000),
-    })
+    const result = await queryDesigns(parseListQuery(new URL(req.url).searchParams))
 
     return NextResponse.json(result, {
       headers: {

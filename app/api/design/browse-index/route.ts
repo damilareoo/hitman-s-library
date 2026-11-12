@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { queryBrowseIndex } from '@/lib/design-queries'
+import { queryBrowseIndex } from '@/lib/design-queries-cached'
 
 export async function GET() {
   try {

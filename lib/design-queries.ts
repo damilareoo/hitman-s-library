@@ -3,7 +3,6 @@
 //
 // Both the server-rendered gallery and /api/design/filter-advanced call these,
 // so the first paint and every subsequent fetch cannot drift apart.
-import { unstable_cache } from 'next/cache'
 import { toHttps } from '@/lib/secure-url'
 import { getSql } from '@/lib/db'
 import { cleanTitle, decodeEntities } from './clean-title'
@@ -372,8 +371,7 @@ export async function queryCategories(): Promise<{ name: string; count: number }
  * size: at 200 it silently dropped the fiftieth-newest sites from the only
  * part of the page a crawler can follow.
  */
-export const queryAllSitesIndex = unstable_cache(
-  async () => {
+export async function loadAllSitesIndex() {
     const rows = await sql`
       SELECT id, source_url, source_name
       FROM design_sources
@@ -386,20 +384,7 @@ export const queryAllSitesIndex = unstable_cache(
       url: row.source_url as string,
       title: cleanTitle(row.source_name, row.source_url),
     }))
-  },
-  ['all-sites-index'],
-  { revalidate: 3600, tags: ['designs'] },
-)
-
-/**
- * Category counts change only when a site is added or removed, so serving them
- * a few minutes stale costs nothing and takes a query off the render path.
- */
-export const queryCategoriesCached = unstable_cache(
-  queryCategories,
-  ['categories'],
-  { revalidate: 300, tags: ['designs'] },
-)
+}
 
 /** One row per site, small enough to keep in the browser for the browse panel. */
 export interface BrowseEntry {
@@ -419,8 +404,7 @@ export interface BrowseEntry {
  * five short fields cost a few kilobytes, and the cache means new arrivals
  * show up within a couple of minutes.
  */
-export const queryBrowseIndex = unstable_cache(
-  async (): Promise<BrowseEntry[]> => {
+export async function loadBrowseIndex(): Promise<BrowseEntry[]> {
     const rows = await sql`
       SELECT id, source_url, source_name, kind, tags,
              thumbnail_optimized_url, thumbnail_url
@@ -436,7 +420,4 @@ export const queryBrowseIndex = unstable_cache(
       thumb: cleanUrl(row.thumbnail_optimized_url) ?? cleanUrl(row.thumbnail_url),
       tags: parseTags(row.tags),
     }))
-  },
-  ['browse-index'],
-  { revalidate: 120, tags: ['designs'] },
-)
+}

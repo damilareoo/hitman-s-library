@@ -1,12 +1,8 @@
 import { Suspense } from 'react'
 import type { Metadata } from 'next'
 import { Gallery } from '@/components/gallery'
-import {
-  queryDesigns,
-  queryCategoriesCached,
-  queryAllSitesIndex,
-  type SortBy,
-} from '@/lib/design-queries'
+import { queryDesigns, type SortBy } from '@/lib/design-queries'
+import { queryCategoriesCached, queryAllSitesIndex } from '@/lib/design-queries-cached'
 import { getDomain } from '@/lib/get-domain'
 import { SIMILAR_ENABLED, querySimilar } from '@/lib/similarity'
 import { rankDesignsByColor, COLOR_RADIUS, COLOR_CAP, isHexColor } from '@/lib/color-distance'
