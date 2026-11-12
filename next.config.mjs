@@ -29,4 +29,9 @@ const nextConfig = {
 
 export default nextConfig
 
-import('@opennextjs/cloudflare').then(m => m.initOpenNextCloudflareForDev());
+// Only `next dev` needs the local Cloudflare bindings. Calling this during
+// `next build` starts a Miniflare/workerd instance for no reason, and with
+// Next 16's parallel build workers it races on the same SQLite state file.
+if (process.env.NODE_ENV === 'development') {
+  import('@opennextjs/cloudflare').then(m => m.initOpenNextCloudflareForDev());
+}

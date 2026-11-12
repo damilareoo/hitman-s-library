@@ -410,7 +410,7 @@ Touch targets are expanded with pseudo-element overlays rather than padding, so 
 | `BLOB_READ_WRITE_TOKEN` | Vercel Blob storage token |
 | `ADMIN_PASSWORD` | Passcode for `/admin`, and the bearer token for scripts |
 | `ADMIN_SESSION_SECRET` | Optional. Signs session cookies; falls back to `ADMIN_PASSWORD`. Set it so rotating the passcode does not invalidate the signing key |
-| `CRON_SECRET` | Bearer token for the nightly `/api/cron/backfill` job |
+| `CRON_SECRET` | Bearer token for the cron routes. The weekly digest runs from the `cron/` worker; the nightly `/api/cron/backfill` is not scheduled on Cloudflare, because capture cannot run in a Worker (see `cron/worker.ts`) |
 | `NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN` | PostHog project key. Needed at build time, or analytics stay off |
 | `NEXT_PUBLIC_PREVIEW_ORIGIN` | Optional. Host that serves the live preview. Derived from the current hostname when unset |
 
