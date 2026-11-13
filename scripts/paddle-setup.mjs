@@ -2,7 +2,7 @@
 // scripts/paddle-setup.mjs
 //
 // Creates (or updates) Hitman's Library Pro in Paddle: one product, a monthly
-// and a yearly price, with lower prices for price groups B and C. Safe to run
+// and a yearly price, the same everywhere. Safe to run
 // again — everything is matched by custom_data.key. Reads PADDLE_API_KEY from
 // .env.local and never prints it. Sandbox unless --live.
 //
@@ -19,11 +19,8 @@ const KEY = live ? env.PADDLE_API_KEY_LIVE : env.PADDLE_API_KEY
 if (!KEY) { console.error(`Missing ${live ? 'PADDLE_API_KEY_LIVE' : 'PADDLE_API_KEY'} in .env.local`); process.exit(1) }
 const BASE = live ? 'https://api.paddle.com' : 'https://sandbox-api.paddle.com'
 
-// Same table the app uses (data/price-groups.ts), loaded without a TS step.
-const src = readFileSync(new URL('../data/price-groups.ts', import.meta.url), 'utf8')
-const list = name => [...src.match(new RegExp(`export const ${name} = \\[([^\\]]+)\\]`))[1].matchAll(/'([A-Z]{2})'/g)].map(m => m[1])
-const GROUP_B = list('GROUP_B'), GROUP_C = list('GROUP_C')
-const PRICES = { A: { month: 500, year: 4800 }, B: { month: 300, year: 2900 }, C: { month: 200, year: 1900 } }
+// Same as data/price-groups.ts: one price everywhere.
+const PRICES = { month: 500, year: 4800 }
 
 async function api(method, path, body) {
   const res = await fetch(BASE + path, {
@@ -55,13 +52,11 @@ for (const interval of ['month', 'year']) {
   const body = {
     description: interval === 'month' ? 'Pro, monthly' : 'Pro, yearly',
     name: interval === 'month' ? 'Monthly' : 'Yearly',
-    unit_price: { amount: String(PRICES.A[interval]), currency_code: 'USD' },
+    unit_price: { amount: String(PRICES[interval]), currency_code: 'USD' },
     // One subscription per person: checkout shows no quantity picker.
     quantity: { minimum: 1, maximum: 1 },
-    unit_price_overrides: [
-      { country_codes: GROUP_B, unit_price: { amount: String(PRICES.B[interval]), currency_code: 'USD' } },
-      { country_codes: GROUP_C, unit_price: { amount: String(PRICES.C[interval]), currency_code: 'USD' } },
-    ],
+    // No regional prices: clears any left from earlier runs.
+    unit_price_overrides: [],
   }
   const existing = prices.find(p => p.custom_data?.key === key)
   const price = existing

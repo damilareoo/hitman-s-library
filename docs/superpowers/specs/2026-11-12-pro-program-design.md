@@ -50,7 +50,7 @@ Anti-goals (failure even if it "works")
 
 | Area | Decision |
 |---|---|
-| Price | Regional. Group A $5/mo · $48/yr; Group B ≈$3/mo · ≈$29/yr; Group C ≈$2/mo · ≈$19/yr. |
+| Price | **One price everywhere: $5/mo · $48/yr** (owner, 2026-11-13; replaces the earlier regional groups). Shown in local currency where Paddle supports it. |
 | Plans | Monthly and yearly. |
 | Free taste | 3 full Pro style kits per month for signed-in free users, shown with a quiet meter (option "B"). |
 | Accounts | Sign-in only when needed (saving across devices, upgrading). Email magic link **and** Google. No passwords. |

@@ -23,7 +23,7 @@ const SECTIONS: LegalSection[] = [
   },
   {
     title: 'Pro',
-    body: <>Pro is a subscription, billed monthly or yearly. The price is shown in your currency before you pay, and may differ by country. It renews automatically until you cancel. Cancel any time from your receipt email or by writing to us; you keep Pro until the end of the period you paid for.</>,
+    body: <>Pro is a subscription, billed monthly or yearly. The price is the same everywhere and is shown in your currency, where possible, before you pay. It renews automatically until you cancel. Cancel any time from your receipt email or by writing to us; you keep Pro until the end of the period you paid for.</>,
   },
   {
     title: 'Payments',

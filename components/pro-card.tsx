@@ -1,8 +1,8 @@
 // components/pro-card.tsx
 //
-// The Pro offer: one card in the member-card language. Local price from
-// Paddle (by where you are), a Monthly/Yearly switch (yearly first where
-// prices are lowest), and one action. Checkout is a transaction our server
+// The Pro offer: one card in the member-card language. One price for
+// everyone, shown by Paddle in your currency where it can, a Monthly/Yearly
+// switch, and one action. Checkout is a transaction our server
 // made for your account; Paddle's overlay takes the payment.
 'use client'
 
@@ -12,7 +12,7 @@ import { ColourStrip } from '@/components/colour-strip'
 import { CARD } from '@/components/member-card'
 import { useAccount, openSignIn, KITS_EVENT } from '@/lib/account-client'
 import { loadPaddle, localPrices, onPaddleEvent, setPaddleCustomer, type LocalPrices } from '@/lib/paddle/client'
-import { priceGroup } from '@/data/price-groups'
+import { DEFAULT_INTERVAL } from '@/data/price-groups'
 import { track } from '@/lib/analytics'
 
 const FEATURES = [
@@ -27,17 +27,12 @@ export function ProCard() {
   const { status, pro, paddleCustomerId } = useAccount()
   useEffect(() => { setPaddleCustomer(paddleCustomerId) }, [paddleCustomerId])
   const [prices, setPrices] = useState<LocalPrices | null>(null)
-  const [interval, setInterval_] = useState<'month' | 'year'>('year')
-  const [chosen, setChosen] = useState(false)
+  const [interval, setInterval_] = useState<'month' | 'year'>(DEFAULT_INTERVAL)
   const [phase, setPhase] = useState<Phase>('idle')
 
   useEffect(() => {
     track('pricing_viewed')
-    localPrices().then(p => {
-      setPrices(p)
-      // Where Pro is cheapest, a year up front is the better deal; elsewhere monthly leads.
-      if (!chosen) setInterval_(priceGroup(p.country) === 'C' ? 'year' : 'month')
-    }).catch(() => setPrices(null))
+    localPrices().then(setPrices).catch(() => setPrices(null))
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -117,7 +112,7 @@ export function ProCard() {
               {(['month', 'year'] as const).map(i => (
                 <button
                   key={i} role="radio" aria-checked={interval === i}
-                  onClick={() => { setInterval_(i); setChosen(true) }}
+                  onClick={() => setInterval_(i)}
                   className={'h-8 rounded-[7px] text-[12.5px] font-[600] transition-colors ' + (interval === i ? 'bg-card text-ink shadow-[0_1px_2px_rgba(0,0,0,0.08)]' : 'text-ink-3 hover:text-ink')}
                 >
                   {i === 'month' ? 'Monthly' : <>Yearly <span className="font-[500] text-[#E8A04A]">save {save}%</span></>}
@@ -128,7 +123,7 @@ export function ProCard() {
               <span className="text-[28px] font-[640] tracking-[-0.03em] text-ink min-w-[3ch]">{price ?? '—'}</span>
               <span className="text-[13.5px] text-ink-3">/ {interval === 'month' ? 'month' : 'year'}</span>
             </p>
-            <p className={CARD.meta + ' mt-1'}>In your currency. Prices adjust to where you live.</p>
+            <p className={CARD.meta + ' mt-1'}>Shown in your currency where we can.</p>
             <button
               onClick={getPro} disabled={phase === 'opening' || phase === 'finishing'}
               className="mt-4 w-full h-11 rounded-[10px] flex items-center justify-center gap-2 bg-foreground text-background text-[14px] font-[600] tracking-[-0.01em] hover:opacity-90 active:scale-[0.99] disabled:opacity-50 transition"
