@@ -54,7 +54,7 @@ function deps() {
   const seen = new Set<string>()
   const rows: any[] = []
   const d: WebhookDeps = {
-    secret: SECRET, now: () => NOW,
+    source: async () => 'yes', secret: SECRET, now: () => NOW,
     apply: async (id, row, occurredAt) => { if (seen.has(id)) return; seen.add(id); rows.push({ ...row, occurredAt }) },
   }
   return { d, rows }
@@ -63,6 +63,18 @@ const post = async (body: string, header?: string) =>
   new Request('https://hitmanslibrary.xyz/api/paddle/webhook', { method: 'POST', body, headers: { 'paddle-signature': header ?? await sign(body, NOW) } })
 
 describe('handleWebhook', () => {
+  test('a delivery from outside Paddle\'s addresses → 403, nothing written', async () => {
+    const { d, rows } = deps()
+    d.source = async () => 'no'
+    expect((await handleWebhook(await post(JSON.stringify(event())), d)).status).toBe(403)
+    expect(rows).toEqual([])
+  })
+  test('if Paddle\'s address list is unavailable → 503 so Paddle retries', async () => {
+    const { d, rows } = deps()
+    d.source = async () => 'unknown'
+    expect((await handleWebhook(await post(JSON.stringify(event())), d)).status).toBe(503)
+    expect(rows).toEqual([])
+  })
   test('bad signature → 401, nothing written', async () => {
     const { d, rows } = deps()
     expect((await handleWebhook(await post('{}', 'ts=1;h1=00'), d)).status).toBe(401)

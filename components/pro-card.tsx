@@ -11,7 +11,7 @@ import { Package, MagnifyingGlass, ArrowUp, ArrowRight } from '@phosphor-icons/r
 import { ColourStrip } from '@/components/colour-strip'
 import { CARD } from '@/components/member-card'
 import { useAccount, openSignIn, KITS_EVENT } from '@/lib/account-client'
-import { loadPaddle, localPrices, onPaddleEvent, type LocalPrices } from '@/lib/paddle/client'
+import { loadPaddle, localPrices, onPaddleEvent, setPaddleCustomer, type LocalPrices } from '@/lib/paddle/client'
 import { priceGroup } from '@/data/price-groups'
 import { track } from '@/lib/analytics'
 
@@ -24,7 +24,8 @@ const FEATURES = [
 type Phase = 'idle' | 'opening' | 'finishing' | 'failed'
 
 export function ProCard() {
-  const { status, pro } = useAccount()
+  const { status, pro, paddleCustomerId } = useAccount()
+  useEffect(() => { setPaddleCustomer(paddleCustomerId) }, [paddleCustomerId])
   const [prices, setPrices] = useState<LocalPrices | null>(null)
   const [interval, setInterval_] = useState<'month' | 'year'>('year')
   const [chosen, setChosen] = useState(false)

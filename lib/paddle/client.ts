@@ -8,7 +8,8 @@ import { PADDLE } from './config'
 
 type PaddleJs = {
   Environment: { set: (e: string) => void }
-  Initialize: (o: { token: string; eventCallback?: (e: { name?: string }) => void }) => void
+  Initialize: (o: { token: string; pwCustomer?: { id: string }; eventCallback?: (e: { name?: string }) => void }) => void
+  Update: (o: { pwCustomer: { id: string } }) => void
   PricePreview: (o: { items: { priceId: string; quantity: number }[] }) => Promise<{
     data: { customer?: { address?: { countryCode?: string } }; address?: { countryCode?: string }; details: { lineItems: { price: { id: string }; formattedTotals: { total: string }; totals: { total: string } }[] } }
   }>
@@ -17,6 +18,15 @@ type PaddleJs = {
 declare global { interface Window { Paddle?: PaddleJs } }
 
 let loading: Promise<PaddleJs> | null = null
+let customerId: string | null = null
+const CUSTOMER = /^ctm_[a-z0-9]+$/
+
+/** Tells Paddle Retain who this is: the member's Paddle customer id (ctm_…), or nothing. */
+export function setPaddleCustomer(id: string | null | undefined) {
+  if (!id || !CUSTOMER.test(id) || id === customerId) return
+  customerId = id
+  if (loading) loading.then(P => P.Update({ pwCustomer: { id } })).catch(() => {})
+}
 const listeners = new Set<(name: string) => void>()
 
 export function onPaddleEvent(fn: (name: string) => void) { listeners.add(fn); return () => { listeners.delete(fn) } }
@@ -31,7 +41,7 @@ export function loadPaddle(): Promise<PaddleJs> {
       const P = window.Paddle
       if (!P) return reject(new Error('paddle missing'))
       if (PADDLE.environment === 'sandbox') P.Environment.set('sandbox')
-      P.Initialize({ token: PADDLE.clientToken, eventCallback: e => { if (e?.name) listeners.forEach(l => l(e.name!)) } })
+      P.Initialize({ token: PADDLE.clientToken, ...(customerId ? { pwCustomer: { id: customerId } } : {}), eventCallback: e => { if (e?.name) listeners.forEach(l => l(e.name!)) } })
       resolve(P)
     }
     s.onerror = () => { loading = null; reject(new Error('paddle failed to load')) }

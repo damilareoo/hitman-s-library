@@ -16,7 +16,7 @@ export const KITS_EVENT = 'hl:kits-changed'
 
 export interface AccountUser { email: string; name: string | null; avatar: string | null; memberNo: number; since: string; google: boolean }
 export interface KitMeter { used: number; limit: number }
-type State = { status: 'loading' | 'signed-out' | 'signed-in'; user: AccountUser | null; pro?: boolean; kits?: KitMeter }
+type State = { status: 'loading' | 'signed-out' | 'signed-in'; user: AccountUser | null; pro?: boolean; kits?: KitMeter; paddleCustomerId?: string | null }
 
 const LOADING: State = { status: 'loading', user: null }
 let state: State = LOADING
@@ -85,7 +85,7 @@ async function load() {
   if (!signedInHint()) return set({ status: 'signed-out', user: null })
   const body = await fetch('/api/me', { credentials: 'same-origin' }).then(r => r.json()).catch(() => ({ user: null }))
   if (!body.user) return set({ status: 'signed-out', user: null })
-  set({ status: 'signed-in', user: body.user, pro: Boolean(body.pro), kits: body.kits })
+  set({ status: 'signed-in', user: body.user, pro: Boolean(body.pro), kits: body.kits, paddleCustomerId: body.paddleCustomerId ?? null })
   await sync()
 }
 

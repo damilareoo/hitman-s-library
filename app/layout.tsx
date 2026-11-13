@@ -14,7 +14,7 @@ export const metadata: Metadata = {
     template: "%s | Hitman's Library",
   },
   description:
-    "Extract, organize, and reference design systems. Upload links, import Excel sheets, automatically extract colors, typography, layout architecture. Generate prompts for consistent high-quality builds.",
+    "A curated library of the web's best-designed sites, with each one's colours, type and screenshots measured. Free to browse. Pro adds unlimited style kits and deeper search.",
   keywords: [
     "design library",
     "design extraction",
@@ -56,7 +56,7 @@ export const metadata: Metadata = {
     url: "/",
     title: "Hitman's Library",
     description:
-      "A personal infrastructure for everything worth saving on the web. No folders. No bookmarks. Just the library.",
+      "A curated library of the web's best-designed sites, with each one's colours, type and screenshots measured. Free to browse. Pro adds unlimited style kits and deeper search.",
     siteName: "Hitman's Library",
     // One image, not two. Link previews are rendered from a copy the platform
     // scraped and cached on its own servers, so there is no viewer and no
@@ -89,7 +89,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Hitman's Library",
     description:
-      "A personal infrastructure for everything worth saving on the web. No folders. No bookmarks. Just the library.",
+      "A curated library of the web's best-designed sites, with each one's colours, type and screenshots measured. Free to browse. Pro adds unlimited style kits and deeper search.",
     images: ["https://hitmanslibrary.xyz/og-2026-09.png"],
     creator: "@damilareoo",
   },

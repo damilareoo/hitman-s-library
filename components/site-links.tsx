@@ -8,6 +8,7 @@ const PAGES = [
   { href: '/about', label: 'About' },
   { href: '/changelog', label: 'Changelog' },
   { href: '/submit', label: 'Submit' },
+  { href: '/pro', label: 'Pro' },
   { href: '/privacy', label: 'Privacy' },
 ]
 

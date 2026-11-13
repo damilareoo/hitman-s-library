@@ -141,6 +141,11 @@ export default async function AboutPage() {
           </Link>
           .
         </p>
+        <p className="text-meta text-ink-4 mt-3">
+          Questions, or anything else: <a href="mailto:hello@damilare.works" className="text-ink-3 hover:text-ink underline underline-offset-2 decoration-edge-strong transition-colors">hello@damilare.works</a>.{' '}
+          <Link href="/terms" className="text-ink-3 hover:text-ink underline underline-offset-2 decoration-edge-strong transition-colors">Terms</Link> ·{' '}
+          <Link href="/refunds" className="text-ink-3 hover:text-ink underline underline-offset-2 decoration-edge-strong transition-colors">Refunds</Link>
+        </p>
       </main>
     </div>
   )

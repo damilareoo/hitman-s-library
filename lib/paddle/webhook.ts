@@ -21,6 +21,8 @@ export interface SubscriptionRow {
 }
 
 export interface WebhookDeps {
+  /** 'yes' from one of Paddle's addresses, 'no' from elsewhere, 'unknown' when the list couldn't be fetched. */
+  source: (req: Request) => Promise<'yes' | 'no' | 'unknown'>
   secret: string
   now: () => number
   /**
@@ -71,6 +73,10 @@ const json = (status: number, body: unknown) =>
   new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json', 'Cache-Control': 'private, no-store' } })
 
 export async function handleWebhook(req: Request, deps: WebhookDeps): Promise<Response> {
+  const source = await deps.source(req)
+  if (source === 'no') return json(403, { error: 'not-paddle' })
+  // Can't check the sender right now: refuse for the moment; Paddle retries.
+  if (source === 'unknown') return json(503, { error: 'try-later' })
   const body = await req.text()
   if (!(await verifySignature(body, req.headers.get('paddle-signature'), deps.secret, deps.now()))) return json(401, { error: 'bad-signature' })
   let event: { event_id?: string; event_type?: string; occurred_at?: string; data?: PaddleSubscription }
