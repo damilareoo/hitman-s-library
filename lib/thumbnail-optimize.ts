@@ -6,7 +6,7 @@
 // grid hotlinked them as-is. The optimizer output is a 640px webp first
 // frame: sharp decodes only frame one of an animated input, so GIFs freeze
 // for the grid while the detail panel and hover clips keep the motion.
-import { put } from '@vercel/blob'
+import { put } from '@/lib/blob'
 import { loadRuntimeDep } from './runtime-deps'
 
 /** Card slots render at ~283px; 640px is generous headroom for DPR 2. */

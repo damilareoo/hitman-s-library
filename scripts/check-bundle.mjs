@@ -15,7 +15,7 @@ import { join } from 'node:path'
 const BUDGET_KIB = 2000 // gzip; the free plan's hard limit is 3 MB
 // Bundled package code carries its node_modules path in the module ids; bare
 // names also appear in harmless places (the serverExternalPackages list).
-const FORBIDDEN = ['node_modules/posthog-js/', 'node_modules/onnxruntime', 'node_modules/@xenova/', 'node_modules/@sparticuz/', 'node_modules/puppeteer/']
+const FORBIDDEN = ['node_modules/posthog-js/', 'node_modules/@vercel/blob/', 'node_modules/undici/', 'node_modules/onnxruntime', 'node_modules/@xenova/', 'node_modules/@sparticuz/', 'node_modules/puppeteer/']
 
 const out = mkdtempSync(join(tmpdir(), 'hl-bundle-'))
 const log = execFileSync('./node_modules/.bin/wrangler', ['deploy', '--dry-run', '--outdir', out], { encoding: 'utf8' })
