@@ -15,8 +15,8 @@ const IDS: Record<Env, { clientToken: string; productId: string; prices: { month
   },
   production: {
     clientToken: 'live_cdcb0228ae2aad9de1fd3db6fec',
-    productId: '',
-    prices: { month: '', year: '' },
+    productId: 'pro_01m7a9mztba1jas79ak41cad00',
+    prices: { month: 'pri_01m7a9n1629c73425vfqmtq10p', year: 'pri_01m7a9n1mvwjq3ratz3qazf2bw' },
   },
 }
 
