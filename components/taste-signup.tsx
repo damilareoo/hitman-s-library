@@ -4,7 +4,7 @@
 // password — the email row plus the favorites list is the whole profile.
 'use client'
 
-import { CARD, BTN, FIELD } from '@/components/member-card'
+import { CARD, BTN, FIELD, FIELD_INPUT } from '@/components/member-card'
 
 import { useState, useEffect } from 'react'
 import { track } from '@/lib/analytics'
@@ -114,7 +114,7 @@ export function TasteSignup() {
               value={email}
               onChange={e => setEmail(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter') submit() }}
-              className="flex-1 min-w-0 h-full bg-transparent outline-none text-[15px] tracking-[-0.01em] text-ink placeholder:text-ink-4"
+              className={FIELD_INPUT}
             />
             <button
               onClick={submit}

@@ -1,5 +1,7 @@
 'use client'
 
+import { INPUT } from '@/components/member-card'
+
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { motion } from 'motion/react'
 import { ArrowRight, ArrowUpRight, Check, Globe, Minus, Plus, Warning } from '@phosphor-icons/react'
@@ -18,10 +20,8 @@ type PreviewState =
   | { kind: 'unreachable'; message: string }
   | { kind: 'rate-limited'; retryAfterSeconds: number }
 
-// The gallery search field's register, shared by every field here: a quiet
-// filled rectangle with no border until it has focus.
-const FIELD =
-  'w-full px-3 text-bodytext bg-muted/70 border border-transparent rounded-[10px] text-foreground placeholder:text-ink-4 outline-none hover:bg-muted focus:bg-muted focus:ring-1 focus:ring-foreground/15 transition-[background-color,box-shadow] duration-[var(--dur-2)] ease-[var(--ease-sig)]'
+// Every field here uses the site's one input style.
+const FIELD = INPUT
 
 /**
  * The submit form, in page form.
@@ -226,7 +226,7 @@ export function SubmitForm() {
           value={url}
           onChange={e => setUrl(e.target.value)}
           onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey) && canSubmit) { e.preventDefault(); submit() } }}
-          className={`${FIELD} min-h-[68px] pl-9 pr-9 py-2.5 resize-y`}
+          className={`${FIELD} h-auto min-h-[68px] pl-9 pr-9 py-2.5 resize-y`}
         />
         {preview.kind === 'checking' && (
           <span className="absolute right-3 top-[15px]">
@@ -315,7 +315,7 @@ export function SubmitForm() {
                       placeholder="@yourname"
                       value={credit}
                       onChange={e => setCredit(e.target.value)}
-                      className={`${FIELD} h-9`}
+                      className={FIELD}
                     />
                     <p className="mt-1.5 text-meta text-ink-4">
                       Goes with your submission so the reviewer can credit you.
@@ -335,7 +335,7 @@ export function SubmitForm() {
                       placeholder="you@example.com"
                       value={email}
                       onChange={e => setEmail(e.target.value)}
-                      className={`${FIELD} h-9`}
+                      className={FIELD}
                     />
                   </div>
 
@@ -352,7 +352,7 @@ export function SubmitForm() {
                       placeholder="Anything the reviewer should know"
                       value={note}
                       onChange={e => setNote(e.target.value)}
-                      className={`${FIELD} h-9`}
+                      className={FIELD}
                     />
                   </div>
                 </div>

@@ -9,7 +9,7 @@ import { useEffect, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
 import { ArrowRight, X } from '@phosphor-icons/react'
 import { GoogleMark } from '@/components/google-mark'
-import { CARD, BTN, FIELD } from '@/components/member-card'
+import { CARD, BTN, FIELD, FIELD_INPUT } from '@/components/member-card'
 import { POP_IN, POP_OUT } from '@/lib/motion'
 import { SIGN_IN_EVENT } from '@/lib/account-client'
 
@@ -148,7 +148,7 @@ export function SignInSheet() {
                           <input
                             id="signin-email" ref={inputRef} type="email" required autoComplete="email" inputMode="email"
                             value={email} onChange={e => setEmail(e.target.value)} placeholder="you@studio.com"
-                            className="flex-1 min-w-0 h-full bg-transparent outline-none text-[15px] tracking-[-0.01em] text-ink placeholder:text-ink-4"
+                            className={FIELD_INPUT}
                           />
                           <button
                             type="submit" disabled={step === 'sending'} aria-label="Email me a sign-in link"

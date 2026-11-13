@@ -12,7 +12,7 @@ import { ColorsTab } from './colors-tab'
 import { TypeTab } from './type-tab'
 import { HistoryTab } from './history-tab'
 import { ThemeExport } from './theme-export'
-import { CARD } from '@/components/member-card'
+import { CARD, INPUT_SM } from '@/components/member-card'
 import { KitTab } from './kit-tab'
 import { DRIFT_ENABLED } from '@/lib/drift'
 import { UNSORTED } from '@/lib/categories'
@@ -275,7 +275,7 @@ export function SiteDetailPanel({ variant = 'desktop', sourceId, metadata, initi
                     }}
                     placeholder="New set…"
                     aria-label="New collection name"
-                    className="min-w-0 flex-1 h-8 px-2 bg-transparent text-[13px] text-ink placeholder:text-ink-4 outline-none"
+                    className={INPUT_SM + ' min-w-0 flex-1 bg-popover'}
                   />
                   <button
                     onClick={() => {
