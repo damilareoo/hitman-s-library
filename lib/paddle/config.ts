@@ -14,7 +14,7 @@ const IDS: Record<Env, { clientToken: string; productId: string; prices: { month
     prices: { month: 'pri_01m7a4xrd86as5hd4d57gpg889', year: 'pri_01m7a4xrpsaf70zbtn8yk1t14c' },
   },
   production: {
-    clientToken: '', // live_… — created in the live dashboard
+    clientToken: 'live_cdcb0228ae2aad9de1fd3db6fec',
     productId: '',
     prices: { month: '', year: '' },
   },
@@ -22,3 +22,7 @@ const IDS: Record<Env, { clientToken: string; productId: string; prices: { month
 
 export const PADDLE = { environment: ENVIRONMENT, ...IDS[ENVIRONMENT] }
 export const PADDLE_API = ENVIRONMENT === 'sandbox' ? 'https://sandbox-api.paddle.com' : 'https://api.paddle.com'
+/** Worker secret names for this environment, so live and sandbox keys never overwrite each other. */
+export const PADDLE_SECRETS = ENVIRONMENT === 'sandbox'
+  ? { apiKey: 'PADDLE_API_KEY', webhookSecret: 'PADDLE_WEBHOOK_SECRET' }
+  : { apiKey: 'PADDLE_API_KEY_LIVE', webhookSecret: 'PADDLE_WEBHOOK_SECRET_LIVE' }

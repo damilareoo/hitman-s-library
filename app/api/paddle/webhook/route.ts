@@ -6,6 +6,7 @@ import { handleWebhook } from '@/lib/paddle/webhook'
 import { applySubscriptionEvent } from '@/lib/paddle/apply'
 import { problem } from '@/lib/auth/request'
 import { inCidrs, paddleIps } from '@/lib/paddle/ips'
+import { PADDLE_SECRETS } from '@/lib/paddle/config'
 
 // guard: none — only Paddle's published IPs are accepted, and every request must carry a valid HMAC signature
 export async function POST(req: Request) {
@@ -17,7 +18,7 @@ export async function POST(req: Request) {
         if (!cidrs.length) return 'unknown'
         return inCidrs(r.headers.get('cf-connecting-ip') ?? '', cidrs) ? 'yes' : 'no'
       },
-      secret: process.env.PADDLE_WEBHOOK_SECRET ?? '',
+      secret: process.env[PADDLE_SECRETS.webhookSecret] ?? '',
       now: () => Math.floor(Date.now() / 1000),
       apply: applySubscriptionEvent,
     })

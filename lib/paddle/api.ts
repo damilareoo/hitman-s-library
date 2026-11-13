@@ -1,10 +1,10 @@
 // lib/paddle/api.ts
 // The few Paddle API calls the app makes, server-side with the secret key.
-import { PADDLE_API } from './config'
+import { PADDLE_API, PADDLE_SECRETS } from './config'
 
 async function paddle<T>(method: string, path: string, body?: unknown): Promise<T> {
-  const key = process.env.PADDLE_API_KEY
-  if (!key) throw new Error('PADDLE_API_KEY is not configured')
+  const key = process.env[PADDLE_SECRETS.apiKey]
+  if (!key) throw new Error(`${PADDLE_SECRETS.apiKey} is not configured`)
   const res = await fetch(PADDLE_API + path, {
     method, headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
     body: body ? JSON.stringify(body) : undefined,

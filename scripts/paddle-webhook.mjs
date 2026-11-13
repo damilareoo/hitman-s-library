@@ -3,7 +3,7 @@
 //
 // Registers (once) the Paddle notification destination for subscription
 // events and pipes its signing secret straight into the Worker secret
-// PADDLE_WEBHOOK_SECRET. The secret is never printed. Sandbox unless --live.
+// PADDLE_WEBHOOK_SECRET (or _LIVE with --live). The secret is never printed. Sandbox unless --live.
 import { readFileSync } from 'node:fs'
 import { spawnSync } from 'node:child_process'
 
@@ -30,5 +30,5 @@ console.log('notification setting', setting.id, existing ? '(updated)' : '(creat
 
 const secret = setting.endpoint_secret_key ?? existing?.endpoint_secret_key
 if (!secret) { console.error('No signing secret returned'); process.exit(1) }
-const put = spawnSync('./node_modules/.bin/wrangler', ['secret', 'put', 'PADDLE_WEBHOOK_SECRET'], { input: secret, encoding: 'utf8' })
-console.log(put.status === 0 ? 'PADDLE_WEBHOOK_SECRET stored in the Worker' : 'Failed to store the secret: ' + (put.stderr || '').split('\n')[0])
+const put = spawnSync('./node_modules/.bin/wrangler', ['secret', 'put', live ? 'PADDLE_WEBHOOK_SECRET_LIVE' : 'PADDLE_WEBHOOK_SECRET'], { input: secret, encoding: 'utf8' })
+console.log(put.status === 0 ? `${live ? 'PADDLE_WEBHOOK_SECRET_LIVE' : 'PADDLE_WEBHOOK_SECRET'} stored in the Worker` : 'Failed to store the secret: ' + (put.stderr || '').split('\n')[0])
