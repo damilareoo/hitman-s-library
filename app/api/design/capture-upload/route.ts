@@ -9,7 +9,7 @@
 // real Chrome through the wall locally and POSTs the results here.
 import { NextResponse } from 'next/server'
 import { revalidateTag } from 'next/cache'
-import { put } from '@vercel/blob'
+import { put } from '@/lib/blob'
 import { getSql } from '@/lib/db'
 import { requireAdmin } from '@/lib/admin-auth'
 import { deduplicateColors, toColorFormats } from '@/lib/color-utils'

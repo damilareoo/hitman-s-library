@@ -89,7 +89,7 @@ export async function POST(
         await sql`UPDATE design_sources SET motion_clip_url = ${extractionResult.motionClipUrl}, motion_bytes = ${extractionResult.motionBytes} WHERE id = ${id}`.catch(() => null)
         if (prev?.motion_clip_url && prev.motion_clip_url !== extractionResult.motionClipUrl) {
           try {
-            const { del } = await import('@vercel/blob')
+            const { del } = await import('@/lib/blob')
             await del(prev.motion_clip_url)
           } catch { /* orphaned blob — storage, not data loss */ }
         }

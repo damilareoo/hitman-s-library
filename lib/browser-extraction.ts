@@ -1,5 +1,5 @@
 import type { Page } from 'puppeteer'
-import { put } from '@vercel/blob'
+import { put } from '@/lib/blob'
 import { existsSync, unlinkSync } from 'fs'
 import { extractAssets } from './asset-extraction'
 import { measureColorAreaShares } from './color-area.js'
