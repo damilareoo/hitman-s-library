@@ -3,18 +3,19 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
-const PAGES: { href: string; label: string; wide?: boolean }[] = [
+const PAGES: { href: string; label: string; legal?: boolean }[] = [
   { href: '/', label: 'Gallery' },
   { href: '/about', label: 'About' },
   { href: '/changelog', label: 'Changelog' },
   { href: '/submit', label: 'Submit' },
   { href: '/pro', label: 'Pro' },
   { href: '/privacy', label: 'Privacy' },
-  // The policies a buyer (and the payment provider) expects in the site's
-  // navigation. The phone capsule has no room; there Privacy links to both.
-  { href: '/terms', label: 'Terms', wide: true },
-  { href: '/refunds', label: 'Refunds', wide: true },
+  // The policies live with Privacy: listed only on the legal pages, so the
+  // row everywhere else stays short. Privacy itself links to both.
+  { href: '/terms', label: 'Terms', legal: true },
+  { href: '/refunds', label: 'Refunds', legal: true },
 ]
+const LEGAL = new Set(['/privacy', '/terms', '/refunds'])
 
 interface SiteLinksProps {
   /** The mobile detail sheet covers this corner; nothing behind it is reachable. */
@@ -34,7 +35,8 @@ interface SiteLinksProps {
  */
 export function SiteLinks({ hidden = false }: SiteLinksProps) {
   const pathname = usePathname()
-  const elsewhere = PAGES.filter(page => page.href !== pathname)
+  const onLegal = LEGAL.has(pathname)
+  const elsewhere = PAGES.filter(page => page.href !== pathname && (!page.legal || onLegal))
 
   return (
     <nav
@@ -63,7 +65,7 @@ export function SiteLinks({ hidden = false }: SiteLinksProps) {
         <Link
           key={page.href}
           href={page.href}
-          className={(page.wide ? 'max-sm:hidden ' : '') + "relative text-meta text-ink-4 hover:text-ink transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-foreground/25 rounded-[3px] max-xl:px-3 max-xl:py-1.5 max-xl:rounded-full max-xl:hover:bg-muted after:absolute after:inset-x-0 after:top-1/2 after:h-11 after:-translate-y-1/2 after:content-['']"}
+          className={(page.legal ? "max-sm:hidden " : "") + "relative text-meta text-ink-4 hover:text-ink transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-foreground/25 rounded-[3px] max-xl:px-3 max-xl:py-1.5 max-xl:rounded-full max-xl:hover:bg-muted after:absolute after:inset-x-0 after:top-1/2 after:h-11 after:-translate-y-1/2 after:content-['']"}
         >
           {page.label}
         </Link>
