@@ -10,7 +10,6 @@ import { motion, AnimatePresence } from 'motion/react'
 import { ArrowRight, X } from '@phosphor-icons/react'
 import { GoogleMark } from '@/components/google-mark'
 import { CARD } from '@/components/member-card'
-import { ColourStrip } from '@/components/colour-strip'
 import { POP_IN, POP_OUT } from '@/lib/motion'
 import { SIGN_IN_EVENT } from '@/lib/account-client'
 
@@ -117,68 +116,62 @@ export function SignInSheet() {
                 exit={{ opacity: 0, y: 10, transition: POP_OUT }} transition={POP_IN}
                 className={CARD.shell + ' pointer-events-auto relative w-full sm:max-w-[344px] max-sm:rounded-b-none max-sm:border-b-0 max-sm:pb-[env(safe-area-inset-bottom)] shadow-[0_28px_70px_-24px_rgba(0,0,0,0.4)]'}
               >
-                <ColourStrip />
-
-                <div className={CARD.pad + ' h-10 flex items-center justify-between'}>
-                  <p className={CARD.label}>Member card</p>
-                  <div className="flex items-center gap-2 -mr-2">
-                    <p className={CARD.number} aria-label="No member number yet">No. ____</p>
-                    <button onClick={() => setOpen(false)} aria-label="Close" className="w-8 h-8 grid place-items-center rounded-[8px] text-ink-4 hover:text-ink hover:bg-foreground/[0.05] transition-colors">
-                      <X className="w-3.5 h-3.5" weight="bold" />
-                    </button>
-                  </div>
+                <div className={CARD.head}>
+                  <span>{mode === 'join' ? 'Join the library' : 'Sign in'}</span>
+                  <button onClick={() => setOpen(false)} aria-label="Close" className="-mr-2 w-7 h-7 grid place-items-center rounded-[7px] text-ink-4 hover:text-ink hover:bg-foreground/[0.06] transition-colors">
+                    <X className="w-3.5 h-3.5" weight="bold" />
+                  </button>
                 </div>
 
-                <div className={CARD.pad + ' pt-2'}>
-                  <h2 id="signin-title" className="text-[24px] font-[640] tracking-[-0.03em] leading-[1.05] text-ink">
-                    {step === 'sent' ? 'Check your inbox.' : mode === 'join' ? 'Get your library card.' : 'Welcome back.'}
+                <div className="px-4 pt-4 pb-4">
+                  <h2 id="signin-title" className="text-[20px] font-[630] tracking-[-0.025em] leading-tight text-ink">
+                    {step === 'sent' ? 'Check your inbox' : mode === 'join' ? 'Get your library card' : 'Welcome back'}
                   </h2>
-                  <p className={CARD.body + ' mt-2 text-pretty'}>
+                  <p className={CARD.body + ' mt-1 text-pretty'}>
                     {step === 'sent'
                       ? <>A link is on its way to <span className="text-ink">{email}</span>. It works once, for 15 minutes.</>
                       : mode === 'join'
-                        ? 'Keep your hearts and sets on every device. Free, no password.'
+                        ? 'Keep your hearts and sets on every device. Free.'
                         : 'Pick up your hearts and sets where you left them.'}
                   </p>
                   {note && step !== 'sent' && <p role="status" className="mt-2 text-[13px] leading-[1.45] text-[#c8382f] dark:text-[#ff8a80]">{note}</p>}
-                </div>
 
-                {step === 'sent' ? (
-                  <div className={CARD.pad + ' pt-3 pb-4'}>
-                    <button className={CARD.meta + ' underline underline-offset-4 decoration-edge-strong hover:text-ink transition-colors'} onClick={() => { setStep('choose'); setNote(null) }}>
+                  {step === 'sent' ? (
+                    <button className={CARD.footBtn + ' -ml-2 mt-3'} onClick={() => { setStep('choose'); setNote(null) }}>
                       Use a different email
                     </button>
-                  </div>
-                ) : (
-                  <>
-                    <form onSubmit={sendLink} className={CARD.pad + ' pt-3 pb-3'}>
-                      <label htmlFor="signin-email" className="sr-only">Email</label>
-                      <div className="flex items-center gap-2 border-b border-edge-strong focus-within:border-foreground transition-colors">
-                        <input
-                          id="signin-email" ref={inputRef} type="email" required autoComplete="email" inputMode="email"
-                          value={email} onChange={e => setEmail(e.target.value)} placeholder="you@studio.com"
-                          className="flex-1 min-w-0 h-11 bg-transparent outline-none text-[16px] tracking-[-0.01em] text-ink placeholder:text-ink-4"
-                        />
-                        <button
-                          type="submit" disabled={step === 'sending'} aria-label="Email me a sign-in link"
-                          className="shrink-0 w-8 h-8 grid place-items-center rounded-full bg-foreground text-background disabled:opacity-40 hover:opacity-90 active:scale-95 transition"
-                        >
-                          <ArrowRight className="w-3.5 h-3.5" weight="bold" />
-                        </button>
-                      </div>
-                      <p className={CARD.meta + ' mt-2'}>
-                        {step === 'sending' ? 'Sending your link…' : <>We email a link. No password. <a href="/privacy" className="underline underline-offset-2 hover:text-ink">Privacy</a></>}
-                      </p>
-                    </form>
-                    <a
-                      href={`/api/auth/google?next=${encodeURIComponent(next())}`}
-                      className={CARD.action + ' ' + CARD.pad + ' h-11 justify-between border-t border-edge'}
-                    >
-                      <span className="flex items-center gap-2.5"><GoogleMark size={16} /> Continue with Google</span>
-                      <ArrowRight className="w-3.5 h-3.5 text-ink-4" weight="bold" />
-                    </a>
-                  </>
-                )}
+                  ) : (
+                    <>
+                      <form onSubmit={sendLink} className="mt-4">
+                        <label htmlFor="signin-email" className="sr-only">Email</label>
+                        <div className="flex items-center gap-1 h-10 pl-3 pr-1 rounded-[10px] border border-edge-strong focus-within:border-foreground/50 transition-colors">
+                          <input
+                            id="signin-email" ref={inputRef} type="email" required autoComplete="email" inputMode="email"
+                            value={email} onChange={e => setEmail(e.target.value)} placeholder="you@studio.com"
+                            className="flex-1 min-w-0 h-full bg-transparent outline-none text-[15px] tracking-[-0.01em] text-ink placeholder:text-ink-4"
+                          />
+                          <button
+                            type="submit" disabled={step === 'sending'} aria-label="Email me a sign-in link"
+                            className="shrink-0 h-8 px-2.5 flex items-center gap-1 rounded-[7px] bg-foreground text-background text-[12.5px] font-[600] disabled:opacity-40 hover:opacity-90 active:scale-[0.98] transition"
+                          >
+                            {step === 'sending' ? 'Sending…' : <>Email link <ArrowRight className="w-3 h-3" weight="bold" /></>}
+                          </button>
+                        </div>
+                      </form>
+                      <a
+                        href={`/api/auth/google?next=${encodeURIComponent(next())}`}
+                        className="mt-2 h-10 flex items-center justify-center gap-2.5 rounded-[10px] border border-edge-strong text-[13.5px] font-[600] text-ink hover:bg-foreground/[0.04] active:bg-foreground/[0.07] transition-colors focus-visible:outline-2 focus-visible:outline-[#E8A04A]"
+                      >
+                        <GoogleMark size={16} /> Continue with Google
+                      </a>
+                    </>
+                  )}
+                </div>
+
+                <div className={CARD.foot + ' px-4'}>
+                  <span className={CARD.meta}>No password. <a href="/privacy" className="underline underline-offset-2 hover:text-ink">Privacy</a></span>
+                  <button onClick={() => setOpen(false)} className={CARD.footBtn + ' ml-auto -mr-2'}>Close <span className={CARD.kbd}>esc</span></button>
+                </div>
               </motion.div>
             </div>
           </>

@@ -8,7 +8,7 @@
 
 import { useEffect, useState } from 'react'
 import { Package, MagnifyingGlass, ArrowUp, ArrowRight } from '@phosphor-icons/react'
-import { ColourStrip } from '@/components/colour-strip'
+import { ProMark } from '@/components/pro-mark'
 import { CARD } from '@/components/member-card'
 import { useAccount, openSignIn, KITS_EVENT } from '@/lib/account-client'
 import { loadPaddle, localPrices, onPaddleEvent, setPaddleCustomer, type LocalPrices } from '@/lib/paddle/client'
@@ -81,61 +81,68 @@ export function ProCard() {
   const price = prices ? (interval === 'month' ? prices.month : prices.year) : null
 
   return (
-    <div className="w-full max-w-[400px]">
+    <div className="w-full max-w-[380px]">
       <section className={CARD.shell + ' shadow-[0_28px_70px_-28px_rgba(0,0,0,0.35)]'}>
-        <ColourStrip />
-        <div className={CARD.pad + ' h-10 flex items-center justify-between'}>
-          <p className={CARD.label}>Pro</p>
-          {pro && <p className={CARD.number}>Active</p>}
+        <div className={CARD.head}>
+          <span>Pro</span>
+          {pro ? <span className={CARD.proPill}>Active</span> : <span className="text-ink-4">Cancel any time</span>}
         </div>
-        <div className={CARD.pad + ' pt-1'}>
-          <h1 className="text-[24px] font-[640] tracking-[-0.03em] leading-[1.1] text-ink text-balance">
-            {pro || phase === 'finishing' ? (pro ? "You're Pro." : 'Finishing up…') : 'Every style in the library, ready to build with.'}
+
+        <div className="px-4 pt-4 pb-4">
+          <ProMark height={40} className="max-w-[118px]" />
+          <h1 className="mt-4 text-[20px] font-[630] tracking-[-0.025em] leading-[1.2] text-ink text-balance">
+            {pro || phase === 'finishing' ? (pro ? "You're Pro. Thanks for backing the library." : 'Finishing up…') : 'Every style in the library, ready to build with.'}
           </h1>
-          <ul className="mt-5 space-y-2.5">
+          <ul className="mt-3 space-y-1.5">
             {FEATURES.map(({ Icon, text }) => (
               <li key={text} className="flex items-center gap-2.5 text-[13.5px] text-ink-2">
-                <Icon className="w-4 h-4 shrink-0 text-ink-3" weight="bold" /> {text}
+                <Icon className="w-3.5 h-3.5 shrink-0 text-ink-4" weight="bold" /> {text}
               </li>
             ))}
           </ul>
+
+          {!pro && (
+            <>
+              <div className="mt-5 flex items-end justify-between gap-3">
+                <p className="flex items-baseline gap-1">
+                  <span className="text-[26px] font-[640] tracking-[-0.03em] text-ink min-w-[3ch]">{price ?? '—'}</span>
+                  <span className="text-[13px] text-ink-3">/ {interval === 'month' ? 'month' : 'year'}</span>
+                </p>
+                <div role="radiogroup" aria-label="Billing" className="flex gap-1.5 pb-1">
+                  {(['month', 'year'] as const).map(i => (
+                    <button
+                      key={i} role="radio" aria-checked={interval === i} onClick={() => setInterval_(i)}
+                      className={'h-7 px-3 rounded-full border text-[12px] font-[600] transition-colors ' + (interval === i ? 'border-foreground bg-foreground text-background' : 'border-edge text-ink-3 hover:text-ink')}
+                    >
+                      {i === 'month' ? 'Monthly' : `Yearly −${save}%`}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <p className={CARD.meta + ' mt-1'}>Shown in your currency where we can.</p>
+              {phase === 'failed' && <p role="status" className="mt-2 text-[12.5px] text-[#c8382f] dark:text-[#ff8a80]">Checkout didn&apos;t open. Try again.</p>}
+            </>
+          )}
         </div>
 
-        {pro ? (
-          <div className={CARD.pad + ' pt-6 pb-4'}>
-            <p className={CARD.meta}>Thanks for backing the library.</p>
-            <button onClick={manage} className={CARD.meta + ' mt-1 underline underline-offset-4 hover:text-ink'}>Manage subscription</button>
-          </div>
-        ) : (
-          <div className={CARD.pad + ' pt-6 pb-4'}>
-            <div role="radiogroup" aria-label="Billing" className="grid grid-cols-2 p-[3px] rounded-[10px] bg-foreground/[0.05]">
-              {(['month', 'year'] as const).map(i => (
-                <button
-                  key={i} role="radio" aria-checked={interval === i}
-                  onClick={() => setInterval_(i)}
-                  className={'h-8 rounded-[7px] text-[12.5px] font-[600] transition-colors ' + (interval === i ? 'bg-card text-ink shadow-[0_1px_2px_rgba(0,0,0,0.08)]' : 'text-ink-3 hover:text-ink')}
-                >
-                  {i === 'month' ? 'Monthly' : <>Yearly <span className="font-[500] text-[#E8A04A]">save {save}%</span></>}
-                </button>
-              ))}
-            </div>
-            <p className="mt-4 flex items-baseline gap-1.5">
-              <span className="text-[28px] font-[640] tracking-[-0.03em] text-ink min-w-[3ch]">{price ?? '—'}</span>
-              <span className="text-[13.5px] text-ink-3">/ {interval === 'month' ? 'month' : 'year'}</span>
-            </p>
-            <p className={CARD.meta + ' mt-1'}>Shown in your currency where we can.</p>
-            <button
-              onClick={getPro} disabled={phase === 'opening' || phase === 'finishing'}
-              className="mt-4 w-full h-11 rounded-[10px] flex items-center justify-center gap-2 bg-foreground text-background text-[14px] font-[600] tracking-[-0.01em] hover:opacity-90 active:scale-[0.99] disabled:opacity-50 transition"
-            >
-              {phase === 'opening' ? 'Opening checkout…' : status === 'signed-in' ? <>Get Pro <ArrowRight className="w-4 h-4" weight="bold" /></> : <>Sign in to get Pro <ArrowRight className="w-4 h-4" weight="bold" /></>}
-            </button>
-            {phase === 'failed' && <p role="status" className="mt-2 text-[12.5px] text-[#c8382f] dark:text-[#ff8a80]">Checkout didn&apos;t open. Try again.</p>}
-            <p className={CARD.meta + ' mt-3'}>
-              Cancel any time. Full refund within 14 days. <a href="/terms" className="underline underline-offset-2 hover:text-ink">Terms</a> · <a href="/refunds" className="underline underline-offset-2 hover:text-ink">Refunds</a>
-            </p>
-          </div>
-        )}
+        <div className={CARD.foot + ' pl-4 pr-2'}>
+          {pro ? (
+            <>
+              <span className={CARD.meta}>Unlimited kits and search</span>
+              <button onClick={manage} className={CARD.footBtn + ' ml-auto'}>Manage subscription</button>
+            </>
+          ) : (
+            <>
+              <span className={CARD.meta}>14-day refund · <a href="/terms" className="underline underline-offset-2 hover:text-ink">Terms</a></span>
+              <button
+                onClick={getPro} disabled={phase === 'opening' || phase === 'finishing'}
+                className="ml-auto h-8 px-3.5 flex items-center gap-1.5 rounded-[8px] bg-foreground text-background text-[13px] font-[600] hover:opacity-90 active:scale-[0.98] disabled:opacity-50 transition"
+              >
+                {phase === 'opening' ? 'Opening…' : status === 'signed-in' ? <>Get Pro <ArrowRight className="w-3.5 h-3.5" weight="bold" /></> : <>Sign in to get Pro <ArrowRight className="w-3.5 h-3.5" weight="bold" /></>}
+              </button>
+            </>
+          )}
+        </div>
       </section>
       <p className="mt-4 text-center text-[12.5px] text-ink-4">Browsing, hearts, sets and three kits a month stay free.</p>
     </div>

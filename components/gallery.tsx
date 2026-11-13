@@ -30,6 +30,7 @@ import Link from 'next/link'
 import { useIsNarrow, useIsPhone } from '@/lib/use-is-narrow'
 import { useUrlParams } from '@/lib/use-url-params'
 import { Refine } from '@/components/refine'
+import { CARD } from '@/components/member-card'
 import { refineFromParams, refineToParams, refineApiQuery, refineActive, type RefineQuery } from '@/lib/search/refine-params'
 import { openSignIn } from '@/lib/account-client'
 import { prefetchDetail } from '@/lib/detail-cache'
@@ -1189,18 +1190,23 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
             exit={{ opacity: 0, scale: 0.98, y: -4, transition: POP_OUT }}
             transition={POP_IN}
             style={{ transformOrigin: 'top right' }}
-            className="fixed z-[60] top-14 right-4 left-4 sm:left-auto sm:w-[320px] rounded-[10px] border border-edge-strong bg-card shadow-[0_12px_32px_-8px_rgba(0,0,0,0.28)] p-1"
+            className={CARD.shell + ' fixed z-[60] top-14 right-4 left-4 sm:left-auto sm:w-[340px] shadow-[0_24px_56px_-20px_rgba(0,0,0,0.35)]'}
           >
-            <div className="flex items-center justify-end pl-3 pr-1 py-1">
+            <div className={CARD.head}>
+              <span>Weekly digest</span>
               <button
                 onClick={() => setDigestOpen(false)}
                 aria-label="Close digest signup"
-                className="w-7 h-7 flex items-center justify-center rounded-[4px] text-ink-4 hover:text-ink hover:bg-muted transition-colors"
+                className="-mr-2 w-7 h-7 grid place-items-center rounded-[7px] text-ink-4 hover:text-ink hover:bg-foreground/[0.06] transition-colors"
               >
                 <X className="w-3.5 h-3.5" weight="bold" />
               </button>
             </div>
             <TasteSignup />
+            <div className={CARD.foot + ' px-4'}>
+              <span className={CARD.meta}>Unsubscribe any time.</span>
+              <button onClick={() => setDigestOpen(false)} className={CARD.footBtn + ' ml-auto -mr-2'}>Close <span className={CARD.kbd}>esc</span></button>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>

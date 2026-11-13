@@ -67,10 +67,9 @@ export function useSavedCounts() {
   return counts
 }
 
-const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`
 
 export function AccountButton() {
-  const { status, user, pro } = useAccount()
+  const { status, user, pro, kits } = useAccount()
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
   const counts = useSavedCounts()
@@ -118,13 +117,13 @@ export function AccountButton() {
             className={CARD.shell + ' absolute right-0 top-10 z-50 w-[300px] max-sm:fixed max-sm:inset-x-3 max-sm:top-[60px] max-sm:w-auto shadow-[0_24px_56px_-20px_rgba(0,0,0,0.35)]'}
           >
             <div className={CARD.head}>
-              <span>Membership</span>
-              <span className="text-ink-4 font-[500]">No. {String(user.memberNo).padStart(4, '0')}</span>
+              <span>Member since {since}</span>
+              <span className="text-ink-4">No. {String(user.memberNo).padStart(4, '0')}</span>
             </div>
 
             <div className="px-4 pt-4 pb-4">
               <div className="flex items-center gap-3">
-                <Avatar user={user} size={36} />
+                <Avatar user={user} size={40} />
                 <div className="min-w-0 flex-1">
                   <p className={CARD.title + ' truncate'}>{displayName}</p>
                   <p className={CARD.meta + ' mt-0.5 flex items-center gap-1.5 min-w-0'} title={user.google ? 'Signs in with Google' : 'Signs in with an email link'}>
@@ -134,13 +133,18 @@ export function AccountButton() {
                 </div>
               </div>
 
-              {/* One visual: Pro is the word in your hearted colours; free is the band of them. */}
-              <div className="mt-4">
-                {pro ? <ProMark ids={heartIds} height={40} className="max-w-[118px]" /> : <ColourStrip ids={heartIds} className="rounded-[3px]" />}
+              {/* The plate: your colours on the left (the word Pro for members),
+                  what you have on the right. */}
+              <div className="mt-4 flex items-stretch rounded-[12px] ring-1 ring-inset ring-edge bg-foreground/[0.02] overflow-hidden">
+                <div className="w-[128px] shrink-0 grid place-items-center px-3 py-3 border-r border-edge">
+                  {pro ? <ProMark ids={heartIds} height={36} /> : <ColourStrip ids={heartIds} className="rounded-[3px]" />}
+                </div>
+                <dl className="flex-1 min-w-0 px-3 py-2.5 space-y-1 text-[12.5px]">
+                  <div className="flex justify-between gap-2"><dt className="text-ink-4">Hearts</dt><dd className="font-[600] text-ink">{counts.hearts}</dd></div>
+                  <div className="flex justify-between gap-2"><dt className="text-ink-4">Sets</dt><dd className="font-[600] text-ink">{counts.sets}</dd></div>
+                  <div className="flex justify-between gap-2"><dt className="text-ink-4">Kits</dt><dd className={'font-[600] ' + (pro ? 'text-[#A8611A] dark:text-[#F0B36A]' : 'text-ink')}>{pro ? 'Unlimited' : `${Math.max(0, (kits?.limit ?? 3) - (kits?.used ?? 0))} of ${kits?.limit ?? 3} left`}</dd></div>
+                </dl>
               </div>
-              <p className={CARD.meta + ' mt-3'}>
-                {plural(counts.hearts, 'heart', 'hearts')} · {plural(counts.sets, 'set', 'sets')} · since {since}
-              </p>
             </div>
 
             <div className={CARD.foot}>

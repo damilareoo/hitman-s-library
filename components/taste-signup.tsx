@@ -4,6 +4,8 @@
 // password — the email row plus the favorites list is the whole profile.
 'use client'
 
+import { CARD } from '@/components/member-card'
+
 import { useState, useEffect } from 'react'
 import { track } from '@/lib/analytics'
 
@@ -78,11 +80,11 @@ export function TasteSignup() {
   }
 
   return (
-    <div className="px-3 pb-3">
+    <div className="px-4 pt-4 pb-4">
       {teasers.length > 0 && state === 'idle' && (
-        <div className="flex gap-1.5 mb-3" aria-hidden="true">
+        <div className="flex gap-1.5 mb-4" aria-hidden="true">
           {teasers.map(t => (
-            <span key={t.id} className="flex-1 h-[52px] rounded-[6px] overflow-hidden border border-edge bg-muted block">
+            <span key={t.id} className="flex-1 h-[48px] rounded-[7px] overflow-hidden ring-1 ring-inset ring-foreground/10 bg-muted block">
               {t.thumbnail ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={t.thumbnail} alt="" loading="lazy" className="w-full h-full object-cover object-top" />
@@ -91,21 +93,17 @@ export function TasteSignup() {
           ))}
         </div>
       )}
-      <p className="text-titletext text-ink leading-snug mb-1">
-        Get sites like these weekly.
-      </p>
-      <p className="text-meta text-ink-3 leading-relaxed mb-3">
+      <p className={CARD.title}>Get sites like these weekly</p>
+      <p className={CARD.body + ' mt-1'}>
         {favoriteCount === 0
           ? 'Five new arrivals matched to the library, every Monday.'
-          : `Five new arrivals matched to your ${favoriteCount} favorite${favoriteCount === 1 ? '' : 's'}, every Monday.`}
+          : `Five new arrivals matched to your ${favoriteCount} heart${favoriteCount === 1 ? '' : 's'}, every Monday.`}
       </p>
       {state === 'done' ? (
-        <p className="text-meta text-ink-3 leading-relaxed">
-          You&apos;re in. First digest lands with the next additions.
-        </p>
+        <p className={CARD.body + ' mt-3 text-ink'}>You&apos;re in. The first digest lands with the next additions.</p>
       ) : (
         <>
-          <div className="flex items-center gap-1.5">
+          <div className="mt-4 flex items-center gap-1 h-10 pl-3 pr-1 rounded-[10px] border border-edge-strong focus-within:border-foreground/50 transition-colors">
             <input
               type="email"
               inputMode="email"
@@ -116,24 +114,18 @@ export function TasteSignup() {
               value={email}
               onChange={e => setEmail(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter') submit() }}
-              className="min-w-0 flex-1 h-9 px-2.5 text-bodytext bg-muted/60 border border-edge rounded-[6px] text-foreground placeholder:text-ink-4 focus:outline-none focus:border-foreground/30 focus:bg-muted transition-colors"
+              className="flex-1 min-w-0 h-full bg-transparent outline-none text-[15px] tracking-[-0.01em] text-ink placeholder:text-ink-4"
             />
             <button
               onClick={submit}
               disabled={state === 'sending' || favoriteCount === 0}
-              className="shrink-0 h-9 px-3.5 rounded-[6px] bg-foreground text-background text-bodytext font-medium hover:opacity-90 disabled:opacity-40 transition-opacity"
+              className="shrink-0 h-8 px-3 rounded-[7px] bg-foreground text-background text-[12.5px] font-[600] hover:opacity-90 disabled:opacity-40 transition"
             >
-              {state === 'sending' ? '…' : 'Join'}
+              {state === 'sending' ? 'Joining…' : 'Join'}
             </button>
           </div>
-          {favoriteCount === 0 && (
-            <p className="mt-2 text-micro text-ink-4 leading-relaxed">
-              Heart sites to tune it to your taste.
-            </p>
-          )}
-          {typeof state === 'object' && (
-            <p className="mt-1.5 text-meta text-[var(--color-error)]">{state.error}</p>
-          )}
+          {favoriteCount === 0 && <p className={CARD.meta + ' mt-2'}>Heart a few sites first to tune it to your taste.</p>}
+          {typeof state === 'object' && <p className="mt-2 text-[12.5px] text-[#c8382f] dark:text-[#ff8a80]">{state.error}</p>}
         </>
       )}
     </div>
