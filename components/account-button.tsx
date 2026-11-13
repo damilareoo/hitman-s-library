@@ -115,48 +115,38 @@ export function AccountButton() {
             initial={{ opacity: 0, y: -6, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -4, transition: POP_OUT }} transition={POP_IN}
             style={{ transformOrigin: 'top right' }}
-            className={CARD.shell + ' absolute right-0 top-10 z-50 w-[284px] max-sm:fixed max-sm:inset-x-3 max-sm:top-[60px] max-sm:w-auto shadow-[0_24px_56px_-20px_rgba(0,0,0,0.35)]'}
+            className={CARD.shell + ' absolute right-0 top-10 z-50 w-[300px] max-sm:fixed max-sm:inset-x-3 max-sm:top-[60px] max-sm:w-auto shadow-[0_24px_56px_-20px_rgba(0,0,0,0.35)]'}
           >
-            {/* Your card: the strip is in the colours of the sites you've hearted. */}
-            {pro ? (
-              // A Pro card leads with the word itself, made of the colours you've hearted.
-              <div className={CARD.pad + ' pt-4 pb-3 flex items-start justify-between gap-4'}>
-                <ProMark ids={heartIds} height={52} className="max-w-[148px]" />
-                <div className="text-right shrink-0 pt-0.5">
-                  <p className={CARD.label}>Member</p>
-                  <p className={CARD.number + ' mt-2'}>No. {String(user.memberNo).padStart(4, '0')}</p>
-                </div>
-              </div>
-            ) : (
-              <>
-                <ColourStrip ids={heartIds} />
-                <div className={CARD.pad + ' h-10 flex items-center justify-between'}>
-                  <p className={CARD.label}>Member card</p>
-                  <p className={CARD.number}>No. {String(user.memberNo).padStart(4, '0')}</p>
-                </div>
-              </>
-            )}
-            <div className={CARD.pad + ' pt-0.5 pb-3 flex items-center gap-3'}>
-              <Avatar user={user} size={40} pro={pro} />
-              <div className="min-w-0">
-                <p className="text-[16px] font-[640] tracking-[-0.02em] leading-tight text-ink truncate">{displayName}</p>
-                <p className={CARD.meta + ' mt-0.5 flex items-center gap-1.5 min-w-0'} title={user.google ? 'Signs in with Google' : 'Signs in with an email link'}>
-                  {user.google ? <GoogleMark size={11} /> : <EnvelopeSimple className="w-3 h-3 shrink-0" weight="bold" />}
-                  <span className="truncate">{user.email}</span>
-                </p>
-              </div>
+            <div className={CARD.head}>
+              <span>Membership</span>
+              <span className="text-ink-4 font-[500]">No. {String(user.memberNo).padStart(4, '0')}</span>
             </div>
-            <p className={CARD.pad + ' ' + CARD.body + ' pb-3'}>
-              {plural(counts.hearts, 'heart', 'hearts')} · {plural(counts.sets, 'set', 'sets')} · since {since}
-            </p>
 
-            <a href="/pro" role="menuitem" className={CARD.action + ' ' + CARD.pad + ' justify-between border-t border-edge font-[500]'}>
-              {pro ? <span>Pro <span className="text-ink-4 font-[500]">· unlimited kits and search</span></span> : <span>Go Pro <span className="text-ink-4 font-[500]">· unlimited kits</span></span>}
-              <span className="text-ink-4 text-[12px] font-[500]">{pro ? 'Manage' : '→'}</span>
-            </a>
-            <div className="grid grid-cols-2 border-t border-edge">
-              <a href="/api/me/export" role="menuitem" className={CARD.action + ' justify-center'}><DownloadSimple className="w-3.5 h-3.5" weight="bold" /> Your data</a>
-              <button role="menuitem" className={CARD.action + ' justify-center border-l border-edge'} onClick={() => { setOpen(false); void signOut() }}><SignOut className="w-3.5 h-3.5" weight="bold" /> Sign out</button>
+            <div className="px-4 pt-4 pb-4">
+              <div className="flex items-center gap-3">
+                <Avatar user={user} size={36} />
+                <div className="min-w-0 flex-1">
+                  <p className={CARD.title + ' truncate'}>{displayName}</p>
+                  <p className={CARD.meta + ' mt-0.5 flex items-center gap-1.5 min-w-0'} title={user.google ? 'Signs in with Google' : 'Signs in with an email link'}>
+                    {user.google ? <GoogleMark size={11} /> : <EnvelopeSimple className="w-3 h-3 shrink-0" weight="bold" />}
+                    <span className="truncate">{user.email}</span>
+                  </p>
+                </div>
+              </div>
+
+              {/* One visual: Pro is the word in your hearted colours; free is the band of them. */}
+              <div className="mt-4">
+                {pro ? <ProMark ids={heartIds} height={40} className="max-w-[118px]" /> : <ColourStrip ids={heartIds} className="rounded-[3px]" />}
+              </div>
+              <p className={CARD.meta + ' mt-3'}>
+                {plural(counts.hearts, 'heart', 'hearts')} · {plural(counts.sets, 'set', 'sets')} · since {since}
+              </p>
+            </div>
+
+            <div className={CARD.foot}>
+              <a href="/api/me/export" role="menuitem" className={CARD.footBtn}><DownloadSimple className="w-3.5 h-3.5" weight="bold" /> Your data</a>
+              <button role="menuitem" className={CARD.footBtn} onClick={() => { setOpen(false); void signOut() }}><SignOut className="w-3.5 h-3.5" weight="bold" /> Sign out</button>
+              <a href="/pro" role="menuitem" className={CARD.footBtn + ' ml-auto ' + (pro ? '' : 'text-ink font-[600]')}>{pro ? 'Manage' : 'Go Pro'}</a>
             </div>
           </motion.div>
         )}
