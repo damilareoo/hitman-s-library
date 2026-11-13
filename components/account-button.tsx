@@ -8,7 +8,8 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
-import { SignIn, DownloadSimple, SignOut, Trash, Heart, Stack, GoogleLogo, EnvelopeSimple } from '@phosphor-icons/react'
+import { SignIn, DownloadSimple, SignOut, GoogleLogo, EnvelopeSimple } from '@phosphor-icons/react'
+import { ColourStrip } from '@/components/colour-strip'
 import { POP_IN, POP_OUT } from '@/lib/motion'
 import { COLLECTIONS_EVENT } from '@/lib/collections'
 import { useAccount, openSignIn, signOut, deleteAccount, FAVORITES_EVENT, type AccountUser } from '@/lib/account-client'
@@ -46,10 +47,11 @@ function useSavedCounts() {
     try {
       const hearts = JSON.parse(localStorage.getItem('hl:favorites') ?? '[]')
       const sets = JSON.parse(localStorage.getItem('hl:collections') ?? '{}')
-      return { hearts: Array.isArray(hearts) ? hearts.length : 0, sets: sets && typeof sets === 'object' ? Object.keys(sets).length : 0 }
-    } catch { return { hearts: 0, sets: 0 } }
+      const ids = Array.isArray(hearts) ? hearts.map(Number).filter(Number.isFinite) : []
+      return { hearts: ids.length, sets: sets && typeof sets === 'object' ? Object.keys(sets).length : 0, ids }
+    } catch { return { hearts: 0, sets: 0, ids: [] as number[] } }
   }
-  const [counts, setCounts] = useState({ hearts: 0, sets: 0 })
+  const [counts, setCounts] = useState({ hearts: 0, sets: 0, ids: [] as number[] })
   useEffect(() => {
     const update = () => setCounts(read())
     update()
@@ -70,6 +72,7 @@ export function AccountButton() {
   const [failed, setFailed] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
   const counts = useSavedCounts()
+  const heartIds = counts.ids.length ? counts.ids.slice(-40) : undefined
 
   useEffect(() => {
     if (!open) return
@@ -92,8 +95,8 @@ export function AccountButton() {
 
   const displayName = user.name || user.email.split('@')[0]
   const since = new Date(user.since).toLocaleDateString('en-GB', { month: 'short', year: 'numeric' })
-  const row = 'w-full flex items-center gap-3 h-11 px-4 text-[13.5px] tracking-[-0.005em] text-ink-2 hover:text-ink hover:bg-foreground/[0.04] active:bg-foreground/[0.07] transition-colors focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[#E8A04A]'
-  const label = 'text-[10.5px] font-[600] tracking-[0.12em] uppercase text-ink-4'
+  const stub = 'flex items-center justify-center gap-2 h-12 text-[13.5px] font-[600] tracking-[-0.01em] text-ink hover:bg-foreground/[0.04] active:bg-foreground/[0.07] transition-colors focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[#E8A04A]'
+  const label = 'text-[10.5px] font-[600] tracking-[0.14em] uppercase text-ink-4'
 
   return (
     <div ref={ref} className="relative mr-1">
@@ -112,56 +115,40 @@ export function AccountButton() {
             initial={{ opacity: 0, y: -6, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -4, transition: POP_OUT }} transition={POP_IN}
             style={{ transformOrigin: 'top right' }}
-            className="absolute right-0 top-10 z-50 w-[292px] max-sm:fixed max-sm:inset-x-3 max-sm:top-[60px] max-sm:w-auto rounded-[18px] border border-edge-strong bg-popover text-popover-foreground shadow-[0_24px_56px_-20px_rgba(0,0,0,0.35)] overflow-hidden"
+            className="absolute right-0 top-10 z-50 w-[316px] max-sm:fixed max-sm:inset-x-3 max-sm:top-[60px] max-sm:w-auto rounded-[18px] border border-edge-strong bg-popover text-popover-foreground shadow-[0_24px_56px_-20px_rgba(0,0,0,0.35)] overflow-hidden"
           >
-            {/* Who */}
-            <div className="flex items-center gap-3 px-4 pt-4 pb-3.5">
-              <Avatar user={user} size={40} />
-              <div className="min-w-0">
-                <p className="text-[15px] font-[620] tracking-[-0.02em] text-ink truncate">{displayName}</p>
-                <p className="text-[12.5px] text-ink-3 truncate">{user.email}</p>
+            {/* Your card: the strip is in the colours of the sites you've hearted. */}
+            <ColourStrip ids={heartIds} />
+            <div className="px-5 pt-4 pb-5">
+              <div className="flex items-center justify-between">
+                <p className={label}>Member card</p>
+                <p className="text-[12px] font-[600] tabular-nums tracking-[0.04em] whitespace-nowrap text-[#E8A04A]">No. {String(user.memberNo).padStart(4, '0')}</p>
               </div>
-            </div>
-
-            {/* The member slip */}
-            <div className="mx-4 mb-3.5 grid grid-cols-2 rounded-[12px] border border-edge">
-              <div className="px-3 py-2.5">
-                <p className={label}>Member</p>
-                <p className="mt-1 text-[14px] font-[620] tabular-nums text-[#E8A04A]">No. {String(user.memberNo).padStart(4, '0')}</p>
+              <div className="mt-5 flex items-center gap-3.5">
+                <Avatar user={user} size={44} />
+                <div className="min-w-0">
+                  <p className="text-[17px] font-[640] tracking-[-0.025em] leading-tight text-ink truncate">{displayName}</p>
+                  <p className="mt-0.5 text-[12.5px] text-ink-3 truncate">{user.email}</p>
+                </div>
               </div>
-              <div className="px-3 py-2.5 border-l border-edge">
-                <p className={label}>Since</p>
-                <p className="mt-1 text-[14px] font-[600] text-ink">{since}</p>
-              </div>
-            </div>
-
-            {/* What's saved, and how you sign in */}
-            <div className="px-4 pb-3.5 space-y-2 text-[12.5px] text-ink-3">
-              <p className="flex items-center gap-2">
-                <Heart className="w-3.5 h-3.5" weight="bold" />
-                {plural(counts.hearts, 'heart', 'hearts')}
-                <span className="text-ink-4">·</span>
-                <Stack className="w-3.5 h-3.5" weight="bold" />
-                {plural(counts.sets, 'set', 'sets')}
-                <span className="text-ink-4">on every device</span>
-              </p>
-              <p className="flex items-center gap-2">
-                {user.google
-                  ? <><GoogleLogo className="w-3.5 h-3.5" weight="bold" /> Signs in with Google</>
-                  : <><EnvelopeSimple className="w-3.5 h-3.5" weight="bold" /> Signs in with an email link</>}
+              <p className="mt-5 text-[12.5px] text-ink-3 tabular-nums">
+                {plural(counts.hearts, 'heart', 'hearts')} · {plural(counts.sets, 'set', 'sets')} · since {since}
               </p>
             </div>
 
-            <div className="border-t border-edge py-1">
-              <a href="/api/me/export" role="menuitem" className={row}><DownloadSimple className="w-4 h-4" weight="bold" /> Download my data</a>
-              <button role="menuitem" className={row} onClick={() => { setOpen(false); void signOut() }}><SignOut className="w-4 h-4" weight="bold" /> Sign out</button>
+            <div className="grid grid-cols-2 border-t border-edge">
+              <a href="/api/me/export" role="menuitem" className={stub}><DownloadSimple className="w-3.5 h-3.5" weight="bold" /> Your data</a>
+              <button role="menuitem" className={stub + ' border-l border-edge'} onClick={() => { setOpen(false); void signOut() }}><SignOut className="w-3.5 h-3.5" weight="bold" /> Sign out</button>
             </div>
 
-            <div className="border-t border-edge py-1">
+            {/* Rare and final, so it sits quietly at the foot of the card. */}
+            <div className="border-t border-edge px-5 py-2.5 flex items-center justify-between text-[12px]">
+              <span className="text-ink-4 flex items-center gap-1.5">
+                {user.google ? <><GoogleLogo className="w-3 h-3" weight="bold" /> Google</> : <><EnvelopeSimple className="w-3 h-3" weight="bold" /> Email link</>}
+              </span>
               {confirming ? (
                 <button
-                  role="menuitem"
-                  className={row + ' text-[#c8382f] dark:text-[#ff8a80] hover:text-[#c8382f] dark:hover:text-[#ff8a80]'}
+                  className="text-[#c8382f] dark:text-[#ff8a80] font-[600] hover:underline underline-offset-2"
                   onClick={async () => {
                     // A double-click must never delete: the confirm only arms after a beat.
                     if (Date.now() - armedAt < 600) return
@@ -169,12 +156,11 @@ export function AccountButton() {
                     else setFailed(true)
                   }}
                 >
-                  <Trash className="w-4 h-4" weight="bold" />
-                  {failed ? "Couldn't delete. Try again" : 'Delete everything — tap to confirm'}
+                  {failed ? "Couldn't delete. Try again" : 'Delete everything?'}
                 </button>
               ) : (
-                <button role="menuitem" className={row + ' text-ink-3'} onClick={() => { setConfirming(true); setArmedAt(Date.now()); setFailed(false) }}>
-                  <Trash className="w-4 h-4" weight="bold" /> Delete account
+                <button className="text-ink-4 hover:text-ink transition-colors" onClick={() => { setConfirming(true); setArmedAt(Date.now()); setFailed(false) }}>
+                  Delete account
                 </button>
               )}
             </div>

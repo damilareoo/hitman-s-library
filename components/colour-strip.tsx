@@ -19,18 +19,19 @@ function hsl(hex: string): [number, number, number] {
   return [(h * 60 + 360) % 360, d / (1 - Math.abs(2 * l - 1)), l]
 }
 
-/** The densest 100° band of hues, ordered across it; light at the top of each column. */
+/** The densest 60° band of hues, ordered across it; light at the top of each column. */
 function band(colors: string[]): string[] {
   const usable = colors.filter(c => { const [, s, l] = hsl(c); return s > 0.3 && l > 0.28 && l < 0.78 })
   if (usable.length < 4) return usable
   const dist = (a: number, b: number) => { const d = Math.abs(a - b) % 360; return Math.min(d, 360 - d) }
+  const W = 30
   let best = 0, most = -1
   for (let c = 0; c < 360; c += 10) {
-    const n = usable.filter(x => dist(hsl(x)[0], c) <= 50).length
+    const n = usable.filter(x => dist(hsl(x)[0], c) <= W).length
     if (n > most) { most = n; best = c }
   }
   const rel = (c: string) => ((hsl(c)[0] - best + 540) % 360) - 180
-  return usable.filter(c => dist(hsl(c)[0], best) <= 50).sort((a, b) => rel(a) - rel(b))
+  return usable.filter(c => dist(hsl(c)[0], best) <= W).sort((a, b) => rel(a) - rel(b))
 }
 
 export function ColourStrip({ ids, className = '' }: { ids?: number[]; className?: string }) {
@@ -60,7 +61,7 @@ export function ColourStrip({ ids, className = '' }: { ids?: number[]; className
         const sorted = [...slice].sort((x, y) => hsl(y)[2] - hsl(x)[2])
         for (let r = 0; r < ROWS; r++) {
           const x = c * PITCH, y = r * PITCH
-          if (a < 1) { g.globalAlpha = 0.1; g.fillStyle = ink; g.fillRect(x, y, TILE, TILE) }
+          if (a < 1) { g.globalAlpha = 0.06; g.fillStyle = ink; g.fillRect(x, y, TILE, TILE) }
           if (a <= 0 || !sorted.length) continue
           g.globalAlpha = a
           g.fillStyle = sorted[r % sorted.length]
@@ -71,14 +72,16 @@ export function ColourStrip({ ids, className = '' }: { ids?: number[]; className
     }
     paint([], 0)
 
-    const url = ids && ids.length
-      ? `/api/design/filter-advanced?ids=${ids.slice(0, 40).join(',')}`
-      : '/api/design/filter-advanced?limit=24&sortBy=recent'
-    fetch(url)
+    const load = (url: string) => fetch(url)
       .then(r => r.json())
       .then((body: { designs?: { colors?: string[] }[] }) =>
         band([...new Set((body.designs ?? []).flatMap(d => d.colors ?? []))].filter(c => /^#[0-9a-f]{6}$/i.test(c))))
       .catch(() => [] as string[])
+    const recent = '/api/design/filter-advanced?limit=24&sortBy=recent'
+    // A few hearts can be too few colours for a band; the newest sites fill in.
+    ;(ids && ids.length
+      ? load(`/api/design/filter-advanced?ids=${ids.slice(0, 40).join(',')}`).then(c => c.length >= 6 ? c : load(recent))
+      : load(recent))
       .then(colors => {
         if (cancelled || !colors.length) return
         if (matchMedia('(prefers-reduced-motion: reduce)').matches) return paint(colors, 2)

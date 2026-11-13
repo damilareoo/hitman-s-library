@@ -93,6 +93,7 @@ const changelog: ChangelogRelease[] = [
       { type: 'new', author: 'damilare', text: 'Download everything stored about you, or delete your account, from the account menu' },
       { type: 'new', author: 'damilare', text: 'A plain privacy page says what we keep, why, and how to remove it' },
       { type: 'improved', author: 'damilare', text: 'Your Google photo shows in the header, and the account menu says what you have saved' },
+      { type: 'improved', author: 'damilare', text: 'Sign-in and your account now look like a library card, in the colours you heart' },
     ],
   },
   {
