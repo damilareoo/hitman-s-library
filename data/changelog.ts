@@ -98,6 +98,7 @@ const changelog: ChangelogRelease[] = [
       { type: 'improved', author: 'damilare', text: 'Deleting your account now lives on the privacy page, keeping the account card simple' },
       { type: 'new', author: 'damilare', text: 'Style kits: DESIGN.md, Figma variables and captures in one zip, three free a month' },
       { type: 'improved', author: 'damilare', text: 'Grid thumbnails load faster on phones, with smaller images for nearly every site' },
+      { type: 'improved', author: 'damilare', text: 'Site requests made while signed in are linked to your account for review' },
     ],
   },
   {

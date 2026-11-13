@@ -3,6 +3,7 @@
 // The one public write path in the application. It writes a row and nothing
 // else — no extraction, no headless browser, no blob storage. Approving a
 // request is what starts real work, and that is behind the admin session.
+import { currentUser } from '@/lib/auth/request'
 import { NextResponse } from 'next/server'
 import { getSql } from '@/lib/db'
 import { assertPublicUrl, BlockedUrlError } from '@/lib/safe-url'
@@ -72,6 +73,8 @@ export async function POST(req: Request) {
   // does a DNS lookup, and validating first meant a stream of invalid
   // addresses cost lookups without ever touching anyone's quota.
   const ipHash = hashIp(clientIp(req))
+  // Signed-in requests remember who asked, so Pro members' requests are reviewed first.
+  const userId = (await currentUser(req).catch(() => null))?.user.id ?? null
   const limit = await checkRateLimit(ipHash, 'request-submit', LIMIT, WINDOW_SECONDS)
   if (!limit.ok) {
     return NextResponse.json({
@@ -123,7 +126,7 @@ export async function POST(req: Request) {
     // and credit travel the same way: they belong to the single form.
     const single = candidates.length === 1
     const rows = await sql`
-      INSERT INTO design_requests (url, normalized_url, preview_title, preview_image, ip_hash, email, note, credit)
+      INSERT INTO design_requests (url, normalized_url, preview_title, preview_image, ip_hash, email, note, credit, user_id)
       VALUES (
         ${toAbsoluteUrl(raw)},
         ${normalized},
@@ -132,13 +135,21 @@ export async function POST(req: Request) {
         ${ipHash},
         ${email},
         ${single ? note : null},
-        ${single ? credit : null}
+        ${single ? credit : null},
+        ${userId}
       )
       ON CONFLICT (normalized_url) DO UPDATE SET
         request_count = design_requests.request_count + 1,
         email = COALESCE(design_requests.email, EXCLUDED.email),
         note = COALESCE(design_requests.note, EXCLUDED.note),
         credit = COALESCE(design_requests.credit, EXCLUDED.credit),
+        -- A Pro member asking again lifts the request; otherwise the first asker stays.
+        user_id = CASE
+          WHEN EXCLUDED.user_id IS NOT NULL AND EXISTS (
+            SELECT 1 FROM subscriptions s WHERE s.user_id = EXCLUDED.user_id
+              AND s.status IN ('active', 'trialing') AND (s.current_period_end IS NULL OR s.current_period_end > now()))
+          THEN EXCLUDED.user_id
+          ELSE COALESCE(design_requests.user_id, EXCLUDED.user_id) END,
         status = CASE WHEN design_requests.status = 'dismissed' THEN 'pending' ELSE design_requests.status END,
         preview_title = COALESCE(design_requests.preview_title, EXCLUDED.preview_title),
         preview_image = COALESCE(design_requests.preview_image, EXCLUDED.preview_image),

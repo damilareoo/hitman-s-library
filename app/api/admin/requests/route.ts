@@ -14,12 +14,16 @@ export async function GET(req: NextRequest) {
   const status = req.nextUrl.searchParams.get('status') ?? 'pending'
 
   const rows = await sql`
-    SELECT id, url, normalized_url, status, source_id,
-           preview_title, preview_image, request_count, created_at, email,
-           note, credit
-    FROM design_requests
-    WHERE status = ${status}
-    ORDER BY request_count DESC, created_at DESC
+    SELECT r.id, r.url, r.normalized_url, r.status, r.source_id,
+           r.preview_title, r.preview_image, r.request_count, r.created_at, r.email,
+           r.note, r.credit,
+           -- Pro members' requests are reviewed first (the same rule as isPro).
+           (s.user_id IS NOT NULL) AS pro
+    FROM design_requests r
+    LEFT JOIN subscriptions s ON s.user_id = r.user_id
+      AND s.status IN ('active', 'trialing') AND (s.current_period_end IS NULL OR s.current_period_end > now())
+    WHERE r.status = ${status}
+    ORDER BY pro DESC, r.request_count DESC, r.created_at DESC
     LIMIT 200
   `
 
@@ -38,6 +42,7 @@ export async function GET(req: NextRequest) {
       status: r.status,
       sourceId: r.source_id ? String(r.source_id) : null,
       title: r.preview_title,
+      pro: Boolean(r.pro),
       image: r.preview_image,
       requestCount: r.request_count,
       createdAt: r.created_at,
