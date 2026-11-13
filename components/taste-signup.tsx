@@ -4,7 +4,7 @@
 // password — the email row plus the favorites list is the whole profile.
 'use client'
 
-import { CARD } from '@/components/member-card'
+import { CARD, BTN, FIELD } from '@/components/member-card'
 
 import { useState, useEffect } from 'react'
 import { track } from '@/lib/analytics'
@@ -84,7 +84,7 @@ export function TasteSignup() {
       {teasers.length > 0 && state === 'idle' && (
         <div className="flex gap-1.5 mb-4" aria-hidden="true">
           {teasers.map(t => (
-            <span key={t.id} className="flex-1 h-[48px] rounded-[7px] overflow-hidden ring-1 ring-inset ring-foreground/10 bg-muted block">
+            <span key={t.id} className="flex-1 h-[48px] rounded-[6px] overflow-hidden ring-1 ring-inset ring-foreground/10 bg-muted block">
               {t.thumbnail ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={t.thumbnail} alt="" loading="lazy" className="w-full h-full object-cover object-top" />
@@ -103,7 +103,7 @@ export function TasteSignup() {
         <p className={CARD.body + ' mt-3 text-ink'}>You&apos;re in. The first digest lands with the next additions.</p>
       ) : (
         <>
-          <div className="mt-4 flex items-center gap-1 h-10 pl-3 pr-1 rounded-[10px] border border-edge-strong focus-within:border-foreground/50 transition-colors">
+          <div className={FIELD + ' mt-4'}>
             <input
               type="email"
               inputMode="email"
@@ -119,7 +119,7 @@ export function TasteSignup() {
             <button
               onClick={submit}
               disabled={state === 'sending' || favoriteCount === 0}
-              className="shrink-0 h-8 px-3 rounded-[7px] bg-foreground text-background text-[12.5px] font-[600] hover:opacity-90 disabled:opacity-40 transition"
+              className={BTN.inField}
             >
               {state === 'sending' ? 'Joining…' : 'Join'}
             </button>

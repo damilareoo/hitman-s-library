@@ -92,7 +92,7 @@ export function KitTab({ siteId, siteUrl, hostname, colors, typography }: Props)
           <ThemeExport siteUrl={siteUrl} siteTitle={hostname} colors={colors} typography={typography} />
         </div>
       </div>
-      <div className="flex-shrink-0 border-t border-edge-faint px-4 h-12 flex items-center">
+      <div className="flex-shrink-0 h-12 px-4 flex items-center bg-foreground/[0.025] border-t border-edge">
         <KitAction siteId={siteId} />
       </div>
     </div>

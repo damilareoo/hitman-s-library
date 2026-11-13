@@ -9,7 +9,7 @@ import { useEffect, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
 import { ArrowRight, X } from '@phosphor-icons/react'
 import { GoogleMark } from '@/components/google-mark'
-import { CARD } from '@/components/member-card'
+import { CARD, BTN, FIELD } from '@/components/member-card'
 import { POP_IN, POP_OUT } from '@/lib/motion'
 import { SIGN_IN_EVENT } from '@/lib/account-client'
 
@@ -118,7 +118,7 @@ export function SignInSheet() {
               >
                 <div className={CARD.head}>
                   <span>{mode === 'join' ? 'Join the library' : 'Sign in'}</span>
-                  <button onClick={() => setOpen(false)} aria-label="Close" className="-mr-2 w-7 h-7 grid place-items-center rounded-[7px] text-ink-4 hover:text-ink hover:bg-foreground/[0.06] transition-colors">
+                  <button onClick={() => setOpen(false)} aria-label="Close" className={BTN.icon + ' -mr-2'}>
                     <X className="w-3.5 h-3.5" weight="bold" />
                   </button>
                 </div>
@@ -144,7 +144,7 @@ export function SignInSheet() {
                     <>
                       <form onSubmit={sendLink} className="mt-4">
                         <label htmlFor="signin-email" className="sr-only">Email</label>
-                        <div className="flex items-center gap-1 h-10 pl-3 pr-1 rounded-[10px] border border-edge-strong focus-within:border-foreground/50 transition-colors">
+                        <div className={FIELD}>
                           <input
                             id="signin-email" ref={inputRef} type="email" required autoComplete="email" inputMode="email"
                             value={email} onChange={e => setEmail(e.target.value)} placeholder="you@studio.com"
@@ -152,7 +152,7 @@ export function SignInSheet() {
                           />
                           <button
                             type="submit" disabled={step === 'sending'} aria-label="Email me a sign-in link"
-                            className="shrink-0 h-8 px-2.5 flex items-center gap-1 rounded-[7px] bg-foreground text-background text-[12.5px] font-[600] disabled:opacity-40 hover:opacity-90 active:scale-[0.98] transition"
+                            className={BTN.inField}
                           >
                             {step === 'sending' ? 'Sending…' : <>Email link <ArrowRight className="w-3 h-3" weight="bold" /></>}
                           </button>
@@ -160,7 +160,7 @@ export function SignInSheet() {
                       </form>
                       <a
                         href={`/api/auth/google?next=${encodeURIComponent(next())}`}
-                        className="mt-2 h-10 flex items-center justify-center gap-2.5 rounded-[10px] border border-edge-strong text-[13.5px] font-[600] text-ink hover:bg-foreground/[0.04] active:bg-foreground/[0.07] transition-colors focus-visible:outline-2 focus-visible:outline-[#E8A04A]"
+                        className={BTN.secondaryLg + ' mt-2 w-full gap-2.5'}
                       >
                         <GoogleMark size={16} /> Continue with Google
                       </a>

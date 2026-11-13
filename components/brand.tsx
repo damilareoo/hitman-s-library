@@ -73,7 +73,7 @@ export function Brand() {
         onTouchCancel={cancelPress}
         aria-label="Hitman's Library, home"
         title="Hitman's Library"
-        className="relative flex items-center justify-center w-8 h-8 rounded-[8px] text-foreground hover:bg-muted/60 active:scale-[0.98] transition-[background-color,transform] duration-[var(--dur-2)] ease-[var(--ease-sig)] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-foreground/25 after:absolute after:left-1/2 after:top-1/2 after:h-11 after:w-11 after:-translate-x-1/2 after:-translate-y-1/2 after:content-['']"
+        className="relative flex items-center justify-center w-8 h-8 rounded-[10px] text-foreground hover:bg-muted/60 active:scale-[0.98] transition-[background-color,transform] duration-[var(--dur-2)] ease-[var(--ease-sig)] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-foreground/25 after:absolute after:left-1/2 after:top-1/2 after:h-11 after:w-11 after:-translate-x-1/2 after:-translate-y-1/2 after:content-['']"
       >
         <Mark className="w-6 h-6 shrink-0" />
       </Link>

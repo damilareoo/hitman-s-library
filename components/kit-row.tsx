@@ -12,6 +12,7 @@ import { Package, ArrowDown, ArrowRight } from '@phosphor-icons/react'
 import { useAccount, openSignIn } from '@/lib/account-client'
 import { downloadKit } from '@/lib/kit/download-kit'
 import { track } from '@/lib/analytics'
+import { BTN } from '@/components/member-card'
 
 type Phase = 'idle' | 'packing' | 'saved' | 'limit' | 'failed'
 
@@ -55,7 +56,7 @@ export function KitAction({ siteId }: { siteId: number }) {
       </span>
       <button
         type="button" onClick={get} disabled={phase === 'packing'}
-        className="shrink-0 h-8 px-3 rounded-[8px] flex items-center gap-1.5 text-[13px] font-[600] tracking-[-0.01em] bg-foreground text-background hover:opacity-90 active:scale-[0.98] disabled:opacity-50 transition"
+        className={BTN.primary}
       >
         {phase === 'packing' ? 'Packing…' : phase === 'saved' ? 'Saved' : signedIn ? <><ArrowDown className="w-3.5 h-3.5" weight="bold" /> Download kit</> : 'Get it free'}
       </button>

@@ -89,7 +89,7 @@ export function OriginPeek({ children, src, alt, caption }: OriginPeekProps) {
         className={[
           'pointer-events-none absolute z-50 left-1/2',
           below ? 'top-[calc(100%+10px)]' : 'bottom-[calc(100%+10px)]',
-          'w-[min(600px,90vw)] rounded-[6px] border border-edge-strong bg-card overflow-hidden',
+          'w-[min(600px,90vw)] rounded-[16px] border border-edge-strong bg-card overflow-hidden',
           'shadow-[0_12px_32px_-8px_rgba(0,0,0,0.28)]',
           'transition-[opacity,transform] duration-[var(--dur-2)] ease-[var(--ease-sig)]',
           'motion-reduce:transition-none',

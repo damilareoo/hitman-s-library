@@ -115,7 +115,7 @@ export function DesignCard({ design, index, isSelected, onClick, onHover, onTagC
       // cheap — so the press registers in the card's own language instead.
       className={
         (cssEnter ? 'card-enter ' : '') +
-        'group relative flex flex-col rounded-[4px] overflow-hidden border cursor-pointer ' +
+        'group relative flex flex-col rounded-[12px] overflow-hidden border cursor-pointer ' +
         'transition-[background-color,border-color] duration-[var(--dur-1)] ease-[var(--ease-hover)] ' +
         (isSelected
           ? 'border-foreground/60'
@@ -224,7 +224,7 @@ export function DesignCard({ design, index, isSelected, onClick, onHover, onTagC
               aria-pressed={isFavorite}
               aria-label={isFavorite ? `Remove ${label} from favorites` : `Favorite ${label}`}
               title={isFavorite ? 'Favorited' : 'Favorite'}
-              className="relative z-10 shrink-0 -mt-0.5 -mr-1 w-7 h-7 flex items-center justify-center rounded-[4px] text-ink-4 hover:text-ink hover:bg-muted/40 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-foreground/40 before:absolute before:-inset-2 before:content-['']"
+              className="relative z-10 shrink-0 -mt-0.5 -mr-1 w-7 h-7 flex items-center justify-center rounded-[10px] text-ink-4 hover:text-ink hover:bg-muted/40 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-foreground/40 before:absolute before:-inset-2 before:content-['']"
             >
               <Heart className="w-3.5 h-3.5" weight={isFavorite ? 'fill' : 'bold'} />
             </button>
@@ -240,7 +240,7 @@ export function DesignCard({ design, index, isSelected, onClick, onHover, onTagC
             // 44px without growing the hover fill or the focus ring. It stops
             // short of the screenshot above and the palette row below, so the
             // card's own click target loses nothing but the 8px gutter.
-            className="relative z-10 shrink-0 -mt-0.5 -mr-1 w-7 h-7 flex items-center justify-center rounded-[4px] text-ink-4 hover:text-ink hover:bg-muted/40 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-foreground/40 before:absolute before:-inset-2 before:content-['']"
+            className="relative z-10 shrink-0 -mt-0.5 -mr-1 w-7 h-7 flex items-center justify-center rounded-[10px] text-ink-4 hover:text-ink hover:bg-muted/40 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-foreground/40 before:absolute before:-inset-2 before:content-['']"
           >
             <ArrowUpRight className="w-3.5 h-3.5" weight="bold" />
           </a>

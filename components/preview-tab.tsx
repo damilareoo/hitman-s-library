@@ -213,7 +213,7 @@ export function PreviewTab({
     const Icon = ICONS[info.icon]
     return (
       <div className="flex flex-col items-center justify-center flex-1 gap-3 p-8">
-        <div className="w-full rounded-[4px] border border-edge p-6 text-center space-y-3">
+        <div className="w-full rounded-[12px] border border-edge p-6 text-center space-y-3">
           <div className="flex items-center justify-center gap-2 text-ink-3">
             <Icon className="w-3.5 h-3.5" />
             <span className="text-micro">{info.label}</span>
@@ -260,7 +260,7 @@ export function PreviewTab({
           onClick={reload}
           aria-label="Reload preview"
           title="Reload preview"
-          className="w-7 h-7 flex-shrink-0 flex items-center justify-center rounded-[6px] text-ink-3 hover:text-ink hover:bg-muted transition-colors"
+          className="w-7 h-7 flex-shrink-0 flex items-center justify-center rounded-[10px] text-ink-3 hover:text-ink hover:bg-muted transition-colors"
         >
           <ArrowClockwise className="w-3.5 h-3.5" weight="bold" />
         </button>
@@ -273,7 +273,7 @@ export function PreviewTab({
         rel="noopener noreferrer"
         aria-label={`Open ${domain} in a new tab`}
         title={`Open ${domain}`}
-        className="w-7 h-7 -mr-1 flex-shrink-0 flex items-center justify-center rounded-[6px] text-ink-3 hover:text-ink hover:bg-muted transition-colors"
+        className="w-7 h-7 -mr-1 flex-shrink-0 flex items-center justify-center rounded-[10px] text-ink-3 hover:text-ink hover:bg-muted transition-colors"
       >
         <ArrowUpRight className="w-3.5 h-3.5" weight="bold" />
       </a>
@@ -282,7 +282,7 @@ export function PreviewTab({
 
   const stage = (content: ReactNode) => (
     <div className="relative flex-1 min-h-0 bg-background">
-      <div className="absolute inset-3 max-sm:inset-2 rounded-[10px] max-sm:rounded-[8px] border border-edge overflow-hidden bg-muted">
+      <div className="absolute inset-3 max-sm:inset-2 rounded-[12px] max-sm:rounded-[10px] border border-edge overflow-hidden bg-muted">
         {content}
       </div>
     </div>

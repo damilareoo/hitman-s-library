@@ -5,6 +5,8 @@
 // network, no model, nothing to fail.
 'use client'
 
+import { CARD } from '@/components/member-card'
+
 import { useSoundsContext } from '@/contexts/sounds-context'
 import { useCopied } from '@/lib/use-copied'
 import { track } from '@/lib/analytics'
@@ -65,12 +67,11 @@ export function ThemeExport({
     } catch { /* download unavailable */ }
   }
 
-  const btn =
-    'px-2 h-7 rounded-[6px] text-[12px] font-[500] transition-colors flex items-center gap-1.5 ' +
-    'text-ink-3 hover:text-ink hover:bg-muted active:scale-[0.98]'
+  const btn = CARD.footBtn
 
   return (
-    <div className="flex items-center gap-1" role="group" aria-label="Copy theme">
+    <div className="flex items-center gap-0.5" role="group" aria-label="Copy theme">
+      <span className="pl-2 pr-1 text-[12px] text-ink-4 max-[380px]:hidden">Copy</span>
       <button
         type="button"
         onClick={() => copyText(buildCssVars(colors, typography, fontImport), 'css')}
@@ -85,7 +86,7 @@ export function ThemeExport({
         className={btn}
         title="Copy Tailwind v4 @theme block"
       >
-        {copy.copiedId === 'tw' ? 'Copied' : '@theme'}
+        {copy.copiedId === 'tw' ? 'Copied' : 'Tailwind'}
       </button>
       <button
         type="button"

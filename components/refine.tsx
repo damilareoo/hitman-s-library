@@ -10,7 +10,7 @@ import { useEffect, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
 import { SlidersHorizontal, ImageSquare, Plus, X } from '@phosphor-icons/react'
 import { POP_IN, POP_OUT } from '@/lib/motion'
-import { CARD } from '@/components/member-card'
+import { CARD, BTN } from '@/components/member-card'
 import { paletteFromFile } from '@/lib/palette-client'
 import { refineActive, type RefineQuery } from '@/lib/search/refine-params'
 
@@ -47,7 +47,7 @@ export function Refine({ value, onApply, className = '' }: { value: RefineQuery;
     <div ref={ref} className={'relative ' + className}>
       <button
         onClick={() => setOpen(v => !v)} aria-expanded={open} aria-haspopup="dialog"
-        className={'h-7 px-2.5 flex items-center gap-1.5 rounded-[10px] text-ui transition-colors ' + (active ? 'bg-foreground text-background' : 'bg-muted/70 text-ink-3 hover:bg-muted hover:text-ink-2')}
+        className={'h-7 px-2.5 flex items-center gap-1.5 rounded-[10px] text-ui font-[500] transition-colors ' + (active ? 'bg-foreground text-background' : 'bg-muted/70 text-ink-3 hover:bg-muted hover:text-ink-2')}
       >
         <SlidersHorizontal className="w-3.5 h-3.5" weight="bold" />
         <span>Refine</span>
@@ -83,13 +83,13 @@ export function Refine({ value, onApply, className = '' }: { value: RefineQuery;
                 <div className="mt-2 flex flex-wrap items-center gap-1.5">
                   {q.palette.map(c => (
                     <button key={c} title={`Remove ${c}`} onClick={() => setQ(v => ({ ...v, palette: v.palette.filter(x => x !== c) }))}
-                      className="group relative w-7 h-7 rounded-[7px] ring-1 ring-inset ring-foreground/10" style={{ background: c }}>
+                      className="group relative w-7 h-7 rounded-[6px] ring-1 ring-inset ring-foreground/10" style={{ background: c }}>
                       <X className="absolute inset-0 m-auto w-3 h-3 opacity-0 group-hover:opacity-100 text-white mix-blend-difference" weight="bold" />
                     </button>
                   ))}
                   {q.palette.length < 6 && (
                     <button onClick={() => colourRef.current?.click()} title="Add a colour"
-                      className="w-7 h-7 grid place-items-center rounded-[7px] border border-dashed border-edge-strong text-ink-4 hover:text-ink">
+                      className="w-7 h-7 grid place-items-center rounded-[6px] border border-dashed border-edge-strong text-ink-4 hover:text-ink">
                       <Plus className="w-3 h-3" weight="bold" />
                     </button>
                   )}
@@ -102,7 +102,7 @@ export function Refine({ value, onApply, className = '' }: { value: RefineQuery;
                 <label htmlFor="refine-font" className={CARD.label}>Font</label>
                 <input id="refine-font" value={q.font} maxLength={40} placeholder="Inter, Instrument Serif…"
                   onChange={e => setQ(v => ({ ...v, font: e.target.value }))}
-                  className="mt-2 w-full h-8 px-2.5 rounded-[8px] border border-edge bg-transparent text-[13px] text-ink placeholder:text-ink-4 outline-none focus:border-foreground/30" />
+                  className="mt-2 w-full h-9 px-3 rounded-[10px] border border-edge-strong bg-transparent text-[13px] text-ink placeholder:text-ink-4 outline-none focus:border-foreground/50 transition-colors" />
               </section>
 
               <section>
@@ -110,7 +110,7 @@ export function Refine({ value, onApply, className = '' }: { value: RefineQuery;
                 <div role="radiogroup" aria-label="Readable text" className="mt-2 flex gap-1.5">
                   {(['', 'AA', 'AAA'] as const).map(r => (
                     <button key={r || 'any'} role="radio" aria-checked={q.readable === r} onClick={() => setQ(v => ({ ...v, readable: r }))}
-                      className={'h-7 px-3 rounded-full border text-[12px] font-[600] transition-colors ' + (q.readable === r ? 'border-foreground bg-foreground text-background' : 'border-edge text-ink-3 hover:text-ink')}>
+                      className={BTN.chip(q.readable === r)}>
                       {r || 'Any'}
                     </button>
                   ))}

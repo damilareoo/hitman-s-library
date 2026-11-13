@@ -1,8 +1,41 @@
 // components/member-card.ts
-// One scale for the two member cards (the sign-in sheet and the account card),
-// so type, spacing and actions match exactly.
+// The site's one scale for cards, buttons and corners, so type, spacing,
+// actions and radii match everywhere.
+//
+// Radius: one ladder, kept concentric. A nested corner is the outer corner
+// minus the gap between them, so curves run parallel:
+//   card 16 → rows in a 6px inset 10 → controls 10 → a button 4px inside a
+//   field 6 → key caps 5. Chips and toggles are fully round.
+export const R = {
+  card: 'rounded-[16px]',
+  inset: 'rounded-[10px]',   // rows and plates inside a card's 6px inset
+  control: 'rounded-[10px]', // buttons, inputs, field groups
+  nested: 'rounded-[6px]',   // a button sitting 4px inside a control
+  key: 'rounded-[5px]',
+  chip: 'rounded-full',
+}
+
+const btnBase = 'inline-flex items-center justify-center gap-1.5 shrink-0 font-[600] tracking-[-0.01em] whitespace-nowrap transition disabled:opacity-40 disabled:pointer-events-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#E8A04A]'
+
+/** Buttons: two sizes, three looks. md is 32px (cards, toolbars), lg is 40px (forms, full-width). */
+export const BTN = {
+  primary: `${btnBase} h-8 px-3 ${R.control} text-[13px] bg-foreground text-background hover:opacity-90 active:scale-[0.98]`,
+  secondary: `${btnBase} h-8 px-3 ${R.control} text-[13px] border border-edge-strong text-ink hover:bg-foreground/[0.04] active:bg-foreground/[0.07]`,
+  ghost: `${btnBase} h-8 px-2.5 ${R.control} text-[13px] font-[500] text-ink-3 hover:text-ink hover:bg-foreground/[0.05]`,
+  primaryLg: `${btnBase} h-10 px-4 ${R.control} text-[13.5px] bg-foreground text-background hover:opacity-90 active:scale-[0.99]`,
+  secondaryLg: `${btnBase} h-10 px-4 ${R.control} text-[13.5px] border border-edge-strong text-ink hover:bg-foreground/[0.04] active:bg-foreground/[0.07]`,
+  /** A button inside a 40px field, 4px from its edge: 32px tall, corner 10 − 4 = 6. */
+  inField: `${btnBase} h-8 px-3 ${R.nested} text-[12.5px] bg-foreground text-background hover:opacity-90 active:scale-[0.98]`,
+  /** Square icon buttons (close, etc). */
+  icon: `inline-grid place-items-center shrink-0 w-8 h-8 ${R.control} text-ink-4 hover:text-ink hover:bg-foreground/[0.06] transition-colors focus-visible:outline-2 focus-visible:outline-[#E8A04A]`,
+  /** Toggle chips; pass the active state through `chip(active)`. */
+  chip: (active: boolean) => `${btnBase} h-7 px-3 ${R.chip} border text-[12px] ${active ? 'border-foreground bg-foreground text-background' : 'border-edge text-ink-3 hover:text-ink'}`,
+}
+
+/** A 40px field that can hold a BTN.inField on its right. */
+export const FIELD = `flex items-center gap-1 h-10 pl-3 pr-1 ${R.control} border border-edge-strong focus-within:border-foreground/50 transition-colors`
 export const CARD = {
-  shell: 'bg-popover text-popover-foreground border border-edge-strong rounded-[16px] overflow-hidden',
+  shell: 'bg-popover text-popover-foreground border border-edge-strong rounded-[16px] overflow-hidden', // R.card
   pad: 'px-4',
   label: 'text-[11px] leading-none font-[600] tracking-[0.12em] uppercase text-ink-4',
   number: 'text-[11px] leading-none font-[600] tracking-[0.06em] text-[#E8A04A] whitespace-nowrap',
@@ -12,7 +45,7 @@ export const CARD = {
   // title, a white body with one idea, a tinted footer for the actions.
   head: 'h-10 px-4 flex items-center justify-between gap-3 bg-foreground/[0.025] border-b border-edge text-[12.5px] font-[500] text-ink-3',
   foot: 'h-11 px-2 flex items-center gap-1 bg-foreground/[0.025] border-t border-edge',
-  footBtn: 'h-8 px-2 flex items-center gap-1.5 rounded-[8px] text-[12.5px] font-[500] text-ink-3 hover:text-ink hover:bg-foreground/[0.05] transition-colors focus-visible:outline-2 focus-visible:outline-[#E8A04A]',
+  footBtn: 'inline-flex items-center gap-1.5 h-8 px-2.5 rounded-[10px] text-[13px] font-[500] text-ink-3 hover:text-ink hover:bg-foreground/[0.05] transition-colors focus-visible:outline-2 focus-visible:outline-[#E8A04A]', // = BTN.ghost
   title: 'text-[15px] font-[620] tracking-[-0.02em] leading-tight text-ink',
   pill: 'h-6 px-2 inline-flex items-center rounded-full border border-edge text-[11.5px] font-[600] text-ink-3',
   proPill: 'h-6 px-2 inline-flex items-center gap-1 rounded-full bg-[#E8A04A]/[0.14] text-[11.5px] font-[650] text-[#A8611A] dark:text-[#F0B36A]',

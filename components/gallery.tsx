@@ -30,7 +30,7 @@ import Link from 'next/link'
 import { useIsNarrow, useIsPhone } from '@/lib/use-is-narrow'
 import { useUrlParams } from '@/lib/use-url-params'
 import { Refine } from '@/components/refine'
-import { CARD } from '@/components/member-card'
+import { CARD, BTN } from '@/components/member-card'
 import { refineFromParams, refineToParams, refineApiQuery, refineActive, type RefineQuery } from '@/lib/search/refine-params'
 import { openSignIn } from '@/lib/account-client'
 import { prefetchDetail } from '@/lib/detail-cache'
@@ -94,7 +94,7 @@ const COLOR_FILTER_RE = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i
 // Direction H keeps active rows obvious through fill, not a leading rule.
 function sortButton(isActive: boolean): string {
   return [
-    'relative rounded-[6px] text-meta border transition-[background-color,border-color,color,transform] duration-[var(--dur-2)] ease-[var(--ease-sig)] active:scale-[0.98]',
+    'relative rounded-[10px] text-meta border transition-[background-color,border-color,color,transform] duration-[var(--dur-2)] ease-[var(--ease-sig)] active:scale-[0.98]',
     // The pill is 23px tall; the overlay reaches full height.
     // Nothing sits above or below it inside the 56px header.
     "after:absolute after:inset-x-0 after:top-1/2 after:h-11 after:-translate-y-1/2 after:content-['']",
@@ -106,7 +106,7 @@ function sortButton(isActive: boolean): string {
 
 function categoryPill(isActive: boolean): string {
   return [
-    'shrink-0 h-8 px-3 rounded-[8px] text-meta whitespace-nowrap border',
+    'shrink-0 h-8 px-3 rounded-[10px] text-meta whitespace-nowrap border',
     'transition-[background-color,border-color,color,transform] duration-[var(--dur-2)] ease-[var(--ease-sig)] active:scale-[0.98]',
     'focus:outline-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-foreground/20',
     isActive
@@ -126,7 +126,7 @@ const ICON_BUTTON =
 
 function SkeletonCard() {
   return (
-    <div className="flex flex-col border border-edge rounded-[4px] overflow-hidden animate-pulse">
+    <div className="flex flex-col border border-edge rounded-[12px] overflow-hidden animate-pulse">
       <div className="aspect-[16/10] bg-muted" />
       <div className="px-3.5 pt-2.5 pb-3 flex flex-col gap-2 border-t border-edge-faint">
         <div className="space-y-1.5">
@@ -995,7 +995,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
           the header and nine categories to reach it is a long trip. */}
       <a
         href="#gallery"
-        className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[60] focus:px-3 focus:py-2 focus:rounded-[4px] focus:border focus:border-edge-strong focus:bg-background focus:text-bodytext focus:text-ink focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-foreground/40"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[60] focus:px-3 focus:py-2 focus:rounded-[10px] focus:border focus:border-edge-strong focus:bg-background focus:text-bodytext focus:text-ink focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-foreground/40"
       >
         Skip to sites
       </a>
@@ -1136,7 +1136,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
                     role="menuitem"
                     // Opened a tick later, so this tap doesn't count as a click outside it.
                     onClick={() => { setMoreOpen(false); setTimeout(() => window.dispatchEvent(new Event(OPEN_SAVED_EVENT)), 0) }}
-                    className="w-full flex items-center gap-2.5 h-9 px-2.5 rounded-[6px] text-bodytext text-ink-2 text-left hover:text-ink hover:bg-muted transition-colors"
+                    className="w-full flex items-center gap-2.5 h-9 px-2.5 rounded-[10px] text-bodytext text-ink-2 text-left hover:text-ink hover:bg-muted transition-colors"
                   >
                     <BookmarkSimple className="w-4 h-4" weight="bold" />
                     <span>Saved</span>
@@ -1144,7 +1144,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
                   <button
                     role="menuitem"
                     onClick={() => { setMoreOpen(false); setDigestOpen(true) }}
-                    className="w-full flex items-center gap-2.5 h-9 px-2.5 rounded-[6px] text-bodytext text-ink-2 text-left hover:text-ink hover:bg-muted transition-colors"
+                    className="w-full flex items-center gap-2.5 h-9 px-2.5 rounded-[10px] text-bodytext text-ink-2 text-left hover:text-ink hover:bg-muted transition-colors"
                   >
                     <EnvelopeSimple className="w-4 h-4" weight="bold" />
                     <span>Digest</span>
@@ -1153,7 +1153,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
                     role="menuitem"
                     href="/submit"
                     onClick={() => setMoreOpen(false)}
-                    className="w-full flex items-center gap-2.5 h-9 px-2.5 rounded-[6px] text-bodytext text-ink-2 text-left hover:text-ink hover:bg-muted transition-colors"
+                    className="w-full flex items-center gap-2.5 h-9 px-2.5 rounded-[10px] text-bodytext text-ink-2 text-left hover:text-ink hover:bg-muted transition-colors"
                   >
                     <Plus className="w-4 h-4" weight="bold" />
                     <span>Submit</span>
@@ -1165,7 +1165,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
                       if (!sounds.enabled) sounds.playThemeToggle(true)
                       sounds.setEnabled(p => !p)
                     }}
-                    className="w-full flex items-center gap-2.5 h-9 px-2.5 rounded-[6px] text-bodytext text-ink-2 text-left hover:text-ink hover:bg-muted transition-colors"
+                    className="w-full flex items-center gap-2.5 h-9 px-2.5 rounded-[10px] text-bodytext text-ink-2 text-left hover:text-ink hover:bg-muted transition-colors"
                   >
                     {sounds.enabled
                       ? <SpeakerHigh className="w-4 h-4" weight="regular" />
@@ -1197,7 +1197,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
               <button
                 onClick={() => setDigestOpen(false)}
                 aria-label="Close digest signup"
-                className="-mr-2 w-7 h-7 grid place-items-center rounded-[7px] text-ink-4 hover:text-ink hover:bg-foreground/[0.06] transition-colors"
+                className={BTN.icon + ' -mr-2'}
               >
                 <X className="w-3.5 h-3.5" weight="bold" />
               </button>
@@ -1251,7 +1251,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
                 aria-label="Search sites"
                 value={searchInput}
                 onChange={e => setSearchInput(e.target.value)}
-                className="w-full h-8 pl-8 pr-7 text-ui bg-muted/70 border border-transparent rounded-[12px] text-foreground placeholder:text-ink-4 outline-none hover:bg-muted focus:bg-muted focus:ring-1 focus:ring-foreground/15 focus-visible:outline-none [&:focus-visible]:outline-none transition-[background-color,box-shadow] duration-[var(--dur-2)] ease-[var(--ease-sig)] [&::-webkit-search-cancel-button]:hidden"
+                className="w-full h-8 pl-8 pr-7 text-ui bg-muted/70 border border-transparent rounded-[10px] text-foreground placeholder:text-ink-4 outline-none hover:bg-muted focus:bg-muted focus:ring-1 focus:ring-foreground/15 focus-visible:outline-none [&:focus-visible]:outline-none transition-[background-color,box-shadow] duration-[var(--dur-2)] ease-[var(--ease-sig)] [&::-webkit-search-cancel-button]:hidden"
               />
               {searchInput && (
                 <button
@@ -1392,18 +1392,18 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
                 <div className="flex flex-wrap items-center gap-1.5">
                   <span className="text-[12.5px] font-[600] text-ink mr-1">Refined</span>
                   {refine.palette.length > 0 && (
-                    <button onClick={() => applyRefine({ ...refine, palette: [] })} className="h-7 pl-2 pr-1.5 flex items-center gap-1.5 rounded-[8px] bg-muted/70 text-[12px] text-ink-2 hover:bg-muted" title="Remove palette">
+                    <button onClick={() => applyRefine({ ...refine, palette: [] })} className="h-7 pl-2 pr-1.5 flex items-center gap-1.5 rounded-full bg-muted/70 text-[12px] text-ink-2 hover:bg-muted" title="Remove palette">
                       {refine.palette.map(c => <span key={c} className="w-3 h-3 rounded-[3px] ring-1 ring-inset ring-foreground/10" style={{ background: c }} />)}
                       <X className="w-3 h-3 text-ink-4" weight="bold" />
                     </button>
                   )}
                   {refine.font && (
-                    <button onClick={() => applyRefine({ ...refine, font: '' })} className="h-7 px-2 flex items-center gap-1.5 rounded-[8px] bg-muted/70 text-[12px] text-ink-2 hover:bg-muted">
+                    <button onClick={() => applyRefine({ ...refine, font: '' })} className="h-7 px-2 flex items-center gap-1.5 rounded-full bg-muted/70 text-[12px] text-ink-2 hover:bg-muted">
                       Font: {refine.font} <X className="w-3 h-3 text-ink-4" weight="bold" />
                     </button>
                   )}
                   {refine.readable && (
-                    <button onClick={() => applyRefine({ ...refine, readable: '' })} className="h-7 px-2 flex items-center gap-1.5 rounded-[8px] bg-muted/70 text-[12px] text-ink-2 hover:bg-muted">
+                    <button onClick={() => applyRefine({ ...refine, readable: '' })} className="h-7 px-2 flex items-center gap-1.5 rounded-full bg-muted/70 text-[12px] text-ink-2 hover:bg-muted">
                       Readable {refine.readable} <X className="w-3 h-3 text-ink-4" weight="bold" />
                     </button>
                   )}
@@ -1520,7 +1520,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
                             </p>
                             <Link
                               href={`/submit?url=${encodeURIComponent(search.trim())}`}
-                              className="mt-1 h-9 px-4 inline-flex items-center gap-2 rounded-[6px] bg-foreground text-background text-bodytext font-medium hover:opacity-90 transition-opacity"
+                              className="mt-1 h-9 px-4 inline-flex items-center gap-2 rounded-[10px] bg-foreground text-background text-bodytext font-medium hover:opacity-90 transition-opacity"
                             >
                               Submit it
                               <ArrowRight className="w-3.5 h-3.5" weight="bold" />
@@ -1534,7 +1534,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
                               <button
                                 key={name}
                                 onClick={() => handleFilterChange(name)}
-                                className="shrink-0 h-8 px-3 rounded-[8px] text-meta whitespace-nowrap border bg-foreground/[0.055] text-ink-2 border-transparent hover:text-ink hover:bg-foreground/[0.09] active:scale-[0.98] transition-[background-color,border-color,color,transform] duration-[var(--dur-2)] ease-[var(--ease-sig)]"
+                                className="shrink-0 h-8 px-3 rounded-[10px] text-meta whitespace-nowrap border bg-foreground/[0.055] text-ink-2 border-transparent hover:text-ink hover:bg-foreground/[0.09] active:scale-[0.98] transition-[background-color,border-color,color,transform] duration-[var(--dur-2)] ease-[var(--ease-sig)]"
                               >
                                 {name === 'All' ? name : displayKind(name)}
                               </button>
