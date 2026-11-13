@@ -31,15 +31,15 @@ export async function downloadKit(id: number): Promise<KitResult> {
   const missing: string[] = []
   await Promise.all(body.captures.map(async c => {
     try {
-      const r = await fetch(c.url, { mode: 'cors', credentials: 'omit' })
+      const r = await fetch(c.url, { credentials: 'same-origin' })
       if (!r.ok) throw new Error(String(r.status))
       entries.push({ name: `${folder}/${c.name}`, data: new Uint8Array(await r.arrayBuffer()) })
     } catch {
-      missing.push(`${c.name}: ${c.url}`)
+      missing.push(c.name)
     }
   }))
   if (missing.length) {
-    entries.push({ name: `${folder}/captures-missing.txt`, data: enc.encode(`These captures couldn't be packed. They're public at:\n\n${missing.join('\n')}\n`) })
+    entries.push({ name: `${folder}/captures-missing.txt`, data: enc.encode(`Couldn't fetch ${missing.join(' and ')} just now. Download the kit again to retry; it won't count twice this month.\n`) })
   }
 
   const blob = new Blob([zipStore(entries) as BlobPart], { type: 'application/zip' })

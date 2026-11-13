@@ -41,13 +41,16 @@ describe('handleKit', () => {
     expect(r.status).toBe(402)
     expect(await r.json()).toEqual({ error: 'limit', meter: { pro: false, kitsUsed: 3, kitsLimit: 3 } })
   })
-  test('success: five files, https captures only, never cached', async () => {
+  test('success: five files, same-origin capture paths, never cached', async () => {
     const r = await handleKit(req(), '7', deps())
     expect(r.status).toBe(200)
     expect(r.headers.get('cache-control')).toBe('private, no-store')
     const body = await r.json()
     expect(body.files).toHaveLength(5)
-    expect(body.captures).toEqual([{ name: 'desktop.png', url: 'https://cdn/a.png' }])
+    expect(body.captures).toEqual([
+      { name: 'desktop.png', url: '/api/kit/7/capture/desktop' },
+      { name: 'mobile.png', url: '/api/kit/7/capture/mobile' },
+    ])
     expect(body.meter).toEqual({ pro: false, kitsUsed: 1, kitsLimit: 3 })
   })
 })
