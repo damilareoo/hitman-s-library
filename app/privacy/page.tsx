@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import type { Metadata } from 'next'
 import { Brand } from '@/components/brand'
 import { SiteLinks } from '@/components/site-links'
@@ -75,6 +76,7 @@ export default function PrivacyPage() {
 
         <p className="mt-16 pt-8 border-t border-edge text-micro text-ink-4">
           Hitman&apos;s Library is run by Oluwadamilare Osofisan. Last updated {UPDATED}.
+          {' '}See also the <Link href="/terms" className="underline underline-offset-2 hover:text-ink">Terms</Link> and <Link href="/refunds" className="underline underline-offset-2 hover:text-ink">Refund policy</Link>.
         </p>
       </main>
     </div>
