@@ -1502,7 +1502,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
 
       {/* Detail panel — the column is always here. The empty state names
             what the panel holds, which is how you learn the tabs exist. */}
-        <div className="hidden xl:flex xl:col-span-4 track-panel flex-col sticky top-14 h-[calc(100vh-56px)] border-l border-edge-strong bg-background">
+        <div className="hidden xl:flex xl:col-span-4 track-panel flex-col sticky top-14 z-40 h-[calc(100vh-56px)] border-l border-edge-strong bg-background">
           <AnimatePresence mode="wait">
             {isPanelOpen && !isNarrow ? (
               <motion.div

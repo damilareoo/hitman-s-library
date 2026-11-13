@@ -166,6 +166,11 @@ export function SiteDetailPanel({ variant = 'desktop', sourceId, metadata, initi
   // Anything more about the row belongs in a tab.
   const kindLabel = metadata?.kind && metadata.kind !== UNSORTED ? metadata.kind : undefined
   const title = data?.title?.trim() || hostname
+  // "Goodside → An independent brand design studio" reads as "Goodside".
+  const shortName = (() => {
+    const head = title.split(/\s+[→—–|·]\s+|\s+-\s+|:\s+/)[0].trim()
+    return head.length >= 2 && head.length <= 48 ? head : title
+  })()
   const favCount = server?.favorite_count
 
   const account = useAccount()
@@ -188,22 +193,23 @@ export function SiteDetailPanel({ variant = 'desktop', sourceId, metadata, initi
         style={{ paddingTop: 'max(12px, env(safe-area-inset-top))' }}
       >
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
-            <p className="text-[15px] font-[640] tracking-[-0.02em] leading-tight text-ink truncate">{title}</p>
-            {typeof favCount === 'number' && (
-              <span
-                className="inline-flex items-center gap-1 shrink-0 text-[12px] text-ink-4"
-                title={`${favCount} favorite${favCount === 1 ? '' : 's'}`}
-              >
-                <Heart className="w-3 h-3 text-[var(--color-error)]" weight="fill" aria-hidden="true" />
-                {favCount}
-                <span className="sr-only">favorites</span>
-              </span>
+          {/* The site's own name, not its SEO title; the full title is on hover. */}
+          <h2 className="text-[17px] font-[640] tracking-[-0.025em] leading-tight text-ink truncate" title={title}>{shortName}</h2>
+          <p className="mt-1 flex items-center gap-1.5 text-[12.5px] text-ink-4 min-w-0">
+            <span className="truncate">{hostname}</span>
+            {kindLabel && <><span aria-hidden="true">·</span><span className="shrink-0">{kindLabel}</span></>}
+            {typeof favCount === 'number' && favCount > 0 && (
+              <>
+                <span aria-hidden="true">·</span>
+                <span className="inline-flex items-center gap-1 shrink-0" title={`${favCount} heart${favCount === 1 ? '' : 's'}`}>
+                  <Heart className="w-3 h-3 text-[var(--color-error)]" weight="fill" aria-hidden="true" />
+                  {favCount}<span className="sr-only"> hearts</span>
+                </span>
+              </>
             )}
-          </div>
-          <p className="mt-0.5 text-[12px] text-ink-4 truncate">{hostname}{kindLabel ? ` · ${kindLabel}` : ''}</p>
+          </p>
         </div>
-        <div className="flex items-center gap-0.5 shrink-0">
+        <div className="flex items-center gap-1 shrink-0 -mr-1.5">
           <div ref={saveRef} className="relative">
             <button
               onClick={() => setSaveOpen(v => !v)}
@@ -286,7 +292,6 @@ export function SiteDetailPanel({ variant = 'desktop', sourceId, metadata, initi
               )}
             </AnimatePresence>
           </div>
-          <span aria-hidden="true" className="panel-head-divider w-px h-4 bg-edge mx-0.5" />
           {onClose && (
             <button
               onClick={() => { playClose(); onClose() }}
@@ -373,7 +378,7 @@ export function SiteDetailPanel({ variant = 'desktop', sourceId, metadata, initi
                   initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: DUR.move, ease: EASE }}
                   exit={{ opacity: 0, y: -4, transition: { duration: DUR.exit } }}>
-                  <KitTab siteId={data.id} colors={data.colors} typography={data.typography} />
+                  <KitTab siteId={data.id} siteUrl={data.url} hostname={hostname} colors={data.colors} typography={data.typography} />
                 </motion.div>
               )}
               {DRIFT_ENABLED && effectiveTab === 'history' && (

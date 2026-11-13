@@ -9,11 +9,14 @@ import { useMemo } from 'react'
 import { Sparkle, FigmaLogo, Code } from '@phosphor-icons/react'
 import { nameColors } from '@/lib/kit/roles'
 import { KitAction } from './kit-row'
+import { ThemeExport } from './theme-export'
 
 interface Props {
   siteId: number
+  siteUrl: string
+  hostname: string
   colors: { hex_value: string; oklch: string | null; area_share: number | null }[]
-  typography: { font_family: string; role: string }[]
+  typography: { font_family: string; role: string; google_fonts_url: string | null; primary_weight: number | null }[]
 }
 
 const USES = [
@@ -22,7 +25,7 @@ const USES = [
   { Icon: Code, title: 'Code', body: 'Paste theme.css, or the Tailwind theme.' },
 ]
 
-export function KitTab({ siteId, colors, typography }: Props) {
+export function KitTab({ siteId, siteUrl, hostname, colors, typography }: Props) {
   const named = useMemo(() => nameColors(colors), [colors])
   const roles = named.filter(c => c.role !== 'support')
   const rest = named.filter(c => c.role === 'support')
@@ -82,6 +85,12 @@ export function KitTab({ siteId, colors, typography }: Props) {
           ))}
         </ul>
         <p className="mt-3 text-[12px] text-ink-4">One zip with the full-size captures. Colours named by role and hue, values checked.</p>
+
+        {/* The quick copies stay free and need no account. */}
+        <div className="mt-6 flex items-center justify-between gap-3 rounded-[10px] border border-edge-faint pl-3 pr-1.5 h-11">
+          <span className="text-[12.5px] text-ink-3 whitespace-nowrap">Copy now, free</span>
+          <ThemeExport siteUrl={siteUrl} siteTitle={hostname} colors={colors} typography={typography} />
+        </div>
       </div>
       <div className="flex-shrink-0 border-t border-edge-faint px-4 h-12 flex items-center">
         <KitAction siteId={siteId} />
