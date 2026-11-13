@@ -34,11 +34,11 @@ process.env.BLOB_READ_WRITE_TOKEN ||= env.BLOB_READ_WRITE_TOKEN
 
 let pending
 if (onlyIds) {
-  pending = await sql`SELECT id, source_url, thumbnail_url FROM design_sources WHERE id = ANY(${onlyIds}::int[]) AND thumbnail_url IS NOT NULL`
+  pending = await sql`SELECT id, source_url, thumbnail_url, screenshot_url FROM design_sources WHERE id = ANY(${onlyIds}::int[]) AND thumbnail_url IS NOT NULL`
 } else if (force) {
-  pending = await sql`SELECT id, source_url, thumbnail_url FROM design_sources WHERE thumbnail_url IS NOT NULL ORDER BY id ASC`
+  pending = await sql`SELECT id, source_url, thumbnail_url, screenshot_url FROM design_sources WHERE thumbnail_url IS NOT NULL ORDER BY id ASC`
 } else {
-  pending = await sql`SELECT id, source_url, thumbnail_url FROM design_sources WHERE thumbnail_url IS NOT NULL AND thumbnail_optimized_url IS NULL ORDER BY id ASC`
+  pending = await sql`SELECT id, source_url, thumbnail_url, screenshot_url FROM design_sources WHERE thumbnail_url IS NOT NULL AND thumbnail_optimized_url IS NULL ORDER BY id ASC`
 }
 console.log(`${pending.length} thumbnails to optimize`)
 
@@ -48,12 +48,23 @@ let frozen = 0
 for (const site of pending) {
   const id = Number(site.id)
   try {
-    if (!site.thumbnail_url.startsWith('http')) { failed++; continue }
-    const res = await fetch(site.thumbnail_url, { signal: AbortSignal.timeout(15000) })
-    if (!res.ok) throw new Error(`HTTP ${res.status}`)
-    if (!(res.headers.get('content-type') ?? '').startsWith('image/')) throw new Error('non-image')
-    const buf = Buffer.from(await res.arrayBuffer())
-    if (!buf.length) throw new Error('empty')
+    // The hotlinked image first; when its host refuses or it isn't an image,
+    // fall back to our own capture of the site.
+    let buf = null, why = ''
+    for (const src of [site.thumbnail_url, site.screenshot_url]) {
+      if (!src || !src.startsWith('http')) continue
+      try {
+        const res = await fetch(src, { signal: AbortSignal.timeout(15000), headers: { 'User-Agent': 'Mozilla/5.0 (compatible; HitmansLibrary/1.0)' } })
+        if (!res.ok) throw new Error(`HTTP ${res.status}`)
+        if (!(res.headers.get('content-type') ?? '').startsWith('image/')) throw new Error('non-image')
+        const b = Buffer.from(await res.arrayBuffer())
+        if (!b.length) throw new Error('empty')
+        await sharp(b).metadata()
+        buf = b
+        break
+      } catch (e) { why += `${new URL(src).hostname}: ${e.message}; ` }
+    }
+    if (!buf) throw new Error(why || 'no source')
     const meta = await sharp(buf).metadata()
     // Animated input freezes to its first frame for the grid — the motion
     // stays in the detail panel and the hover clip.
@@ -77,6 +88,7 @@ for (const site of pending) {
     done++
   } catch (e) {
     failed++
+    console.log(`failed ${id}: ${e.message}`)
   }
   if ((done + failed) % 25 === 0) console.log(`progress: ${done + failed}/${pending.length} (frozen GIFs: ${frozen})`)
 }
