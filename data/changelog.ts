@@ -104,6 +104,7 @@ const changelog: ChangelogRelease[] = [
       { type: 'new', author: 'damilare', text: 'New Pro members get a welcome email with Pro drawn in their own colours' },
       { type: 'improved', author: 'damilare', text: 'Grid cards respond more clearly to hover, press and selection' },
       { type: 'improved', author: 'damilare', text: 'The Kit tab is shorter and easier to scan' },
+      { type: 'improved', author: 'damilare', text: 'Search, sign-in, submit and every other field now share one input style' },
       { type: 'new', author: 'damilare', text: 'A Kit tab shows what the style kit gives you before you download it' },
       { type: 'new', author: 'damilare', text: 'Saved in the header opens your hearts and every set in one tap' },
       { type: 'improved', author: 'damilare', text: 'The site panel has cleaner tabs, one type scale and less visual noise' },

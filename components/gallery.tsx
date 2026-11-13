@@ -30,7 +30,7 @@ import Link from 'next/link'
 import { useIsNarrow, useIsPhone } from '@/lib/use-is-narrow'
 import { useUrlParams } from '@/lib/use-url-params'
 import { Refine } from '@/components/refine'
-import { CARD, BTN } from '@/components/member-card'
+import { CARD, BTN, INPUT } from '@/components/member-card'
 import { refineFromParams, refineToParams, refineApiQuery, refineActive, type RefineQuery } from '@/lib/search/refine-params'
 import { openSignIn } from '@/lib/account-client'
 import { prefetchDetail } from '@/lib/detail-cache'
@@ -1019,7 +1019,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
             onClick={() => setBrowseOpen(true)}
             aria-label="Search the library"
             aria-keyshortcuts="Meta+K"
-            className="flex-1 max-w-xs h-7 pl-2.5 pr-1.5 hidden xl:flex items-center gap-2 rounded-[10px] bg-muted/70 border border-transparent text-ui text-ink-4 hover:bg-muted hover:text-ink-2 transition-[background-color,color] duration-[var(--dur-2)] ease-[var(--ease-sig)]"
+            className="flex-1 max-w-xs h-8 pl-3 pr-1.5 hidden xl:flex items-center gap-2 rounded-[10px] border border-edge-strong text-[13px] text-ink-4 hover:border-foreground/30 hover:text-ink-2 transition-colors"
           >
             <MagnifyingGlass className="w-3 h-3 shrink-0" weight="regular" />
             <span className="flex-1 text-left truncate">Search sites…</span>
@@ -1251,7 +1251,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
                 aria-label="Search sites"
                 value={searchInput}
                 onChange={e => setSearchInput(e.target.value)}
-                className="w-full h-8 pl-8 pr-7 text-ui bg-muted/70 border border-transparent rounded-[10px] text-foreground placeholder:text-ink-4 outline-none hover:bg-muted focus:bg-muted focus:ring-1 focus:ring-foreground/15 focus-visible:outline-none [&:focus-visible]:outline-none transition-[background-color,box-shadow] duration-[var(--dur-2)] ease-[var(--ease-sig)] [&::-webkit-search-cancel-button]:hidden"
+                className={INPUT + ' pl-8 pr-8 [&::-webkit-search-cancel-button]:hidden'}
               />
               {searchInput && (
                 <button

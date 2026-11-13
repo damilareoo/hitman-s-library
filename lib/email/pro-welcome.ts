@@ -26,7 +26,7 @@ function wordTable(swatches: Swatch[], seed: number): string {
     let cells = '', gap = 0
     const flush = () => { if (gap) { cells += `<td colspan="${gap}"></td>`; gap = 0 } }
     for (let x = 0; x < row.length; x++) {
-      if (row[x] === '#') { flush(); cells += `<td bgcolor="${at.get(`${x},${y}`)}" width="5" height="5"></td>` } else gap++
+      if (row[x] === '#') { flush(); cells += `<td bgcolor="${at.get(`${x},${y}`)}" width="3" height="3"></td>` } else gap++
     }
     flush()
     return `<tr>${cells}</tr>`
@@ -45,7 +45,7 @@ export function proWelcomeEmail({ name, memberNo, swatches }: { name: string; me
   <tr><td style="background:${C.tint};border-bottom:1px solid ${C.line};border-radius:16px 16px 0 0;padding:11px 16px;font:500 12.5px ${FONT};color:${C.muted}">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td style="font:500 12.5px ${FONT};color:${C.muted}">Membership</td><td align="right" style="font:500 12.5px ${FONT};color:${C.muted}">No. ${no}</td></tr></table>
   </td></tr>
-  <tr><td style="padding:20px 16px 4px">${wordTable(swatches, memberNo * 7919)}</td></tr>
+  <tr><td style="padding:20px 16px 8px">${wordTable(swatches, memberNo * 7919)}</td></tr>
   <tr><td style="padding:12px 16px 0;font:600 20px/1.2 ${FONT};color:${C.ink};letter-spacing:-0.02em">You're Pro.</td></tr>
   <tr><td style="padding:4px 16px 0;font:400 14px/1.45 ${FONT};color:${C.muted}">${hello}</td></tr>
   <tr><td style="padding:14px 16px 18px"><table role="presentation" cellpadding="0" cellspacing="0" border="0">

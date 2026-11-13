@@ -32,8 +32,17 @@ export const BTN = {
   chip: (active: boolean) => `${btnBase} h-7 px-3 ${R.chip} border text-[12px] ${active ? 'border-foreground bg-foreground text-background' : 'border-edge text-ink-3 hover:text-ink'}`,
 }
 
-/** A 40px field that can hold a BTN.inField on its right. */
-export const FIELD = `flex items-center gap-1 h-10 pl-3 pr-1 ${R.control} border border-edge-strong focus-within:border-foreground/50 transition-colors`
+/**
+ * Every text input on the site. One look: 40px tall, corner 10, a firm hairline
+ * on a transparent ground, 14px text; the border strengthens on hover and focus.
+ */
+export const INPUT = `w-full h-10 px-3 ${R.control} border border-edge-strong bg-transparent text-[14px] tracking-[-0.01em] text-ink placeholder:text-ink-4 outline-none hover:border-foreground/30 focus:border-foreground/50 transition-colors`
+/** The compact input for inline spots (32px), same look. */
+export const INPUT_SM = INPUT.replace('h-10 px-3', 'h-8 px-2.5').replace('text-[14px]', 'text-[13px]')
+/** A 40px field that can hold a BTN.inField on its right; same look as INPUT. */
+export const FIELD = `flex items-center gap-1 h-10 pl-3 pr-1 ${R.control} border border-edge-strong hover:border-foreground/30 focus-within:border-foreground/50 transition-colors`
+/** The bare input that sits inside a FIELD. */
+export const FIELD_INPUT = 'flex-1 min-w-0 h-full bg-transparent outline-none text-[14px] tracking-[-0.01em] text-ink placeholder:text-ink-4'
 export const CARD = {
   shell: 'bg-popover text-popover-foreground border border-edge-strong rounded-[16px] overflow-hidden', // R.card
   pad: 'px-4',

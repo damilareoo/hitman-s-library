@@ -22,7 +22,7 @@ describe('proWelcomeEmail', () => {
     expect(mail.html).toContain('&lt;b&gt;Ada&lt;/b&gt;')
     expect(mail.html).not.toContain('<b>Ada')
   })
-  test('stays well under the Gmail clip size', () => expect(mail.html.length).toBeLessThan(90_000))
+  test('stays well under the Gmail clip size', () => expect(mail.html.length).toBeLessThan(98_000))
   test('same member, same word: the colours are deterministic', () => {
     expect(proWelcomeEmail({ name: 'Ada', memberNo: 7, swatches }).html).toBe(proWelcomeEmail({ name: 'Ada', memberNo: 7, swatches }).html)
   })

@@ -10,7 +10,7 @@ import { useEffect, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
 import { SlidersHorizontal, ImageSquare, Plus, X } from '@phosphor-icons/react'
 import { POP_IN, POP_OUT } from '@/lib/motion'
-import { CARD, BTN } from '@/components/member-card'
+import { CARD, BTN, INPUT } from '@/components/member-card'
 import { paletteFromFile } from '@/lib/palette-client'
 import { refineActive, type RefineQuery } from '@/lib/search/refine-params'
 
@@ -47,7 +47,7 @@ export function Refine({ value, onApply, className = '' }: { value: RefineQuery;
     <div ref={ref} className={'relative ' + className}>
       <button
         onClick={() => setOpen(v => !v)} aria-expanded={open} aria-haspopup="dialog"
-        className={'h-7 px-2.5 flex items-center gap-1.5 rounded-[10px] text-ui font-[500] transition-colors ' + (active ? 'bg-foreground text-background' : 'bg-muted/70 text-ink-3 hover:bg-muted hover:text-ink-2')}
+        className={'h-8 max-xl:h-10 px-3 flex items-center gap-1.5 rounded-[10px] text-[13px] font-[500] transition-colors ' + (active ? 'bg-foreground text-background border border-foreground' : 'border border-edge-strong text-ink-3 hover:border-foreground/30 hover:text-ink-2')}
       >
         <SlidersHorizontal className="w-3.5 h-3.5" weight="bold" />
         <span>Refine</span>
@@ -102,7 +102,7 @@ export function Refine({ value, onApply, className = '' }: { value: RefineQuery;
                 <label htmlFor="refine-font" className={CARD.label}>Font</label>
                 <input id="refine-font" value={q.font} maxLength={40} placeholder="Inter, Instrument Serif…"
                   onChange={e => setQ(v => ({ ...v, font: e.target.value }))}
-                  className="mt-2 w-full h-9 px-3 rounded-[10px] border border-edge-strong bg-transparent text-[13px] text-ink placeholder:text-ink-4 outline-none focus:border-foreground/50 transition-colors" />
+                  className={INPUT + ' mt-2'} />
               </section>
 
               <section>
