@@ -25,6 +25,7 @@ import { matchFastPath } from './lib/edge/fast-path'
 import { getSiteDetail } from './lib/read/site-detail'
 import { queryDesigns } from './lib/design-queries'
 import { securityHeaders, withSecurityHeaders } from './lib/edge/security-headers'
+import { matchOwnImage, imageHeaders } from './lib/edge/image-pass'
 import { STORED_AT, browserHeaders, cacheKey, cacheKind, storedHeaders } from './lib/edge/edge-cache'
 
 interface Ctx {
@@ -107,6 +108,16 @@ export default {
 }
 
 async function handle(request: Request, env: Env, ctx: Ctx, url: URL): Promise<Response> {
+  const own = matchOwnImage(request.method, url)
+  if (own) {
+    try {
+      // Cloudflare keeps the original at the edge; no Next, next to no CPU.
+      const upstream = await fetch(own, { cf: { cacheEverything: true, cacheTtl: 31536000 } } as RequestInit)
+      const headers = upstream.ok ? imageHeaders(upstream.headers) : null
+      if (headers) return new Response(upstream.body, { headers })
+    } catch { /* fall through to Next */ }
+    return openNext.fetch(request, env, ctx)
+  }
   const k = cacheKind(request, url)
   if (!k) return origin(request, env, ctx, url)
 
