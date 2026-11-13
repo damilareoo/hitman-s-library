@@ -39,7 +39,7 @@ const NEVER = [
   '/api/request', '/api/taste', '/api/design/capture-upload', '/api/design/delete',
   '/api/design/extract', '/unsubscribe',
   // Pro: per-person metering and entitlement.
-  '/api/kit', '/api/search', '/api/paddle',
+  '/api/kit', '/api/search', '/api/paddle', '/api/checkout',
   // Accounts: personal by definition. Pages stay anonymous; these never cache.
   '/api/auth', '/api/me', '/account',
 ]
