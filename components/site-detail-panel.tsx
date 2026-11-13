@@ -12,6 +12,7 @@ import { ColorsTab } from './colors-tab'
 import { TypeTab } from './type-tab'
 import { HistoryTab } from './history-tab'
 import { ThemeExport } from './theme-export'
+import { KitRow } from './kit-row'
 import { DRIFT_ENABLED } from '@/lib/drift'
 import { UNSORTED } from '@/lib/categories'
 import { Spinner } from './ui/spinner'
@@ -408,6 +409,7 @@ export function SiteDetailPanel({ variant = 'desktop', sourceId, metadata, initi
 
       {/* Token kit footer: copy the site's theme out. Persistent across tabs;
           it only needs the palette and type the panel already holds. */}
+      {data && <KitRow siteId={data.id} />}
       {data && (
         <div className="flex-shrink-0 border-t border-edge-faint px-4 py-2 flex items-center justify-between gap-2">
           <span className="text-micro text-ink-4 max-[359px]:hidden">Copy theme</span>

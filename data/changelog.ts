@@ -96,6 +96,8 @@ const changelog: ChangelogRelease[] = [
       { type: 'improved', author: 'damilare', text: 'Sign-in and your account now look like a library card, in the colours you heart' },
       { type: 'improved', author: 'damilare', text: 'Google sign-in shows the real Google mark, and both cards share one tighter layout' },
       { type: 'improved', author: 'damilare', text: 'Deleting your account now lives on the privacy page, keeping the account card simple' },
+      { type: 'new', author: 'damilare', text: 'Style kits: DESIGN.md, Figma variables and captures in one zip, three free a month' },
+      { type: 'improved', author: 'damilare', text: 'Grid thumbnails load faster on phones, with smaller images for nearly every site' },
     ],
   },
   {
