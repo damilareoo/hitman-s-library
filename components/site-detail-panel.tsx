@@ -13,6 +13,7 @@ import { TypeTab } from './type-tab'
 import { HistoryTab } from './history-tab'
 import { ThemeExport } from './theme-export'
 import { KitLink } from './kit-row'
+import { CARD } from '@/components/member-card'
 import { KitTab } from './kit-tab'
 import { DRIFT_ENABLED } from '@/lib/drift'
 import { UNSORTED } from '@/lib/categories'
@@ -229,27 +230,38 @@ export function SiteDetailPanel({ variant = 'desktop', sourceId, metadata, initi
                   exit={{ opacity: 0, scale: 0.98, y: -2, transition: POP_OUT }}
                   transition={POP_IN}
                   style={{ transformOrigin: 'top right' }}
-                  className="absolute right-0 top-[calc(100%+6px)] z-50 w-[220px] rounded-[10px] border border-edge-strong bg-card shadow-[0_12px_32px_-8px_rgba(0,0,0,0.28)] p-1.5"
+                  className={CARD.shell + ' absolute right-0 top-[calc(100%+6px)] z-50 w-[260px] shadow-[0_24px_56px_-20px_rgba(0,0,0,0.35)]'}
                 >
-                {Object.keys(collections).length === 0 && (
-                  <p className="px-2 py-1.5 text-meta text-ink-4">No sets yet — name one below.</p>
-                )}
-                {Object.entries(collections).map(([name, ids]) => {
-                  const saved = ids.includes(sourceId)
-                  return (
-                    <button
-                      key={name}
-                      onClick={() => updateCollectionMembership(name, saved)}
-                      aria-pressed={saved}
-                      className="w-full flex items-center gap-2 px-2 py-1.5 rounded-[6px] text-left hover:bg-muted transition-colors"
-                    >
-                      <span className="flex-1 truncate text-bodytext text-ink">{name}</span>
-                      <span className="text-micro tabular-nums text-ink-4">{ids.length}</span>
-                      {saved && <Check className="w-3 h-3 text-ink-2" weight="bold" />}
-                    </button>
-                  )
-                })}
-                <div className="flex items-center gap-1.5 mt-1 pt-1.5 border-t border-edge-faint">
+                <div className={CARD.head}>
+                  <span>Save to a set</span>
+                  {account.status === 'signed-out'
+                    // Saving works without an account; this only says how to keep it everywhere.
+                    ? <button onClick={() => openSignIn('join')} className="text-ink-4 hover:text-ink underline underline-offset-2">Sign in to sync</button>
+                    : <span className="text-ink-4">{Object.keys(collections).length} {Object.keys(collections).length === 1 ? 'set' : 'sets'}</span>}
+                </div>
+                <div className="p-1.5 max-h-[260px] overflow-auto">
+                  {Object.keys(collections).length === 0 && (
+                    <p className={CARD.meta + ' px-2.5 py-2'}>No sets yet. Name your first one below.</p>
+                  )}
+                  {Object.entries(collections).map(([name, ids]) => {
+                    const saved = ids.includes(sourceId)
+                    return (
+                      <button
+                        key={name}
+                        onClick={() => updateCollectionMembership(name, saved)}
+                        aria-pressed={saved}
+                        className="w-full h-9 px-2.5 flex items-center gap-2.5 rounded-[9px] text-left text-[13.5px] font-[500] text-ink hover:bg-foreground/[0.045] transition-colors"
+                      >
+                        <span className={'w-4 h-4 shrink-0 grid place-items-center rounded-[5px] border ' + (saved ? 'bg-foreground border-foreground text-background' : 'border-edge-strong')}>
+                          {saved && <Check className="w-2.5 h-2.5" weight="bold" />}
+                        </span>
+                        <span className="flex-1 truncate">{name}</span>
+                        <span className={CARD.kbd}>{ids.length}</span>
+                      </button>
+                    )
+                  })}
+                </div>
+                <div className={CARD.foot + ' px-2'}>
                   <input
                     value={newSetName}
                     onChange={e => setNewSetName(e.target.value)}
@@ -264,7 +276,7 @@ export function SiteDetailPanel({ variant = 'desktop', sourceId, metadata, initi
                     }}
                     placeholder="New set…"
                     aria-label="New collection name"
-                    className="min-w-0 flex-1 h-8 px-2 text-meta bg-muted/60 border border-edge rounded-[6px] text-foreground placeholder:text-ink-4 focus:outline-none focus:border-foreground/30 transition-colors"
+                    className="min-w-0 flex-1 h-8 px-2 bg-transparent text-[13px] text-ink placeholder:text-ink-4 outline-none"
                   />
                   <button
                     onClick={() => {
@@ -274,20 +286,12 @@ export function SiteDetailPanel({ variant = 'desktop', sourceId, metadata, initi
                         setNewSetName('')
                       }
                     }}
-                    className="shrink-0 h-8 px-2.5 rounded-[6px] bg-foreground text-background text-meta font-medium hover:opacity-90 transition-opacity"
+                    disabled={!sanitizeName(newSetName)}
+                    className={CARD.footBtn + ' text-ink font-[600] disabled:opacity-40'}
                   >
-                    Add
+                    Add <span className={CARD.kbd}>↵</span>
                   </button>
                 </div>
-                {account.status === 'signed-out' && (
-                  // Saving works without an account; this only says how to keep it everywhere.
-                  <button
-                    onClick={() => openSignIn('join')}
-                    className="mt-1.5 w-full text-left px-2 py-1.5 text-micro text-ink-3 hover:text-ink transition-colors"
-                  >
-                    Sign in to keep your sets on every device
-                  </button>
-                )}
                 </motion.div>
               )}
             </AnimatePresence>

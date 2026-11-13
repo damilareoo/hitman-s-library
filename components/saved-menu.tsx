@@ -42,7 +42,7 @@ export function SavedMenu() {
     return () => { window.removeEventListener('mousedown', onDown); window.removeEventListener('keydown', onKey) }
   }, [open])
 
-  const row = CARD.action + ' ' + CARD.pad + ' w-full justify-between font-[500]'
+  const row = 'h-9 px-2.5 flex items-center justify-between gap-3 rounded-[9px] text-[13.5px] font-[500] text-ink hover:bg-foreground/[0.045] focus-visible:bg-foreground/[0.045] outline-none transition-colors'
 
   return (
     <div ref={ref} className="relative">
@@ -63,25 +63,28 @@ export function SavedMenu() {
             style={{ transformOrigin: 'top right' }}
             className={CARD.shell + ' absolute right-0 top-10 z-50 w-[264px] max-sm:fixed max-sm:inset-x-3 max-sm:top-[60px] max-sm:w-auto shadow-[0_24px_56px_-20px_rgba(0,0,0,0.35)]'}
           >
-            <div className={CARD.pad + ' h-10 flex items-center'}><p className={CARD.label}>Saved</p></div>
-            <Link href="/?saved=hearts" role="menuitem" onClick={() => setOpen(false)} className={row}>
-              <span className="flex items-center gap-2"><Heart className="w-3.5 h-3.5 text-[var(--color-error)]" weight="fill" /> Hearts</span>
-              <span className="text-ink-4 font-[500]">{counts.hearts}</span>
-            </Link>
-            {sets.length > 0 && (
-              <div className="border-t border-edge-faint max-h-[280px] overflow-auto">
-                {sets.map(([name, ids]) => (
-                  <Link key={name} href={`/?collection=${encodeURIComponent(name)}`} role="menuitem" onClick={() => setOpen(false)} className={row}>
-                    <span className="flex items-center gap-2 min-w-0"><FolderSimple className="w-3.5 h-3.5 shrink-0 text-ink-3" weight="bold" /><span className="truncate">{name}</span></span>
-                    <span className="text-ink-4 font-[500]">{ids.length}</span>
-                  </Link>
-                ))}
-              </div>
-            )}
-            <p className={CARD.pad + ' ' + CARD.meta + ' py-3 border-t border-edge-faint'}>
-              {sets.length === 0 ? 'Save a site to a set from its panel, using the bookmark.' : 'Add to a set from any site, using the bookmark.'}
-              {status === 'signed-out' && <> <button className="underline underline-offset-2 hover:text-ink" onClick={() => { setOpen(false); openSignIn('join') }}>Sign in</button> to keep these on every device.</>}
-            </p>
+            <div className={CARD.head}>
+              <span>Saved</span>
+              <span className="text-ink-4">{sets.length} {sets.length === 1 ? 'set' : 'sets'}</span>
+            </div>
+            <div className="p-1.5 max-h-[320px] overflow-auto">
+              <Link href="/?saved=hearts" role="menuitem" onClick={() => setOpen(false)} className={row}>
+                <span className="flex items-center gap-2.5"><Heart className="w-3.5 h-3.5 text-[var(--color-error)]" weight="fill" /> Hearts</span>
+                <span className={CARD.kbd}>{counts.hearts}</span>
+              </Link>
+              {sets.length > 0 && <p className={CARD.label + ' px-2.5 pt-3 pb-1.5'}>Sets</p>}
+              {sets.map(([name, ids]) => (
+                <Link key={name} href={`/?collection=${encodeURIComponent(name)}`} role="menuitem" onClick={() => setOpen(false)} className={row}>
+                  <span className="flex items-center gap-2.5 min-w-0"><FolderSimple className="w-3.5 h-3.5 shrink-0 text-ink-3" weight="bold" /><span className="truncate">{name}</span></span>
+                  <span className={CARD.kbd}>{ids.length}</span>
+                </Link>
+              ))}
+            </div>
+            <div className={CARD.foot + ' px-4'}>
+              {status === 'signed-out'
+                ? <button className={CARD.footBtn + ' -ml-2'} onClick={() => { setOpen(false); openSignIn('join') }}>Sign in to keep these everywhere</button>
+                : <span className={CARD.meta}>Add to a set with the bookmark on any site.</span>}
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
