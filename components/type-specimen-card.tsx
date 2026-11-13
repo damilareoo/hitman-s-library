@@ -112,7 +112,7 @@ export function TypeSpecimenCard({ typography, index }: { typography: Typography
   return (
     <div
       className={index > 0 ? 'mt-9' : undefined}
-      style={{ opacity: 0, animation: `fade-in-up 0.45s var(--ease-sig) ${index * 70}ms both` }}
+      style={{ opacity: 0, animation: `fade-in-up 0.2s var(--ease-sig) ${index * 40}ms both` }}
     >
       {/* The name set in itself is the whole specimen. The attribution sits
           inline on the name line, in the UI voice, and only when the stylesheet

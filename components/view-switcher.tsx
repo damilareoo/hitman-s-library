@@ -37,7 +37,7 @@ export function ViewSwitcher({
           'absolute top-[3px] left-[3px] h-[26px] w-[calc(50%-3px)] rounded-[7px] bg-card pointer-events-none',
           'shadow-[0_1px_2px_rgba(0,0,0,0.06),0_0_0_1px_rgba(0,0,0,0.03)]',
           'dark:bg-[color-mix(in_srgb,var(--foreground)_12%,var(--background))] dark:shadow-[0_1px_2px_rgba(0,0,0,0.4)]',
-          'transition-transform duration-[var(--dur-3)] ease-[var(--ease-sig)] motion-reduce:transition-none',
+          'transition-transform duration-[var(--dur-2)] ease-[var(--ease-sig)] motion-reduce:transition-none',
         ].join(' ')}
         style={{ transform: view === 'index' ? 'translateX(100%)' : 'translateX(0)' }}
       />

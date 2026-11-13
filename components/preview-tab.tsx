@@ -346,7 +346,7 @@ export function PreviewTab({
                 onError={() => setProxyFailed(true)}
                 sandbox={sandbox}
                 className="absolute inset-0 h-full w-full border-none"
-                style={{ opacity: loaded ? 1 : 0, transition: 'opacity var(--dur-4) var(--ease-sig)' }}
+                style={{ opacity: loaded ? 1 : 0, transition: 'opacity var(--dur-3) var(--ease-sig)' }}
               />
             </div>
           </div>,
@@ -384,7 +384,7 @@ export function PreviewTab({
             onError={() => setProxyFailed(true)}
             sandbox={sandbox}
             className="absolute inset-0 w-full h-full border-none"
-            style={{ opacity: loaded ? 1 : 0, transition: 'opacity var(--dur-4) var(--ease-sig)' }}
+            style={{ opacity: loaded ? 1 : 0, transition: 'opacity var(--dur-3) var(--ease-sig)' }}
           />
         </div>,
       )}

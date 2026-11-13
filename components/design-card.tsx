@@ -158,7 +158,7 @@ export function DesignCard({ design, index, isSelected, onClick, onHover, onTagC
             onError={handleImgError}
             unoptimized={!isOptimizable}
             // Hover eases the screenshot in a touch; a press dims it for an instant.
-            className={"hover-zoom object-cover object-top transition-[opacity,transform,filter] duration-300 ease-[var(--ease-sig)] group-active:brightness-[.94] group-active:duration-100 " + (imgStatus === 'loading' ? 'opacity-0' : 'opacity-100')}
+            className={"hover-zoom object-cover object-top transition-[opacity,transform,filter] duration-[250ms] ease-[var(--ease-sig)] group-active:brightness-[.94] group-active:duration-100 " + (imgStatus === 'loading' ? 'opacity-0' : 'opacity-100')}
           />
         )}
         {imgStatus === 'error' && (

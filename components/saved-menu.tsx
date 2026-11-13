@@ -18,7 +18,6 @@ import { CARD } from '@/components/member-card'
 /** Opens the menu from elsewhere (the phone header's More menu). */
 export const OPEN_SAVED_EVENT = 'hl:open-saved'
 
-const QUIET = "relative flex items-center gap-1 text-meta text-ink-3 hover:text-ink transition-colors mr-1 after:absolute after:inset-x-0 after:top-1/2 after:h-11 after:-translate-y-1/2 after:content-['']"
 
 export function SavedMenu() {
   const [open, setOpen] = useState(false)
@@ -48,11 +47,10 @@ export function SavedMenu() {
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen(v => !v)}
-        aria-expanded={open} aria-haspopup="menu" aria-label="Saved"
-        className={QUIET + ' max-sm:hidden'}
+        aria-expanded={open} aria-haspopup="menu" aria-label="Saved" title="Saved"
+        className="relative w-8 h-8 grid place-items-center rounded-[10px] text-ink-3 hover:text-ink hover:bg-foreground/[0.05] transition-colors max-sm:hidden after:absolute after:inset-0 after:-m-1.5 after:content-['']"
       >
-        <BookmarkSimple className="w-3.5 h-3.5" weight="bold" />
-        <span>Saved</span>
+        <BookmarkSimple className="w-4 h-4" weight="bold" />
       </button>
       <AnimatePresence>
         {open && (
