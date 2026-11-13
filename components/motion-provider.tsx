@@ -5,7 +5,7 @@ import { MotionConfig } from 'motion/react'
 export function MotionProvider({ children }: { children: ReactNode }) {
   return (
     <MotionConfig
-      transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+      transition={{ duration: 0.2, ease: [0.23, 1, 0.32, 1] }}
       reducedMotion="user"
     >
       {children}

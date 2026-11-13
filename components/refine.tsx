@@ -9,7 +9,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
 import { SlidersHorizontal, ImageSquare, Plus, X } from '@phosphor-icons/react'
-import { POP_IN, POP_OUT } from '@/lib/motion'
+import { MENU } from '@/lib/motion'
 import { CARD, BTN, INPUT } from '@/components/member-card'
 import { paletteFromFile } from '@/lib/palette-client'
 import { refineActive, type RefineQuery } from '@/lib/search/refine-params'
@@ -58,8 +58,7 @@ export function Refine({ value, onApply, className = '' }: { value: RefineQuery;
         {open && (
           <motion.div
             role="dialog" aria-label="Refine by palette, font and readable text"
-            initial={{ opacity: 0, y: -6, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -4, transition: POP_OUT }} transition={POP_IN}
+            {...MENU}
             style={{ transformOrigin: 'top left' }}
             className={CARD.shell + ' absolute left-0 top-9 z-50 w-[320px] max-sm:fixed max-sm:inset-x-3 max-sm:top-[118px] max-sm:w-auto shadow-[0_24px_56px_-20px_rgba(0,0,0,0.35)]'}
             onDragOver={e => e.preventDefault()}

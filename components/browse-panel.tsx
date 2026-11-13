@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import { MagnifyingGlass } from '@phosphor-icons/react'
-import { POP_IN, POP_OUT } from '@/lib/motion'
 import { displayKind } from '@/lib/categories'
 import type { CollectionMap } from '@/lib/collections'
 import type { Design } from '@/components/design-card'
@@ -193,7 +192,8 @@ export function BrowsePanel({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.18 }}
+            // Opened by ⌘K, many times a day: no open or close animation.
+            transition={{ duration: 0 }}
             className="fixed inset-0 z-[70] bg-background/55 backdrop-blur-[2px]"
             onClick={onClose}
           />
@@ -205,10 +205,10 @@ export function BrowsePanel({
               role="dialog"
               aria-modal="true"
               aria-label="Browse the library"
-              initial={{ opacity: 0, y: -12, scale: 0.98 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: -8, scale: 0.99, transition: POP_OUT }}
-              transition={POP_IN}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0 }}
               onKeyDown={onKeyDown}
               className="pointer-events-auto mt-[12vh] w-full max-w-[824px] max-h-[min(70vh,640px)] flex flex-col rounded-[16px] border border-edge-strong bg-popover text-popover-foreground shadow-[0_24px_64px_-16px_rgba(0,0,0,0.35)] overflow-hidden"
             >

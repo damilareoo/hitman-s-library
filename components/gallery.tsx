@@ -25,7 +25,8 @@ import { useSoundsContext } from '@/contexts/sounds-context'
 import { BrowsePanel } from '@/components/browse-panel'
 import { Brand } from '@/components/brand'
 import { SiteLinks } from '@/components/site-links'
-import { EASE, DUR, POP_IN, POP_OUT } from '@/lib/motion'
+import { ProWord } from '@/components/pro-word'
+import { EASE, DUR, MENU } from '@/lib/motion'
 import Link from 'next/link'
 import { useIsNarrow, useIsPhone } from '@/lib/use-is-narrow'
 import { useUrlParams } from '@/lib/use-url-params'
@@ -191,6 +192,9 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
   const [similarLoading, setSimilarLoading] = useState(false)
 
   const [designs, setDesigns] = useState<Design[]>(initialDesigns)
+  // The header's Pro word takes the first page's colours once, so it doesn't
+  // shift as filters change.
+  const [headerColors] = useState(() => initialDesigns.slice(0, 40).flatMap(d => d.colors ?? []))
   const [pagination, setPagination] = useState<Pagination>(initialPagination)
   const [categories, setCategories] = useState(initialCategories)
   const [isLoadingMore, setIsLoadingMore] = useState(false)
@@ -1011,6 +1015,8 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
               structure rather than pixels. */}
           <h1 className="sr-only">Hitman&apos;s Library</h1>
           <Brand />
+          {/* On a phone the right side is full; Pro sits beside the mark. */}
+          <span className="sm:hidden -ml-1"><ProWord colors={headerColors} /></span>
 
           {/* Search is a layer, not a field: the same keystroke that opens it
               searches the whole library, not just the page on screen. Below xl
@@ -1051,17 +1057,9 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
               <EnvelopeSimple className="w-3.5 h-3.5" weight="bold" />
               <span>Digest</span>
             </button>
-            {/* Submit sits in the same quiet register as Digest — the loud
-                version belongs in the zero-results state, where it is an
-                answer to something the person just asked for. */}
-            <Link
-              href="/submit"
-              aria-label="Submit your work"
-              className="relative flex items-center gap-1 text-meta text-ink-3 hover:text-ink transition-colors mr-1 max-sm:hidden after:absolute after:inset-x-0 after:top-1/2 after:h-11 after:-translate-y-1/2 after:content-['']"
-            >
-              <Plus className="w-3 h-3" weight="bold" />
-              <span>Submit</span>
-            </Link>
+            {/* Pro, in its own language: the pixel word from the Pro card.
+                Submit lives in the footer, the phone menu and the empty search. */}
+            <span className="max-sm:hidden"><ProWord colors={headerColors} /></span>
             <SavedMenu />
             <AccountButton />
 
@@ -1094,7 +1092,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
                 t.ready.then(() => {
                   document.documentElement.animate(
                     { clipPath: [`circle(0px at ${x}px ${y}px)`, `circle(${endRadius}px at ${x}px ${y}px)`] },
-                    { duration: 360, easing: 'cubic-bezier(0.22, 1, 0.36, 1)', pseudoElement: '::view-transition-new(root)' },
+                    { duration: 360, easing: 'cubic-bezier(0.23, 1, 0.32, 1)', pseudoElement: '::view-transition-new(root)' },
                   )
                 })
                 t.finished.then(() => { isThemeTransitioning.current = false })
@@ -1125,10 +1123,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
                   <motion.div
                     key="more-menu"
                     role="menu"
-                    initial={{ opacity: 0, scale: 0.96, y: -4 }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.98, y: -2, transition: POP_OUT }}
-                    transition={POP_IN}
+                    {...MENU}
                     style={{ transformOrigin: 'top right' }}
                     className="absolute right-0 top-[calc(100%+6px)] z-[60] w-[208px] rounded-[10px] border border-edge-strong bg-card p-1 shadow-[0_12px_32px_-8px_rgba(0,0,0,0.28)]"
                   >
@@ -1185,10 +1180,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
           <motion.div
             key="digest-popover"
             ref={digestRef}
-            initial={{ opacity: 0, scale: 0.96, y: -6 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.98, y: -4, transition: POP_OUT }}
-            transition={POP_IN}
+            {...MENU}
             style={{ transformOrigin: 'top right' }}
             className={CARD.shell + ' fixed z-[60] top-14 right-4 left-4 sm:left-auto sm:w-[340px] shadow-[0_24px_56px_-20px_rgba(0,0,0,0.35)]'}
           >
@@ -1601,10 +1593,12 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
             {isPanelOpen && !isNarrow ? (
               <motion.div
                 key={selectedId}
+                // Switching sites is constant: the new one fades up at once,
+                // the old one leaves without holding the column empty.
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.15 }}
+                exit={{ opacity: 0, transition: { duration: 0 } }}
+                transition={{ duration: 0.12, ease: EASE }}
                 className="flex flex-col h-full"
               >
                 {renderDetailPanel('desktop')}
@@ -1671,9 +1665,9 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
               role="dialog"
               aria-modal="true"
               aria-label="Site details"
-              initial={{ opacity: 0, x: 24 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 24 }}
+              initial={{ opacity: 0, transform: 'translateX(24px)' }}
+              animate={{ opacity: 1, transform: 'translateX(0px)' }}
+              exit={{ opacity: 0, transform: 'translateX(24px)', transition: { duration: 0.16, ease: EASE } }}
               transition={{ type: 'spring', damping: 38, stiffness: 420, mass: 0.8 }}
               className="site-sheet xl:hidden fixed z-50 flex flex-col overflow-hidden bg-card border border-edge-strong"
               style={{
