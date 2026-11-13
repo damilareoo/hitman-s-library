@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { ArrowUpRight, Check, X, Users } from '@phosphor-icons/react'
 import { Spinner } from '@/components/ui/spinner'
+import { CARD } from '@/components/member-card'
 
 interface RequestRow {
   id: string
@@ -16,6 +17,8 @@ interface RequestRow {
   email: string | null
   note: string | null
   credit: string | null
+  /** Asked for by a Pro member: reviewed first. */
+  pro: boolean
 }
 
 type Tab = 'pending' | 'added' | 'dismissed'
@@ -149,7 +152,10 @@ export function AdminRequests() {
                 )}
 
                 <div className="min-w-0 flex-1">
-                  <p className="text-bodytext text-ink truncate">{row.title ?? host}</p>
+                  <p className="flex items-center gap-2 min-w-0">
+                    <span className="text-bodytext text-ink truncate">{row.title ?? host}</span>
+                    {row.pro && <span className={CARD.proPill + ' !h-5 shrink-0'} title="Asked for by a Pro member: reviewed first">Pro</span>}
+                  </p>
                   <p className="text-meta text-ink-4 truncate">
                     {host} · {formatDate(row.createdAt)}{row.email ? ` · ${row.email}` : ''}{row.credit ? ` · by ${row.credit}` : ''}
                   </p>
