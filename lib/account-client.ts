@@ -11,9 +11,12 @@ import { COLLECTIONS_EVENT } from '@/lib/collections'
 
 export const FAVORITES_EVENT = 'hl:favorites-changed'
 export const SIGN_IN_EVENT = 'hl:sign-in'
+/** Fired after a style kit download, so the meter re-reads /api/me. */
+export const KITS_EVENT = 'hl:kits-changed'
 
 export interface AccountUser { email: string; name: string | null; avatar: string | null; memberNo: number; since: string; google: boolean }
-type State = { status: 'loading' | 'signed-out' | 'signed-in'; user: AccountUser | null }
+export interface KitMeter { used: number; limit: number }
+type State = { status: 'loading' | 'signed-out' | 'signed-in'; user: AccountUser | null; pro?: boolean; kits?: KitMeter }
 
 const LOADING: State = { status: 'loading', user: null }
 let state: State = LOADING
@@ -82,7 +85,7 @@ async function load() {
   if (!signedInHint()) return set({ status: 'signed-out', user: null })
   const body = await fetch('/api/me', { credentials: 'same-origin' }).then(r => r.json()).catch(() => ({ user: null }))
   if (!body.user) return set({ status: 'signed-out', user: null })
-  set({ status: 'signed-in', user: body.user })
+  set({ status: 'signed-in', user: body.user, pro: Boolean(body.pro), kits: body.kits })
   await sync()
 }
 
@@ -93,6 +96,7 @@ function start() {
   void load()
   window.addEventListener(FAVORITES_EVENT, scheduleSync)
   window.addEventListener(COLLECTIONS_EVENT, scheduleSync)
+  window.addEventListener(KITS_EVENT, () => { void load() })
   // Back/forward cache and other tabs: re-check when the page comes back.
   window.addEventListener('pageshow', e => { if ((e as PageTransitionEvent).persisted) void load() })
 }

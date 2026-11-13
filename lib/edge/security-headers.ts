@@ -35,7 +35,8 @@ function contentSecurityPolicy(previewOrigin: string): string {
     // Captures, favicons and thumbnails come from many hosts, always over https.
     "img-src 'self' data: blob: https:",
     "media-src 'self' blob: https:",
-    `connect-src 'self' ${POSTHOG} https://cloudflareinsights.com`,
+    // The style kit fetches captures from blob storage to zip them in the browser.
+    `connect-src 'self' ${POSTHOG} https://cloudflareinsights.com https://*.public.blob.vercel-storage.com`,
     `frame-src 'self' ${previewOrigin}`.trim(),
     "frame-ancestors 'none'",
     "worker-src 'self' blob:",
