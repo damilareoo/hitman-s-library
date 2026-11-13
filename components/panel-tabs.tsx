@@ -1,7 +1,7 @@
 'use client'
 
 import React from 'react'
-import { DeviceMobile, Monitor, Palette, TextT, ClockCounterClockwise } from '@phosphor-icons/react'
+import { DeviceMobile, Monitor, Palette, TextT, ClockCounterClockwise, Package } from '@phosphor-icons/react'
 import { useSoundsContext } from '@/contexts/sounds-context'
 import { MOVE_EASE, DUR } from '@/lib/motion'
 
@@ -9,7 +9,7 @@ import { MOVE_EASE, DUR } from '@/lib/motion'
  *  keep working underneath while the tab stays out of the panel. */
 export const HISTORY_TAB_ENABLED = false
 
-export type PanelTab = 'preview' | 'mobile' | 'colors' | 'type' | 'history'
+export type PanelTab = 'preview' | 'mobile' | 'colors' | 'type' | 'kit' | 'history'
 
 interface PanelTabsProps {
   active: PanelTab
@@ -27,11 +27,12 @@ const BASE_TABS: TabDef[] = [
   { key: 'mobile',  label: 'Mobile',  Icon: DeviceMobile },
   { key: 'colors', label: 'Colors', Icon: Palette },
   { key: 'type',   label: 'Type',    Icon: TextT },
+  { key: 'kit',    label: 'Kit',     Icon: Package },
 ]
 
 // History sits beside Type; the whole tab vanishes with the flag.
 const ALL_TABS: TabDef[] = HISTORY_TAB_ENABLED
-  ? [...BASE_TABS, { key: 'history', label: 'History', Icon: ClockCounterClockwise }]
+  ? [...BASE_TABS.slice(0, 4), { key: 'history', label: 'History', Icon: ClockCounterClockwise }, BASE_TABS[4]]
   : BASE_TABS
 
 // Offering Mobile to someone already holding a phone is offering them the
@@ -123,17 +124,18 @@ export function PanelTabs({ active, onChange, variant = 'desktop', colorsCount, 
     : 'none'
 
   return (
-    <div className="px-3 pt-2.5 pb-2 flex-shrink-0">
+    <div className="px-4 flex-shrink-0 border-b border-edge-faint">
       <div
         ref={trackRef}
         role="tablist"
         aria-label="Site detail tabs"
         onKeyDown={handleKeyDown}
-        className="relative flex w-full h-[38px] p-[3px] rounded-[10px] bg-foreground/[0.05] dark:bg-foreground/[0.07]"
+        className="relative flex items-stretch gap-5 max-sm:gap-4 h-10"
       >
+        {/* One underline, measured from the active tab. */}
         <span
           aria-hidden="true"
-          className="absolute top-[3px] left-0 h-8 rounded-[7px] bg-card pointer-events-none shadow-[0_1px_2px_rgba(0,0,0,0.06),0_0_0_1px_rgba(0,0,0,0.03)] dark:bg-[color-mix(in_srgb,var(--foreground)_12%,var(--background))] dark:shadow-[0_1px_2px_rgba(0,0,0,0.4)]"
+          className="absolute bottom-[-1px] left-0 h-[2px] rounded-full bg-foreground pointer-events-none"
           style={{
             width: thumb?.width ?? 0,
             transform: `translateX(${thumb?.left ?? 0}px)`,
@@ -141,7 +143,7 @@ export function PanelTabs({ active, onChange, variant = 'desktop', colorsCount, 
             transition,
           }}
         />
-        {TABS.map(({ key, label, Icon }) => {
+        {TABS.map(({ key, label }) => {
           const isActive = active === key
           const count = key === 'colors' ? colorsCount : key === 'type' ? typeCount : undefined
           return (
@@ -153,19 +155,13 @@ export function PanelTabs({ active, onChange, variant = 'desktop', colorsCount, 
               tabIndex={isActive ? 0 : -1}
               onClick={() => { viaKeyboard.current = false; playTabChange(); onChange(key) }}
               className={[
-                'relative z-[1] flex-1 min-w-0 h-8 px-2 rounded-[7px]',
-                'flex items-center justify-center gap-1.5',
-                'transition-colors duration-[var(--dur-2)] ease-[var(--ease-hover)]',
-                isActive ? 'text-ink' : 'text-ink-3 hover:text-ink',
+                'relative z-[1] shrink-0 flex items-center gap-1 text-[13px] font-[600] tracking-[-0.01em] leading-none whitespace-nowrap',
+                'transition-colors duration-[var(--dur-2)] ease-[var(--ease-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#E8A04A]',
+                isActive ? 'text-ink' : 'text-ink-4 hover:text-ink',
               ].join(' ')}
             >
-              <Icon className="w-3.5 h-3.5 shrink-0" weight={isActive ? 'fill' : 'regular'} />
-              <span className="flex items-center gap-1 text-[12px] font-medium leading-none whitespace-nowrap">
-                {label}
-                {typeof count === 'number' && (
-                  <span className="text-[11px] text-ink-4 tabular-nums">{count}</span>
-                )}
-              </span>
+              {label}
+              {typeof count === 'number' && <span className="font-[500] text-ink-4">{count}</span>}
             </button>
           )
         })}

@@ -66,8 +66,8 @@ export function ThemeExport({
   }
 
   const btn =
-    'px-2.5 h-7 rounded-[4px] text-micro transition-colors flex items-center gap-1.5 ' +
-    'text-ink-4 hover:text-ink hover:bg-muted active:scale-[0.98]'
+    'px-2 h-7 rounded-[6px] text-[12px] font-[500] transition-colors flex items-center gap-1.5 ' +
+    'text-ink-3 hover:text-ink hover:bg-muted active:scale-[0.98]'
 
   return (
     <div className="flex items-center gap-1" role="group" aria-label="Copy theme">

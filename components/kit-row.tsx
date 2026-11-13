@@ -1,13 +1,14 @@
 // components/kit-row.tsx
 //
-// The style kit, one row above the free theme copies. DESIGN.md, Figma
-// variables, the captures and the token files in one zip. Free accounts get
+// The style kit's download (meter and button, used at the foot of the Kit
+// tab) and the footer line that leads to it from the other tabs. DESIGN.md,
+// Figma variables, the captures and the token files in one zip. Free accounts get
 // three a month; Pro has no limit. The server decides — this row only says
 // what it decided. No pop-ups, no countdowns.
 'use client'
 
 import { useState } from 'react'
-import { Package, ArrowDown } from '@phosphor-icons/react'
+import { Package, ArrowDown, ArrowRight } from '@phosphor-icons/react'
 import { useAccount, openSignIn } from '@/lib/account-client'
 import { downloadKit } from '@/lib/kit/download-kit'
 import { track } from '@/lib/analytics'
@@ -20,7 +21,7 @@ function resetsOn(): string {
   return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 1)).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' })
 }
 
-export function KitRow({ siteId }: { siteId: number }) {
+export function KitAction({ siteId }: { siteId: number }) {
   const { status, pro, kits } = useAccount()
   const [phase, setPhase] = useState<Phase>('idle')
   if (status === 'loading') return null
@@ -48,20 +49,31 @@ export function KitRow({ siteId }: { siteId: number }) {
   const atLimit = signedIn && !pro && (phase === 'limit' || left === 0)
 
   return (
-    <div className="flex-shrink-0 border-t border-edge-faint px-4 h-11 flex items-center gap-3">
-      <span className="flex items-center gap-2 shrink-0 whitespace-nowrap text-[13px] font-[600] tracking-[-0.01em] text-ink" title="DESIGN.md, Figma variables, captures and token files in one zip">
-        <Package className="w-3.5 h-3.5 text-ink-3" weight="bold" /> Style kit
-      </span>
-      <span role="status" className={'flex-1 min-w-0 truncate text-right text-[12px] ' + (phase === 'limit' || phase === 'failed' ? 'text-ink-2' : 'text-ink-4')}>
+    <div className="flex items-center gap-3 w-full min-w-0">
+      <span role="status" className={'flex-1 min-w-0 truncate text-[12px] ' + (phase === 'limit' || phase === 'failed' ? 'text-ink-2' : 'text-ink-4')}>
         {note}{atLimit && <span className="max-sm:hidden"> · Pro has no limit</span>}
       </span>
       <button
         type="button" onClick={get} disabled={phase === 'packing'}
-        title="DESIGN.md, Figma variables, captures and token files in one zip"
-        className="shrink-0 h-7 px-2.5 rounded-[6px] flex items-center gap-1.5 text-[12.5px] font-[600] tracking-[-0.01em] bg-foreground text-background hover:opacity-90 active:scale-[0.98] disabled:opacity-50 transition"
+        className="shrink-0 h-8 px-3 rounded-[8px] flex items-center gap-1.5 text-[13px] font-[600] tracking-[-0.01em] bg-foreground text-background hover:opacity-90 active:scale-[0.98] disabled:opacity-50 transition"
       >
-        {phase === 'packing' ? 'Packing…' : phase === 'saved' ? 'Saved' : signedIn ? <><ArrowDown className="w-3 h-3" weight="bold" /> Download</> : 'Get it'}
+        {phase === 'packing' ? 'Packing…' : phase === 'saved' ? 'Saved' : signedIn ? <><ArrowDown className="w-3.5 h-3.5" weight="bold" /> Download kit</> : 'Get it free'}
       </button>
     </div>
+  )
+}
+
+/** The footer line on the other tabs: what the kit is for, one tap to see it. */
+export function KitLink({ onOpen }: { onOpen: () => void }) {
+  return (
+    <button
+      type="button" onClick={onOpen}
+      className="group flex-shrink-0 w-full border-t border-edge-faint px-4 h-11 flex items-center gap-2 text-left hover:bg-foreground/[0.03] transition-colors"
+    >
+      <Package className="w-3.5 h-3.5 shrink-0 text-ink-3" weight="bold" />
+      <span className="text-[13px] font-[600] tracking-[-0.01em] text-ink whitespace-nowrap">Build in this style</span>
+      <span className="flex-1 min-w-0 truncate text-[12px] text-ink-4">Its colours and type for AI tools, Figma and code</span>
+      <ArrowRight className="w-3.5 h-3.5 shrink-0 text-ink-4 group-hover:text-ink transition-colors" weight="bold" />
+    </button>
   )
 }

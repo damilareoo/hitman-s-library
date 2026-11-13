@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef, useCallback, useMemo, Fragment } from 'react'
 import { useTheme } from 'next-themes'
-import { Sun, Moon, SpeakerHigh, SpeakerSlash, MagnifyingGlass, X, ArrowRight, Plus, DotsThree } from '@phosphor-icons/react'
+import { Sun, Moon, SpeakerHigh, SpeakerSlash, MagnifyingGlass, X, ArrowRight, Plus, DotsThree, BookmarkSimple } from '@phosphor-icons/react'
 import dynamic from 'next/dynamic'
 import { DesignCard, type Design } from '@/components/design-card'
 import { ViewSwitcher, type LibraryView } from '@/components/view-switcher'
@@ -15,6 +15,7 @@ import { TasteSignup } from '@/components/taste-signup'
 import { useCollections, deleteCollection } from '@/lib/collections'
 import { FAVORITES_EVENT } from '@/lib/account-client'
 import { AccountButton } from '@/components/account-button'
+import { SavedMenu, OPEN_SAVED_EVENT } from '@/components/saved-menu'
 import { EnvelopeSimple } from '@phosphor-icons/react'
 import type { PanelTab } from '@/components/panel-tabs'
 import { HISTORY_TAB_ENABLED } from '@/components/panel-tabs'
@@ -151,7 +152,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
   // Deep-link tab (A1): ?site=415&tab=colors restores the exact tab.
   const rawTab = searchParams.get('tab')
   const panelTab: PanelTab = (
-    rawTab === 'mobile' || rawTab === 'colors' || rawTab === 'type' ||
+    rawTab === 'mobile' || rawTab === 'colors' || rawTab === 'type' || rawTab === 'kit' ||
     (rawTab === 'history' && HISTORY_TAB_ENABLED) || rawTab === 'preview'
   ) ? rawTab : 'preview'
   // Similar mode (Phase 2): the main pane shows one site's neighbors with
@@ -234,16 +235,10 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
   // Hearts feed the digest signup only: ids persist in localStorage and the
   // taste vector is recomputed server-side on every subscribe. No view, no
   // route — the Mobbin-style Save without the collection machinery.
-  const [favorites, setFavorites] = useState<number[]>(() => {
-    if (typeof window === 'undefined') return []
-    try {
-      const raw = window.localStorage.getItem('hl:favorites')
-      const parsed: unknown = raw ? JSON.parse(raw) : []
-      return Array.isArray(parsed) ? parsed.map(Number).filter(Number.isFinite) : []
-    } catch {
-      return []
-    }
-  })
+  // Read after mount, never during render: the server renders without them,
+  // and hydration keeps the server's empty hearts unless state changes.
+  const [favorites, setFavorites] = useState<number[]>([])
+  const [favoritesRead, setFavoritesRead] = useState(false)
   const toggleFavorite = useCallback((id: string) => {
     setFavorites(prev => {
       const n = Number(id)
@@ -255,14 +250,16 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
       return next
     })
   }, [])
-  // A sign-in on this device merges hearts from the account; read them back.
+  // Hearts load once mounted, and again when a sign-in merges the account's in.
   useEffect(() => {
     const reload = () => {
       try {
         const parsed: unknown = JSON.parse(window.localStorage.getItem('hl:favorites') ?? '[]')
         if (Array.isArray(parsed)) setFavorites(parsed.map(Number).filter(Number.isFinite))
       } catch { /* storage unavailable */ }
+      setFavoritesRead(true)
     }
+    reload()
     window.addEventListener(FAVORITES_EVENT, reload)
     return () => window.removeEventListener(FAVORITES_EVENT, reload)
   }, [])
@@ -517,14 +514,20 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
   // Collection view (?collection=name): ids resolve client-side from the
   // named set, rows come from the same ids filter as favorites did. An empty
   // or foreign set renders the honest empty state, never someone else's grid.
-  const collectionName = searchParams.get('collection')
+  // ?saved=hearts shows your hearts the same way, newest first.
+  const rawCollection = searchParams.get('collection')
+  const heartsView = !rawCollection && searchParams.get('saved') === 'hearts'
+  const collectionName = rawCollection ?? (heartsView ? 'Hearts' : null)
   const [collections] = useCollections()
-  const collectionIds = collectionName ? (collections[collectionName] ?? []) : []
+  const collectionIds = heartsView ? [...favorites].reverse() : collectionName ? (collections[collectionName] ?? []) : []
   const [collectionTitle, setCollectionTitle] = useState<string | null>(null)
   const showingCollection = useRef(false)
   const collectionSeq = useRef(0)
   const lastCollection = useRef<string | null>(null)
   useEffect(() => {
+    // Hearts come from this device after mount; wait for them rather than
+    // flashing the empty state.
+    if (heartsView && !favoritesRead) return
     const key = collectionName ? `${collectionName}:${collectionIds.join(',')}` : null
     if (lastCollection.current === key) return
     lastCollection.current = key
@@ -555,7 +558,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
     }).finally(() => {
       if (seq === collectionSeq.current) setIsRefetching(false)
     })
-  }, [collectionName, collectionIds.join(','), loadDesigns])
+  }, [collectionName, collectionIds.join(','), loadDesigns, heartsView, favoritesRead])
 
   // Infinite scroll
   useEffect(() => {
@@ -683,7 +686,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
       p.delete('tag')
       p.delete('q')
       p.delete('sort')
-      p.delete('collection')
+      p.delete('collection'); p.delete('saved')
       p.delete('similarTo')
       p.delete('view')
       if (!current) {
@@ -712,7 +715,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
       p.delete('category')
       p.delete('tag')
       p.delete('q')
-      p.delete('collection')
+      p.delete('collection'); p.delete('saved')
       p.delete('similarTo')
       p.delete('color')
       p.delete('trail')
@@ -753,7 +756,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
       p.delete('site')
       p.delete('tab')
       p.delete('sort')
-      p.delete('collection')
+      p.delete('collection'); p.delete('saved')
       p.delete('similarTo')
       p.delete('color')
       p.delete('trail')
@@ -796,7 +799,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
       p.delete('category')
       p.delete('tag')
       p.delete('q')
-      p.delete('collection')
+      p.delete('collection'); p.delete('saved')
       p.delete('similarTo')
       p.delete('color')
       p.delete('trail')
@@ -859,7 +862,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
     track('design_opened', { source_id: id, opening_surface: 'browse_panel' })
     updateParams(p => {
       p.delete('view')
-      p.delete('collection')
+      p.delete('collection'); p.delete('saved')
       p.delete('similarTo')
       p.delete('color')
       p.delete('trail')
@@ -1008,6 +1011,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
               <Plus className="w-3 h-3" weight="bold" />
               <span>Submit</span>
             </Link>
+            <SavedMenu />
             <AccountButton />
 
             <button
@@ -1077,6 +1081,15 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
                     style={{ transformOrigin: 'top right' }}
                     className="absolute right-0 top-[calc(100%+6px)] z-[60] w-[208px] rounded-[10px] border border-edge-strong bg-card p-1 shadow-[0_12px_32px_-8px_rgba(0,0,0,0.28)]"
                   >
+                  <button
+                    role="menuitem"
+                    // Opened a tick later, so this tap doesn't count as a click outside it.
+                    onClick={() => { setMoreOpen(false); setTimeout(() => window.dispatchEvent(new Event(OPEN_SAVED_EVENT)), 0) }}
+                    className="w-full flex items-center gap-2.5 h-9 px-2.5 rounded-[6px] text-bodytext text-ink-2 text-left hover:text-ink hover:bg-muted transition-colors"
+                  >
+                    <BookmarkSimple className="w-4 h-4" weight="bold" />
+                    <span>Saved</span>
+                  </button>
                   <button
                     role="menuitem"
                     onClick={() => { setMoreOpen(false); setDigestOpen(true) }}
@@ -1315,6 +1328,16 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
                 </span>
               </div>
             )}
+            {/* Below xl there is no grid heading, so a set or your hearts get
+                their own: what you're looking at, and the way back. */}
+            {collectionName && (
+              <div className="xl:hidden flex items-center justify-between gap-3 pb-3 mb-4 border-b border-edge">
+                <h2 className="min-w-0 truncate text-[13px] font-[600] tracking-[-0.01em] text-ink">
+                  {collectionTitle ?? collectionName} <span className="font-[500] text-ink-4">{pagination.total}</span>
+                </h2>
+                <Link href="/" scroll={false} className="shrink-0 text-[12px] text-ink-4 hover:text-ink transition-colors">Back to library</Link>
+              </div>
+            )}
             <div className="hidden xl:flex items-center justify-between gap-4 pb-3 mb-5 border-b border-edge">
               <div className="flex items-center gap-2 min-w-0">
                 <h2 className="flex items-center gap-1.5 text-meta text-ink font-medium">
@@ -1328,7 +1351,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
                   {similarToId ? `Similar to ${similarTitle ?? '…'}` : collectionName ? collectionTitle ?? collectionName : galleryHeading}{' '}
                   <span className="text-ink-4 tabular-nums">{pagination.total}</span>
                 </h2>
-                {(hasFilters || similarToId) && (
+                {(hasFilters || similarToId || collectionName) && (
                   <Link
                     href="/"
                     scroll={false}
@@ -1389,7 +1412,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
                     ? (
                       <div className="col-span-full flex flex-col items-center justify-center py-24 gap-3 text-center">
                         <p className="text-bodytext text-ink-3">
-                          {hasFilters ? 'Nothing here yet' : 'No sites yet'}
+                          {heartsView ? 'Heart a site and it shows up here' : collectionName ? 'Nothing in this set yet' : hasFilters ? 'Nothing here yet' : 'No sites yet'}
                         </p>
 
                         {/* Searching and finding nothing is the moment someone

@@ -236,13 +236,9 @@ export function PreviewTab({
   /** The site never draws its own chrome over itself: status lives in the bar,
    *  and the page sits on a framed screen so busy artwork reads as content. */
   const bar = (
-    <div className="h-[46px] flex-shrink-0 flex items-center gap-2 px-3 border-b border-edge-faint bg-card">
-      <span
-        title={siteUrl}
-        className="flex-1 min-w-0 truncate px-2.5 py-1.5 rounded-[6px] bg-foreground/[0.045] text-[12px] text-ink-3"
-      >
-        {domain}
-      </span>
+    <div className="h-10 flex-shrink-0 flex items-center gap-2 px-4 border-b border-edge-faint">
+      {/* The domain is in the panel header; this row is only state and actions. */}
+      <span className="flex-1" />
       <span className="inline-flex items-center gap-1.5 flex-shrink-0 text-[12px] text-ink-4">
         {state === 'loading' ? (
           <span className="w-2.5 h-2.5 rounded-full border-[1.5px] border-edge-strong border-t-ink-3 animate-spin motion-reduce:animate-none" />

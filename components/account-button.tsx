@@ -46,7 +46,7 @@ function Avatar({ user, size }: { user: AccountUser; size: number }) {
 }
 
 /** What this device holds, live — the same numbers the account carries once synced. */
-function useSavedCounts() {
+export function useSavedCounts() {
   const read = () => {
     try {
       const hearts = JSON.parse(localStorage.getItem('hl:favorites') ?? '[]')

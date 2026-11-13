@@ -12,7 +12,8 @@ import { ColorsTab } from './colors-tab'
 import { TypeTab } from './type-tab'
 import { HistoryTab } from './history-tab'
 import { ThemeExport } from './theme-export'
-import { KitRow } from './kit-row'
+import { KitLink } from './kit-row'
+import { KitTab } from './kit-tab'
 import { DRIFT_ENABLED } from '@/lib/drift'
 import { UNSORTED } from '@/lib/categories'
 import { Spinner } from './ui/spinner'
@@ -181,17 +182,17 @@ export function SiteDetailPanel({ variant = 'desktop', sourceId, metadata, initi
     <div className="flex flex-col h-full bg-background">
       {/* Header */}
       <div
-        className="flex items-center gap-2.5 px-3.5 py-3 border-b border-edge-faint flex-shrink-0"
+        className="flex items-center gap-3 px-4 py-3 flex-shrink-0"
         // Only bites when the panel runs edge to edge on a phone; elsewhere
         // env() is 0 and this is the same 12px the padding already was.
         style={{ paddingTop: 'max(12px, env(safe-area-inset-top))' }}
       >
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <p className="text-titletext text-ink truncate">{title}</p>
+            <p className="text-[15px] font-[640] tracking-[-0.02em] leading-tight text-ink truncate">{title}</p>
             {typeof favCount === 'number' && (
               <span
-                className="inline-flex items-center gap-1 shrink-0 text-[12px] text-ink-4 tabular-nums"
+                className="inline-flex items-center gap-1 shrink-0 text-[12px] text-ink-4"
                 title={`${favCount} favorite${favCount === 1 ? '' : 's'}`}
               >
                 <Heart className="w-3 h-3 text-[var(--color-error)]" weight="fill" aria-hidden="true" />
@@ -200,9 +201,7 @@ export function SiteDetailPanel({ variant = 'desktop', sourceId, metadata, initi
               </span>
             )}
           </div>
-          {kindLabel && (
-            <p className="text-micro text-ink-4 mt-1 truncate">{kindLabel}</p>
-          )}
+          <p className="mt-0.5 text-[12px] text-ink-4 truncate">{hostname}{kindLabel ? ` · ${kindLabel}` : ''}</p>
         </div>
         <div className="flex items-center gap-0.5 shrink-0">
           <div ref={saveRef} className="relative">
@@ -211,7 +210,7 @@ export function SiteDetailPanel({ variant = 'desktop', sourceId, metadata, initi
               aria-expanded={saveOpen}
               aria-label="Save to a collection"
               title="Save to a collection"
-              className="w-8 h-8 flex items-center justify-center rounded-[4px] text-ink-3 hover:text-ink hover:bg-muted transition-colors"
+              className="w-8 h-8 flex items-center justify-center rounded-[8px] text-ink-3 hover:text-ink hover:bg-muted transition-colors"
             >
               <BookmarkSimple className="w-4 h-4" weight={Object.values(collections).some(ids => ids.includes(sourceId)) ? 'fill' : 'bold'} />
             </button>
@@ -291,7 +290,7 @@ export function SiteDetailPanel({ variant = 'desktop', sourceId, metadata, initi
           {onClose && (
             <button
               onClick={() => { playClose(); onClose() }}
-              className="w-8 h-8 flex items-center justify-center rounded-[4px] text-ink-3 hover:text-ink hover:bg-muted transition-colors"
+              className="w-8 h-8 flex items-center justify-center rounded-[8px] text-ink-3 hover:text-ink hover:bg-muted transition-colors"
               aria-label="Close panel"
             >
               <X className="w-4 h-4" weight="bold" />
@@ -369,6 +368,14 @@ export function SiteDetailPanel({ variant = 'desktop', sourceId, metadata, initi
                   <TypeTab typography={data.typography} extractionError={data.extraction_error} />
                 </motion.div>
               )}
+              {effectiveTab === 'kit' && (
+                <motion.div key="kit" className="flex flex-col flex-1 min-h-0"
+                  initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: DUR.move, ease: EASE }}
+                  exit={{ opacity: 0, y: -4, transition: { duration: DUR.exit } }}>
+                  <KitTab siteId={data.id} colors={data.colors} typography={data.typography} />
+                </motion.div>
+              )}
               {DRIFT_ENABLED && effectiveTab === 'history' && (
                 <motion.div key="history" className="flex flex-col flex-1 min-h-0"
                   initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}
@@ -407,19 +414,21 @@ export function SiteDetailPanel({ variant = 'desktop', sourceId, metadata, initi
         )}
       </AnimatePresence>
 
-      {/* Token kit footer: copy the site's theme out. Persistent across tabs;
-          it only needs the palette and type the panel already holds. */}
-      {data && <KitRow siteId={data.id} />}
-      {data && (
-        <div className="flex-shrink-0 border-t border-edge-faint px-4 py-2 flex items-center justify-between gap-2">
-          <span className="text-micro text-ink-4 max-[359px]:hidden">Copy theme</span>
-          <ThemeExport
-            siteUrl={data.url}
-            siteTitle={hostname}
-            colors={data.colors}
-            typography={data.typography}
-          />
-        </div>
+      {/* Footer: on every tab but Kit, a line into the kit, then the free
+          theme copies. The Kit tab carries its own download. */}
+      {data && effectiveTab !== 'kit' && (
+        <>
+          <KitLink onOpen={() => { setActiveTab('kit'); onTabChange?.('kit') }} />
+          <div className="flex-shrink-0 border-t border-edge-faint px-4 h-11 flex items-center justify-between gap-2">
+            <span className="text-[12px] text-ink-4 max-[359px]:hidden">Copy theme</span>
+            <ThemeExport
+              siteUrl={data.url}
+              siteTitle={hostname}
+              colors={data.colors}
+              typography={data.typography}
+            />
+          </div>
+        </>
       )}
     </div>
   )
