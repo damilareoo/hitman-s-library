@@ -114,15 +114,15 @@ export function AccountButton() {
             initial={{ opacity: 0, y: -6, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -4, transition: POP_OUT }} transition={POP_IN}
             style={{ transformOrigin: 'top right' }}
-            className={CARD.shell + ' absolute right-0 top-10 z-50 w-[296px] max-sm:fixed max-sm:inset-x-3 max-sm:top-[60px] max-sm:w-auto shadow-[0_24px_56px_-20px_rgba(0,0,0,0.35)]'}
+            className={CARD.shell + ' absolute right-0 top-10 z-50 w-[284px] max-sm:fixed max-sm:inset-x-3 max-sm:top-[60px] max-sm:w-auto shadow-[0_24px_56px_-20px_rgba(0,0,0,0.35)]'}
           >
             {/* Your card: the strip is in the colours of the sites you've hearted. */}
             <ColourStrip ids={heartIds} />
-            <div className={CARD.pad + ' h-11 flex items-center justify-between'}>
+            <div className={CARD.pad + ' h-10 flex items-center justify-between'}>
               <p className={CARD.label}>Member card</p>
               <p className={CARD.number}>No. {String(user.memberNo).padStart(4, '0')}</p>
             </div>
-            <div className={CARD.pad + ' pt-1 pb-4 flex items-center gap-3'}>
+            <div className={CARD.pad + ' pt-0.5 pb-3 flex items-center gap-3'}>
               <Avatar user={user} size={40} />
               <div className="min-w-0">
                 <p className="text-[16px] font-[640] tracking-[-0.02em] leading-tight text-ink truncate">{displayName}</p>
@@ -132,7 +132,7 @@ export function AccountButton() {
                 </p>
               </div>
             </div>
-            <p className={CARD.pad + ' ' + CARD.body + ' pb-4 tabular-nums'}>
+            <p className={CARD.pad + ' ' + CARD.body + ' pb-3'}>
               {plural(counts.hearts, 'heart', 'hearts')} · {plural(counts.sets, 'set', 'sets')} · since {since}
             </p>
 

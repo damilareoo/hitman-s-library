@@ -115,11 +115,11 @@ export function SignInSheet() {
                 role="dialog" aria-modal="true" aria-labelledby="signin-title"
                 initial={{ opacity: 0, y: 18, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: 10, transition: POP_OUT }} transition={POP_IN}
-                className={CARD.shell + ' pointer-events-auto relative w-full sm:max-w-[360px] max-sm:rounded-b-none max-sm:border-b-0 max-sm:pb-[env(safe-area-inset-bottom)] shadow-[0_28px_70px_-24px_rgba(0,0,0,0.4)]'}
+                className={CARD.shell + ' pointer-events-auto relative w-full sm:max-w-[344px] max-sm:rounded-b-none max-sm:border-b-0 max-sm:pb-[env(safe-area-inset-bottom)] shadow-[0_28px_70px_-24px_rgba(0,0,0,0.4)]'}
               >
                 <ColourStrip />
 
-                <div className={CARD.pad + ' h-11 flex items-center justify-between'}>
+                <div className={CARD.pad + ' h-10 flex items-center justify-between'}>
                   <p className={CARD.label}>Member card</p>
                   <div className="flex items-center gap-2 -mr-2">
                     <p className={CARD.number} aria-label="No member number yet">No. ____</p>
@@ -129,7 +129,7 @@ export function SignInSheet() {
                   </div>
                 </div>
 
-                <div className={CARD.pad + ' pt-3'}>
+                <div className={CARD.pad + ' pt-2'}>
                   <h2 id="signin-title" className="text-[24px] font-[640] tracking-[-0.03em] leading-[1.05] text-ink">
                     {step === 'sent' ? 'Check your inbox.' : mode === 'join' ? 'Get your library card.' : 'Welcome back.'}
                   </h2>
@@ -144,14 +144,14 @@ export function SignInSheet() {
                 </div>
 
                 {step === 'sent' ? (
-                  <div className={CARD.pad + ' pt-4 pb-5'}>
+                  <div className={CARD.pad + ' pt-3 pb-4'}>
                     <button className={CARD.meta + ' underline underline-offset-4 decoration-edge-strong hover:text-ink transition-colors'} onClick={() => { setStep('choose'); setNote(null) }}>
                       Use a different email
                     </button>
                   </div>
                 ) : (
                   <>
-                    <form onSubmit={sendLink} className={CARD.pad + ' pt-4 pb-4'}>
+                    <form onSubmit={sendLink} className={CARD.pad + ' pt-3 pb-3'}>
                       <label htmlFor="signin-email" className="sr-only">Email</label>
                       <div className="flex items-center gap-2 border-b border-edge-strong focus-within:border-foreground transition-colors">
                         <input
@@ -172,7 +172,7 @@ export function SignInSheet() {
                     </form>
                     <a
                       href={`/api/auth/google?next=${encodeURIComponent(next())}`}
-                      className={CARD.action + ' ' + CARD.pad + ' h-12 justify-between border-t border-edge'}
+                      className={CARD.action + ' ' + CARD.pad + ' h-11 justify-between border-t border-edge'}
                     >
                       <span className="flex items-center gap-2.5"><GoogleMark size={16} /> Continue with Google</span>
                       <ArrowRight className="w-3.5 h-3.5 text-ink-4" weight="bold" />
