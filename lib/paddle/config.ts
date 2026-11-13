@@ -5,7 +5,7 @@
 // `node scripts/paddle-setup.mjs --live`) and flipping ENVIRONMENT.
 type Env = 'sandbox' | 'production'
 
-const ENVIRONMENT: Env = 'sandbox'
+const ENVIRONMENT: Env = 'production'
 
 const IDS: Record<Env, { clientToken: string; productId: string; prices: { month: string; year: string } }> = {
   sandbox: {
