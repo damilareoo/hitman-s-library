@@ -88,6 +88,9 @@ const changelog: ChangelogRelease[] = [
     date: '2026-11-13',
     title: 'Your Saves, Everywhere',
     items: [
+      { type: 'improved', author: 'damilare', text: 'Card images load faster and stay cached, so repeat visits show them instantly' },
+      { type: 'improved', author: 'damilare', text: 'The ⌘K browser, Type tab and Submit page share the same cards, buttons and chips' },
+      { type: 'fixed', author: 'damilare', text: 'Four sites that showed a borrowed share image now show real captures' },
       { type: 'new', author: 'damilare', text: 'Sign in with Google or an email link to keep hearts and sets on every device' },
       { type: 'new', author: 'damilare', text: 'No passwords, and the library stays fully open without an account' },
       { type: 'new', author: 'damilare', text: 'Download everything stored about you, or delete your account, from the account menu' },
