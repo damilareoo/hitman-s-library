@@ -19,9 +19,11 @@ export function buildSearchIndex(designs: { id: string | number; colors: string[
   return designs.map(d => {
     const colors = d.colors.map(c => HEX.exec((c ?? '').trim())).filter((m): m is RegExpExecArray => !!m).map(m => '#' + m[1].toLowerCase())
     const fonts = d.typography.map(f => (f ?? '').trim()).filter(f => f.length > 1 && !NOT_A_FONT.has(f.toLowerCase()))
-    // The first colour is the largest area on the page: the background. Text
-    // is whichever palette colour reads best on it.
-    const contrast = colors.length > 1 ? Math.max(...colors.slice(1).map(c => contrastRatio(colors[0], c))) : null
+    // Colours come largest area first: the background, then the colour that
+    // covers most of what sits on it (usually the text). Measuring against the
+    // best-reading colour instead let nearly every site pass, since almost all
+    // carry a black or white somewhere.
+    const contrast = colors.length > 1 ? contrastRatio(colors[0], colors[1]) : null
     return { id: Number(d.id), colors, fonts, contrast }
   })
 }
