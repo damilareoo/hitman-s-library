@@ -98,6 +98,7 @@ const changelog: ChangelogRelease[] = [
       { type: 'improved', author: 'damilare', text: 'Deleting your account now lives on the privacy page, keeping the account card simple' },
       { type: 'new', author: 'damilare', text: 'Style kits: DESIGN.md, Figma variables and captures in one zip, three free a month' },
       { type: 'improved', author: 'damilare', text: 'Style kit colours are named by role and hue, with plain how-to steps inside' },
+      { type: 'new', author: 'damilare', text: 'Refine searches the library by colours from an image, a font, or readable text' },
       { type: 'new', author: 'damilare', text: 'A Kit tab shows what the style kit gives you before you download it' },
       { type: 'new', author: 'damilare', text: 'Saved in the header opens your hearts and every set in one tap' },
       { type: 'improved', author: 'damilare', text: 'The site panel has cleaner tabs, one type scale and less visual noise' },

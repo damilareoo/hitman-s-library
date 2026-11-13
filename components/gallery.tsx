@@ -29,6 +29,9 @@ import { EASE, DUR, POP_IN, POP_OUT } from '@/lib/motion'
 import Link from 'next/link'
 import { useIsNarrow, useIsPhone } from '@/lib/use-is-narrow'
 import { useUrlParams } from '@/lib/use-url-params'
+import { Refine } from '@/components/refine'
+import { refineFromParams, refineToParams, refineApiQuery, refineActive, type RefineQuery } from '@/lib/search/refine-params'
+import { openSignIn } from '@/lib/account-client'
 import { prefetchDetail } from '@/lib/detail-cache'
 import { track } from '@/lib/analytics'
 
@@ -380,7 +383,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
     lastFilterKey.current = filterKey
     // Similar and collection modes own the grid; filter edits apply when
     // they are cleared.
-    if (similarToId || collectionName) return
+    if (similarToId || collectionName || refineKey) return
 
     // Navigation is scroll:false so opening a site doesn't jump the page, but a
     // new filter is a new result set — staying halfway down it reads as though
@@ -559,6 +562,52 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
       if (seq === collectionSeq.current) setIsRefetching(false)
     })
   }, [collectionName, collectionIds.join(','), loadDesigns, heartsView, favoritesRead])
+
+  // Refine (Pro search): the server ranks the library and decides who may
+  // search; the grid loads the ranked ids through the cached path, in order.
+  const refine = useMemo(() => refineFromParams(searchParams), [searchParams])
+  const refineKey = refineActive(refine) ? refineApiQuery(refine) : null
+  const [refineNote, setRefineNote] = useState<null | 'signed-out' | 'pro' | 'failed'>(null)
+  const lastRefine = useRef<string | null>(null)
+  const refineSeq = useRef(0)
+  useEffect(() => {
+    if (lastRefine.current === refineKey) return
+    const was = lastRefine.current
+    lastRefine.current = refineKey
+    if (!refineKey) {
+      setRefineNote(null)
+      if (was && !collectionName && !colorRef.current) { setIsRefetching(true); loadDesigns(0, false).finally(() => setIsRefetching(false)) }
+      return
+    }
+    const seq = ++refineSeq.current
+    setIsRefetching(true); setRefineNote(null)
+    const empty = () => { setDesigns([]); setPagination({ total: 0, hasMore: false, offset: 0 }) }
+    ;(async () => {
+      try {
+        const r = await fetch('/api/search/pro?' + refineKey, { credentials: 'same-origin' })
+        if (seq !== refineSeq.current) return
+        if (r.status === 401 || r.status === 402) { setRefineNote(r.status === 401 ? 'signed-out' : 'pro'); empty(); return }
+        if (!r.ok) throw new Error(String(r.status))
+        const { ids } = await r.json() as { ids: number[] }
+        if (!ids.length) { empty(); return }
+        const data = await fetch(`/api/design/filter-advanced?ids=${ids.join(',')}&limit=200`).then(res => res.json())
+        if (seq !== refineSeq.current) return
+        const rank = new Map(ids.map((id, i) => [String(id), i]))
+        const list: Design[] = [...(data.designs || [])].sort((a: Design, b: Design) => (rank.get(String(a.id)) ?? 0) - (rank.get(String(b.id)) ?? 0))
+        setDesigns(list)
+        setPagination({ total: list.length, hasMore: false, offset: 0 })
+        track('pro_search_used', { facets: [refine.palette.length && 'palette', refine.font && 'font', refine.readable && 'contrast'].filter(Boolean) })
+      } catch {
+        if (seq === refineSeq.current) { setRefineNote('failed'); empty() }
+      } finally {
+        if (seq === refineSeq.current) setIsRefetching(false)
+      }
+    })()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [refineKey, loadDesigns])
+  const applyRefine = useCallback((q: RefineQuery) => {
+    updateParams(p => { p.delete('site'); p.delete('tab'); p.delete('collection'); p.delete('saved'); refineToParams(q, p) })
+  }, [updateParams])
 
   // Infinite scroll
   useEffect(() => {
@@ -977,6 +1026,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
               ⌘K
             </kbd>
           </button>
+          <Refine value={refine} onApply={applyRefine} className="hidden xl:block" />
 
           {/* On a phone the switcher sits on the window's centre line, the way
               the prototype does, rather than in whatever space the mark and
@@ -1186,8 +1236,9 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
         <main id="gallery" tabIndex={-1} className="xl:col-span-8 min-[1920px]:col-span-9 flex flex-col min-w-0 focus:outline-none">
           {/* Compact filters — mobile and tablet */}
           <div className="xl:hidden sticky top-14 z-20 bg-background border-b border-edge-strong">
-            <div className="px-4 pt-3 pb-2 relative">
-              <MagnifyingGlass className="absolute left-7 top-1/2 -translate-y-[2px] w-3 h-3 text-ink-3 pointer-events-none" weight="regular" />
+            <div className="px-4 pt-3 pb-2 flex items-center gap-2">
+            <div className="relative flex-1 min-w-0">
+              <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-3 h-3 text-ink-3 pointer-events-none" weight="regular" />
               <input
                 type="search"
                 placeholder="Search sites…"
@@ -1199,17 +1250,19 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
               {searchInput && (
                 <button
                   onClick={() => setSearchInput('')}
-                  className="absolute right-7 top-1/2 -translate-y-[2px] text-ink-4 hover:text-ink-2 transition-colors"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-4 hover:text-ink-2 transition-colors"
                   aria-label="Clear search"
                 >
                   <X className="w-3 h-3" weight="bold" />
                 </button>
               )}
               {!searchInput && search && (
-                <span className="absolute right-4 top-1/2 -translate-y-[2px] text-micro tabular-nums text-ink-4 pointer-events-none" aria-hidden="true">
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-micro tabular-nums text-ink-4 pointer-events-none" aria-hidden="true">
                   {pagination.total}
                 </span>
               )}
+            </div>
+            <Refine value={refine} onApply={applyRefine} />
             </div>
 
             <p className="px-4 pt-1 pb-2 text-meta text-ink-4 text-balance">
@@ -1328,6 +1381,38 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
                 </span>
               </div>
             )}
+            {refineKey && (
+              <div className="pb-3 mb-4 border-b border-edge">
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <span className="text-[12.5px] font-[600] text-ink mr-1">Refined</span>
+                  {refine.palette.length > 0 && (
+                    <button onClick={() => applyRefine({ ...refine, palette: [] })} className="h-7 pl-2 pr-1.5 flex items-center gap-1.5 rounded-[8px] bg-muted/70 text-[12px] text-ink-2 hover:bg-muted" title="Remove palette">
+                      {refine.palette.map(c => <span key={c} className="w-3 h-3 rounded-[3px] ring-1 ring-inset ring-foreground/10" style={{ background: c }} />)}
+                      <X className="w-3 h-3 text-ink-4" weight="bold" />
+                    </button>
+                  )}
+                  {refine.font && (
+                    <button onClick={() => applyRefine({ ...refine, font: '' })} className="h-7 px-2 flex items-center gap-1.5 rounded-[8px] bg-muted/70 text-[12px] text-ink-2 hover:bg-muted">
+                      Font: {refine.font} <X className="w-3 h-3 text-ink-4" weight="bold" />
+                    </button>
+                  )}
+                  {refine.readable && (
+                    <button onClick={() => applyRefine({ ...refine, readable: '' })} className="h-7 px-2 flex items-center gap-1.5 rounded-[8px] bg-muted/70 text-[12px] text-ink-2 hover:bg-muted">
+                      Readable {refine.readable} <X className="w-3 h-3 text-ink-4" weight="bold" />
+                    </button>
+                  )}
+                  <button onClick={() => applyRefine({ palette: [], font: '', readable: '' })} className="ml-1 text-[12px] text-ink-4 hover:text-ink">Clear</button>
+                  {!refineNote && <span className="ml-auto text-[12px] text-ink-4">{pagination.total} {pagination.total === 1 ? 'site' : 'sites'}</span>}
+                </div>
+                {refineNote && (
+                  <p role="status" className="mt-3 text-[13.5px] text-ink-2">
+                    {refineNote === 'pro' && <>Refine is part of Pro: search the whole library by palette, font and readable text. <a href="/pro" className="font-[600] underline underline-offset-4 hover:text-ink">Go Pro</a></>}
+                    {refineNote === 'signed-out' && <>Refine is part of Pro. <button onClick={() => openSignIn('join')} className="font-[600] underline underline-offset-4 hover:text-ink">Sign in</button>, then <a href="/pro" className="font-[600] underline underline-offset-4 hover:text-ink">Go Pro</a>.</>}
+                    {refineNote === 'failed' && <>Couldn&apos;t refine just now. Try again.</>}
+                  </p>
+                )}
+              </div>
+            )}
             {/* Below xl there is no grid heading, so a set or your hearts get
                 their own: what you're looking at, and the way back. */}
             {collectionName && (
@@ -1338,7 +1423,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
                 <Link href="/" scroll={false} className="shrink-0 text-[12px] text-ink-4 hover:text-ink transition-colors">Back to library</Link>
               </div>
             )}
-            <div className="hidden xl:flex items-center justify-between gap-4 pb-3 mb-5 border-b border-edge">
+            <div className={(refineKey ? 'hidden' : 'hidden xl:flex') + ' items-center justify-between gap-4 pb-3 mb-5 border-b border-edge'}>
               <div className="flex items-center gap-2 min-w-0">
                 <h2 className="flex items-center gap-1.5 text-meta text-ink font-medium">
                   {colorFilter && (
@@ -1390,7 +1475,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
 
             {/* One line of value proposition: nothing above the fold says
                 what this is, and shared-link visitors bounce on confusion. */}
-            <p className="hidden xl:block text-meta text-ink-4 text-balance pb-3 -mt-2">
+            <p className={(refineKey ? 'hidden' : 'hidden xl:block') + ' text-meta text-ink-4 text-balance pb-3 -mt-2'}>
               {libraryTotal} of the web&apos;s best-designed sites, dissected. Colors, type, assets and screenshots, extracted automatically.
             </p>
 
@@ -1408,11 +1493,14 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
               <AnimatePresence mode="sync">
                 {showSkeletons
                   ? Array.from({ length: 8 }).map((_, i) => <SkeletonCard key={`s${i}`} />)
+                  : designs.length === 0 && refineNote
+                    // The refine note above already says what happened; nothing below it.
+                    ? null
                   : designs.length === 0
                     ? (
                       <div className="col-span-full flex flex-col items-center justify-center py-24 gap-3 text-center">
                         <p className="text-bodytext text-ink-3">
-                          {heartsView ? 'Heart a site and it shows up here' : collectionName ? 'Nothing in this set yet' : hasFilters ? 'Nothing here yet' : 'No sites yet'}
+                          {refineKey ? (refineNote ? '' : 'No sites match. Try fewer colours or a wider readable setting.') : heartsView ? 'Heart a site and it shows up here' : collectionName ? 'Nothing in this set yet' : hasFilters ? 'Nothing here yet' : 'No sites yet'}
                         </p>
 
                         {/* Searching and finding nothing is the moment someone
@@ -1434,7 +1522,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
                           </>
                         )}
 
-                        {categories.length > 0 && (
+                        {categories.length > 0 && !refineKey && (
                           <div className="flex flex-wrap items-center justify-center gap-1.5 mt-1 max-w-[320px]">
                             {categories.map(({ name }) => (
                               <button
