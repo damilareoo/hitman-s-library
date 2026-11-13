@@ -1,5 +1,7 @@
 'use client'
 
+import { isOwnMedia } from '@/lib/media'
+
 import { useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
 import { motion } from 'motion/react'
@@ -72,7 +74,7 @@ export function DesignCard({ design, index, isSelected, onClick, onHover, onTagC
   // image optimizer. A fallback og:image comes from whatever host the site is
   // on, and allowing those meant configuring the optimizer for every hostname
   // on the internet. Serve them as-is instead.
-  const isOptimizable = Boolean(imgSrc && imgSrc.includes('.public.blob.vercel-storage.com'))
+  const isOptimizable = isOwnMedia(imgSrc)
 
   useEffect(() => {
     const img = imgRef.current

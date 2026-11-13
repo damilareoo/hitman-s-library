@@ -4,7 +4,9 @@
 import { getSql } from '@/lib/db'
 import { signedOutCookies } from '@/lib/auth/session'
 import { getEntitlement } from '@/lib/pro/entitlement'
-import { currentUser, NO_STORE, problem, renewedCookies, sameOriginWrite } from '@/lib/auth/request'
+import { currentUser, NO_STORE, problem, renewedCookies } from '@/lib/auth/request'
+import { handleDeleteAccount } from '@/lib/account/delete-account'
+import { hasLiveSubscription } from '@/lib/pro/live-subscription'
 
 function json(body: unknown, cookies: string[] = []): Response {
   const headers = new Headers({ 'content-type': 'application/json', ...NO_STORE })
@@ -33,13 +35,18 @@ export async function GET(req: Request) {
 
 // guard: none — same-origin only, needs the caller's own session, deletes only their account
 export async function DELETE(req: Request) {
-  const refused = sameOriginWrite(req)
-  if (refused) return refused
-  const me = await currentUser(req)
-  if (!me) return problem(401, 'signed-out', signedOutCookies())
-  const sql = getSql()
-  // Sessions and saved data cascade with the user row; pending links go too.
-  await sql`DELETE FROM login_tokens WHERE email = ${me.user.email}`
-  await sql`DELETE FROM users WHERE id = ${me.user.id}`
-  return json({ ok: true }, signedOutCookies())
+  return handleDeleteAccount(req, {
+    user: async r => { const me = await currentUser(r); return me ? { id: me.user.id, email: me.user.email } : null },
+    liveSubscription: hasLiveSubscription,
+    remove: async ({ id, email }) => {
+      const sql = getSql()
+      // Sessions, saved data and the ended subscription cascade with the user
+      // row. Pending links go, and the contact email leaves any site requests.
+      await sql.transaction([
+        sql`DELETE FROM login_tokens WHERE email = ${email}`,
+        sql`UPDATE design_requests SET email = NULL WHERE user_id = ${id} OR email = ${email}`,
+        sql`DELETE FROM users WHERE id = ${id}`,
+      ])
+    },
+  }, signedOutCookies())
 }

@@ -5,8 +5,13 @@ import { NextRequest, NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/admin-auth'
 import { getSql } from '@/lib/db'
 import { sendProWelcome } from '@/lib/email/send-pro-welcome'
+import { sameOriginWrite } from '@/lib/auth/request'
 
 export async function POST(req: NextRequest) {
+  // Same origin and JSON only: the admin cookie is Lax, and the preview
+  // subdomain counts as the same site.
+  const refused = sameOriginWrite(req, { json: true })
+  if (refused) return refused
   const denied = await requireAdmin(req)
   if (denied) return denied
   const { email } = await req.json().catch(() => ({})) as { email?: string }

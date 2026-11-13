@@ -3,10 +3,11 @@
 // public already; routing them through here makes them same-origin, so the
 // browser can pack any of them whatever host they live on. Signed-in only,
 // and only ever the URL stored for that site — never a URL from the request.
-import { currentUser, problem, NO_STORE } from '@/lib/auth/request'
+import { currentUser, problem } from '@/lib/auth/request'
 import { getSql } from '@/lib/db'
 import { parseId } from '@/lib/parse-id'
 import { safeFetch } from '@/lib/safe-url'
+import { passCapture } from '@/lib/kit/capture-proxy'
 
 const MAX_BYTES = 15 * 1024 * 1024
 
@@ -20,11 +21,9 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   if (!url) return problem(404, 'not-found')
   try {
     const upstream = await safeFetch(url, { signal: AbortSignal.timeout(10000) })
-    const type = upstream.headers.get('content-type') ?? ''
-    const size = Number(upstream.headers.get('content-length') ?? 0)
-    if (!upstream.ok || !type.startsWith('image/') || size > MAX_BYTES) return problem(502, 'capture-unavailable')
-    // Streamed straight through: no buffering, next to no CPU.
-    return new Response(upstream.body, { headers: { 'content-type': type, ...NO_STORE } })
+    // Streamed straight through (no buffering, next to no CPU), raster only,
+    // sandboxed, and capped even when no length was declared.
+    return passCapture(upstream, MAX_BYTES) ?? problem(502, 'capture-unavailable')
   } catch {
     return problem(502, 'capture-unavailable')
   }
