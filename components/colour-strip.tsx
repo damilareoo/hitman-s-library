@@ -9,9 +9,10 @@
 
 import { useEffect, useRef } from 'react'
 
-const PITCH = 4, TILE = 3, ROWS = 6
+export const PITCH = 4, TILE = 3
+const ROWS = 6
 
-function hsl(hex: string): [number, number, number] {
+export function hsl(hex: string): [number, number, number] {
   const n = parseInt(hex.slice(1), 16), r = (n >> 16 & 255) / 255, g = (n >> 8 & 255) / 255, b = (n & 255) / 255
   const max = Math.max(r, g, b), min = Math.min(r, g, b), l = (max + min) / 2, d = max - min
   if (!d) return [0, 0, l]
@@ -32,6 +33,19 @@ function band(colors: string[]): string[] {
   }
   const rel = (c: string) => ((hsl(c)[0] - best + 540) % 360) - 180
   return usable.filter(c => dist(hsl(c)[0], best) <= W).sort((a, b) => rel(a) - rel(b))
+}
+
+/** Colours from these sites (your hearts), or the newest sites when there are too few: one coherent band. */
+export function loadBandColours(ids?: number[]): Promise<string[]> {
+  const load = (url: string) => fetch(url)
+    .then(r => r.json())
+    .then((body: { designs?: { colors?: string[] }[] }) =>
+      band([...new Set((body.designs ?? []).flatMap(d => d.colors ?? []))].filter(c => /^#[0-9a-f]{6}$/i.test(c))))
+    .catch(() => [] as string[])
+  const recent = '/api/design/filter-advanced?limit=24&sortBy=recent'
+  return ids && ids.length
+    ? load(`/api/design/filter-advanced?ids=${ids.slice(0, 40).join(',')}`).then(c => (c.length >= 6 ? c : load(recent)))
+    : load(recent)
 }
 
 export function ColourStrip({ ids, className = '' }: { ids?: number[]; className?: string }) {
@@ -72,16 +86,7 @@ export function ColourStrip({ ids, className = '' }: { ids?: number[]; className
     }
     paint([], 0)
 
-    const load = (url: string) => fetch(url)
-      .then(r => r.json())
-      .then((body: { designs?: { colors?: string[] }[] }) =>
-        band([...new Set((body.designs ?? []).flatMap(d => d.colors ?? []))].filter(c => /^#[0-9a-f]{6}$/i.test(c))))
-      .catch(() => [] as string[])
-    const recent = '/api/design/filter-advanced?limit=24&sortBy=recent'
-    // A few hearts can be too few colours for a band; the newest sites fill in.
-    ;(ids && ids.length
-      ? load(`/api/design/filter-advanced?ids=${ids.slice(0, 40).join(',')}`).then(c => c.length >= 6 ? c : load(recent))
-      : load(recent))
+    loadBandColours(ids)
       .then(colors => {
         if (cancelled || !colors.length) return
         if (matchMedia('(prefers-reduced-motion: reduce)').matches) return paint(colors, 2)
