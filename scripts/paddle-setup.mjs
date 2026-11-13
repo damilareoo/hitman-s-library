@@ -56,6 +56,8 @@ for (const interval of ['month', 'year']) {
     description: interval === 'month' ? 'Pro, monthly' : 'Pro, yearly',
     name: interval === 'month' ? 'Monthly' : 'Yearly',
     unit_price: { amount: String(PRICES.A[interval]), currency_code: 'USD' },
+    // One subscription per person: checkout shows no quantity picker.
+    quantity: { minimum: 1, maximum: 1 },
     unit_price_overrides: [
       { country_codes: GROUP_B, unit_price: { amount: String(PRICES.B[interval]), currency_code: 'USD' } },
       { country_codes: GROUP_C, unit_price: { amount: String(PRICES.C[interval]), currency_code: 'USD' } },
