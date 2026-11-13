@@ -71,3 +71,4 @@ panel-done.json
 .wrangler
 .dev.vars*
 !.dev.vars.example
+.verify/
