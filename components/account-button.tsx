@@ -14,13 +14,14 @@ import { SignIn, DownloadSimple, SignOut, EnvelopeSimple } from '@phosphor-icons
 import { GoogleMark } from '@/components/google-mark'
 import { CARD } from '@/components/member-card'
 import { ColourStrip } from '@/components/colour-strip'
+import { ProMark } from '@/components/pro-mark'
 import { POP_IN, POP_OUT } from '@/lib/motion'
 import { COLLECTIONS_EVENT } from '@/lib/collections'
 import { useAccount, openSignIn, signOut, FAVORITES_EVENT, type AccountUser } from '@/lib/account-client'
 
 const QUIET = "relative flex items-center gap-1 text-meta text-ink-3 hover:text-ink transition-colors mr-1 after:absolute after:inset-x-0 after:top-1/2 after:h-11 after:-translate-y-1/2 after:content-['']"
 
-function Avatar({ user, size }: { user: AccountUser; size: number }) {
+function Avatar({ user, size, pro = false }: { user: AccountUser; size: number; pro?: boolean }) {
   const [broken, setBroken] = useState(false)
   const initial = (user.name || user.email).trim().charAt(0).toUpperCase()
   if (user.avatar && !broken) {
@@ -30,14 +31,14 @@ function Avatar({ user, size }: { user: AccountUser; size: number }) {
       <img
         src={user.avatar} alt="" width={size} height={size} referrerPolicy="no-referrer"
         onError={() => setBroken(true)}
-        className="rounded-full object-cover shrink-0 ring-1 ring-foreground/10"
+        className={'rounded-full object-cover shrink-0 ' + (pro ? 'ring-2 ring-[#E8A04A] ring-offset-2 ring-offset-popover' : 'ring-1 ring-foreground/10')}
         style={{ width: size, height: size }}
       />
     )
   }
   return (
     <span
-      className="rounded-full grid place-items-center shrink-0 bg-foreground text-background font-[640]"
+      className={'rounded-full grid place-items-center shrink-0 bg-foreground text-background font-[640] ' + (pro ? 'ring-2 ring-[#E8A04A] ring-offset-2 ring-offset-popover' : '')}
       style={{ width: size, height: size, fontSize: Math.round(size * 0.43) }}
     >
       {initial}
@@ -104,7 +105,7 @@ export function AccountButton() {
         aria-expanded={open} aria-haspopup="menu" aria-label="Your account"
         className="rounded-full grid place-items-center transition-opacity hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#E8A04A]"
       >
-        <Avatar user={user} size={28} />
+        <Avatar user={user} size={28} pro={pro} />
       </button>
 
       <AnimatePresence>
@@ -117,13 +118,26 @@ export function AccountButton() {
             className={CARD.shell + ' absolute right-0 top-10 z-50 w-[284px] max-sm:fixed max-sm:inset-x-3 max-sm:top-[60px] max-sm:w-auto shadow-[0_24px_56px_-20px_rgba(0,0,0,0.35)]'}
           >
             {/* Your card: the strip is in the colours of the sites you've hearted. */}
-            <ColourStrip ids={heartIds} />
-            <div className={CARD.pad + ' h-10 flex items-center justify-between'}>
-              <p className={CARD.label}>Member card</p>
-              <p className={CARD.number}>No. {String(user.memberNo).padStart(4, '0')}</p>
-            </div>
+            {pro ? (
+              // A Pro card leads with the word itself, made of the colours you've hearted.
+              <div className={CARD.pad + ' pt-4 pb-3 flex items-start justify-between gap-4'}>
+                <ProMark ids={heartIds} height={52} className="max-w-[148px]" />
+                <div className="text-right shrink-0 pt-0.5">
+                  <p className={CARD.label}>Member</p>
+                  <p className={CARD.number + ' mt-2'}>No. {String(user.memberNo).padStart(4, '0')}</p>
+                </div>
+              </div>
+            ) : (
+              <>
+                <ColourStrip ids={heartIds} />
+                <div className={CARD.pad + ' h-10 flex items-center justify-between'}>
+                  <p className={CARD.label}>Member card</p>
+                  <p className={CARD.number}>No. {String(user.memberNo).padStart(4, '0')}</p>
+                </div>
+              </>
+            )}
             <div className={CARD.pad + ' pt-0.5 pb-3 flex items-center gap-3'}>
-              <Avatar user={user} size={40} />
+              <Avatar user={user} size={40} pro={pro} />
               <div className="min-w-0">
                 <p className="text-[16px] font-[640] tracking-[-0.02em] leading-tight text-ink truncate">{displayName}</p>
                 <p className={CARD.meta + ' mt-0.5 flex items-center gap-1.5 min-w-0'} title={user.google ? 'Signs in with Google' : 'Signs in with an email link'}>
@@ -137,7 +151,7 @@ export function AccountButton() {
             </p>
 
             <a href="/pro" role="menuitem" className={CARD.action + ' ' + CARD.pad + ' justify-between border-t border-edge font-[500]'}>
-              {pro ? <span className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-[#E8A04A]" /> Pro</span> : <span>Go Pro <span className="text-ink-4 font-[500]">· unlimited kits</span></span>}
+              {pro ? <span>Pro <span className="text-ink-4 font-[500]">· unlimited kits and search</span></span> : <span>Go Pro <span className="text-ink-4 font-[500]">· unlimited kits</span></span>}
               <span className="text-ink-4 text-[12px] font-[500]">{pro ? 'Manage' : '→'}</span>
             </a>
             <div className="grid grid-cols-2 border-t border-edge">
