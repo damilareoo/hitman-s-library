@@ -1,0 +1,64 @@
+// lib/search/search.ts
+//
+// Pro search over a compact index of the library: every site's colours, fonts
+// and best text contrast. Pure functions — the route loads the index (cached
+// at the edge) and asks these for ids, so the Worker does a few thousand
+// subtractions per query and nothing heavier.
+import { hexToOklab, contrastRatio } from '@/lib/kit/color'
+
+export interface SearchEntry { id: number; colors: string[]; fonts: string[]; contrast: number | null }
+export interface SearchQuery { palette: string[]; font: string; contrast: 'AA' | 'AAA' | null; empty: boolean }
+
+const HEX = /^#?([0-9a-f]{6})$/i
+const NOT_A_FONT = new Set(['true', 'false', 'null', 'undefined', 'inherit', 'initial'])
+/** How far (in OKLab) a site's nearest colour may sit from each colour asked for. */
+export const PALETTE_RADIUS = 0.1
+export const MAX_PALETTE = 6
+
+export function buildSearchIndex(designs: { id: string | number; colors: string[]; typography: string[] }[]): SearchEntry[] {
+  return designs.map(d => {
+    const colors = d.colors.map(c => HEX.exec((c ?? '').trim())).filter((m): m is RegExpExecArray => !!m).map(m => '#' + m[1].toLowerCase())
+    const fonts = d.typography.map(f => (f ?? '').trim()).filter(f => f.length > 1 && !NOT_A_FONT.has(f.toLowerCase()))
+    // The first colour is the largest area on the page: the background. Text
+    // is whichever palette colour reads best on it.
+    const contrast = colors.length > 1 ? Math.max(...colors.slice(1).map(c => contrastRatio(colors[0], c))) : null
+    return { id: Number(d.id), colors, fonts, contrast }
+  })
+}
+
+export function parseSearchQuery(params: URLSearchParams): SearchQuery {
+  const palette = [...new Set((params.get('palette') ?? '').split(',')
+    .map(s => HEX.exec(s.trim())).filter((m): m is RegExpExecArray => !!m)
+    .map(m => '#' + m[1].toLowerCase()))].slice(0, MAX_PALETTE)
+  const rawFont = (params.get('font') ?? '').trim().toLowerCase()
+  const font = rawFont.length <= 40 ? rawFont : ''
+  const c = params.get('contrast')
+  const contrast = c === 'AA' || c === 'AAA' ? c : null
+  return { palette, font, contrast, empty: !palette.length && !font && !contrast }
+}
+
+const dist = (a: [number, number, number], b: [number, number, number]) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2])
+
+/** Matching ids, best first: by palette closeness when a palette is given, otherwise library order. */
+export function searchIndex(index: SearchEntry[], q: SearchQuery): number[] {
+  const want = q.palette.map(hexToOklab)
+  const min = q.contrast === 'AAA' ? 7 : q.contrast === 'AA' ? 4.5 : 0
+  const hits: { id: number; score: number; order: number }[] = []
+  index.forEach((e, order) => {
+    if (q.font && !e.fonts.some(f => f.toLowerCase().includes(q.font))) return
+    if (min && (e.contrast == null || e.contrast < min)) return
+    let score = 0
+    if (want.length) {
+      if (!e.colors.length) return
+      const labs = e.colors.map(hexToOklab)
+      for (const w of want) {
+        const d = Math.min(...labs.map(l => dist(w, l)))
+        if (d > PALETTE_RADIUS) return
+        score += d
+      }
+      score /= want.length
+    }
+    hits.push({ id: e.id, score, order })
+  })
+  return hits.sort((a, b) => a.score - b.score || a.order - b.order).map(h => h.id)
+}
