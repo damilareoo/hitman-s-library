@@ -1023,7 +1023,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
           >
             <MagnifyingGlass className="w-3 h-3 shrink-0" weight="regular" />
             <span className="flex-1 text-left truncate">Search sites…</span>
-            <kbd className="flex items-center justify-center h-[16px] min-w-[16px] px-1 rounded-[4px] border border-edge text-micro pointer-events-none">
+            <kbd className={CARD.kbd + ' pointer-events-none'}>
               ⌘K
             </kbd>
           </button>
@@ -1344,7 +1344,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
                 <span className="tabular-nums shrink-0">{pagination.total}</span>
                 <button
                   onClick={clearAll}
-                  className="ml-auto shrink-0 text-ink-3 hover:text-ink transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-foreground/25 rounded-[4px]"
+                  className="ml-auto shrink-0 text-ink-3 hover:text-ink transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#E8A04A] rounded-[5px]"
                 >
                   Clear
                 </button>
@@ -1398,12 +1398,12 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
                     </button>
                   )}
                   {refine.font && (
-                    <button onClick={() => applyRefine({ ...refine, font: '' })} className="h-7 px-2 flex items-center gap-1.5 rounded-full bg-muted/70 text-[12px] text-ink-2 hover:bg-muted">
+                    <button onClick={() => applyRefine({ ...refine, font: '' })} className={BTN.chip(false) + ' gap-1.5'}>
                       Font: {refine.font} <X className="w-3 h-3 text-ink-4" weight="bold" />
                     </button>
                   )}
                   {refine.readable && (
-                    <button onClick={() => applyRefine({ ...refine, readable: '' })} className="h-7 px-2 flex items-center gap-1.5 rounded-full bg-muted/70 text-[12px] text-ink-2 hover:bg-muted">
+                    <button onClick={() => applyRefine({ ...refine, readable: '' })} className={BTN.chip(false) + ' gap-1.5'}>
                       Readable {refine.readable} <X className="w-3 h-3 text-ink-4" weight="bold" />
                     </button>
                   )}
@@ -1446,7 +1446,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
                   <Link
                     href="/"
                     scroll={false}
-                    className="text-meta text-ink-4 hover:text-ink transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-foreground/25 rounded-[4px]"
+                    className="text-meta text-ink-4 hover:text-ink transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#E8A04A] rounded-[5px]"
                   >
                     Clear
                   </Link>
@@ -1520,7 +1520,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
                             </p>
                             <Link
                               href={`/submit?url=${encodeURIComponent(search.trim())}`}
-                              className="mt-1 h-9 px-4 inline-flex items-center gap-2 rounded-[10px] bg-foreground text-background text-bodytext font-medium hover:opacity-90 transition-opacity"
+                              className={'mt-1 ' + BTN.primaryLg}
                             >
                               Submit it
                               <ArrowRight className="w-3.5 h-3.5" weight="bold" />
@@ -1534,7 +1534,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
                               <button
                                 key={name}
                                 onClick={() => handleFilterChange(name)}
-                                className="shrink-0 h-8 px-3 rounded-[10px] text-meta whitespace-nowrap border bg-foreground/[0.055] text-ink-2 border-transparent hover:text-ink hover:bg-foreground/[0.09] active:scale-[0.98] transition-[background-color,border-color,color,transform] duration-[var(--dur-2)] ease-[var(--ease-sig)]"
+                                className={BTN.chip(false)}
                               >
                                 {name === 'All' ? name : displayKind(name)}
                               </button>

@@ -18,14 +18,17 @@ export function TypeTab({ typography, extractionError }: { typography: Typograph
     return <TabEmptyState message="No typography extracted" extractionError={extractionError} />
   }
   return (
-    <div className="p-6 overflow-y-auto flex flex-col" data-lenis-prevent>
-      <p className="m-0 mb-6 font-sans text-[12px] text-ink-4">Fonts in use</p>
-      {typography.map((t, i) => (
-        <TypeSpecimenCard key={`${t.role}-${i}`} typography={t} index={i} />
-      ))}
-      <p className="m-0 mt-8 pt-3.5 border-t border-edge-faint font-sans text-[12px] leading-relaxed text-ink-4">
-        Each name is set in the face that rendered on the live site.
-      </p>
+    <div className="flex flex-col flex-1 min-h-0 overflow-y-auto" data-lenis-prevent>
+      {/* Same strip as the Colors tab: what this is on the left, how to read it on the right. */}
+      <div className="sticky top-0 z-10 bg-background px-4 pt-3 pb-1 h-10 flex items-center justify-between gap-2 shrink-0">
+        <span className="text-[12px] font-[500] text-ink-3">Fonts in use <span className="text-ink-4 tabular-nums">{typography.length}</span></span>
+        <span className="text-[12px] text-ink-4">Set in the face the live site used</span>
+      </div>
+      <div className="px-4 pt-3 pb-6 flex flex-col">
+        {typography.map((t, i) => (
+          <TypeSpecimenCard key={`${t.role}-${i}`} typography={t} index={i} />
+        ))}
+      </div>
     </div>
   )
 }

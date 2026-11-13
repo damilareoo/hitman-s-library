@@ -74,7 +74,7 @@ export function IndexView({
           <button
             key={name}
             onClick={() => onKind(name)}
-            className="w-full flex items-baseline justify-between gap-4 py-3.5 border-b border-edge text-left text-ink-2 hover:text-ink transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-foreground/25 rounded-[2px]"
+            className="w-full flex items-baseline justify-between gap-4 py-3.5 border-b border-edge text-left text-ink-2 hover:text-ink transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#E8A04A]"
           >
             <span className="text-[22px] font-semibold tracking-[-0.03em] leading-none max-sm:text-[20px]">
               {displayKind(name)}
