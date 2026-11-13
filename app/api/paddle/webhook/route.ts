@@ -7,6 +7,7 @@ import { applySubscriptionEvent } from '@/lib/paddle/apply'
 import { problem } from '@/lib/auth/request'
 import { inCidrs, paddleIps } from '@/lib/paddle/ips'
 import { PADDLE_SECRETS } from '@/lib/paddle/config'
+import { sendProWelcome } from '@/lib/email/send-pro-welcome'
 
 // guard: none — only Paddle's published IPs are accepted, and every request must carry a valid HMAC signature
 export async function POST(req: Request) {
@@ -21,6 +22,7 @@ export async function POST(req: Request) {
       secret: process.env[PADDLE_SECRETS.webhookSecret] ?? '',
       now: () => Math.floor(Date.now() / 1000),
       apply: applySubscriptionEvent,
+      welcome: sendProWelcome,
     })
   } catch (err) {
     console.error('[paddle webhook]', err)

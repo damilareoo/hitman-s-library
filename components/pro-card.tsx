@@ -84,13 +84,13 @@ export function ProCard() {
     <div className="w-full max-w-[380px]">
       <section className={CARD.shell + ' shadow-[0_28px_70px_-28px_rgba(0,0,0,0.35)]'}>
         <div className={CARD.head}>
-          <span>Pro</span>
+          <span>Membership</span>
           {pro ? <span className={CARD.proPill}>Active</span> : <span className="text-ink-4">Cancel any time</span>}
         </div>
 
-        <div className="px-4 pt-4 pb-4">
-          <ProMark height={40} className="max-w-[118px]" />
-          <h1 className="mt-4 text-[20px] font-[630] tracking-[-0.025em] leading-[1.2] text-ink text-balance">
+        <ProMark />
+        <div className="px-4 pt-1 pb-4">
+          <h1 className="text-[20px] font-[630] tracking-[-0.025em] leading-[1.2] text-ink text-balance">
             {pro || phase === 'finishing' ? (pro ? "You're Pro. Thanks for backing the library." : 'Finishing up…') : 'Every style in the library, ready to build with.'}
           </h1>
           <ul className="mt-3 space-y-1.5">

@@ -12,6 +12,7 @@ import { useEffect, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
 import { SignIn, DownloadSimple, SignOut, EnvelopeSimple } from '@phosphor-icons/react'
 import { GoogleMark } from '@/components/google-mark'
+import { ProMark } from '@/components/pro-mark'
 import { CARD } from '@/components/member-card'
 import { POP_IN, POP_OUT } from '@/lib/motion'
 import { COLLECTIONS_EVENT } from '@/lib/collections'
@@ -71,6 +72,7 @@ export function AccountButton() {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
   const counts = useSavedCounts()
+  const heartIds = counts.ids.length ? counts.ids.slice(-40) : undefined
 
   useEffect(() => {
     if (!open) return
@@ -114,11 +116,14 @@ export function AccountButton() {
             className={CARD.shell + ' absolute right-0 top-10 z-50 w-[300px] max-sm:fixed max-sm:inset-x-3 max-sm:top-[60px] max-sm:w-auto shadow-[0_24px_56px_-20px_rgba(0,0,0,0.35)]'}
           >
             <div className={CARD.head}>
-              <span>No. {String(user.memberNo).padStart(4, '0')} <span className="text-ink-4">· since {since}</span></span>
-              {pro ? <span className={CARD.proPill}>Pro</span> : <span className="text-ink-4">Free</span>}
+              <span>No. {String(user.memberNo).padStart(4, '0')}</span>
+              <span className="text-ink-4">Member since {since}</span>
             </div>
 
-            <div className="px-4 pt-4 pb-4">
+            {/* Pro members carry the Pro moment itself: the word, in their own colours. */}
+            {pro && <ProMark ids={heartIds} />}
+
+            <div className={'px-4 pb-4 ' + (pro ? 'pt-1' : 'pt-4')}>
               <div className="flex items-center gap-3">
                 <Avatar user={user} size={40} pro={pro} />
                 <div className="min-w-0">
