@@ -23,11 +23,14 @@ const defaultDeps = (): EntitlementDeps => ({ sql: getSql(), now: () => new Date
 
 export interface SubscriptionState { status: string | null; current_period_end: Date | string | null }
 
-/** Pro while the subscription is active (or trialing) and its paid period hasn't ended. The pro_users view applies the same rule in SQL. */
+/** Paddle charges at the period end and tells us after; a day's grace covers the gap. */
+export const RENEWAL_GRACE_MS = 24 * 60 * 60 * 1000
+
+/** Pro while the subscription is active (or trialing) and its paid period (plus a day's grace) hasn't ended. The pro_users view applies the same rule in SQL. */
 export function isPro(sub: SubscriptionState | null, now: Date): boolean {
   if (!sub || (sub.status !== 'active' && sub.status !== 'trialing')) return false
   if (sub.current_period_end == null) return true
-  return new Date(sub.current_period_end).getTime() > now.getTime()
+  return new Date(sub.current_period_end).getTime() + RENEWAL_GRACE_MS > now.getTime()
 }
 
 export interface Entitlement { pro: boolean; kitsUsed: number; kitsLimit: number }

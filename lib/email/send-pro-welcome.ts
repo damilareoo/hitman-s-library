@@ -1,8 +1,8 @@
 // lib/email/send-pro-welcome.ts
 // Sends the Pro welcome email for one member, in their own hearted colours
-// (from the cached search index, so this costs one small query and a send).
+// (read for those sites only, so the webhook never builds the whole search
+// index). With no hearts yet, the email uses the default warm GIF.
 import { getSql } from '@/lib/db'
-import { searchIndexCached } from '@/lib/search/load'
 import { proWelcomeEmail } from './pro-welcome'
 import type { Swatch } from '@/lib/pro/palette'
 
@@ -11,10 +11,13 @@ export async function sendProWelcome(userId: string): Promise<void> {
     SELECT u.email, u.name, u.member_no, COALESCE(d.favorite_ids, '{}') AS favs
       FROM users u LEFT JOIN user_data d ON d.user_id = u.id WHERE u.id = ${userId}::uuid`
   if (!u?.email) return
-  const favs = new Set<number>((u.favs as number[]).map(Number))
-  const index = await searchIndexCached()
-  const mine: Swatch[] = index.filter(e => favs.has(e.id)).flatMap(e => e.colors.map(c => [c, ''] as Swatch))
-  const swatches = mine.length >= 12 ? mine : [...mine, ...index.slice(0, 60).flatMap(e => e.colors.map(c => [c, ''] as Swatch))]
+  const favs = (u.favs as number[]).map(Number).filter(Number.isInteger).slice(0, 200)
+  const rows = favs.length ? await getSql()`
+    SELECT p->>'hex' AS hex
+      FROM design_sources ds JOIN extraction_history eh ON eh.id = ds.current_extraction_id,
+           jsonb_array_elements(CASE WHEN jsonb_typeof(eh.palette) = 'array' THEN eh.palette ELSE '[]'::jsonb END) p
+     WHERE ds.id = ANY(${favs}::int[]) AND p->>'hex' ~* '^#[0-9a-f]{6}$'` : []
+  const swatches: Swatch[] = rows.map(r => [String(r.hex).toLowerCase(), ''] as Swatch)
   const { subject, html, text } = proWelcomeEmail({ name: u.name ?? '', memberNo: Number(u.member_no), swatches })
   const res = await fetch('https://api.resend.com/emails', {
     method: 'POST',

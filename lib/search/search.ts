@@ -6,7 +6,9 @@
 // subtractions per query and nothing heavier.
 import { hexToOklab, contrastRatio } from '@/lib/kit/color'
 
-export interface SearchEntry { id: number; colors: string[]; fonts: string[]; contrast: number | null }
+type Lab = [number, number, number]
+/** labs: each colour in OKLab, worked out once when the index is built (and cached with it). */
+export interface SearchEntry { id: number; colors: string[]; fonts: string[]; contrast: number | null; labs?: Lab[] }
 export interface SearchQuery { palette: string[]; font: string; contrast: 'AA' | 'AAA' | null; empty: boolean }
 
 const HEX = /^#?([0-9a-f]{6})$/i
@@ -24,7 +26,8 @@ export function buildSearchIndex(designs: { id: string | number; colors: string[
     // best-reading colour instead let nearly every site pass, since almost all
     // carry a black or white somewhere.
     const contrast = colors.length > 1 ? contrastRatio(colors[0], colors[1]) : null
-    return { id: Number(d.id), colors, fonts, contrast }
+    const labs = colors.map(c => hexToOklab(c).map(v => Math.round(v * 1e4) / 1e4) as Lab)
+    return { id: Number(d.id), colors, fonts, contrast, labs }
   })
 }
 
@@ -39,7 +42,7 @@ export function parseSearchQuery(params: URLSearchParams): SearchQuery {
   return { palette, font, contrast, empty: !palette.length && !font && !contrast }
 }
 
-const dist = (a: [number, number, number], b: [number, number, number]) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2])
+const dist = (a: Lab, b: Lab) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2])
 
 /** Matching ids, best first: by palette closeness when a palette is given, otherwise library order. */
 export function searchIndex(index: SearchEntry[], q: SearchQuery): number[] {
@@ -52,7 +55,7 @@ export function searchIndex(index: SearchEntry[], q: SearchQuery): number[] {
     let score = 0
     if (want.length) {
       if (!e.colors.length) return
-      const labs = e.colors.map(hexToOklab)
+      const labs = e.labs ?? e.colors.map(hexToOklab)
       for (const w of want) {
         const d = Math.min(...labs.map(l => dist(w, l)))
         if (d > PALETTE_RADIUS) return

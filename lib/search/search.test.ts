@@ -11,7 +11,15 @@ const INDEX = buildSearchIndex(DESIGNS)
 
 describe('buildSearchIndex', () => {
   test('keeps only real hex colours and real font names', () => {
-    expect(INDEX.find(e => e.id === 4)).toEqual({ id: 4, colors: ['#00ff00'], fonts: [], contrast: null })
+    const e = INDEX.find(e => e.id === 4)!
+    expect({ ...e, labs: undefined }).toEqual({ id: 4, colors: ['#00ff00'], fonts: [], contrast: null, labs: undefined })
+  })
+  test('OKLab is worked out once, at build, and search uses it', () => {
+    expect(INDEX[0].labs?.length).toBe(3)
+    // A doctored entry: its stored OKLab says pure orange whatever its hex says.
+    const orange = buildSearchIndex([{ id: 9, colors: ['#ff5526'], typography: [] }])[0]
+    const doctored = { ...orange, id: 10, colors: ['#0000ff'] }
+    expect(searchIndex([doctored], parseSearchQuery(new URLSearchParams('palette=ff5526')))).toEqual([10])
   })
   test('records text-on-background contrast', () => {
     expect(INDEX.find(e => e.id === 1)!.contrast).toBeGreaterThan(15)
