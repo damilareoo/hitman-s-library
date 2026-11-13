@@ -5,8 +5,9 @@
 import { getSql } from '@/lib/db'
 import type { SubscriptionRow } from './webhook'
 
-export async function applySubscriptionEvent(eventId: string, row: SubscriptionRow, occurredAt: string): Promise<void> {
-  await getSql()`
+/** True when this event was new and changed the row (false for a retry or an older event). */
+export async function applySubscriptionEvent(eventId: string, row: SubscriptionRow, occurredAt: string): Promise<boolean> {
+  const rows = await getSql()`
     WITH ev AS (
       INSERT INTO paddle_events (id) VALUES (${eventId}) ON CONFLICT DO NOTHING RETURNING id
     )
@@ -22,5 +23,7 @@ export async function applySubscriptionEvent(eventId: string, row: SubscriptionR
       provider_customer_id = EXCLUDED.provider_customer_id,
       provider_subscription_id = EXCLUDED.provider_subscription_id,
       provider_updated_at = EXCLUDED.provider_updated_at, updated_at = now()
-    WHERE subscriptions.provider_updated_at IS NULL OR subscriptions.provider_updated_at <= EXCLUDED.provider_updated_at`
+    WHERE subscriptions.provider_updated_at IS NULL OR subscriptions.provider_updated_at <= EXCLUDED.provider_updated_at
+    RETURNING 1`
+  return rows.length > 0
 }

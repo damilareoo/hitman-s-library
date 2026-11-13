@@ -30,7 +30,9 @@ export interface WebhookDeps {
    * a no-op, an older event never overwrites a newer one, and a failed write
    * leaves nothing recorded, so Paddle's retry still lands.
    */
-  apply: (eventId: string, row: SubscriptionRow, occurredAt: string) => Promise<void>
+  apply: (eventId: string, row: SubscriptionRow, occurredAt: string) => Promise<boolean>
+  /** The welcome email for a new member. Optional; a failure never fails the webhook. */
+  welcome?: (userId: string) => Promise<void>
 }
 
 const MAX_AGE_SECONDS = 300
@@ -87,6 +89,10 @@ export async function handleWebhook(req: Request, deps: WebhookDeps): Promise<Re
     console.warn('[paddle] subscription without a valid userId', event.data.id)
     return json(200, { ok: true, ignored: true })
   }
-  await deps.apply(event.event_id, row, event.occurred_at ?? new Date(deps.now() * 1000).toISOString())
+  const applied = await deps.apply(event.event_id, row, event.occurred_at ?? new Date(deps.now() * 1000).toISOString())
+  // Once per new subscription: `applied` is false for a retried event, so a retry never mails twice.
+  if (applied && event.event_type === 'subscription.created' && (row.status === 'active' || row.status === 'trialing') && deps.welcome) {
+    try { await deps.welcome(row.userId) } catch (err) { console.error('[paddle] welcome email failed', err) }
+  }
   return json(200, { ok: true })
 }

@@ -116,10 +116,15 @@ export function DesignCard({ design, index, isSelected, onClick, onHover, onTagC
       className={
         (cssEnter ? 'card-enter ' : '') +
         'group relative flex flex-col rounded-[12px] overflow-hidden border cursor-pointer ' +
-        'transition-[background-color,border-color] duration-[var(--dur-1)] ease-[var(--ease-hover)] ' +
+        'transition-[border-color,outline-color,outline-offset] duration-[var(--dur-1)] ease-[var(--ease-hover)] ' +
+        // Selected: a ring 3px outside the card. Outlines follow the radius, so
+        // its corner (12 + 3) stays concentric with the card's own.
+        'outline outline-[1.5px] outline-offset-[3px] ' +
+        // Keyboard focus anywhere in the card shows the same ring, in amber.
+        'has-[:focus-visible]:outline-[#E8A04A] has-[:focus-visible]:outline-2 ' +
         (isSelected
-          ? 'border-foreground/60'
-          : 'border-edge hover:border-foreground/10 hover:bg-[#f8f8f8] active:border-foreground/30 dark:hover:bg-muted/60')
+          ? 'border-edge-strong outline-foreground'
+          : 'border-edge outline-transparent hover:border-edge-strong active:border-foreground/30')
       }
     >
       {/* Screenshot */}
@@ -149,7 +154,8 @@ export function DesignCard({ design, index, isSelected, onClick, onHover, onTagC
             }}
             onError={handleImgError}
             unoptimized={!isOptimizable}
-            className={"hover-zoom object-cover object-top transition-[opacity,transform] duration-[450ms] ease-[var(--ease-sig)] " + (imgStatus === 'loading' ? 'opacity-0' : 'opacity-100')}
+            // Hover eases the screenshot in a touch; a press dims it for an instant.
+            className={"hover-zoom object-cover object-top transition-[opacity,transform,filter] duration-[600ms] ease-[var(--ease-sig)] group-active:brightness-[.94] group-active:duration-100 " + (imgStatus === 'loading' ? 'opacity-0' : 'opacity-100')}
           />
         )}
         {imgStatus === 'error' && (
@@ -224,7 +230,7 @@ export function DesignCard({ design, index, isSelected, onClick, onHover, onTagC
               aria-pressed={isFavorite}
               aria-label={isFavorite ? `Remove ${label} from favorites` : `Favorite ${label}`}
               title={isFavorite ? 'Favorited' : 'Favorite'}
-              className="relative z-10 shrink-0 -mt-0.5 -mr-1 w-7 h-7 flex items-center justify-center rounded-[10px] text-ink-4 hover:text-ink hover:bg-muted/40 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-foreground/40 before:absolute before:-inset-2 before:content-['']"
+              className="relative z-10 shrink-0 -mt-0.5 -mr-1 w-7 h-7 flex items-center justify-center rounded-[10px] text-ink-4 group-hover:text-ink-2 hover:!text-ink hover:bg-foreground/[0.05] transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-foreground/40 before:absolute before:-inset-2 before:content-['']"
             >
               <Heart className="w-3.5 h-3.5" weight={isFavorite ? 'fill' : 'bold'} />
             </button>
@@ -240,7 +246,7 @@ export function DesignCard({ design, index, isSelected, onClick, onHover, onTagC
             // 44px without growing the hover fill or the focus ring. It stops
             // short of the screenshot above and the palette row below, so the
             // card's own click target loses nothing but the 8px gutter.
-            className="relative z-10 shrink-0 -mt-0.5 -mr-1 w-7 h-7 flex items-center justify-center rounded-[10px] text-ink-4 hover:text-ink hover:bg-muted/40 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-foreground/40 before:absolute before:-inset-2 before:content-['']"
+            className="relative z-10 shrink-0 -mt-0.5 -mr-1 w-7 h-7 flex items-center justify-center rounded-[10px] text-ink-4 group-hover:text-ink-2 hover:!text-ink hover:bg-foreground/[0.05] transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-foreground/40 before:absolute before:-inset-2 before:content-['']"
           >
             <ArrowUpRight className="w-3.5 h-3.5" weight="bold" />
           </a>

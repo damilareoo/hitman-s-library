@@ -20,9 +20,9 @@ interface Props {
 }
 
 const USES = [
-  { Icon: Sparkle, title: 'AI tool', body: 'Add DESIGN.md to Claude, Cursor or v0 and ask for this style.' },
-  { Icon: FigmaLogo, title: 'Figma', body: 'Import the colours and fonts as variables.' },
-  { Icon: Code, title: 'Code', body: 'Paste theme.css, or the Tailwind theme.' },
+  { Icon: Sparkle, title: 'AI tool', body: 'DESIGN.md for Claude, Cursor or v0.' },
+  { Icon: FigmaLogo, title: 'Figma', body: 'Colours and fonts as variables.' },
+  { Icon: Code, title: 'Code', body: 'theme.css and a Tailwind theme, plus full-size captures.' },
 ]
 
 export function KitTab({ siteId, siteUrl, hostname, colors, typography }: Props) {
@@ -34,62 +34,47 @@ export function KitTab({ siteId, siteUrl, hostname, colors, typography }: Props)
   return (
     <div className="flex flex-col flex-1 min-h-0">
       <div data-lenis-prevent className="flex-1 min-h-0 overflow-auto px-4 pt-5 pb-6">
-        <h3 className="text-[20px] font-[640] tracking-[-0.025em] leading-tight text-ink">Build in this style</h3>
-        <p className="mt-1.5 text-[13.5px] leading-[1.45] text-ink-3 text-pretty">
-          Take this site&apos;s colours and type into your AI tool, Figma or code.
-        </p>
+        <h3 className="text-[20px] font-[630] tracking-[-0.025em] leading-tight text-ink">Build in this style</h3>
+        <p className="mt-1 text-[13.5px] leading-[1.45] text-ink-3">Take this site&apos;s colours and type into your AI tool, Figma or code.</p>
 
         {named.length > 0 && (
           <div className="mt-5">
-            <div className="flex flex-wrap gap-x-4 gap-y-2.5">
-              {roles.map(c => (
-                <span key={c.hex} className="flex items-center gap-2 text-[12.5px]">
-                  <span className="w-5 h-5 rounded-[5px] ring-1 ring-inset ring-foreground/10" style={{ background: c.hex }} />
-                  <span className="text-ink">{c.name}</span>
-                  <span className="text-ink-4">{c.hex}</span>
-                </span>
-              ))}
+            {/* The palette as one object: every colour, in the kit's order. */}
+            <div className="flex h-10 rounded-[12px] overflow-hidden ring-1 ring-inset ring-foreground/10">
+              {named.map(c => <span key={c.hex} title={`${c.name} ${c.hex}`} className="flex-1" style={{ background: c.hex }} />)}
             </div>
-            {rest.length > 0 && (
-              <div className="mt-3 flex items-center gap-1">
-                {rest.slice(0, 14).map(c => (
-                  <span key={c.hex} title={`${c.name} ${c.hex}`} className="w-4 h-4 rounded-[4px] ring-1 ring-inset ring-foreground/10" style={{ background: c.hex }} />
-                ))}
-                {rest.length > 14 && <span className="ml-1 text-[12px] text-ink-4">+{rest.length - 14}</span>}
-              </div>
-            )}
+            <p className="mt-2 text-[12px] text-ink-4">
+              {roles.map((c, i) => (
+                <span key={c.hex}>{i > 0 && ' · '}<span className="text-ink-3">{c.name}</span> {c.hex}</span>
+              ))}
+              {rest.length > 0 && <span> · {rest.length} more</span>}
+            </p>
           </div>
         )}
 
         {fonts.length > 0 && (
-          <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2">
+          <p className="mt-4 flex flex-wrap items-baseline gap-x-4 gap-y-1 text-[13px] text-ink">
             {fonts.map(f => (
-              <span key={f.role + f.font_family} className="flex items-baseline gap-2 text-[12.5px]">
-                <span className="text-[18px] leading-none text-ink" style={{ fontFamily: `"${f.font_family}", var(--font-sans)` }}>Aa</span>
-                <span className="text-ink">{f.font_family}</span>
-                <span className="text-ink-4">{f.role}</span>
+              <span key={f.role + f.font_family} className="flex items-baseline gap-1.5">
+                <span className="text-[17px] leading-none" style={{ fontFamily: `"${f.font_family}", var(--font-sans)` }}>Aa</span>
+                {f.font_family} <span className="text-ink-4">{f.role}</span>
               </span>
             ))}
-          </div>
+          </p>
         )}
 
-        <ul className="mt-6 border-t border-edge-faint">
+        <ul className="mt-6 space-y-2.5">
           {USES.map(({ Icon, title, body }) => (
-            <li key={title} className="flex gap-3 py-3 border-b border-edge-faint">
-              <Icon className="w-4 h-4 mt-0.5 shrink-0 text-ink-3" weight="bold" />
-              <div className="min-w-0">
-                <p className="text-[13.5px] font-[600] tracking-[-0.01em] text-ink">{title}</p>
-                <p className="mt-0.5 text-[12.5px] leading-[1.45] text-ink-3">{body}</p>
-              </div>
+            <li key={title} className="flex items-baseline gap-2.5 text-[13px] leading-[1.45]">
+              <Icon className="w-3.5 h-3.5 shrink-0 translate-y-[2px] text-ink-4" weight="bold" />
+              <span><span className="font-[600] text-ink">{title}</span> <span className="text-ink-3">{body}</span></span>
             </li>
           ))}
         </ul>
-        <p className="mt-3 text-[12px] text-ink-4">One zip with the full-size captures. Colours named by role and hue, values checked.</p>
 
-        {/* The quick copies stay free and need no account. */}
-        <div className="mt-6 flex items-center justify-between gap-3 rounded-[10px] border border-edge-faint pl-3 pr-1.5 h-11">
-          <span className="text-[12.5px] text-ink-3 whitespace-nowrap">Copy now, free</span>
+        <div className="mt-6 -mx-2.5 flex items-center">
           <ThemeExport siteUrl={siteUrl} siteTitle={hostname} colors={colors} typography={typography} />
+          <span className="ml-auto text-[12px] text-ink-4 pr-2.5">Free, no account</span>
         </div>
       </div>
       <div className="flex-shrink-0 h-12 px-4 flex items-center bg-foreground/[0.025] border-t border-edge">

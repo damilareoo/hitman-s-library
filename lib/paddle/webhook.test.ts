@@ -53,11 +53,13 @@ describe('subscriptionRow', () => {
 function deps() {
   const seen = new Set<string>()
   const rows: any[] = []
+  const welcomed: string[] = []
   const d: WebhookDeps = {
     source: async () => 'yes', secret: SECRET, now: () => NOW,
-    apply: async (id, row, occurredAt) => { if (seen.has(id)) return; seen.add(id); rows.push({ ...row, occurredAt }) },
+    apply: async (id, row, occurredAt) => { if (seen.has(id)) return false; seen.add(id); rows.push({ ...row, occurredAt }); return true },
+    welcome: async userId => { welcomed.push(userId) },
   }
-  return { d, rows }
+  return { d, rows, welcomed }
 }
 const post = async (body: string, header?: string) =>
   new Request('https://hitmanslibrary.xyz/api/paddle/webhook', { method: 'POST', body, headers: { 'paddle-signature': header ?? await sign(body, NOW) } })
@@ -93,6 +95,23 @@ describe('handleWebhook', () => {
     d.apply = async () => { throw new Error('db down') }
     const r = await handleWebhook(await post(JSON.stringify(event({ event_id: 'evt_9' }))), d).catch(() => null)
     expect(r === null || r.status >= 500).toBe(true)
+  })
+  test('a new subscription sends the welcome email once, even if Paddle retries', async () => {
+    const { d, welcomed } = deps()
+    const body = JSON.stringify(event({ event_id: 'evt_new', event_type: 'subscription.created' }))
+    await handleWebhook(await post(body), d); await handleWebhook(await post(body), d)
+    expect(welcomed).toEqual([USER])
+  })
+  test('updates and cancellations send no welcome', async () => {
+    const { d, welcomed } = deps()
+    await handleWebhook(await post(JSON.stringify(event({ event_id: 'evt_u', event_type: 'subscription.updated' }))), d)
+    await handleWebhook(await post(JSON.stringify(event({ event_id: 'evt_c', event_type: 'subscription.created' }, { status: 'canceled' }))), d)
+    expect(welcomed).toEqual([])
+  })
+  test('a failed welcome email still answers 200', async () => {
+    const { d } = deps()
+    d.welcome = async () => { throw new Error('resend down') }
+    expect((await handleWebhook(await post(JSON.stringify(event({ event_id: 'evt_w', event_type: 'subscription.created' }))), d)).status).toBe(200)
   })
   test('other event types are acknowledged and ignored', async () => {
     const { d, rows } = deps()
