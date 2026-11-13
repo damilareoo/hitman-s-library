@@ -59,6 +59,8 @@ export function ProCard() {
         loadPaddle(),
         fetch('/api/checkout', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ interval }) }),
       ])
+      // A subscription that's past due: fix the card in Paddle, don't buy twice.
+      if (res.status === 409) { setPhase('idle'); return manage() }
       if (!res.ok) throw new Error(String(res.status))
       const { transactionId, email } = await res.json()
       P.Checkout.open({

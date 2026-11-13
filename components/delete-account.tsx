@@ -10,9 +10,14 @@ import { useAccount, deleteAccount } from '@/lib/account-client'
 export function DeleteAccount() {
   const { status } = useAccount()
   const [armedAt, setArmedAt] = useState(0)
-  const [state, setState] = useState<'idle' | 'armed' | 'failed' | 'done'>('idle')
+  const [state, setState] = useState<'idle' | 'armed' | 'failed' | 'subscribed' | 'done'>('idle')
   if (state === 'done') return <p className="mt-4 text-meta text-ink-3">Your account and everything saved with it are gone.</p>
   if (status !== 'signed-in') return null
+  if (state === 'subscribed') return (
+    <p className="mt-4 text-meta text-ink-3">
+      Cancel Pro first, so you&rsquo;re never billed for an account that&rsquo;s gone. <a href="/pro" className="text-ink underline underline-offset-4 decoration-edge-strong">Manage Pro</a>
+    </p>
+  )
   return (
     <div className="mt-4 flex items-center gap-3 text-meta">
       {state === 'idle' ? (
@@ -25,7 +30,8 @@ export function DeleteAccount() {
             className="font-[600] text-[#c8382f] dark:text-[#ff8a80] underline underline-offset-4"
             onClick={async () => {
               if (Date.now() - armedAt < 600) return
-              setState((await deleteAccount()) ? 'done' : 'failed')
+              const r = await deleteAccount()
+              setState(r === 'ok' ? 'done' : r)
             }}
           >
             {state === 'failed' ? "Couldn't delete. Try again" : 'Delete everything, for good'}

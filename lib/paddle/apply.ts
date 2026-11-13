@@ -1,13 +1,15 @@
 // lib/paddle/apply.ts
 // The one statement that applies a Paddle subscription event: the event id
 // is recorded and the row written together, only for a user that exists, and
-// only if this event is not older than the one already applied.
+// only if this event is not older than the one already applied. A live
+// subscription always takes the row; an ending one only ends itself, so a
+// second or old subscription being cancelled never takes Pro from a live one.
 import { getSql } from '@/lib/db'
 import type { SubscriptionRow } from './webhook'
 
 /** True when this event was new and changed the row (false for a retry or an older event). */
-export async function applySubscriptionEvent(eventId: string, row: SubscriptionRow, occurredAt: string): Promise<boolean> {
-  const rows = await getSql()`
+export async function applySubscriptionEvent(eventId: string, row: SubscriptionRow, occurredAt: string, sql = getSql()): Promise<boolean> {
+  const rows = await sql`
     WITH ev AS (
       INSERT INTO paddle_events (id) VALUES (${eventId}) ON CONFLICT DO NOTHING RETURNING id
     )
@@ -23,7 +25,10 @@ export async function applySubscriptionEvent(eventId: string, row: SubscriptionR
       provider_customer_id = EXCLUDED.provider_customer_id,
       provider_subscription_id = EXCLUDED.provider_subscription_id,
       provider_updated_at = EXCLUDED.provider_updated_at, updated_at = now()
-    WHERE subscriptions.provider_updated_at IS NULL OR subscriptions.provider_updated_at <= EXCLUDED.provider_updated_at
+    WHERE (subscriptions.provider_updated_at IS NULL OR subscriptions.provider_updated_at <= EXCLUDED.provider_updated_at)
+      AND (subscriptions.provider_subscription_id IS NULL
+           OR subscriptions.provider_subscription_id = EXCLUDED.provider_subscription_id
+           OR EXCLUDED.status IN ('active', 'trialing', 'past_due'))
     RETURNING 1`
   return rows.length > 0
 }

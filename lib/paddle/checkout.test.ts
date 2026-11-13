@@ -11,6 +11,7 @@ function deps(over: Partial<CheckoutDeps> = {}) {
   const d: CheckoutDeps = {
     user: async () => ({ id: 'u1', email: 'ada@example.com', cookies: [] }),
     isPro: async () => false,
+    liveSubscription: async () => false,
     allowed: async () => true,
     prices: { month: 'pri_m', year: 'pri_y' },
     createTransaction: async (priceId, userId) => { created.push({ priceId, userId }); return 'txn_1' },
@@ -25,6 +26,13 @@ describe('handleCheckout', () => {
   test('already Pro → 409, no transaction', async () => {
     const { d, created } = deps({ isPro: async () => true })
     expect((await handleCheckout(req({ interval: 'year' }), d)).status).toBe(409)
+    expect(created).toEqual([])
+  })
+  test('a past-due subscription → 409 manage-billing, no second subscription', async () => {
+    const { d, created } = deps({ liveSubscription: async () => true })
+    const r = await handleCheckout(req({ interval: 'year' }), d)
+    expect(r.status).toBe(409)
+    expect(await r.json()).toEqual({ error: 'manage-billing' })
     expect(created).toEqual([])
   })
   test('unknown interval → 400', async () => expect((await handleCheckout(req({ interval: 'week' }), deps().d)).status).toBe(400))

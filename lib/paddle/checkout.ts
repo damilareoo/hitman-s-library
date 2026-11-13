@@ -9,6 +9,8 @@ import { NO_STORE, problem, sameOriginWrite } from '@/lib/auth/request'
 export interface CheckoutDeps {
   user: (req: Request) => Promise<{ id: string; email: string; cookies: string[] } | null>
   isPro: (userId: string) => Promise<boolean>
+  /** Any subscription still alive at Paddle (incl. past due): manage it, don't buy a second. */
+  liveSubscription: (userId: string) => Promise<boolean>
   allowed: (req: Request) => Promise<boolean>
   prices: { month: string; year: string }
   createTransaction: (priceId: string, userId: string) => Promise<string>
@@ -24,6 +26,7 @@ export async function handleCheckout(req: Request, deps: CheckoutDeps): Promise<
   const interval = body.interval === 'month' || body.interval === 'year' ? body.interval : null
   if (!interval) return problem(400, 'bad-interval', me.cookies)
   if (await deps.isPro(me.id)) return problem(409, 'already-pro', me.cookies)
+  if (await deps.liveSubscription(me.id)) return problem(409, 'manage-billing', me.cookies)
   const transactionId = await deps.createTransaction(deps.prices[interval], me.id)
   const headers = new Headers({ 'content-type': 'application/json', ...NO_STORE })
   for (const c of me.cookies) headers.append('Set-Cookie', c)

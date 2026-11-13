@@ -135,10 +135,12 @@ export async function signOut(): Promise<void> {
   set({ status: 'signed-out', user: null })
 }
 
-export async function deleteAccount(): Promise<boolean> {
+/** 'subscribed' when a Pro subscription must be cancelled first. */
+export async function deleteAccount(): Promise<'ok' | 'subscribed' | 'failed'> {
   const res = await fetch('/api/me', { method: 'DELETE' }).catch(() => null)
-  if (!res?.ok) return false
+  if (res?.status === 409) return 'subscribed'
+  if (!res?.ok) return 'failed'
   forgetLocal()
   set({ status: 'signed-out', user: null })
-  return true
+  return 'ok'
 }

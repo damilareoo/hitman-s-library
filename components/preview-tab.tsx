@@ -6,6 +6,7 @@ import { ShieldWarning, LockSimple, Clock, FileDashed, WifiSlash, Warning, Arrow
 import { classifyExtractionError } from '@/lib/classify-extraction-error'
 import { getDomain } from '@/lib/get-domain'
 import { previewOrigin } from '@/lib/preview-origin'
+import { isOwnMedia } from '@/lib/media'
 
 const ICONS = { ShieldWarning, LockSimple, Clock, FileDashed, WifiSlash, Warning }
 type PreviewMode = 'live' | 'screenshot' | 'mobile'
@@ -20,10 +21,10 @@ type PreviewMode = 'live' | 'screenshot' | 'mobile'
  * 8.7MB capture comes back at 1.2MB for a 1200px column, and smaller again in
  * AVIF where the browser accepts it.
  *
- * Only blob-hosted captures are optimizable — the optimizer is deliberately
- * restricted to that one host, so anything else is served as-is.
+ * Only our own captures are optimizable (Blob, and R2 once moved) — the
+ * optimizer is deliberately restricted to those hosts, so anything else is
+ * served as-is.
  */
-const OPTIMIZABLE = '.public.blob.vercel-storage.com'
 /**
  * q must be 75. Next 16 validates quality against `images.qualities`, which
  * defaults to [75], and anything else is a 400 INVALID_IMAGE_OPTIMIZE_REQUEST
@@ -31,7 +32,7 @@ const OPTIMIZABLE = '.public.blob.vercel-storage.com'
  * an unoptimized one.
  */
 function optimized(url: string, width: number): string {
-  if (!url.includes(OPTIMIZABLE)) return url
+  if (!isOwnMedia(url)) return url
   return `/_next/image?url=${encodeURIComponent(url)}&w=${width}&q=75`
 }
 /**

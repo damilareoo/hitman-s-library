@@ -4,6 +4,7 @@ const nextConfig = {
     remotePatterns: [
       // Vercel Blob storage — where screenshots and thumbnails are saved.
       { protocol: 'https', hostname: '*.public.blob.vercel-storage.com' },
+      { protocol: 'https', hostname: 'media.hitmanslibrary.xyz' },
     ],
     // Thumbnails scraped from arbitrary sites are the one case that cannot be
     // enumerated. Serving them unoptimized keeps them working without turning

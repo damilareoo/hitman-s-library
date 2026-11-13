@@ -3,6 +3,7 @@
 //
 // Both the server-rendered gallery and /api/design/filter-advanced call these,
 // so the first paint and every subsequent fetch cannot drift apart.
+import { isOwnMedia } from '@/lib/media'
 import { toHttps } from '@/lib/secure-url'
 import { getSql } from '@/lib/db'
 import { cleanTitle, decodeEntities } from './clean-title'
@@ -64,12 +65,6 @@ export interface QueryResult {
   designs: DesignRecord[]
   pagination: { total: number; limit: number; offset: number; hasMore: boolean }
 }
-
-/**
- * Blob host for our own captures. Anything else in screenshot_url is a
- * salvaged og:image from before the salvage removal — see mapDesignRecords.
- */
-const OWN_CAPTURE_HOST = '.public.blob.vercel-storage.com'
 
 /**
  * Column list shared by every gallery-shaped read, so the card grid, the
@@ -280,13 +275,13 @@ function mapDesignRecords(
     // the page (six such rows predate the salvage removal) — and two of them
     // are animated GIFs that would autoplay in the grid at full size. Only a
     // blob URL counts as a capture; anything else drops to thumbnail duty.
-    const capture = typeof row.screenshot_url === 'string' && row.screenshot_url.includes(OWN_CAPTURE_HOST)
+    const capture = isOwnMedia(row.screenshot_url)
       ? cleanUrl(row.screenshot_url)
       : null
     const salvaged = !capture ? cleanUrl(row.screenshot_url) : null
     // Snapshots copy whatever the row held — including a salvaged og:image
     // where the row never had a capture. Same blob check as below.
-    const snapCapture = typeof snapshot?.screenshot_url === 'string' && snapshot.screenshot_url.includes(OWN_CAPTURE_HOST)
+    const snapCapture = snapshot && isOwnMedia(snapshot.screenshot_url)
       ? cleanUrl(snapshot.screenshot_url)
       : null
     const snapSalvaged = !snapCapture ? cleanUrl(snapshot?.screenshot_url) : null
