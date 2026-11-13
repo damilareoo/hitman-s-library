@@ -1,37 +1,27 @@
 // lib/email/pro-welcome.ts
 //
-// The welcome email for a new Pro member: the Pro moment's final frame, the
-// word "Pro" built from the member's own colours (sorted exactly as the
-// animation ends: hue across, lightest on top), on the site's card layout:
-// tinted header, one-idea body, tinted footer. Email can't run canvas, so the
-// word is a table of small coloured cells from a fixed mask of the real font.
-// Light only: most mail clients render on white.
-import { PRO_MASK } from '@/lib/pro/word-mask'
-import { centreOf, fill, hueWindow, sortForSlots, type Swatch } from '@/lib/pro/palette'
+// The welcome email for a new Pro member: the Pro moment itself, as an
+// animated GIF in the hue nearest the member's own colours, on the site's card
+// layout: tinted header, one-idea body, tinted footer. Light only: most mail
+// clients render on white.
+import { centreOf, hueWindow, type Swatch } from '@/lib/pro/palette'
 
 const SITE = 'https://hitmanslibrary.xyz'
 const esc = (s: string) => s.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!))
-const NEUTRAL: Swatch[] = ['#3f3f3c', '#4a4a46', '#55554f', '#2e2e2b', '#5f5e58'].map(c => [c, ''])
 
 const C = { ink: '#161615', muted: '#76746e', line: '#ebeae6', tint: '#f7f7f5', amber: '#A8611A' }
 const FONT = `-apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, Arial, sans-serif`
 
-function wordTable(swatches: Swatch[], seed: number): string {
-  const slots: [number, number][] = []
-  PRO_MASK.forEach((row, y) => [...row].forEach((ch, x) => { if (ch === '#') slots.push([x, y]) }))
-  const pool = swatches.length ? hueWindow(swatches, swatches, false) : NEUTRAL
-  const colours = sortForSlots(slots, fill(pool.length ? pool : NEUTRAL, slots.length, seed), centreOf(pool.length ? pool : NEUTRAL))
-  const at = new Map(slots.map((s, i) => [`${s[0]},${s[1]}`, colours[i][0]]))
-  const rows = PRO_MASK.map((row, y) => {
-    let cells = '', gap = 0
-    const flush = () => { if (gap) { cells += `<td colspan="${gap}"></td>`; gap = 0 } }
-    for (let x = 0; x < row.length; x++) {
-      if (row[x] === '#') { flush(); cells += `<td bgcolor="${at.get(`${x},${y}`)}" width="3" height="3"></td>` } else gap++
-    }
-    flush()
-    return `<tr>${cells}</tr>`
-  }).join('')
-  return `<table role="presentation" aria-label="Pro" cellpadding="0" cellspacing="1" border="0" style="border-collapse:separate;line-height:0;font-size:0">${rows}</table>`
+/**
+ * The animated word: one of twelve pre-rendered GIFs (scripts/render-pro-gifs.mjs),
+ * one per 30° hue window, chosen to sit nearest the member's own colours.
+ * Frame 0 is the finished word, for clients that only show the first frame.
+ */
+export function proGifFor(swatches: Swatch[]): string {
+  const pool = swatches.length ? hueWindow(swatches, swatches, false) : []
+  const centre = pool.length ? centreOf(pool) : 30
+  const bucket = (Math.round(centre / 30) * 30) % 360
+  return `${SITE}/email/pro-h${String(bucket).padStart(3, '0')}.gif`
 }
 
 export function proWelcomeEmail({ name, memberNo, swatches }: { name: string; memberNo: number; swatches: Swatch[] }) {
@@ -45,7 +35,7 @@ export function proWelcomeEmail({ name, memberNo, swatches }: { name: string; me
   <tr><td style="background:${C.tint};border-bottom:1px solid ${C.line};border-radius:16px 16px 0 0;padding:11px 16px;font:500 12.5px ${FONT};color:${C.muted}">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td style="font:500 12.5px ${FONT};color:${C.muted}">Membership</td><td align="right" style="font:500 12.5px ${FONT};color:${C.muted}">No. ${no}</td></tr></table>
   </td></tr>
-  <tr><td style="padding:20px 16px 8px">${wordTable(swatches, memberNo * 7919)}</td></tr>
+  <tr><td style="padding:20px 16px 8px"><img src="${proGifFor(swatches)}" width="300" height="152" alt="Pro" style="display:block;width:300px;max-width:100%;height:auto;border:0;font:700 40px ${FONT};color:${C.ink}"></td></tr>
   <tr><td style="padding:12px 16px 0;font:600 20px/1.2 ${FONT};color:${C.ink};letter-spacing:-0.02em">You're Pro.</td></tr>
   <tr><td style="padding:4px 16px 0;font:400 14px/1.45 ${FONT};color:${C.muted}">${hello}</td></tr>
   <tr><td style="padding:14px 16px 18px"><table role="presentation" cellpadding="0" cellspacing="0" border="0">
