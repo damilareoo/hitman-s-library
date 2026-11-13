@@ -141,7 +141,7 @@ export function IndexView({
               onClick={() => onTag(tag)}
               aria-pressed={active}
               className={[
-                'h-8 px-3 rounded-[8px] text-meta border transition-[background-color,border-color,color,transform] duration-[var(--dur-2)] ease-[var(--ease-sig)] active:scale-[0.98]',
+                'h-8 px-3 rounded-[10px] text-meta border transition-[background-color,border-color,color,transform] duration-[var(--dur-2)] ease-[var(--ease-sig)] active:scale-[0.98]',
                 active
                   ? 'bg-muted text-ink border-transparent font-medium hover:bg-foreground/[0.09]'
                   : 'bg-foreground/[0.055] text-ink-2 border-transparent hover:text-ink hover:bg-foreground/[0.09]',

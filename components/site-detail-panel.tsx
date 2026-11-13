@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
-import { Check, BookmarkSimple, Heart, X } from '@phosphor-icons/react'
+import { Check, BookmarkSimple, Heart, X, ArrowRight } from '@phosphor-icons/react'
 import { useCollections, toggleMembership, sanitizeName } from '@/lib/collections'
 import { PanelTabs, type PanelTab } from './panel-tabs'
 import { useSoundsContext } from '@/contexts/sounds-context'
@@ -12,7 +12,6 @@ import { ColorsTab } from './colors-tab'
 import { TypeTab } from './type-tab'
 import { HistoryTab } from './history-tab'
 import { ThemeExport } from './theme-export'
-import { KitLink } from './kit-row'
 import { CARD } from '@/components/member-card'
 import { KitTab } from './kit-tab'
 import { DRIFT_ENABLED } from '@/lib/drift'
@@ -188,7 +187,7 @@ export function SiteDetailPanel({ variant = 'desktop', sourceId, metadata, initi
     <div className="flex flex-col h-full bg-background">
       {/* Header */}
       <div
-        className="flex items-center gap-3 px-4 py-3 flex-shrink-0"
+        className="flex items-center gap-3 px-4 py-3 flex-shrink-0 bg-foreground/[0.025] border-b border-edge"
         // Only bites when the panel runs edge to edge on a phone; elsewhere
         // env() is 0 and this is the same 12px the padding already was.
         style={{ paddingTop: 'max(12px, env(safe-area-inset-top))' }}
@@ -217,7 +216,7 @@ export function SiteDetailPanel({ variant = 'desktop', sourceId, metadata, initi
               aria-expanded={saveOpen}
               aria-label="Save to a collection"
               title="Save to a collection"
-              className="w-8 h-8 flex items-center justify-center rounded-[8px] text-ink-3 hover:text-ink hover:bg-muted transition-colors"
+              className="w-8 h-8 flex items-center justify-center rounded-[10px] text-ink-3 hover:text-ink hover:bg-muted transition-colors"
             >
               <BookmarkSimple className="w-4 h-4" weight={Object.values(collections).some(ids => ids.includes(sourceId)) ? 'fill' : 'bold'} />
             </button>
@@ -250,7 +249,7 @@ export function SiteDetailPanel({ variant = 'desktop', sourceId, metadata, initi
                         key={name}
                         onClick={() => updateCollectionMembership(name, saved)}
                         aria-pressed={saved}
-                        className="w-full h-9 px-2.5 flex items-center gap-2.5 rounded-[9px] text-left text-[13.5px] font-[500] text-ink hover:bg-foreground/[0.045] transition-colors"
+                        className="w-full h-9 px-2.5 flex items-center gap-2.5 rounded-[10px] text-left text-[13.5px] font-[500] text-ink hover:bg-foreground/[0.045] transition-colors"
                       >
                         <span className={'w-4 h-4 shrink-0 grid place-items-center rounded-[5px] border ' + (saved ? 'bg-foreground border-foreground text-background' : 'border-edge-strong')}>
                           {saved && <Check className="w-2.5 h-2.5" weight="bold" />}
@@ -299,7 +298,7 @@ export function SiteDetailPanel({ variant = 'desktop', sourceId, metadata, initi
           {onClose && (
             <button
               onClick={() => { playClose(); onClose() }}
-              className="w-8 h-8 flex items-center justify-center rounded-[8px] text-ink-3 hover:text-ink hover:bg-muted transition-colors"
+              className="w-8 h-8 flex items-center justify-center rounded-[10px] text-ink-3 hover:text-ink hover:bg-muted transition-colors"
               aria-label="Close panel"
             >
               <X className="w-4 h-4" weight="bold" />
@@ -423,21 +422,20 @@ export function SiteDetailPanel({ variant = 'desktop', sourceId, metadata, initi
         )}
       </AnimatePresence>
 
-      {/* Footer: on every tab but Kit, a line into the kit, then the free
-          theme copies. The Kit tab carries its own download. */}
+      {/* One footer, like every card: the free theme copies on the left, the
+          way into the kit on the right. The Kit tab carries its own download. */}
       {data && effectiveTab !== 'kit' && (
-        <>
-          <KitLink onOpen={() => { setActiveTab('kit'); onTabChange?.('kit') }} />
-          <div className="flex-shrink-0 border-t border-edge-faint px-4 h-11 flex items-center justify-between gap-2">
-            <span className="text-[12px] text-ink-4 max-[359px]:hidden">Copy theme</span>
-            <ThemeExport
-              siteUrl={data.url}
-              siteTitle={hostname}
-              colors={data.colors}
-              typography={data.typography}
-            />
-          </div>
-        </>
+        <div className={CARD.foot + ' flex-shrink-0 pl-2 pr-2'}>
+          <ThemeExport
+            siteUrl={data.url}
+            siteTitle={hostname}
+            colors={data.colors}
+            typography={data.typography}
+          />
+          <button onClick={() => { setActiveTab('kit'); onTabChange?.('kit') }} className={CARD.footBtn + ' ml-auto text-ink font-[600]'}>
+            <span className="max-sm:hidden">Build in this style</span><span className="sm:hidden">Kit</span> <ArrowRight className="w-3.5 h-3.5" weight="bold" />
+          </button>
+        </div>
       )}
     </div>
   )

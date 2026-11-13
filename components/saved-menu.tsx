@@ -42,7 +42,7 @@ export function SavedMenu() {
     return () => { window.removeEventListener('mousedown', onDown); window.removeEventListener('keydown', onKey) }
   }, [open])
 
-  const row = 'h-9 px-2.5 flex items-center justify-between gap-3 rounded-[9px] text-[13.5px] font-[500] text-ink hover:bg-foreground/[0.045] focus-visible:bg-foreground/[0.045] outline-none transition-colors'
+  const row = 'h-9 px-2.5 flex items-center justify-between gap-3 rounded-[10px] text-[13.5px] font-[500] text-ink hover:bg-foreground/[0.045] focus-visible:bg-foreground/[0.045] outline-none transition-colors'
 
   return (
     <div ref={ref} className="relative">

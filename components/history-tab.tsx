@@ -169,7 +169,7 @@ export function HistoryTab({ siteId }: { siteId: number }) {
                   aria-label={`Compare ${formatDate(s.captured_at)}${s.redesigned_vs_previous ? ' (redesigned)' : ''}`}
                   title={formatDate(s.captured_at)}
                   className={[
-                    'w-20 rounded-[4px] overflow-hidden border transition-colors',
+                    'w-20 rounded-[6px] overflow-hidden border transition-colors',
                     isB ? 'border-foreground/60' : 'border-edge hover:border-foreground/20',
                   ].join(' ')}
                 >
@@ -229,7 +229,7 @@ export function HistoryTab({ siteId }: { siteId: number }) {
       ) : pair && snapA && snapB ? (
         <div className="flex flex-col gap-5 p-4">
           {pair.redesigned && (
-            <p className="text-meta text-ink-2 rounded-[4px] border border-edge bg-muted/60 px-3 py-2">
+            <p className="text-meta text-ink-2 rounded-[10px] border border-edge bg-muted/60 px-3 py-2">
               Redesigned between these snapshots.
             </p>
           )}
@@ -286,7 +286,7 @@ export function HistoryTab({ siteId }: { siteId: number }) {
             {pair.typoChanges.length === 0 ? (
               <p className="text-meta text-ink-4">No typography recorded.</p>
             ) : (
-              <div className="flex flex-col rounded-[4px] border border-edge divide-y divide-edge-faint overflow-hidden">
+              <div className="flex flex-col rounded-[12px] border border-edge divide-y divide-edge-faint overflow-hidden">
                 {pair.typoChanges.map(t => (
                   <div key={t.role} className="px-3 py-2">
                     <p className="text-micro text-ink-4 capitalize">{t.role}</p>

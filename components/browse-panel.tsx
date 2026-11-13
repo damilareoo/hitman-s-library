@@ -210,7 +210,7 @@ export function BrowsePanel({
               exit={{ opacity: 0, y: -8, scale: 0.99, transition: POP_OUT }}
               transition={POP_IN}
               onKeyDown={onKeyDown}
-              className="pointer-events-auto mt-[12vh] w-full max-w-[824px] max-h-[min(70vh,640px)] flex flex-col rounded-[12px] border border-edge-strong bg-popover text-popover-foreground shadow-[0_24px_64px_-16px_rgba(0,0,0,0.35)] overflow-hidden"
+              className="pointer-events-auto mt-[12vh] w-full max-w-[824px] max-h-[min(70vh,640px)] flex flex-col rounded-[16px] border border-edge-strong bg-popover text-popover-foreground shadow-[0_24px_64px_-16px_rgba(0,0,0,0.35)] overflow-hidden"
             >
               <div className="flex items-center gap-2.5 px-4 py-3.5 border-b border-edge shrink-0">
                 <MagnifyingGlass className="w-3.5 h-3.5 text-ink-3 shrink-0" weight="regular" />
@@ -235,7 +235,7 @@ export function BrowsePanel({
                       <p className="text-bodytext text-ink-3">Search is unavailable right now.</p>
                       <button
                         onClick={() => { setSites(null); setAttempt(n => n + 1) }}
-                        className="mt-3 h-8 px-3 rounded-[8px] text-meta bg-foreground/[0.055] text-ink-2 hover:text-ink hover:bg-foreground/[0.09] transition-colors"
+                        className="mt-3 h-8 px-3 rounded-[10px] text-meta bg-foreground/[0.055] text-ink-2 hover:text-ink hover:bg-foreground/[0.09] transition-colors"
                       >
                         Try again
                       </button>
@@ -247,7 +247,7 @@ export function BrowsePanel({
                       <p className="text-bodytext text-ink-3">Nothing for “{query.trim()}”.</p>
                       <button
                         onClick={() => { onClose(); onRequest(query.trim()) }}
-                        className="mt-3 h-8 px-3 rounded-[8px] text-meta bg-foreground text-background font-medium hover:opacity-90 transition-opacity"
+                        className="mt-3 h-8 px-3 rounded-[10px] text-meta bg-foreground text-background font-medium hover:opacity-90 transition-opacity"
                       >
                         Submit it
                       </button>
@@ -259,7 +259,7 @@ export function BrowsePanel({
                         onClick={() => openResult(site.id)}
                         onMouseEnter={() => setActive(i)}
                         data-active={i === active}
-                        className="w-full flex items-center gap-3 p-2 rounded-[8px] text-left transition-colors duration-[var(--dur-2)] ease-[var(--ease-hover)] data-[active=true]:bg-muted hover:bg-muted"
+                        className="w-full flex items-center gap-3 p-2 rounded-[10px] text-left transition-colors duration-[var(--dur-2)] ease-[var(--ease-hover)] data-[active=true]:bg-muted hover:bg-muted"
                       >
                         <span className="w-[52px] h-8 rounded-[5px] overflow-hidden border border-edge bg-muted shrink-0">
                           {site.thumb && <img src={site.thumb} alt="" loading="lazy" className="w-full h-full object-cover object-top" />}
@@ -274,14 +274,14 @@ export function BrowsePanel({
                   <>
                     <div className="px-4 pt-3.5 pb-1.5 text-micro text-ink-4">Kinds</div>
                     <div className="flex flex-wrap gap-1.5 px-4 pb-3.5 mb-1 border-b border-edge">
-                      <button onClick={() => onKind('All')} className="h-7 px-2.5 rounded-[8px] text-meta text-ink-2 bg-foreground/[0.055] hover:text-ink hover:bg-foreground/[0.09] transition-colors">
+                      <button onClick={() => onKind('All')} className="h-7 px-2.5 rounded-[10px] text-meta text-ink-2 bg-foreground/[0.055] hover:text-ink hover:bg-foreground/[0.09] transition-colors">
                         All <span className="text-ink-4 tabular-nums">{total}</span>
                       </button>
                       {kinds.map(({ name, count }) => (
                         <button
                           key={name}
                           onClick={() => onKind(name)}
-                          className="h-7 px-2.5 rounded-[8px] text-meta text-ink-2 bg-foreground/[0.055] hover:text-ink hover:bg-foreground/[0.09] transition-colors"
+                          className="h-7 px-2.5 rounded-[10px] text-meta text-ink-2 bg-foreground/[0.055] hover:text-ink hover:bg-foreground/[0.09] transition-colors"
                         >
                           {displayKind(name)} <span className="text-ink-4 tabular-nums">{count}</span>
                         </button>
@@ -295,7 +295,7 @@ export function BrowsePanel({
                           <div key={name} className="group flex items-center gap-1">
                             <button
                               onClick={() => onSet(name)}
-                              className="flex-1 min-w-0 flex items-center gap-3 p-2 rounded-[8px] text-left hover:bg-muted transition-colors"
+                              className="flex-1 min-w-0 flex items-center gap-3 p-2 rounded-[10px] text-left hover:bg-muted transition-colors"
                             >
                               <span className="flex-1 min-w-0 text-bodytext text-ink truncate">{name}</span>
                               <span className="text-meta text-ink-4 shrink-0">{ids.length} sites</span>
@@ -306,7 +306,7 @@ export function BrowsePanel({
                               onClick={() => onDeleteSet(name)}
                               aria-label={`Delete set ${name}`}
                               title={`Delete set ${name}`}
-                              className="shrink-0 w-7 h-7 flex items-center justify-center rounded-[6px] text-ink-4 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 hover:text-ink hover:bg-muted transition-[opacity,background-color,color] duration-[var(--dur-2)]"
+                              className="shrink-0 w-7 h-7 flex items-center justify-center rounded-[10px] text-ink-4 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 hover:text-ink hover:bg-muted transition-[opacity,background-color,color] duration-[var(--dur-2)]"
                             >
                               <span aria-hidden="true">×</span>
                             </button>
@@ -320,7 +320,7 @@ export function BrowsePanel({
                       <button
                         key={design.id}
                         onClick={() => openResult(design.id)}
-                        className="w-full flex items-center gap-3 p-2 rounded-[8px] text-left hover:bg-muted transition-colors"
+                        className="w-full flex items-center gap-3 p-2 rounded-[10px] text-left hover:bg-muted transition-colors"
                       >
                         <span className="w-[52px] h-8 rounded-[5px] overflow-hidden border border-edge bg-muted shrink-0">
                           {design.thumbnail_url && (

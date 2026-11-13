@@ -37,7 +37,7 @@ export function ChangelogSiteHistory({ siteId }: { siteId: number }) {
   }, [siteId])
 
   return (
-    <section aria-label={`Snapshots for site ${siteId}`} className="mb-10 rounded-[4px] border border-edge p-5">
+    <section aria-label={`Snapshots for site ${siteId}`} className="mb-10 rounded-[12px] border border-edge p-5">
       <h2 className="text-heading text-foreground mb-1">
         Site #{siteId}
       </h2>

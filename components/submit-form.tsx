@@ -21,7 +21,7 @@ type PreviewState =
 // The gallery search field's register, shared by every field here: a quiet
 // filled rectangle with no border until it has focus.
 const FIELD =
-  'w-full px-3 text-bodytext bg-muted/70 border border-transparent rounded-[12px] text-foreground placeholder:text-ink-4 outline-none hover:bg-muted focus:bg-muted focus:ring-1 focus:ring-foreground/15 transition-[background-color,box-shadow] duration-[var(--dur-2)] ease-[var(--ease-sig)]'
+  'w-full px-3 text-bodytext bg-muted/70 border border-transparent rounded-[10px] text-foreground placeholder:text-ink-4 outline-none hover:bg-muted focus:bg-muted focus:ring-1 focus:ring-foreground/15 transition-[background-color,box-shadow] duration-[var(--dur-2)] ease-[var(--ease-sig)]'
 
 /**
  * The submit form, in page form.
@@ -276,7 +276,7 @@ export function SubmitForm() {
           <button
             onClick={submit}
             disabled={submitting}
-            className="w-full h-9 inline-flex items-center justify-center gap-2 rounded-[6px] bg-foreground text-background text-bodytext font-medium hover:opacity-90 disabled:opacity-50 transition-opacity"
+            className="w-full h-9 inline-flex items-center justify-center gap-2 rounded-[10px] bg-foreground text-background text-bodytext font-medium hover:opacity-90 disabled:opacity-50 transition-opacity"
           >
             {submitting ? <Spinner className="w-3.5 h-3.5 border-t-background" /> : null}
             {isBatch
@@ -381,7 +381,7 @@ function PreviewCard({ preview }: { preview: PreviewState }) {
         initial={{ opacity: 0, y: 4 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: DUR.color, ease: EASE }}
-        className="mt-3 flex items-center gap-3 p-2.5 rounded-[4px] border border-edge bg-muted/30"
+        className="mt-3 flex items-center gap-3 p-2.5 rounded-[10px] border border-edge bg-muted/30"
       >
         {preview.image ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -413,7 +413,7 @@ function PreviewCard({ preview }: { preview: PreviewState }) {
         initial={{ opacity: 0, y: 4 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: DUR.color, ease: EASE }}
-        className="mt-3 p-2.5 rounded-[4px] border border-edge bg-muted/30"
+        className="mt-3 p-2.5 rounded-[10px] border border-edge bg-muted/30"
       >
         <p className="text-micro text-ink-4 mb-1">
           {added ? 'Added since it was submitted' : 'Already submitted'}
@@ -443,7 +443,7 @@ function PreviewCard({ preview }: { preview: PreviewState }) {
       initial={{ opacity: 0, y: 4 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: DUR.color, ease: EASE }}
-      className="mt-3 flex items-center gap-3 p-2.5 rounded-[4px] border border-edge bg-muted/30"
+      className="mt-3 flex items-center gap-3 p-2.5 rounded-[10px] border border-edge bg-muted/30"
     >
       {preview.image ? (
         // eslint-disable-next-line @next/next/no-img-element
@@ -476,7 +476,7 @@ function BatchResults({
       initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: DUR.move, ease: EASE }}
-      className="mt-4 rounded-[4px] border border-edge bg-muted/30 p-2.5"
+      className="mt-4 rounded-[10px] border border-edge bg-muted/30 p-2.5"
     >
       <p className="text-micro text-ink-4 mb-2">
         {received === results.length
@@ -507,13 +507,13 @@ function BatchResults({
       <div className="mt-3 flex items-center justify-center gap-2">
         <button
           onClick={onAnother}
-          className="h-7 px-2.5 rounded-[4px] border border-edge-strong text-meta text-ink-3 hover:text-ink transition-colors"
+          className="h-7 px-2.5 rounded-[10px] border border-edge-strong text-meta text-ink-3 hover:text-ink transition-colors"
         >
           Submit more
         </button>
         <Link
           href="/"
-          className="h-7 px-3 rounded-[4px] bg-foreground text-background text-meta font-medium hover:opacity-85 transition-opacity inline-flex items-center"
+          className="h-7 px-3 rounded-[10px] bg-foreground text-background text-meta font-medium hover:opacity-85 transition-opacity inline-flex items-center"
         >
           Done
         </Link>
@@ -542,13 +542,13 @@ function SubmittedView({
       <div className="mt-5 flex items-center gap-2">
         <button
           onClick={onAnother}
-          className="h-7 px-2.5 rounded-[4px] border border-edge-strong text-meta text-ink-3 hover:text-ink transition-colors"
+          className="h-7 px-2.5 rounded-[10px] border border-edge-strong text-meta text-ink-3 hover:text-ink transition-colors"
         >
           Submit another
         </button>
         <Link
           href="/"
-          className="h-7 px-3 rounded-[4px] bg-foreground text-background text-meta font-medium hover:opacity-85 transition-opacity inline-flex items-center"
+          className="h-7 px-3 rounded-[10px] bg-foreground text-background text-meta font-medium hover:opacity-85 transition-opacity inline-flex items-center"
         >
           Back to the shelf
         </Link>

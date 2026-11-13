@@ -164,17 +164,17 @@ export function ColorsTab({ colors, extractionError, onFindColor }: {
   return (
     <div className="flex flex-col flex-1 min-h-0 overflow-y-auto" data-lenis-prevent>
 
-      <div className="sticky top-0 bg-background border-b border-edge px-4 py-2 flex items-center justify-between gap-2 shrink-0 z-10">
+      <div className="sticky top-0 bg-background px-4 pt-3 pb-1 flex items-center justify-between gap-2 shrink-0 z-10">
         <div
           ref={trackRef}
           role="group"
           aria-label="Color format"
-          className="relative inline-flex items-center h-7 p-[3px] rounded-[7px] bg-foreground/[0.05] dark:bg-foreground/[0.07]"
+          className="relative inline-flex items-center h-7 p-[3px] rounded-[10px] bg-foreground/[0.05] dark:bg-foreground/[0.07]"
         >
           <span
             aria-hidden="true"
             className={[
-              'absolute top-[3px] left-0 h-[22px] rounded-[5px] bg-card pointer-events-none',
+              'absolute top-[3px] left-0 h-[22px] rounded-[7px] bg-card pointer-events-none',
               'shadow-[0_1px_2px_rgba(0,0,0,0.06),0_0_0_1px_rgba(0,0,0,0.03)]',
               'dark:bg-[color-mix(in_srgb,var(--foreground)_12%,var(--background))] dark:shadow-[0_1px_2px_rgba(0,0,0,0.4)]',
               settled ? 'transition-[transform,width] duration-[var(--dur-2)] ease-[var(--ease-sig)] motion-reduce:transition-none' : '',
@@ -192,7 +192,7 @@ export function ColorsTab({ colors, extractionError, onFindColor }: {
               aria-pressed={format === f}
               onClick={() => setFormat(f)}
               className={[
-                'relative z-[1] h-[22px] px-2 rounded-[5px] text-[11px] font-medium leading-none transition-colors',
+                'relative z-[1] h-[22px] px-2.5 rounded-[7px] text-[12px] font-[500] leading-none transition-colors',
                 format === f ? 'text-ink' : 'text-ink-3 hover:text-ink',
               ].join(' ')}
             >
@@ -200,26 +200,7 @@ export function ColorsTab({ colors, extractionError, onFindColor }: {
             </button>
           ))}
         </div>
-        <div className="flex items-center gap-px">
-          {(['css', 'tailwind'] as const).map(type => (
-            <button
-              key={type}
-              onClick={() => copy(
-                type === 'css' ? `:root {\n${buildCssVars()}\n}` : buildTailwind(),
-                () => exportCopy.markCopied(type),
-              )}
-              className={[
-                'w-9 py-0.5 rounded-[4px] text-micro flex items-center justify-center transition-colors',
-                exportCopy.copiedId === type ? 'text-ink' : 'text-ink-4 hover:text-ink-2',
-              ].join(' ')}
-            >
-              {exportCopy.copiedId === type
-                ? <Check className="w-3 h-3" weight="bold" />
-                : (type === 'css' ? 'CSS' : 'TW')}
-            </button>
-          ))}
-          <span className="text-meta text-ink-4 ml-1 tabular-nums">{colors.length}</span>
-        </div>
+        <span className="text-[12px] text-ink-4">Tap to copy · ⌕ finds similar sites</span>
       </div>
 
       {/* One object, not a list of rows: the bands meet with no gap and the
@@ -227,7 +208,7 @@ export function ColorsTab({ colors, extractionError, onFindColor }: {
           band carries a find-near action — a color here is a door into the
           grid, just like the dots on a card. */}
       <div className="p-3">
-        <div className="overflow-hidden rounded-[5px] border border-edge">
+        <div className="overflow-hidden rounded-[12px] border border-edge">
           {sorted.map((color, i) => {
             const value = valueOf(color)
             const copied = rowCopy.copiedId === i
@@ -272,7 +253,7 @@ export function ColorsTab({ colors, extractionError, onFindColor }: {
         </div>
 
         {!measured && (
-          <p className="text-micro text-ink-4 mt-2.5 px-0.5">
+          <p className="text-[12px] text-ink-4 mt-2.5 px-0.5">
             Shown at equal weight — this site&rsquo;s colours were read before coverage was measured.
           </p>
         )}

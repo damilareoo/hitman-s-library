@@ -9,7 +9,7 @@
 import { useEffect, useState } from 'react'
 import { Package, MagnifyingGlass, ArrowUp, ArrowRight } from '@phosphor-icons/react'
 import { ProMark } from '@/components/pro-mark'
-import { CARD } from '@/components/member-card'
+import { CARD, BTN } from '@/components/member-card'
 import { useAccount, openSignIn, KITS_EVENT } from '@/lib/account-client'
 import { loadPaddle, localPrices, onPaddleEvent, setPaddleCustomer, type LocalPrices } from '@/lib/paddle/client'
 import { DEFAULT_INTERVAL } from '@/data/price-groups'
@@ -112,7 +112,7 @@ export function ProCard() {
                   {(['month', 'year'] as const).map(i => (
                     <button
                       key={i} role="radio" aria-checked={interval === i} onClick={() => setInterval_(i)}
-                      className={'h-7 px-3 rounded-full border text-[12px] font-[600] transition-colors ' + (interval === i ? 'border-foreground bg-foreground text-background' : 'border-edge text-ink-3 hover:text-ink')}
+                      className={BTN.chip(interval === i)}
                     >
                       {i === 'month' ? 'Monthly' : `Yearly −${save}%`}
                     </button>
@@ -136,7 +136,7 @@ export function ProCard() {
               <span className={CARD.meta}>14-day refund · <a href="/terms" className="underline underline-offset-2 hover:text-ink">Terms</a></span>
               <button
                 onClick={getPro} disabled={phase === 'opening' || phase === 'finishing'}
-                className="ml-auto h-8 px-3.5 flex items-center gap-1.5 rounded-[8px] bg-foreground text-background text-[13px] font-[600] hover:opacity-90 active:scale-[0.98] disabled:opacity-50 transition"
+                className={BTN.primary + ' ml-auto'}
               >
                 {phase === 'opening' ? 'Opening…' : status === 'signed-in' ? <>Get Pro <ArrowRight className="w-3.5 h-3.5" weight="bold" /></> : <>Sign in to get Pro <ArrowRight className="w-3.5 h-3.5" weight="bold" /></>}
               </button>
