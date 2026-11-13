@@ -30,10 +30,6 @@ export function isPro(sub: SubscriptionState | null, now: Date): boolean {
   return new Date(sub.current_period_end).getTime() > now.getTime()
 }
 
-// The same rule as isPro, for SQL.
-const PRO_SQL = `s.status IN ('active', 'trialing') AND (s.current_period_end IS NULL OR s.current_period_end > now())`
-const MONTH_SQL = `date_trunc('month', now() AT TIME ZONE 'utc')::date`
-
 export interface Entitlement { pro: boolean; kitsUsed: number; kitsLimit: number }
 
 export async function getEntitlement(userId: string, deps: EntitlementDeps = defaultDeps()): Promise<Entitlement> {
@@ -59,8 +55,10 @@ export async function claimKit(userId: string, sourceId: number, deps: Entitleme
   const [, rows] = await sql.transaction([
     sql`SELECT pg_advisory_xact_lock(hashtext('kit:' || ${userId}))`,
     sql`
-      WITH m AS (SELECT ${sql.unsafe(MONTH_SQL)} AS month),
-      pro AS (SELECT EXISTS (SELECT 1 FROM subscriptions s WHERE s.user_id = ${userId} AND ${sql.unsafe(PRO_SQL)}) AS pro),
+      WITH m AS (SELECT date_trunc('month', now() AT TIME ZONE 'utc')::date AS month),
+      pro AS (SELECT EXISTS (SELECT 1 FROM subscriptions s WHERE s.user_id = ${userId}
+        -- The same rule as isPro.
+        AND s.status IN ('active', 'trialing') AND (s.current_period_end IS NULL OR s.current_period_end > now())) AS pro),
       prior AS (
         SELECT count(*)::int AS used, coalesce(bool_or(k.source_id = ${sourceId}), false) AS had
           FROM kit_downloads k, m WHERE k.user_id = ${userId} AND k.month = m.month

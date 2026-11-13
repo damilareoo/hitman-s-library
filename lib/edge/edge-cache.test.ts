@@ -52,7 +52,7 @@ test('pages and public reads are cacheable; private and write surfaces are not',
 
 test('nothing personal is ever cached: sign-in and account routes always reach the app', () => {
   const k = (path: string) => { const { req, url } = get(path); return cacheKind(req, url) }
-  for (const p of ['/api/me', '/api/me/export', '/api/auth/google', '/api/auth/google/callback?code=x', '/api/auth/email/callback?token=x', '/account']) expect(k(p)).toBeNull()
+  for (const p of ['/api/me', '/api/me/export', '/api/auth/google', '/api/auth/google/callback?code=x', '/api/auth/email/callback?token=x', '/account', '/api/kit/7', '/api/search/pro?palette=fff']) expect(k(p)).toBeNull()
 })
 
 test('Next navigation requests are cacheable only when they carry the _rsc key', () => {
