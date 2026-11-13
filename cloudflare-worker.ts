@@ -110,11 +110,22 @@ export default {
 async function handle(request: Request, env: Env, ctx: Ctx, url: URL): Promise<Response> {
   const own = matchOwnImage(request.method, url)
   if (own) {
+    // Kept in this data centre's cache, keyed by the source alone (every
+    // width asks for the same original): no Next, next to no CPU.
+    const cache = (caches as unknown as { default: Cache }).default
+    const key = new Request(`https://hitmanslibrary.xyz/__img/${encodeURIComponent(own)}`)
     try {
-      // Cloudflare keeps the original at the edge; no Next, next to no CPU.
-      const upstream = await fetch(own, { cf: { cacheEverything: true, cacheTtl: 31536000 } } as RequestInit)
+      const hit = await cache.match(key)
+      if (hit) return new Response(hit.body, { headers: imageHeaders(hit.headers) ?? hit.headers })
+    } catch { /* cache unavailable: fetch below */ }
+    try {
+      const upstream = await fetch(own)
       const headers = upstream.ok ? imageHeaders(upstream.headers) : null
-      if (headers) return new Response(upstream.body, { headers })
+      if (headers && upstream.body) {
+        const [mine, theirs] = upstream.body.tee()
+        ctx.waitUntil(cache.put(key, new Response(theirs, { headers })).catch(() => {}))
+        return new Response(mine, { headers })
+      }
     } catch { /* fall through to Next */ }
     return openNext.fetch(request, env, ctx)
   }
