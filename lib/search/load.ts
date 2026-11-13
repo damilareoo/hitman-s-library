@@ -29,11 +29,23 @@ export async function loadSearchIndex(): Promise<SearchEntry[]> {
   return buildSearchIndex(rows.map(r => ({ id: r.id, colors: r.colors ?? [], typography: r.fonts ?? [] })))
 }
 
-const CACHE_KEY = 'https://hitmanslibrary.xyz/__internal/pro-search-index/v1'
+const CACHE_KEY = 'https://hitmanslibrary.xyz/__internal/pro-search-index/v2'
 const TTL_SECONDS = 600
+
+// The parsed index, kept for a minute in this isolate, so back-to-back
+// searches skip even the cache read and JSON parse.
+let memo: { at: number; index: SearchEntry[] } | null = null
+const MEMO_MS = 60_000
 
 /** The index from Cloudflare's cache, rebuilt at most every ten minutes. */
 export async function searchIndexCached(): Promise<SearchEntry[]> {
+  if (memo && Date.now() - memo.at < MEMO_MS) return memo.index
+  const index = await fromCache()
+  memo = { at: Date.now(), index }
+  return index
+}
+
+async function fromCache(): Promise<SearchEntry[]> {
   const cache = (globalThis as unknown as { caches?: { default?: Cache } }).caches?.default
   if (cache) {
     const hit = await cache.match(CACHE_KEY).catch(() => undefined)

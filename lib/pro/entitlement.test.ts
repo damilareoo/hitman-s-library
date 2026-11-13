@@ -14,6 +14,10 @@ describe('isPro', () => {
     expect(isPro({ status: 'canceled', current_period_end: future }, NOW)).toBe(false)
     expect(isPro({ status: 'past_due', current_period_end: future }, NOW)).toBe(false)
   })
+  test('a renewal in flight keeps Pro for a day past the period end', () => {
+    expect(isPro({ status: 'active', current_period_end: new Date('2026-11-13T10:00:00Z') }, NOW)).toBe(true)
+    expect(isPro({ status: 'active', current_period_end: new Date('2026-11-12T11:00:00Z') }, NOW)).toBe(false)
+  })
   test('active with no period end is Pro', () => expect(isPro({ status: 'active', current_period_end: null }, NOW)).toBe(true))
 })
 
