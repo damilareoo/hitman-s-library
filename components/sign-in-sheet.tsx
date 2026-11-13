@@ -7,7 +7,9 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
-import { GoogleLogo, ArrowRight, X } from '@phosphor-icons/react'
+import { ArrowRight, X } from '@phosphor-icons/react'
+import { GoogleMark } from '@/components/google-mark'
+import { CARD } from '@/components/member-card'
 import { ColourStrip } from '@/components/colour-strip'
 import { POP_IN, POP_OUT } from '@/lib/motion'
 import { SIGN_IN_EVENT } from '@/lib/account-client'
@@ -94,8 +96,6 @@ export function SignInSheet() {
     setNote(error === 'invalid-email' ? 'That email address looks off.' : error === 'rate-limited' ? 'A few too many links. Try again in a while.' : "Couldn't send the link. Try again.")
   }
 
-  const label = 'text-[10.5px] font-[600] tracking-[0.14em] uppercase text-ink-4'
-
   return (
     <>
       <AnimatePresence>
@@ -115,67 +115,67 @@ export function SignInSheet() {
                 role="dialog" aria-modal="true" aria-labelledby="signin-title"
                 initial={{ opacity: 0, y: 18, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: 10, transition: POP_OUT }} transition={POP_IN}
-                className="pointer-events-auto relative w-full sm:max-w-[392px] bg-popover text-popover-foreground border border-edge-strong rounded-t-[22px] sm:rounded-[22px] shadow-[0_28px_70px_-24px_rgba(0,0,0,0.4)] overflow-hidden"
+                className={CARD.shell + ' pointer-events-auto relative w-full sm:max-w-[360px] max-sm:rounded-b-none max-sm:border-b-0 max-sm:pb-[env(safe-area-inset-bottom)] shadow-[0_28px_70px_-24px_rgba(0,0,0,0.4)]'}
               >
                 <ColourStrip />
 
-                <div className="pl-7 pr-5 pt-4 flex items-center justify-between">
-                  <p className={label}>Member card</p>
-                  <div className="flex items-center gap-3">
-                    <p className="text-[12px] font-[600] tabular-nums tracking-[0.04em] text-[#E8A04A]" aria-label="No member number yet">No. ____</p>
-                    <button onClick={() => setOpen(false)} aria-label="Close" className="w-8 h-8 grid place-items-center rounded-[9px] text-ink-4 hover:text-ink hover:bg-foreground/[0.05] transition-colors">
+                <div className={CARD.pad + ' h-11 flex items-center justify-between'}>
+                  <p className={CARD.label}>Member card</p>
+                  <div className="flex items-center gap-2 -mr-2">
+                    <p className={CARD.number} aria-label="No member number yet">No. ____</p>
+                    <button onClick={() => setOpen(false)} aria-label="Close" className="w-8 h-8 grid place-items-center rounded-[8px] text-ink-4 hover:text-ink hover:bg-foreground/[0.05] transition-colors">
                       <X className="w-3.5 h-3.5" weight="bold" />
                     </button>
                   </div>
                 </div>
 
-                <div className="px-7 pt-5">
-                  <h2 id="signin-title" className="text-[27px] font-[640] tracking-[-0.035em] leading-[1.02]">
+                <div className={CARD.pad + ' pt-3'}>
+                  <h2 id="signin-title" className="text-[24px] font-[640] tracking-[-0.03em] leading-[1.05] text-ink">
                     {step === 'sent' ? 'Check your inbox.' : mode === 'join' ? 'Get your library card.' : 'Welcome back.'}
                   </h2>
-                  <p className="mt-2.5 text-[14px] leading-[1.45] text-ink-3 max-w-[300px] text-pretty">
+                  <p className={CARD.body + ' mt-2 text-pretty'}>
                     {step === 'sent'
                       ? <>A link is on its way to <span className="text-ink">{email}</span>. It works once, for 15 minutes.</>
                       : mode === 'join'
                         ? 'Keep your hearts and sets on every device. Free, no password.'
                         : 'Pick up your hearts and sets where you left them.'}
                   </p>
-                  {note && step !== 'sent' && <p role="status" className="mt-3 text-[13px] leading-[1.45] text-[#c8382f] dark:text-[#ff8a80]">{note}</p>}
+                  {note && step !== 'sent' && <p role="status" className="mt-2 text-[13px] leading-[1.45] text-[#c8382f] dark:text-[#ff8a80]">{note}</p>}
                 </div>
 
                 {step === 'sent' ? (
-                  <div className="px-7 pt-7 pb-7">
-                    <button className="text-[13.5px] text-ink-3 underline underline-offset-4 decoration-edge-strong hover:text-ink transition-colors" onClick={() => { setStep('choose'); setNote(null) }}>
+                  <div className={CARD.pad + ' pt-4 pb-5'}>
+                    <button className={CARD.meta + ' underline underline-offset-4 decoration-edge-strong hover:text-ink transition-colors'} onClick={() => { setStep('choose'); setNote(null) }}>
                       Use a different email
                     </button>
                   </div>
                 ) : (
                   <>
-                    <form onSubmit={sendLink} className="px-7 pt-6 pb-6">
+                    <form onSubmit={sendLink} className={CARD.pad + ' pt-4 pb-4'}>
                       <label htmlFor="signin-email" className="sr-only">Email</label>
-                      <div className="flex items-center gap-3 border-b border-edge-strong focus-within:border-foreground transition-colors">
+                      <div className="flex items-center gap-2 border-b border-edge-strong focus-within:border-foreground transition-colors">
                         <input
                           id="signin-email" ref={inputRef} type="email" required autoComplete="email" inputMode="email"
                           value={email} onChange={e => setEmail(e.target.value)} placeholder="you@studio.com"
-                          className="flex-1 min-w-0 h-11 bg-transparent outline-none text-[17px] tracking-[-0.01em] placeholder:text-ink-4"
+                          className="flex-1 min-w-0 h-11 bg-transparent outline-none text-[16px] tracking-[-0.01em] text-ink placeholder:text-ink-4"
                         />
                         <button
                           type="submit" disabled={step === 'sending'} aria-label="Email me a sign-in link"
-                          className="shrink-0 w-9 h-9 -mr-1 grid place-items-center rounded-full bg-foreground text-background disabled:opacity-40 hover:opacity-90 active:scale-95 transition"
+                          className="shrink-0 w-8 h-8 grid place-items-center rounded-full bg-foreground text-background disabled:opacity-40 hover:opacity-90 active:scale-95 transition"
                         >
-                          <ArrowRight className="w-4 h-4" weight="bold" />
+                          <ArrowRight className="w-3.5 h-3.5" weight="bold" />
                         </button>
                       </div>
-                      <p className="mt-2.5 text-[12px] text-ink-4">
+                      <p className={CARD.meta + ' mt-2'}>
                         {step === 'sending' ? 'Sending your link…' : <>We email a link. No password. <a href="/privacy" className="underline underline-offset-2 hover:text-ink">Privacy</a></>}
                       </p>
                     </form>
                     <a
                       href={`/api/auth/google?next=${encodeURIComponent(next())}`}
-                      className="flex items-center justify-between h-[54px] px-7 border-t border-edge text-[14px] font-[600] tracking-[-0.01em] text-ink hover:bg-foreground/[0.03] active:bg-foreground/[0.06] transition-colors focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[#E8A04A]"
+                      className={CARD.action + ' ' + CARD.pad + ' h-12 justify-between border-t border-edge'}
                     >
-                      <span className="flex items-center gap-2.5"><GoogleLogo className="w-4 h-4" weight="bold" /> Continue with Google</span>
-                      <ArrowRight className="w-3.5 h-3.5 text-ink-3" weight="bold" />
+                      <span className="flex items-center gap-2.5"><GoogleMark size={16} /> Continue with Google</span>
+                      <ArrowRight className="w-3.5 h-3.5 text-ink-4" weight="bold" />
                     </a>
                   </>
                 )}

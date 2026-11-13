@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { Brand } from '@/components/brand'
 import { SiteLinks } from '@/components/site-links'
+import { DeleteAccount } from '@/components/delete-account'
 
 export const metadata: Metadata = {
   title: 'Privacy',
@@ -31,12 +32,16 @@ const SECTIONS: { title: string; body: React.ReactNode }[] = [
     body: <>We count visits and clicks with PostHog and Cloudflare Web Analytics, without your email or name. To stop spam we keep a scrambled form of your IP address for a short window, never the address itself.</>,
   },
   {
+    title: 'Style kits',
+    body: <>When you download a style kit, we note which site and which month, to count the three free kits a month. That's all.</>,
+  },
+  {
     title: 'Who handles it',
     body: <>The site runs on Cloudflare. Accounts and the library live in a Neon database. Emails are sent by Resend. Screenshots are stored with Vercel Blob. Google handles Google sign-in. None of them may use your data for anything else, and we never sell it.</>,
   },
   {
     title: 'Your control',
-    body: <>Signed in, open the account menu to download everything we hold about you, or to delete your account. Deleting removes your account, saved sites, sets and sessions at once. For anything else, write to <a className="underline underline-offset-2 hover:text-ink" href="mailto:hello@damilare.works">hello@damilare.works</a>.</>,
+    body: <>Signed in, open the account menu to download everything we hold about you. You can delete your account here. Deleting removes your account, saved sites, sets and sessions at once. For anything else, write to <a className="underline underline-offset-2 hover:text-ink" href="mailto:hello@damilare.works">hello@damilare.works</a>.</>,
   },
 ]
 
@@ -63,6 +68,7 @@ export default function PrivacyPage() {
             <section key={s.title}>
               <h2 className="text-heading text-foreground mb-2">{s.title}</h2>
               <p className="text-reading text-ink-2">{s.body}</p>
+              {s.title === 'Your control' && <DeleteAccount />}
             </section>
           ))}
         </div>

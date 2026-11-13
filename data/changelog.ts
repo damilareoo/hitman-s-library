@@ -94,6 +94,8 @@ const changelog: ChangelogRelease[] = [
       { type: 'new', author: 'damilare', text: 'A plain privacy page says what we keep, why, and how to remove it' },
       { type: 'improved', author: 'damilare', text: 'Your Google photo shows in the header, and the account menu says what you have saved' },
       { type: 'improved', author: 'damilare', text: 'Sign-in and your account now look like a library card, in the colours you heart' },
+      { type: 'improved', author: 'damilare', text: 'Google sign-in shows the real Google mark, and both cards share one tighter layout' },
+      { type: 'improved', author: 'damilare', text: 'Deleting your account now lives on the privacy page, keeping the account card simple' },
     ],
   },
   {
