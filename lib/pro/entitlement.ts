@@ -23,7 +23,7 @@ const defaultDeps = (): EntitlementDeps => ({ sql: getSql(), now: () => new Date
 
 export interface SubscriptionState { status: string | null; current_period_end: Date | string | null }
 
-/** Pro while the subscription is active (or trialing) and its paid period hasn't ended. */
+/** Pro while the subscription is active (or trialing) and its paid period hasn't ended. The pro_users view applies the same rule in SQL. */
 export function isPro(sub: SubscriptionState | null, now: Date): boolean {
   if (!sub || (sub.status !== 'active' && sub.status !== 'trialing')) return false
   if (sub.current_period_end == null) return true
@@ -33,17 +33,13 @@ export function isPro(sub: SubscriptionState | null, now: Date): boolean {
 export interface Entitlement { pro: boolean; kitsUsed: number; kitsLimit: number }
 
 export async function getEntitlement(userId: string, deps: EntitlementDeps = defaultDeps()): Promise<Entitlement> {
+  // pro_users (migration 028) is the one definition of Pro: a live paid
+  // subscription (isPro's rule) or a complimentary team grant.
   const [row] = await deps.sql`
-    SELECT s.status, s.current_period_end,
+    SELECT EXISTS (SELECT 1 FROM pro_users p WHERE p.user_id = ${userId}) AS pro,
            (SELECT count(*)::int FROM kit_downloads k
-             WHERE k.user_id = ${userId} AND k.month = date_trunc('month', now() AT TIME ZONE 'utc')::date) AS used
-      FROM (SELECT 1) one
-      LEFT JOIN subscriptions s ON s.user_id = ${userId}`
-  return {
-    pro: isPro(row?.status ? row as SubscriptionState : null, deps.now()),
-    kitsUsed: Number(row?.used ?? 0),
-    kitsLimit: KIT_LIMIT,
-  }
+             WHERE k.user_id = ${userId} AND k.month = date_trunc('month', now() AT TIME ZONE 'utc')::date) AS used`
+  return { pro: Boolean(row?.pro), kitsUsed: Number(row?.used ?? 0), kitsLimit: KIT_LIMIT }
 }
 
 export type KitClaim =
@@ -56,9 +52,7 @@ export async function claimKit(userId: string, sourceId: number, deps: Entitleme
     sql`SELECT pg_advisory_xact_lock(hashtext('kit:' || ${userId}))`,
     sql`
       WITH m AS (SELECT date_trunc('month', now() AT TIME ZONE 'utc')::date AS month),
-      pro AS (SELECT EXISTS (SELECT 1 FROM subscriptions s WHERE s.user_id = ${userId}
-        -- The same rule as isPro.
-        AND s.status IN ('active', 'trialing') AND (s.current_period_end IS NULL OR s.current_period_end > now())) AS pro),
+      pro AS (SELECT EXISTS (SELECT 1 FROM pro_users p WHERE p.user_id = ${userId}) AS pro),
       prior AS (
         SELECT count(*)::int AS used, coalesce(bool_or(k.source_id = ${sourceId}), false) AS had
           FROM kit_downloads k, m WHERE k.user_id = ${userId} AND k.month = m.month

@@ -17,11 +17,10 @@ export async function GET(req: NextRequest) {
     SELECT r.id, r.url, r.normalized_url, r.status, r.source_id,
            r.preview_title, r.preview_image, r.request_count, r.created_at, r.email,
            r.note, r.credit,
-           -- Pro members' requests are reviewed first (the same rule as isPro).
-           (s.user_id IS NOT NULL) AS pro
+           -- Pro members' requests are reviewed first.
+           (p.user_id IS NOT NULL) AS pro
     FROM design_requests r
-    LEFT JOIN subscriptions s ON s.user_id = r.user_id
-      AND s.status IN ('active', 'trialing') AND (s.current_period_end IS NULL OR s.current_period_end > now())
+    LEFT JOIN pro_users p ON p.user_id = r.user_id
     WHERE r.status = ${status}
     ORDER BY pro DESC, r.request_count DESC, r.created_at DESC
     LIMIT 200

@@ -145,9 +145,7 @@ export async function POST(req: Request) {
         credit = COALESCE(design_requests.credit, EXCLUDED.credit),
         -- A Pro member asking again lifts the request; otherwise the first asker stays.
         user_id = CASE
-          WHEN EXCLUDED.user_id IS NOT NULL AND EXISTS (
-            SELECT 1 FROM subscriptions s WHERE s.user_id = EXCLUDED.user_id
-              AND s.status IN ('active', 'trialing') AND (s.current_period_end IS NULL OR s.current_period_end > now()))
+          WHEN EXCLUDED.user_id IS NOT NULL AND EXISTS (SELECT 1 FROM pro_users p WHERE p.user_id = EXCLUDED.user_id)
           THEN EXCLUDED.user_id
           ELSE COALESCE(design_requests.user_id, EXCLUDED.user_id) END,
         status = CASE WHEN design_requests.status = 'dismissed' THEN 'pending' ELSE design_requests.status END,

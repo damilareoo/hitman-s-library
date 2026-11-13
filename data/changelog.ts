@@ -105,6 +105,7 @@ const changelog: ChangelogRelease[] = [
       { type: 'improved', author: 'damilare', text: 'Panel tabs keep their icons, now one consistent bold set that fills when active' },
       { type: 'improved', author: 'damilare', text: 'The panel leads with the site name, with domain and category underneath' },
       { type: 'fixed', author: 'damilare', text: 'The kit download and free copies no longer hide behind the page links' },
+      { type: 'improved', author: 'damilare', text: 'Pro access is now checked by one rule everywhere it applies' },
       { type: 'improved', author: 'damilare', text: 'Grid thumbnails load faster on phones, with smaller images for nearly every site' },
       { type: 'improved', author: 'damilare', text: 'Site requests made while signed in are linked to your account for review' },
     ],

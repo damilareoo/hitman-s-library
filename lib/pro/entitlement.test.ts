@@ -32,11 +32,7 @@ function fakeDb(state: { pro?: boolean; claimed?: number[] }) {
       if (!had && (pro || used < KIT_LIMIT)) { claimed.add(source); inserted = 1 }
       return { q: 'claim', rows: [{ pro, used, had, inserted }] }
     }
-    if (q.includes('FROM subscriptions') || q.includes('FROM kit_downloads')) {
-      return Promise.resolve([{
-        status: state.pro ? 'active' : null, current_period_end: null, used: claimed.size,
-      }])
-    }
+    if (q.includes('FROM pro_users')) return Promise.resolve([{ pro: !!state.pro, used: claimed.size }])
     throw new Error('unexpected query ' + q)
   }
   sql.unsafe = (s: string) => ({ unsafe: s })
@@ -75,6 +71,10 @@ describe('claimKit', () => {
 })
 
 describe('getEntitlement', () => {
+  test('Pro comes from the pro_users view', async () => {
+    const { deps } = fakeDb({ pro: true, claimed: [1] })
+    expect(await getEntitlement('u', deps)).toEqual({ pro: true, kitsUsed: 1, kitsLimit: KIT_LIMIT })
+  })
   test('reports the month so far', async () => {
     const { deps } = fakeDb({ claimed: [1, 2] })
     expect(await getEntitlement('u', deps)).toEqual({ pro: false, kitsUsed: 2, kitsLimit: KIT_LIMIT })
