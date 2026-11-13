@@ -88,6 +88,8 @@ const changelog: ChangelogRelease[] = [
     date: '2026-11-13',
     title: 'Your Saves, Everywhere',
     items: [
+      { type: 'new', author: 'damilare', text: 'Pro now lives in the top bar, as the same colour-square word as the Pro card' },
+      { type: 'improved', author: 'damilare', text: 'Menus, panels and ⌘K respond faster, with quieter motion and no bounce' },
       { type: 'improved', author: 'damilare', text: 'Card images load faster and stay cached, so repeat visits show them instantly' },
       { type: 'improved', author: 'damilare', text: 'The ⌘K browser, Type tab and Submit page share the same cards, buttons and chips' },
       { type: 'fixed', author: 'damilare', text: 'Four sites that showed a borrowed share image now show real captures' },
