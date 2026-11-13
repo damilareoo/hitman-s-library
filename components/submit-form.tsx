@@ -1,6 +1,6 @@
 'use client'
 
-import { INPUT } from '@/components/member-card'
+import { BTN, INPUT } from '@/components/member-card'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { motion } from 'motion/react'
@@ -276,7 +276,7 @@ export function SubmitForm() {
           <button
             onClick={submit}
             disabled={submitting}
-            className="w-full h-9 inline-flex items-center justify-center gap-2 rounded-[10px] bg-foreground text-background text-bodytext font-medium hover:opacity-90 disabled:opacity-50 transition-opacity"
+            className={BTN.primaryLg + ' w-full gap-2'}
           >
             {submitting ? <Spinner className="w-3.5 h-3.5 border-t-background" /> : null}
             {isBatch
@@ -385,9 +385,9 @@ function PreviewCard({ preview }: { preview: PreviewState }) {
       >
         {preview.image ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={preview.image} alt="" className="w-14 h-10 rounded-[3px] object-cover object-top border border-edge-faint shrink-0" />
+          <img src={preview.image} alt="" className="w-14 h-10 rounded-[5px] object-cover object-top border border-edge-faint shrink-0" />
         ) : (
-          <span className="w-14 h-10 rounded-[3px] bg-muted border border-edge-faint shrink-0" />
+          <span className="w-14 h-10 rounded-[5px] bg-muted border border-edge-faint shrink-0" />
         )}
         <span className="min-w-0 flex-1">
           <span className="flex items-center gap-1.5 text-micro text-ink-4 mb-0.5">
@@ -447,12 +447,12 @@ function PreviewCard({ preview }: { preview: PreviewState }) {
     >
       {preview.image ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={preview.image} alt="" className="w-14 h-10 rounded-[3px] object-cover object-top border border-edge-faint shrink-0 bg-muted" />
+        <img src={preview.image} alt="" className="w-14 h-10 rounded-[5px] object-cover object-top border border-edge-faint shrink-0 bg-muted" />
       ) : preview.favicon ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={preview.favicon} alt="" className="w-14 h-10 rounded-[3px] object-contain p-2 border border-edge-faint shrink-0 bg-muted" />
+        <img src={preview.favicon} alt="" className="w-14 h-10 rounded-[5px] object-contain p-2 border border-edge-faint shrink-0 bg-muted" />
       ) : (
-        <span className="w-14 h-10 rounded-[3px] border border-edge-faint shrink-0 bg-muted" />
+        <span className="w-14 h-10 rounded-[5px] border border-edge-faint shrink-0 bg-muted" />
       )}
       <div className="min-w-0 flex-1">
         <p className="text-bodytext text-ink truncate">{preview.title}</p>
@@ -507,13 +507,13 @@ function BatchResults({
       <div className="mt-3 flex items-center justify-center gap-2">
         <button
           onClick={onAnother}
-          className="h-7 px-2.5 rounded-[10px] border border-edge-strong text-meta text-ink-3 hover:text-ink transition-colors"
+          className={BTN.secondary}
         >
           Submit more
         </button>
         <Link
           href="/"
-          className="h-7 px-3 rounded-[10px] bg-foreground text-background text-meta font-medium hover:opacity-85 transition-opacity inline-flex items-center"
+          className={BTN.primary}
         >
           Done
         </Link>
@@ -542,13 +542,13 @@ function SubmittedView({
       <div className="mt-5 flex items-center gap-2">
         <button
           onClick={onAnother}
-          className="h-7 px-2.5 rounded-[10px] border border-edge-strong text-meta text-ink-3 hover:text-ink transition-colors"
+          className={BTN.secondary}
         >
           Submit another
         </button>
         <Link
           href="/"
-          className="h-7 px-3 rounded-[10px] bg-foreground text-background text-meta font-medium hover:opacity-85 transition-opacity inline-flex items-center"
+          className={BTN.primary}
         >
           Back to the shelf
         </Link>

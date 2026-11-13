@@ -197,7 +197,7 @@ export default async function ChangelogPage(
                     </span>
                   )}
                   {i === 0 && (
-                    <span className="text-micro px-1.5 py-0.5 rounded-[4px] bg-foreground text-background">
+                    <span className="h-5 px-2 inline-flex items-center rounded-full bg-foreground text-background text-[11px] font-[600] tracking-[0.02em]">
                       Latest
                     </span>
                   )}

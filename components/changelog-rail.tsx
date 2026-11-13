@@ -201,7 +201,7 @@ export function ChangelogRail({ months }: ChangelogRailProps) {
         onClick={() => scrollToRelease(month.releases[0].index, true)}
         className={[
           'relative text-micro shrink-0 transition-colors duration-[var(--dur-2)] ease-[var(--ease-sig)]',
-          'focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-foreground/25 rounded-[3px]',
+          'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#E8A04A] rounded-[5px]',
           // Ten-pixel type is a ten-pixel target. The overlay gives the label
           // the same reach the dots beside it already have, without changing
           // how tightly the rail is drawn.
