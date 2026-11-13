@@ -101,7 +101,7 @@ const changelog: ChangelogRelease[] = [
       { type: 'new', author: 'damilare', text: 'Refine searches the library by colours from an image, a font, or readable text' },
       { type: 'improved', author: 'damilare', text: 'Account, sign-in, saved, digest and Pro cards now share one calmer layout' },
       { type: 'improved', author: 'damilare', text: 'Buttons, corners and spacing now match everywhere, including the site panel' },
-      { type: 'new', author: 'damilare', text: 'New Pro members get a welcome email with Pro drawn in their own colours' },
+      { type: 'new', author: 'damilare', text: 'New Pro members get a welcome email with Pro animating in their own colours' },
       { type: 'improved', author: 'damilare', text: 'Grid cards respond more clearly to hover, press and selection' },
       { type: 'improved', author: 'damilare', text: 'The Kit tab is shorter and easier to scan' },
       { type: 'improved', author: 'damilare', text: 'Search, sign-in, submit and every other field now share one input style' },

@@ -24,14 +24,24 @@ export const legible = (hex: string, dark: boolean) => {
   return sat > 0.42 && (dark ? l > 0.36 && l < 0.78 : l > 0.24 && l < 0.6)
 }
 
-/** The hue with the most colours within ±46°. */
+/**
+ * The middle of the densest ±46° run of hues: find the window holding the most
+ * colours, then take the circular mean of the hues inside it (the first window
+ * to reach the maximum sits off to one side of the colours).
+ */
 export function centreOf(swatches: Swatch[]): number {
-  let centre = 30, most = -1
-  for (let c = 0; c < 360; c += 10) {
+  if (!swatches.length) return 30
+  let best = 30, most = -1
+  for (let c = 0; c < 360; c += 5) {
     const n = swatches.filter(s => hueDist(hsl(s[0])[0], c) < 46).length
-    if (n > most) { most = n; centre = c }
+    if (n > most) { most = n; best = c }
   }
-  return centre
+  let sx = 0, sy = 0
+  for (const s of swatches) {
+    const h = hsl(s[0])[0]
+    if (hueDist(h, best) < 46) { sx += Math.cos(h * Math.PI / 180); sy += Math.sin(h * Math.PI / 180) }
+  }
+  return (Math.atan2(sy, sx) * 180 / Math.PI + 360) % 360
 }
 
 /** One coherent window of colours, centred on the member's own (or on the library's when they have none). */
