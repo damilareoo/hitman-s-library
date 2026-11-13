@@ -116,14 +116,15 @@ export function DesignCard({ design, index, isSelected, onClick, onHover, onTagC
       className={
         (cssEnter ? 'card-enter ' : '') +
         'group relative flex flex-col rounded-[12px] overflow-hidden border cursor-pointer ' +
-        'transition-[border-color,outline-color,outline-offset] duration-[var(--dur-1)] ease-[var(--ease-hover)] ' +
-        // Selected: a ring 3px outside the card. Outlines follow the radius, so
-        // its corner (12 + 3) stays concentric with the card's own.
-        'outline outline-[1.5px] outline-offset-[3px] ' +
-        // Keyboard focus anywhere in the card shows the same ring, in amber.
-        'has-[:focus-visible]:outline-[#E8A04A] has-[:focus-visible]:outline-2 ' +
+        'transition-[border-color,outline-color,outline-offset,background-color] duration-[var(--dur-1)] ease-[var(--ease-hover)] ' +
+        // Selected, in the card system's own language: the card takes the
+        // header tint, its border firms up, and a soft neutral halo hugs it
+        // (an outline follows the radius, so the halo stays concentric).
+        'outline outline-[3px] outline-offset-0 ' +
+        // Keyboard focus anywhere in the card shows a ring in the accent.
+        'has-[:focus-visible]:outline-[#E8A04A] has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-[3px] ' +
         (isSelected
-          ? 'border-edge-strong outline-foreground'
+          ? 'bg-foreground/[0.025] border-foreground/25 outline-foreground/[0.07]'
           : 'border-edge outline-transparent hover:border-edge-strong active:border-foreground/30')
       }
     >
