@@ -1,103 +1,99 @@
 // components/pro-word.tsx
 //
-// The Pro mark at header size: the same word as the Pro card and the welcome
-// email, built from small squares of real library colours (2px pitch, 1.6px
-// squares, 14px tall). The squares sweep in once, left to right, when the
-// header first paints, then rest. Hover only firms the label; nothing moves
-// on something seen this often. Reduced motion draws it finished.
+// Pro in the header: the word itself, in BDO Grotesk, filled with the same
+// library colours as the Pro card (one coherent hue window, hue running left
+// to right). On first paint the word sits pale, then the colours wash across
+// it once, the way Refero's type arrives, and it rests. Nothing moves on
+// hover; it's seen too often for that. Members see the same mark; it opens
+// Manage. Reduced motion shows it at rest straight away.
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useAccount } from '@/lib/account-client'
-import { hueWindow, centreOf, sortForSlots, fill, type Swatch } from '@/lib/pro/palette'
+import { hsl, hueWindow, centreOf, hueDist, type Swatch } from '@/lib/pro/palette'
 
-const H = 14, PITCH = 2, TILE = 1.6, SWEEP = 420, FADE = 160
-const FONT = (fs: number) => `760 ${fs}px "BDO Grotesk", "Helvetica Neue", system-ui, sans-serif`
-// Amber, the Pro colour, for the moment before library colours arrive.
-const FALLBACK: Swatch[] = ['#e8a04a', '#d9822b', '#c96a1c', '#f0b36a', '#e07b39', '#d4952f'].map(c => [c, ''] as Swatch)
+// Amber, the Pro colour, until library colours arrive.
+const AMBER = ['#c96a1c', '#d9822b', '#e07b39', '#e8a04a', '#d4952f']
+const W = 27, SWEEP_MS = 900
+// Far enough left that the colour-to-pale edge clears the P before the sweep.
+const START = -Math.round(W * 1.3)
+const TYPE = { font: '760 15px "BDO Grotesk", "Helvetica Neue", system-ui, sans-serif', letterSpacing: '-0.03em' }
+
+/** Five stops across the hue window: hue left to right, each legible on the surface. */
+function stops(colors: string[], dark: boolean): string[] {
+  const all = colors.filter(c => /^#[0-9a-f]{6}$/i.test(c)).map(c => [c.toLowerCase(), ''] as Swatch)
+  if (!all.length) return AMBER
+  const pool = hueWindow(all, all, dark)
+  const centre = centreOf(pool)
+  const rel = (c: string) => ((hsl(c)[0] - centre + 540) % 360) - 180
+  const sorted = [...new Set(pool.map(s => s[0]))].filter(c => hueDist(hsl(c)[0], centre) < 46).sort((a, b) => rel(a) - rel(b))
+  if (sorted.length < 3) return AMBER
+  return [0, 0.25, 0.5, 0.75, 1].map(t => sorted[Math.round(t * (sorted.length - 1))])
+}
 
 export function ProWord({ colors }: { colors: string[] }) {
-  // Members see the same mark, as their badge; it opens Manage.
   const pro = Boolean(useAccount().pro)
-  const ref = useRef<HTMLCanvasElement>(null)
-  const drawn = useRef(false)
-  const key = colors.slice(0, 60).join(',')
+  const id = useId().replace(/:/g, '')
+  const [dark, setDark] = useState(false)
+  const [phase, setPhase] = useState<'pale' | 'sweep' | 'rest'>('pale')
+  const started = useRef(false)
+  const sweep = useRef<SVGAnimateTransformElement>(null)
+
+  // SMIL begins on the document clock; one added after load has to be started.
+  useEffect(() => { if (phase === 'sweep') sweep.current?.beginElement() }, [phase])
 
   useEffect(() => {
-    const cv = ref.current
-    if (!cv) return
-    let raf = 0, cancelled = false
-    const draw = () => {
-      const dark = document.documentElement.classList.contains('dark')
-      const all = colors.filter(c => /^#[0-9a-f]{6}$/i.test(c)).map(c => [c.toLowerCase(), ''] as Swatch)
-      const pool = all.length ? hueWindow(all, all, dark) : FALLBACK
-      const centre = centreOf(pool)
-      const DPR = Math.min(2, window.devicePixelRatio || 1)
-
-      // The word's shape, sampled at 8x so each square reads its true coverage.
-      const fs = H / 0.72
-      const g = document.createElement('canvas').getContext('2d')!
-      g.font = FONT(fs); g.letterSpacing = `${-fs * 0.03}px`
-      const m = g.measureText('Pro')
-      const W = Math.ceil(m.actualBoundingBoxLeft + m.actualBoundingBoxRight) + 2
-      const HH = Math.ceil(m.actualBoundingBoxAscent + m.actualBoundingBoxDescent) + 2
-      const S = 8, mc = document.createElement('canvas'); mc.width = W * S; mc.height = HH * S
-      const mg = mc.getContext('2d')!; mg.scale(S, S); mg.font = g.font; mg.letterSpacing = g.letterSpacing
-      mg.fillText('Pro', m.actualBoundingBoxLeft + 1, m.actualBoundingBoxAscent + 1)
-      const md = mg.getImageData(0, 0, W * S, HH * S).data
-      const slots: [number, number][] = []
-      for (let y = 0; y + TILE <= HH; y += PITCH) for (let x = 0; x + TILE <= W; x += PITCH) {
-        let on = 0, n = 0
-        for (let a = 0; a < TILE * S; a += 2) for (let c = 0; c < TILE * S; c += 2) {
-          n++; if (md[(Math.floor(y * S + a) * W * S + Math.floor(x * S + c)) * 4 + 3] > 128) on++
-        }
-        if (on / n > 0.45) slots.push([x, y])
-      }
-      const cols = sortForSlots(slots, fill(pool, slots.length, 7), centre)
-
-      cv.width = W * DPR; cv.height = HH * DPR
-      cv.style.width = `${W}px`; cv.style.height = `${HH}px`
-      const ctx = cv.getContext('2d')!
-      ctx.setTransform(DPR, 0, 0, DPR, 0, 0)
-      const paint = (t: number) => {
-        ctx.clearRect(0, 0, W, HH)
-        slots.forEach(([x, y], i) => {
-          const a = Math.max(0, Math.min(1, (t - (x / W) * SWEEP) / FADE))
-          if (!a) return
-          ctx.globalAlpha = a; ctx.fillStyle = cols[i][0]; ctx.fillRect(x, y, TILE, TILE)
-        })
-        ctx.globalAlpha = 1
-      }
-      // The sweep plays once per page view; redraws (theme, colours) are instant.
-      if (drawn.current || matchMedia('(prefers-reduced-motion: reduce)').matches) { paint(1e9); return }
-      drawn.current = true
-      const t0 = performance.now()
-      const tick = (now: number) => {
-        if (cancelled) return
-        const t = now - t0
-        paint(t)
-        if (t < SWEEP + FADE) raf = requestAnimationFrame(tick)
-      }
-      raf = requestAnimationFrame(tick)
-    }
-    const start = () => { if (!cancelled) draw() }
-    // The word is set in BDO Grotesk; wait for it so the shape is the real one.
-    document.fonts?.load(FONT(20)).then(start, start)
-    const mo = new MutationObserver(() => { cancelAnimationFrame(raf); start() })
+    const read = () => setDark(document.documentElement.classList.contains('dark'))
+    read()
+    const mo = new MutationObserver(read)
     mo.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] })
-    return () => { cancelled = true; cancelAnimationFrame(raf); mo.disconnect() }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [key])
+    if (!started.current) {
+      started.current = true
+      if (matchMedia('(prefers-reduced-motion: reduce)').matches) setPhase('rest')
+      else {
+        // After the face loads, so the sweep runs over the real letterforms.
+        const go = () => setPhase('sweep')
+        document.fonts?.ready.then(go, go)
+      }
+    }
+    return () => mo.disconnect()
+  }, [])
+
+  const c = stops(colors, dark)
+  const pale = dark ? 'rgba(232,228,220,0.2)' : 'rgba(22,22,21,0.13)'
 
   return (
     <Link
       href="/pro"
       aria-label={pro ? 'Your Pro membership' : 'Hitman’s Library Pro'}
       title={pro ? 'Your Pro membership' : 'Pro: unlimited kits and search by palette'}
-      className="relative inline-flex items-center h-8 px-1.5 mr-0.5 rounded-[10px] hover:bg-foreground/[0.05] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#E8A04A] after:absolute after:inset-x-0 after:top-1/2 after:h-11 after:-translate-y-1/2 after:content-['']"
+      className="relative inline-flex items-center h-8 px-2 rounded-[10px] hover:bg-foreground/[0.05] transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#E8A04A] after:absolute after:inset-x-0 after:top-1/2 after:h-11 after:-translate-y-1/2 after:content-['']"
     >
-      <canvas ref={ref} aria-hidden="true" className="block" width={30} height={16} />
+      <svg width={W} height="14" viewBox={`0 0 ${W} 14`} aria-hidden="true" className="block overflow-visible">
+        <defs>
+          {/* Twice the word's width: colours on the left half, pale on the
+              right. It starts shifted one word-width left (pale over the
+              letters) and slides home, so the colours wash in from the left. */}
+          <linearGradient
+            id={`pw-${id}`} gradientUnits="userSpaceOnUse" x1="0" y1="0" x2={2 * W} y2="0"
+            gradientTransform={phase === 'pale' ? `translate(${START} 0)` : undefined}
+          >
+            {c.map((col, i) => <stop key={i} offset={i * 0.1} stopColor={col} />)}
+            <stop offset="0.5" stopColor={c[c.length - 1]} />
+            <stop offset="0.64" stopColor={pale} />
+            <stop offset="1" stopColor={pale} />
+            {phase === 'sweep' && (
+              <animateTransform
+                ref={sweep}
+                attributeName="gradientTransform" type="translate" from={`${START} 0`} to="0 0"
+                begin="indefinite" dur={`${SWEEP_MS}ms`} fill="freeze" calcMode="spline" keyTimes="0;1" keySplines="0.23 1 0.32 1"
+              />
+            )}
+          </linearGradient>
+        </defs>
+        <text x="0" y="11.6" fill={`url(#pw-${id})`} style={TYPE}>Pro</text>
+      </svg>
     </Link>
   )
 }
