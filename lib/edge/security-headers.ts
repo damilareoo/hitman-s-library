@@ -30,8 +30,8 @@ function contentSecurityPolicy(previewOrigin: string): string {
     // Next's App Router ships its payload as inline scripts.
     // Cloudflare injects its Web Analytics beacon into every page at the edge.
     // Paddle.js runs checkout in its own frame; only Paddle's hosts are allowed.
-    "script-src 'self' 'unsafe-inline' https://us-assets.i.posthog.com https://static.cloudflareinsights.com https://cdn.paddle.com",
-    `style-src 'self' 'unsafe-inline' ${FONT_CSS} https://cdn.paddle.com`,
+    "script-src 'self' 'unsafe-inline' https://us-assets.i.posthog.com https://static.cloudflareinsights.com https://cdn.paddle.com https://sandbox-cdn.paddle.com",
+    `style-src 'self' 'unsafe-inline' ${FONT_CSS} https://cdn.paddle.com https://sandbox-cdn.paddle.com`,
     `font-src 'self' data: ${FONT_FILES}`,
     // Captures, favicons and thumbnails come from many hosts, always over https.
     "img-src 'self' data: blob: https:",

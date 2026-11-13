@@ -69,7 +69,7 @@ export function useSavedCounts() {
 const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`
 
 export function AccountButton() {
-  const { status, user } = useAccount()
+  const { status, user, pro } = useAccount()
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
   const counts = useSavedCounts()
@@ -136,6 +136,10 @@ export function AccountButton() {
               {plural(counts.hearts, 'heart', 'hearts')} · {plural(counts.sets, 'set', 'sets')} · since {since}
             </p>
 
+            <a href="/pro" role="menuitem" className={CARD.action + ' ' + CARD.pad + ' justify-between border-t border-edge font-[500]'}>
+              {pro ? <span className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-[#E8A04A]" /> Pro</span> : <span>Go Pro <span className="text-ink-4 font-[500]">· unlimited kits</span></span>}
+              <span className="text-ink-4 text-[12px] font-[500]">{pro ? 'Manage' : '→'}</span>
+            </a>
             <div className="grid grid-cols-2 border-t border-edge">
               <a href="/api/me/export" role="menuitem" className={CARD.action + ' justify-center'}><DownloadSimple className="w-3.5 h-3.5" weight="bold" /> Your data</a>
               <button role="menuitem" className={CARD.action + ' justify-center border-l border-edge'} onClick={() => { setOpen(false); void signOut() }}><SignOut className="w-3.5 h-3.5" weight="bold" /> Sign out</button>

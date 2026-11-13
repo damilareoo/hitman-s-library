@@ -51,7 +51,7 @@ export function KitAction({ siteId }: { siteId: number }) {
   return (
     <div className="flex items-center gap-3 w-full min-w-0">
       <span role="status" className={'flex-1 min-w-0 truncate text-[12px] ' + (phase === 'limit' || phase === 'failed' ? 'text-ink-2' : 'text-ink-4')}>
-        {note}{atLimit && <span className="max-sm:hidden"> · Pro has no limit</span>}
+        {note}{atLimit && <> · <a href="/pro" className="underline underline-offset-2 text-ink-2 hover:text-ink">Go Pro</a><span className="max-sm:hidden"> for no limit</span></>}
       </span>
       <button
         type="button" onClick={get} disabled={phase === 'packing'}
