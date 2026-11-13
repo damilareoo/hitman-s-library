@@ -252,7 +252,7 @@ export function ProMark({ ids, pad = 16, className = '' }: { ids?: number[]; pad
       <canvas ref={ref} role="img" aria-label="Pro, made of colours from the library" className="block touch-none" />
       <button
         type="button" onClick={() => replayRef.current()} aria-label="Replay" title="Replay"
-        className="absolute top-2.5 right-2.5 w-8 h-8 grid place-items-center rounded-[10px] text-ink-4 hover:text-ink hover:bg-foreground/[0.05] opacity-0 rotate-[30deg] group-hover/pro:opacity-100 group-hover/pro:rotate-0 focus-visible:opacity-100 focus-visible:rotate-0 [@media(hover:none)]:opacity-70 [@media(hover:none)]:rotate-0 transition-[opacity,transform,background-color,color] duration-300 ease-[cubic-bezier(.2,.8,.2,1)]"
+        className="absolute top-2.5 right-2.5 w-8 h-8 grid place-items-center rounded-[10px] text-ink-4 hover:text-ink hover:bg-foreground/[0.05] opacity-0 rotate-[30deg] group-hover/pro:opacity-100 group-hover/pro:rotate-0 focus-visible:opacity-100 focus-visible:rotate-0 [@media(hover:none)]:opacity-70 [@media(hover:none)]:rotate-0 transition-[opacity,transform,background-color,color] duration-200 ease-[var(--ease-sig)]"
       >
         <ArrowCounterClockwise className="w-[15px] h-[15px]" weight="bold" />
       </button>

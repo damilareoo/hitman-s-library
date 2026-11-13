@@ -1,10 +1,11 @@
 // Motion constants for motion/react — mirrors --ease-* / --dur-* in globals.css.
 //
-// One curve cannot serve every job. EASE is the signature curve for things
-// entering and leaving. Movement across the screen wants symmetric
-// acceleration, and hover/press wants something plainer that never overshoots.
-export const EASE = [0.22, 1, 0.36, 1] as const
-export const MOVE_EASE = [0.65, 0, 0.35, 1] as const
+// Fast and quiet: strong ease-out for anything entering or leaving, no
+// overshoot in everyday UI, exits quicker than entrances. Transforms are
+// written as full strings so motion hands them to the compositor; the x/y/scale
+// shorthands run on the main thread and drop frames while a panel loads.
+export const EASE = [0.23, 1, 0.32, 1] as const
+export const MOVE_EASE = [0.77, 0, 0.175, 1] as const
 export const HOVER_EASE = [0.4, 0, 0.2, 1] as const
 
 export const DUR = {
@@ -15,8 +16,14 @@ export const DUR = {
   reveal: 0.45,
 } as const
 
-// A modal's first breath: a stiff spring that lands with a hair of overshoot
-// so the surface reads as a physical thing snapping into place. The exit is
-// the other half of the pair — fast and dead, no bounce on the way out.
-export const POP_IN = { type: 'spring', stiffness: 500, damping: 34, mass: 0.85 } as const
-export const POP_OUT = { duration: 0.13, ease: EASE } as const
+/** Popovers, menus and modals: 180ms in, 120ms out, no bounce. */
+export const POP_IN = { duration: 0.18, ease: EASE } as const
+export const POP_OUT = { duration: 0.12, ease: EASE } as const
+
+/** A menu or popover dropping from its trigger (set transformOrigin to the trigger's corner). */
+export const MENU = {
+  initial: { opacity: 0, transform: 'translateY(-4px) scale(0.98)' },
+  animate: { opacity: 1, transform: 'translateY(0px) scale(1)' },
+  exit: { opacity: 0, transform: 'translateY(-2px) scale(0.99)', transition: POP_OUT },
+  transition: POP_IN,
+} as const

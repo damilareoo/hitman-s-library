@@ -17,7 +17,7 @@ import { KitTab } from './kit-tab'
 import { DRIFT_ENABLED } from '@/lib/drift'
 import { UNSORTED } from '@/lib/categories'
 import { Spinner } from './ui/spinner'
-import { EASE, DUR, POP_IN, POP_OUT } from '@/lib/motion'
+import { EASE, DUR, MENU } from '@/lib/motion'
 import type { Design } from './design-card'
 import { fetchDetail, getCachedDetail } from '@/lib/detail-cache'
 import { useAccount, openSignIn } from '@/lib/account-client'
@@ -224,10 +224,7 @@ export function SiteDetailPanel({ variant = 'desktop', sourceId, metadata, initi
               {saveOpen && (
                 <motion.div
                   key="save-popover"
-                  initial={{ opacity: 0, scale: 0.96, y: -4 }}
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.98, y: -2, transition: POP_OUT }}
-                  transition={POP_IN}
+                  {...MENU}
                   style={{ transformOrigin: 'top right' }}
                   className={CARD.shell + ' absolute right-0 top-[calc(100%+6px)] z-50 w-[260px] shadow-[0_24px_56px_-20px_rgba(0,0,0,0.35)]'}
                 >
@@ -323,18 +320,18 @@ export function SiteDetailPanel({ variant = 'desktop', sourceId, metadata, initi
         {data ? (
           <motion.div
             key={`data-${sourceId}`}
-            initial={{ opacity: 0, y: 4 }}
-            animate={{ opacity: 1, y: 0 }}
+            initial={{ opacity: 0, transform: 'translateY(4px)' }}
+            animate={{ opacity: 1, transform: 'translateY(0px)' }}
             exit={{ opacity: 0 }}
-            transition={{ duration: DUR.move, ease: EASE }}
+            transition={{ duration: DUR.color, ease: EASE }}
             className="flex flex-col flex-1 min-h-0"
           >
             <AnimatePresence mode="wait">
               {effectiveTab === 'preview' && (
                 <motion.div key="preview" className="flex flex-col flex-1 min-h-0"
-                  initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: DUR.move, ease: EASE }}
-                  exit={{ opacity: 0, y: -4, transition: { duration: DUR.exit } }}>
+                  initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                  transition={{ duration: 0.15, ease: EASE }}
+                  exit={{ opacity: 0, transition: { duration: 0 } }}>
                   <PreviewTab
                     siteUrl={data.url}
                     screenshotUrl={data.screenshot_url}
@@ -348,9 +345,9 @@ export function SiteDetailPanel({ variant = 'desktop', sourceId, metadata, initi
               )}
               {!isMobile && activeTab === 'mobile' && (
                 <motion.div key="mobile" className="flex flex-col flex-1 min-h-0"
-                  initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: DUR.move, ease: EASE }}
-                  exit={{ opacity: 0, y: -4, transition: { duration: DUR.exit } }}>
+                  initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                  transition={{ duration: 0.15, ease: EASE }}
+                  exit={{ opacity: 0, transition: { duration: 0 } }}>
                   <PreviewTab
                     siteUrl={data.url}
                     screenshotUrl={data.screenshot_url}
@@ -362,33 +359,33 @@ export function SiteDetailPanel({ variant = 'desktop', sourceId, metadata, initi
               )}
               {effectiveTab === 'colors' && (
                 <motion.div key="colors" className="flex flex-col flex-1 min-h-0"
-                  initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: DUR.move, ease: EASE }}
-                  exit={{ opacity: 0, y: -4, transition: { duration: DUR.exit } }}>
+                  initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                  transition={{ duration: 0.15, ease: EASE }}
+                  exit={{ opacity: 0, transition: { duration: 0 } }}>
                   <ColorsTab colors={data.colors} extractionError={data.extraction_error} onFindColor={onFindColor} />
                 </motion.div>
               )}
               {effectiveTab === 'type' && (
                 <motion.div key="type" className="flex flex-col flex-1 min-h-0"
-                  initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: DUR.move, ease: EASE }}
-                  exit={{ opacity: 0, y: -4, transition: { duration: DUR.exit } }}>
+                  initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                  transition={{ duration: 0.15, ease: EASE }}
+                  exit={{ opacity: 0, transition: { duration: 0 } }}>
                   <TypeTab typography={data.typography} extractionError={data.extraction_error} />
                 </motion.div>
               )}
               {effectiveTab === 'kit' && (
                 <motion.div key="kit" className="flex flex-col flex-1 min-h-0"
-                  initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: DUR.move, ease: EASE }}
-                  exit={{ opacity: 0, y: -4, transition: { duration: DUR.exit } }}>
+                  initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                  transition={{ duration: 0.15, ease: EASE }}
+                  exit={{ opacity: 0, transition: { duration: 0 } }}>
                   <KitTab siteId={data.id} siteUrl={data.url} hostname={hostname} colors={data.colors} typography={data.typography} />
                 </motion.div>
               )}
               {DRIFT_ENABLED && effectiveTab === 'history' && (
                 <motion.div key="history" className="flex flex-col flex-1 min-h-0"
-                  initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: DUR.move, ease: EASE }}
-                  exit={{ opacity: 0, y: -4, transition: { duration: DUR.exit } }}>
+                  initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                  transition={{ duration: 0.15, ease: EASE }}
+                  exit={{ opacity: 0, transition: { duration: 0 } }}>
                   <HistoryTab siteId={sourceId} />
                 </motion.div>
               )}

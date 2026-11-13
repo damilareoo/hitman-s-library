@@ -10,7 +10,7 @@ import { motion, AnimatePresence } from 'motion/react'
 import { ArrowRight, X } from '@phosphor-icons/react'
 import { GoogleMark } from '@/components/google-mark'
 import { CARD, BTN, FIELD, FIELD_INPUT } from '@/components/member-card'
-import { POP_IN, POP_OUT } from '@/lib/motion'
+import { EASE, POP_OUT } from '@/lib/motion'
 import { SIGN_IN_EVENT } from '@/lib/account-client'
 
 const ERRORS: Record<string, string> = {
@@ -112,8 +112,8 @@ export function SignInSheet() {
                 key="signin-sheet"
                 ref={sheetRef}
                 role="dialog" aria-modal="true" aria-labelledby="signin-title"
-                initial={{ opacity: 0, y: 18, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: 10, transition: POP_OUT }} transition={POP_IN}
+                initial={{ opacity: 0, transform: 'translateY(16px) scale(0.98)' }} animate={{ opacity: 1, transform: 'translateY(0px) scale(1)' }}
+                exit={{ opacity: 0, transform: 'translateY(8px) scale(0.99)', transition: POP_OUT }} transition={{ duration: 0.22, ease: EASE }}
                 className={CARD.shell + ' pointer-events-auto relative w-full sm:max-w-[344px] max-sm:rounded-b-none max-sm:border-b-0 max-sm:pb-[env(safe-area-inset-bottom)] shadow-[0_28px_70px_-24px_rgba(0,0,0,0.4)]'}
               >
                 <div className={CARD.head}>
@@ -182,7 +182,7 @@ export function SignInSheet() {
           <div className="fixed bottom-5 inset-x-0 z-[82] flex justify-center pointer-events-none">
             <motion.div
               role="status"
-              initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 4 }} transition={{ duration: 0.2 }}
+              initial={{ opacity: 0, transform: 'translateY(8px)' }} animate={{ opacity: 1, transform: 'translateY(0px)' }} exit={{ opacity: 0, transform: 'translateY(4px)', transition: POP_OUT }} transition={{ duration: 0.2, ease: EASE }}
               className="px-3.5 h-9 grid place-items-center rounded-[10px] bg-foreground text-background text-[13px] font-[600] tracking-[-0.01em]"
             >
               {toast}

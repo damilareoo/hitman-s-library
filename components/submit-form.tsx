@@ -378,8 +378,8 @@ function PreviewCard({ preview }: { preview: PreviewState }) {
   if (preview.kind === 'existing') {
     return (
       <motion.div
-        initial={{ opacity: 0, y: 4 }}
-        animate={{ opacity: 1, y: 0 }}
+        initial={{ opacity: 0, transform: 'translateY(4px)' }}
+        animate={{ opacity: 1, transform: 'translateY(0px)' }}
         transition={{ duration: DUR.color, ease: EASE }}
         className="mt-3 flex items-center gap-3 p-2.5 rounded-[10px] border border-edge bg-muted/30"
       >
@@ -410,8 +410,8 @@ function PreviewCard({ preview }: { preview: PreviewState }) {
     const added = preview.status === 'added'
     return (
       <motion.div
-        initial={{ opacity: 0, y: 4 }}
-        animate={{ opacity: 1, y: 0 }}
+        initial={{ opacity: 0, transform: 'translateY(4px)' }}
+        animate={{ opacity: 1, transform: 'translateY(0px)' }}
         transition={{ duration: DUR.color, ease: EASE }}
         className="mt-3 p-2.5 rounded-[10px] border border-edge bg-muted/30"
       >
@@ -440,8 +440,8 @@ function PreviewCard({ preview }: { preview: PreviewState }) {
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 4 }}
-      animate={{ opacity: 1, y: 0 }}
+      initial={{ opacity: 0, transform: 'translateY(4px)' }}
+      animate={{ opacity: 1, transform: 'translateY(0px)' }}
       transition={{ duration: DUR.color, ease: EASE }}
       className="mt-3 flex items-center gap-3 p-2.5 rounded-[10px] border border-edge bg-muted/30"
     >
@@ -473,8 +473,8 @@ function BatchResults({
   const received = results.filter(r => r.state === 'received').length
   return (
     <motion.div
-      initial={{ opacity: 0, y: 6 }}
-      animate={{ opacity: 1, y: 0 }}
+      initial={{ opacity: 0, transform: 'translateY(6px)' }}
+      animate={{ opacity: 1, transform: 'translateY(0px)' }}
       transition={{ duration: DUR.move, ease: EASE }}
       className="mt-4 rounded-[10px] border border-edge bg-muted/30 p-2.5"
     >
@@ -527,8 +527,8 @@ function SubmittedView({
 }: { title: string | null; count: number; onAnother: () => void }) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 6 }}
-      animate={{ opacity: 1, y: 0 }}
+      initial={{ opacity: 0, transform: 'translateY(6px)' }}
+      animate={{ opacity: 1, transform: 'translateY(0px)' }}
       transition={{ duration: DUR.move, ease: EASE }}
     >
       <h2 className="text-heading text-foreground">

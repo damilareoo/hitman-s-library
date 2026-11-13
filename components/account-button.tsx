@@ -14,7 +14,7 @@ import { SignIn, DownloadSimple, SignOut, EnvelopeSimple } from '@phosphor-icons
 import { GoogleMark } from '@/components/google-mark'
 import { ProMark } from '@/components/pro-mark'
 import { CARD } from '@/components/member-card'
-import { POP_IN, POP_OUT } from '@/lib/motion'
+import { MENU } from '@/lib/motion'
 import { COLLECTIONS_EVENT } from '@/lib/collections'
 import { useAccount, openSignIn, signOut, FAVORITES_EVENT, type AccountUser } from '@/lib/account-client'
 
@@ -110,8 +110,7 @@ export function AccountButton() {
         {open && (
           <motion.div
             role="menu"
-            initial={{ opacity: 0, y: -6, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -4, transition: POP_OUT }} transition={POP_IN}
+            {...MENU}
             style={{ transformOrigin: 'top right' }}
             className={CARD.shell + ' absolute right-0 top-10 z-50 w-[300px] max-sm:fixed max-sm:inset-x-3 max-sm:top-[60px] max-sm:w-auto shadow-[0_24px_56px_-20px_rgba(0,0,0,0.35)]'}
           >

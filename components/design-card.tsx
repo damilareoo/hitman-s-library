@@ -33,7 +33,7 @@ export interface Design {
 }
 
 export const cardVariants = {
-  hidden: { opacity: 0, y: 12 },
+  hidden: { opacity: 0, transform: 'translateY(12px)' },
   show: { opacity: 1, y: 0, transition: { duration: DUR.move, ease: EASE } },
 }
 
@@ -105,8 +105,8 @@ export function DesignCard({ design, index, isSelected, onClick, onHover, onTagC
       // First paint enters with the CSS .card-enter animation, which runs from
       // the server HTML; waiting for JavaScript held the grid invisible for
       // seconds on a phone. Later cards crossfade in through motion.
-      initial={hasAnimated ? { opacity: 0, y: 6 } : false}
-      animate={hasAnimated ? { opacity: 1, y: 0 } : 'show'}
+      initial={hasAnimated ? { opacity: 0, transform: 'translateY(6px)' } : false}
+      animate={hasAnimated ? { opacity: 1, transform: 'translateY(0px)' } : 'show'}
       transition={hasAnimated ? { duration: DUR.color, ease: EASE } : undefined}
       exit={{ opacity: 0, transition: { duration: DUR.exit } }}
       onHoverStart={() => { onHover(); if (design.motion_clip_url) setPlaying(true) }}
@@ -158,7 +158,7 @@ export function DesignCard({ design, index, isSelected, onClick, onHover, onTagC
             onError={handleImgError}
             unoptimized={!isOptimizable}
             // Hover eases the screenshot in a touch; a press dims it for an instant.
-            className={"hover-zoom object-cover object-top transition-[opacity,transform,filter] duration-[600ms] ease-[var(--ease-sig)] group-active:brightness-[.94] group-active:duration-100 " + (imgStatus === 'loading' ? 'opacity-0' : 'opacity-100')}
+            className={"hover-zoom object-cover object-top transition-[opacity,transform,filter] duration-300 ease-[var(--ease-sig)] group-active:brightness-[.94] group-active:duration-100 " + (imgStatus === 'loading' ? 'opacity-0' : 'opacity-100')}
           />
         )}
         {imgStatus === 'error' && (
@@ -182,7 +182,7 @@ export function DesignCard({ design, index, isSelected, onClick, onHover, onTagC
         )}
 
         {/* Hover scrim — subtle, not harsh */}
-        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/[0.04] dark:group-hover:bg-black/[0.1] transition-colors duration-300 pointer-events-none" />
+        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/[0.04] dark:group-hover:bg-black/[0.1] transition-colors duration-200 pointer-events-none" />
         {DRIFT_ENABLED && design.redesigned && (
           <span className="absolute top-2 left-2 rounded-full border border-edge bg-background/90 px-2 py-0.5 text-micro text-ink-2 backdrop-blur-sm">
             Redesigned

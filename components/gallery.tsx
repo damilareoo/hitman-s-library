@@ -25,7 +25,7 @@ import { useSoundsContext } from '@/contexts/sounds-context'
 import { BrowsePanel } from '@/components/browse-panel'
 import { Brand } from '@/components/brand'
 import { SiteLinks } from '@/components/site-links'
-import { EASE, DUR, POP_IN, POP_OUT } from '@/lib/motion'
+import { EASE, DUR, MENU } from '@/lib/motion'
 import Link from 'next/link'
 import { useIsNarrow, useIsPhone } from '@/lib/use-is-narrow'
 import { useUrlParams } from '@/lib/use-url-params'
@@ -1125,10 +1125,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
                   <motion.div
                     key="more-menu"
                     role="menu"
-                    initial={{ opacity: 0, scale: 0.96, y: -4 }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.98, y: -2, transition: POP_OUT }}
-                    transition={POP_IN}
+                    {...MENU}
                     style={{ transformOrigin: 'top right' }}
                     className="absolute right-0 top-[calc(100%+6px)] z-[60] w-[208px] rounded-[10px] border border-edge-strong bg-card p-1 shadow-[0_12px_32px_-8px_rgba(0,0,0,0.28)]"
                   >
@@ -1185,10 +1182,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
           <motion.div
             key="digest-popover"
             ref={digestRef}
-            initial={{ opacity: 0, scale: 0.96, y: -6 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.98, y: -4, transition: POP_OUT }}
-            transition={POP_IN}
+            {...MENU}
             style={{ transformOrigin: 'top right' }}
             className={CARD.shell + ' fixed z-[60] top-14 right-4 left-4 sm:left-auto sm:w-[340px] shadow-[0_24px_56px_-20px_rgba(0,0,0,0.35)]'}
           >
@@ -1601,10 +1595,12 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
             {isPanelOpen && !isNarrow ? (
               <motion.div
                 key={selectedId}
+                // Switching sites is constant: the new one fades up at once,
+                // the old one leaves without holding the column empty.
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.15 }}
+                exit={{ opacity: 0, transition: { duration: 0 } }}
+                transition={{ duration: 0.12, ease: EASE }}
                 className="flex flex-col h-full"
               >
                 {renderDetailPanel('desktop')}
@@ -1671,9 +1667,9 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
               role="dialog"
               aria-modal="true"
               aria-label="Site details"
-              initial={{ opacity: 0, x: 24 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 24 }}
+              initial={{ opacity: 0, transform: 'translateX(24px)' }}
+              animate={{ opacity: 1, transform: 'translateX(0px)' }}
+              exit={{ opacity: 0, transform: 'translateX(24px)', transition: { duration: 0.16, ease: EASE } }}
               transition={{ type: 'spring', damping: 38, stiffness: 420, mass: 0.8 }}
               className="site-sheet xl:hidden fixed z-50 flex flex-col overflow-hidden bg-card border border-edge-strong"
               style={{
