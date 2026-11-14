@@ -68,7 +68,7 @@ export function ProWord({ colors }: { colors: string[] }) {
       href="/pro"
       aria-label={pro ? 'Your Pro membership' : 'Hitman’s Library Pro'}
       title={pro ? 'Your Pro membership' : 'Pro: unlimited kits and search by palette'}
-      className="relative inline-flex items-center h-8 px-2 rounded-[10px] hover:bg-foreground/[0.05] transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#E8A04A] after:absolute after:inset-x-0 after:top-1/2 after:h-11 after:-translate-y-1/2 after:content-['']"
+      className="relative inline-flex items-center h-8 px-2 max-sm:px-1 rounded-[10px] hover:bg-foreground/[0.05] transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#E8A04A] after:absolute after:inset-x-0 after:top-1/2 after:h-11 after:-translate-y-1/2 after:content-['']"
     >
       <svg width={W} height="14" viewBox={`0 0 ${W} 14`} aria-hidden="true" className="block overflow-visible">
         <defs>

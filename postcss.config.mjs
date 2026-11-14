@@ -1,8 +1,9 @@
+import rgbaFallback from './lib/build/rgba-fallback.mjs'
+
 /** @type {import('postcss-load-config').Config} */
 const config = {
-  plugins: {
-    '@tailwindcss/postcss': {},
-  },
+  // rgba twins for Tailwind's color-mix tints, for Safari without color-mix.
+  plugins: ['@tailwindcss/postcss', rgbaFallback],
 }
 
 export default config

@@ -66,14 +66,14 @@
      0.58 is the alpha where the lightest level clears 4.5:1 in both themes;
      the rest are spread above it so four distinct levels survive. */
   --ink: var(--foreground);
-  --ink-2: oklch(from var(--foreground) l c h / 0.80);
-  --ink-3: oklch(from var(--foreground) l c h / 0.68);
-  --ink-4: oklch(from var(--foreground) l c h / 0.58);
+  --ink-2: rgba(var(--foreground-rgb), 0.80);
+  --ink-3: rgba(var(--foreground-rgb), 0.68);
+  --ink-4: rgba(var(--foreground-rgb), 0.58);
 
   /* Edge weights — all borders derive from these */
-  --edge-strong: oklch(from var(--border) l c h / 0.7);
-  --edge: oklch(from var(--border) l c h / 0.5);
-  --edge-faint: oklch(from var(--border) l c h / 0.3);
+  --edge-strong: rgba(var(--border-rgb), 0.7);
+  --edge: rgba(var(--border-rgb), 0.5);
+  --edge-faint: rgba(var(--border-rgb), 0.3);
 
   /* Motion
      One curve cannot serve every job. --ease-sig stays the signature curve for

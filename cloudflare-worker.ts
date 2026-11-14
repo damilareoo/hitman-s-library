@@ -26,6 +26,7 @@ import { getSiteDetail } from './lib/read/site-detail'
 import { queryDesigns } from './lib/design-queries'
 import { securityHeaders, withSecurityHeaders } from './lib/edge/security-headers'
 import { matchOwnImage, imageHeaders } from './lib/edge/image-pass'
+import { httpsRedirect } from './lib/edge/https'
 import { STORED_AT, browserHeaders, cacheKey, cacheKind, storedHeaders } from './lib/edge/edge-cache'
 
 interface Ctx {
@@ -97,6 +98,8 @@ function previewOriginFor(url: URL): string {
 export default {
   async fetch(request: Request, env: Env, ctx: Ctx): Promise<Response> {
     const url = new URL(request.url)
+    const insecure = httpsRedirect(url)
+    if (insecure) return insecure
     const res = await handle(request, env, ctx, url)
     return withSecurityHeaders(res, securityHeaders({
       enforceCsp: env.CSP_ENFORCE === '1',

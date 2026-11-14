@@ -46,12 +46,14 @@ export function Refine({ value, onApply, className = '' }: { value: RefineQuery;
   return (
     <div ref={ref} className={'relative ' + className}>
       <button
-        onClick={() => setOpen(v => !v)} aria-expanded={open} aria-haspopup="dialog"
-        className={'h-8 px-3 max-sm:px-2.5 flex items-center gap-1.5 rounded-[10px] text-[13px] font-[500] transition-colors ' + (active ? 'bg-foreground text-background border border-foreground' : 'border border-edge-strong text-ink-3 hover:border-foreground/30 hover:text-ink-2')}
+        onClick={() => setOpen(v => !v)} aria-expanded={open} aria-haspopup="dialog" aria-label="Refine (Pro)" title="Refine"
+        // On a phone the row has room for the icon only; an amber dot stands in for PRO.
+        className={'relative h-8 px-3 max-sm:w-8 max-sm:px-0 flex items-center justify-center gap-1.5 rounded-[10px] text-[13px] font-[500] transition-colors ' + (active ? 'bg-foreground text-background border border-foreground' : 'border border-edge-strong text-ink-3 hover:border-foreground/30 hover:text-ink-2')}
       >
         <SlidersHorizontal className="w-3.5 h-3.5" weight="bold" />
-        <span>Refine</span>
-        <span className={'text-[10.5px] font-[600] tracking-[0.06em] ' + (active ? 'text-background/70' : 'text-[#E8A04A]')}>PRO</span>
+        <span className="max-sm:hidden">Refine</span>
+        <span className={'max-sm:hidden text-[10.5px] font-[600] tracking-[0.06em] ' + (active ? 'text-background/70' : 'text-[#E8A04A]')}>PRO</span>
+        {!active && <span aria-hidden="true" className="sm:hidden absolute top-[5px] right-[5px] w-1.5 h-1.5 rounded-full bg-[#E8A04A]" />}
       </button>
 
       <AnimatePresence>

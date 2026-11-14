@@ -1028,7 +1028,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
       <header className="sticky top-0 z-50 border-b border-edge-strong bg-background/95 backdrop-blur-sm">
         {/* px-5 at every width keeps the mark, the search trigger and the
             actions on one 20px line. */}
-        <div className="relative h-14 px-5 flex items-center gap-4">
+        <div className="relative h-14 px-5 max-sm:px-3 flex items-center gap-4 max-sm:gap-2">
 
           {/* The wordmark used to be this page's h1. With only the mark on
               screen the heading still has to exist for anything that reads
@@ -1061,7 +1061,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
             <ViewSwitcher view={view} onChange={setView} />
           </div>
 
-          <div className="flex items-center gap-1.5 ml-auto">
+          <div className="flex items-center gap-1.5 max-sm:gap-0.5 ml-auto">
             {/* Deliberately in the same quiet register as Changelog rather
                 than styled as a call to action. The loud version of this
                 belongs in the zero-results state, where it is an answer to
