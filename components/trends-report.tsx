@@ -32,8 +32,10 @@ function Card({ title, note, children }: { title: string; note?: string; childre
   )
 }
 
-/** One row: a label, a bar for the newest sites, a tick for the earlier ones. */
-function Row({ label, swatch, now, before }: { label: string; swatch?: string; now: number; before: number }) {
+/** One row: a label, a bar for the newest sites, a tick for the earlier ones.
+ *  Bars are scaled to the largest value in their card, so small shares read. */
+function Row({ label, swatch, now, before, max }: { label: string; swatch?: string; now: number; before: number; max: number }) {
+  const w = (x: number) => pct(max > 0 ? Math.min(1, x / max) : 0)
   return (
     <li className="grid grid-cols-[minmax(0,1fr)_96px_72px] items-center gap-3 py-2 border-t border-edge-faint first:border-t-0">
       <span className="flex items-center gap-2 min-w-0 text-[13.5px] text-ink truncate">
@@ -41,8 +43,8 @@ function Row({ label, swatch, now, before }: { label: string; swatch?: string; n
         {label}
       </span>
       <span className="relative h-1.5 rounded-full bg-foreground/[0.07]" aria-hidden="true">
-        <span className="absolute inset-y-0 left-0 rounded-full bg-foreground/60" style={{ width: pct(Math.min(1, now)) }} />
-        <span className="absolute -top-1 w-px h-3.5 bg-foreground/40" style={{ left: pct(Math.min(1, before)) }} />
+        <span className="absolute inset-y-0 left-0 rounded-full bg-foreground/60" style={{ width: w(now) }} />
+        <span className="absolute -top-1 w-px h-3.5 bg-foreground/40" style={{ left: w(before) }} />
       </span>
       <span className="text-right text-[12.5px] tabular-nums"><span className="sr-only">{pct(now)} now, {pct(before)} before: </span><Delta now={now} before={before} /></span>
     </li>
@@ -87,17 +89,24 @@ export function TrendsReport() {
           {r.pro ? (
             <>
               <Card title="Typefaces" note="Share of sites using each face. Bar: last 30 days. Tick: before.">
-                <ul>
-                  {r.fonts.slice(0, 8).map(f => (
-                    <Row key={f.name} label={f.name} now={r.recentCount ? f.recent / r.recentCount : 0} before={r.earlierCount ? f.earlier / r.earlierCount : 0} />
-                  ))}
-                </ul>
+                {(() => {
+                  const rows = r.fonts.slice(0, 8).map(f => ({ name: f.name, now: r.recentCount ? f.recent / r.recentCount : 0, before: r.earlierCount ? f.earlier / r.earlierCount : 0 }))
+                  const max = Math.max(...rows.flatMap(x => [x.now, x.before]))
+                  return <ul>{rows.map(x => <Row key={x.name} label={x.name} now={x.now} before={x.before} max={max} />)}</ul>
+                })()}
               </Card>
               <Card title="Accent colours" note="Each site's most saturated colour, by family.">
-                <ul>{r.hues.filter(h => h.name !== 'Neutral').map(h => <Row key={h.name} label={h.name} swatch={FAMILY_SWATCH[h.name]} now={h.recent} before={h.earlier} />)}</ul>
+                {(() => {
+                  const rows = r.hues.filter(h => h.name !== 'Neutral')
+                  const max = Math.max(...rows.flatMap(x => [x.recent, x.earlier]))
+                  return <ul>{rows.map(h => <Row key={h.name} label={h.name} swatch={FAMILY_SWATCH[h.name]} now={h.recent} before={h.earlier} max={max} />)}</ul>
+                })()}
               </Card>
               <Card title="Kinds of site">
-                <ul>{r.kinds.map(k => <Row key={k.name} label={k.name} now={k.recent} before={k.earlier} />)}</ul>
+                {(() => {
+                  const max = Math.max(...r.kinds.flatMap(x => [x.recent, x.earlier]))
+                  return <ul>{r.kinds.map(k => <Row key={k.name} label={k.name} now={k.recent} before={k.earlier} max={max} />)}</ul>
+                })()}
               </Card>
               <Card title="Dark pages" note="A page whose largest colour is near black.">
                 <p className="flex items-baseline gap-3">
