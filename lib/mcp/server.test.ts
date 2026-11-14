@@ -34,7 +34,7 @@ describe('handleMcp', () => {
   })
   test('tools/list: search_sites, get_site, get_tokens', async () => {
     const b = await json(await handleMcp(rpc({ jsonrpc: '2.0', id: 2, method: 'tools/list' }), deps()))
-    expect(b.result.tools.map((t: { name: string }) => t.name)).toEqual(['search_sites', 'get_site', 'get_tokens'])
+    expect(b.result.tools.map((t: { name: string }) => t.name)).toEqual(['search_sites', 'get_design_guide', 'get_site', 'get_tokens'])
   })
   test('tools/call returns text content', async () => {
     const b = await json(await handleMcp(rpc({ jsonrpc: '2.0', id: 3, method: 'tools/call', params: { name: 'get_tokens', arguments: { site: 'goodside.studio' } } }), deps()))
@@ -54,5 +54,19 @@ describe('handleMcp', () => {
   })
   test('GET (no event stream offered) → 405', async () => {
     expect((await handleMcp(new Request('https://hitmanslibrary.xyz/api/mcp', { headers: { authorization: `Bearer ${KEY}` } }), deps())).status).toBe(405)
+  })
+})
+
+describe('design guidance', () => {
+  test('initialize carries the design brief: no widows, one accent, a type scale, no slop', async () => {
+    const b = await json(await handleMcp(rpc({ jsonrpc: '2.0', id: 1, method: 'initialize', params: {} }), deps()))
+    const ins: string = b.result.instructions
+    for (const word of ['widow', 'one accent', 'type scale', 'gradient', '4/8']) expect(ins.toLowerCase()).toContain(word)
+  })
+  test('there is a get_design_guide tool that returns the full brief', async () => {
+    const list = await json(await handleMcp(rpc({ jsonrpc: '2.0', id: 2, method: 'tools/list' }), deps()))
+    expect(list.result.tools.map((t: { name: string }) => t.name)).toContain('get_design_guide')
+    const g = await json(await handleMcp(rpc({ jsonrpc: '2.0', id: 3, method: 'tools/call', params: { name: 'get_design_guide', arguments: {} } }), deps()))
+    expect(g.result.content[0].text.length).toBeGreaterThan(400)
   })
 })

@@ -5,6 +5,7 @@
 // library, open a site, and pull its design tokens while they build. Read-only:
 // a key can never write, and every call is rate-limited per key.
 import { NO_STORE } from '@/lib/auth/request'
+import { GUIDE_SHORT, GUIDE_FULL } from './guide'
 
 export interface SiteSummary { site: string; name: string; url: string; kind: string; colors: string[]; fonts: string[] }
 export interface SearchArgs { query?: string; kind?: string; palette?: string[]; font?: string; readable?: 'AA' | 'AAA'; limit?: number }
@@ -18,7 +19,11 @@ export interface McpDeps {
 }
 
 const PROTOCOL = '2025-06-18'
-const INSTRUCTIONS = "Hitman's Library is a curated library of well-designed websites with their colours, typefaces and captures. Use search_sites to find references (by words, kind, palette, font or text contrast), get_site for one site's palette, fonts and screenshots, and get_tokens for ready-to-use design tokens (CSS variables, a Tailwind theme, tokens.json, DESIGN.md). Sites are named by their address, e.g. goodside.studio. Treat sites as references and inspiration for the user's own design: combine ideas, keep the user's brand, never reproduce a site's logos, wording, images or layouts, and point out fonts that need a paid licence."
+const INSTRUCTIONS = [
+  "Hitman's Library is a curated library of well-designed websites with their measured colours, typefaces and captures. Use search_sites to find references (by words, kind, palette, font or text contrast), get_site for one site's palette, measured type and traits, get_tokens for ready-to-use design tokens, and get_design_guide for the full design brief. Sites are named by their address, e.g. goodside.studio.",
+  'Design brief, follow it whenever you design with this library:',
+  ...GUIDE_SHORT.map(l => `- ${l}`),
+].join('\n')
 
 const SITE_ARG = { type: 'object', properties: { site: { type: 'string', description: 'The site address as the library names it (e.g. goodside.studio), its full URL, or its id.' } }, required: ['site'] }
 const TOOLS = [
@@ -39,6 +44,7 @@ const TOOLS = [
     },
     annotations: { readOnlyHint: true },
   },
+  { name: 'get_design_guide', title: 'Read the design brief', description: 'The design standard to follow when using the library: type scale, colour rationing, spacing, structure, components, motion, and the signs of generated design to avoid. Read it before designing.', inputSchema: { type: 'object', properties: {} }, annotations: { readOnlyHint: true } },
   { name: 'get_site', title: 'Open a site', description: "One site's palette (with each colour's share of the page), typefaces by role, and desktop and mobile capture URLs.", inputSchema: SITE_ARG, annotations: { readOnlyHint: true } },
   { name: 'get_tokens', title: "Get a site's design tokens", description: "A site's design tokens as files: theme.css (CSS variables), tailwind.css (Tailwind v4 theme), tokens.json, figma-variables.json and DESIGN.md.", inputSchema: SITE_ARG, annotations: { readOnlyHint: true } },
 ]
@@ -93,6 +99,7 @@ export async function handleMcp(req: Request, deps: McpDeps): Promise<Response> 
           })
           return toolText(msg.id, sites.length ? { sites } : 'No sites match. Try fewer filters or other words.')
         }
+        if (name === 'get_design_guide') return toolText(msg.id, GUIDE_FULL)
         if (name === 'get_site' || name === 'get_tokens') {
           if (!ref) return toolText(msg.id, 'Give the site as its address, e.g. goodside.studio.', true)
           const out = name === 'get_site' ? await deps.site(ref) : await deps.tokens(ref)
