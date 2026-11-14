@@ -108,3 +108,19 @@ describe('buildTokenFiles', () => {
     expect(buildTokenFiles({ ...SITE, colors: [], typography: [] }).map(f => f.name)).toEqual(['DESIGN.md'])
   })
 })
+
+import { describe as d2, test as t2, expect as e2 } from 'bun:test'
+import { buildTokenFiles as build2 } from './files'
+d2('font fallbacks follow the face', () => {
+  t2('a serif heading falls back to serif, a mono to monospace', () => {
+    const site = { id: 1, url: 'https://x.com', title: 'X', screenshot_url: null, mobile_screenshot_url: null, live_preview: true, created_at: '', extraction_error: null, motion_clip_url: null, motion_error: null, favorite_count: 0,
+      colors: [{ hex_value: '#ffffff', oklch: null, area_share: 0.9 }, { hex_value: '#111111', oklch: null, area_share: 0.1 }],
+      typography: [
+        { font_family: 'Instrument Serif', role: 'heading', google_fonts_url: null, primary_weight: 400, sample_size_px: 48, sample_line_height: null },
+        { font_family: 'Geist Mono', role: 'mono', google_fonts_url: null, primary_weight: 400, sample_size_px: 13, sample_line_height: null },
+      ] }
+    const css = build2(site as never).find(f => f.name === 'theme.css')!.content
+    e2(css).toContain('"Instrument Serif", ui-serif, Georgia, serif')
+    e2(css).toContain('"Geist Mono", ui-monospace, monospace')
+  })
+})

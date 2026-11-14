@@ -5,6 +5,7 @@
 // at the edge) and asks these for ids, so the Worker does a few thousand
 // subtractions per query and nothing heavier.
 import { hexToOklab, contrastRatio } from '@/lib/tokens/color'
+import { isSystemFont, isSerif, isMono, isSans } from '@/lib/tokens/font-kind'
 
 type Lab = [number, number, number]
 /** labs: each colour in OKLab, worked out once when the index is built (and cached with it). */
@@ -20,7 +21,7 @@ export const MAX_PALETTE = 6
 export function buildSearchIndex(designs: { id: string | number; colors: string[]; typography: string[] }[]): SearchEntry[] {
   return designs.map(d => {
     const colors = d.colors.map(c => HEX.exec((c ?? '').trim())).filter((m): m is RegExpExecArray => !!m).map(m => '#' + m[1].toLowerCase())
-    const fonts = d.typography.map(f => (f ?? '').trim()).filter(f => f.length > 1 && !NOT_A_FONT.has(f.toLowerCase()))
+    const fonts = d.typography.map(f => (f ?? '').trim()).filter(f => f.length > 1 && !NOT_A_FONT.has(f.toLowerCase()) && !isSystemFont(f))
     // Colours come largest area first: the background, then the colour that
     // covers most of what sits on it (usually the text). Measuring against the
     // best-reading colour instead let nearly every site pass, since almost all
@@ -42,6 +43,8 @@ export function parseSearchQuery(params: URLSearchParams): SearchQuery {
   return { palette, font, contrast, empty: !palette.length && !font && !contrast }
 }
 
+const KINDS: Record<string, (f: string) => boolean> = { serif: isSerif, sans: isSans, 'sans-serif': isSans, mono: isMono, monospace: isMono }
+
 const dist = (a: Lab, b: Lab) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2])
 
 /** Matching ids, best first: by palette closeness when a palette is given, otherwise library order. */
@@ -50,7 +53,9 @@ export function searchIndex(index: SearchEntry[], q: SearchQuery): number[] {
   const min = q.contrast === 'AAA' ? 7 : q.contrast === 'AA' ? 4.5 : 0
   const hits: { id: number; score: number; order: number }[] = []
   index.forEach((e, order) => {
-    if (q.font && !e.fonts.some(f => f.toLowerCase().includes(q.font))) return
+    // "serif", "sans" and "mono" mean a kind of typeface; anything else is a name.
+    const kind = KINDS[q.font]
+    if (q.font && !(kind ? e.fonts.some(kind) : e.fonts.some(f => f.toLowerCase().includes(q.font)))) return
     if (min && (e.contrast == null || e.contrast < min)) return
     let score = 0
     if (want.length) {
