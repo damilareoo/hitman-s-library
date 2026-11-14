@@ -39,7 +39,7 @@ export function proWelcomeEmail({ name, memberNo, swatches }: { name: string; me
   <tr><td style="padding:12px 16px 0;font:600 20px/1.2 ${FONT};color:${C.ink};letter-spacing:-0.02em">You're Pro.</td></tr>
   <tr><td style="padding:4px 16px 0;font:400 14px/1.45 ${FONT};color:${C.muted}">${hello}</td></tr>
   <tr><td style="padding:14px 16px 18px"><table role="presentation" cellpadding="0" cellspacing="0" border="0">
-    ${item('Unlimited style kits')}${item('Search by palette, font and contrast')}${item('Your site requests reviewed first')}
+    ${item('Unlimited style kits')}${item('Search by palette, font and contrast')}${item('The library inside Claude and Cursor')}${item('Redesign alerts and site history')}${item('Monthly trends')}
   </table></td></tr>
   <tr><td style="background:${C.tint};border-top:1px solid ${C.line};border-radius:0 0 16px 16px;padding:10px 8px 10px 16px">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
@@ -57,7 +57,9 @@ ${name ? `${name.split(' ')[0]}, every` : 'Every'} colour in the library is your
 
 - Unlimited style kits
 - Search by palette, font and contrast
-- Your site requests reviewed first
+- The library inside Claude and Cursor (connect at ${SITE}/pro)
+- Redesign alerts and site history
+- Monthly trends
 
 Open the library: ${SITE}/
 Manage your subscription: ${SITE}/pro

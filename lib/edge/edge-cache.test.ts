@@ -1,4 +1,4 @@
-import { expect, test } from 'bun:test'
+import { describe, expect, test } from 'bun:test'
 import { storedHeaders, browserHeaders, STORED_AT } from './edge-cache'
 
 test('the stored copy is kept at the edge for a day, stamped with its age', () => {
@@ -73,4 +73,15 @@ test('tracking parameters share one cache entry; versions never do', () => {
   const k = (path: string, v = 'v1') => { const { req, url } = get(path); return cacheKey(req, url, v).url }
   expect(k('/?utm_source=x&b=2&a=1')).toBe(k('/?a=1&b=2'))
   expect(k('/', 'v1')).not.toBe(k('/', 'v2'))
+})
+
+describe('cacheKind: per-person Pro reads', () => {
+  const k = (path: string) => cacheKind(new Request('https://hitmanslibrary.xyz' + path), new URL('https://hitmanslibrary.xyz' + path))
+  test('a site History never caches; the site detail still does', () => {
+    expect(k('/api/design/801/history')).toBeNull()
+    expect(k('/api/design/801')).toBe('api')
+  })
+  test('watch, keys, mcp and trends never cache', () => {
+    for (const p of ['/api/watch', '/api/keys', '/api/mcp', '/api/trends']) expect(k(p)).toBeNull()
+  })
 })

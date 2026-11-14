@@ -1,13 +1,17 @@
 // app/api/design/[id]/history/route.ts
 // Per-site time travel (Phase 1): every extraction snapshot plus the drift
-// between consecutive runs. Public read data, like the gallery and the
-// detail endpoint — no auth change.
+// between consecutive runs. A site's full timeline is Pro: others get its
+// first snapshot and a count, so the tab can say what Pro would show. Never
+// cached at the edge (per-person answer).
 import { NextResponse } from 'next/server'
 import { parseId } from '@/lib/parse-id'
 import { getSql } from '@/lib/db'
 import { getSiteHistory } from '@/lib/extraction-history'
 import { DRIFT_ENABLED, driftBetween } from '@/lib/drift'
 import { toHttps } from '@/lib/secure-url'
+import { isConfirmedRedesign } from '@/lib/drift'
+import { currentUser, NO_STORE } from '@/lib/auth/request'
+import { getEntitlement } from '@/lib/pro/entitlement'
 
 const sql = getSql()
 
@@ -47,6 +51,17 @@ export async function GET(
     const snapshots = await getSiteHistory(id)
     const out = snapshots.map(publicSnapshot)
 
+    if (snapshots.length >= 2) {
+      const me = await currentUser(_req)
+      const pro = me ? (await getEntitlement(me.user.id)).pro : false
+      if (!pro) {
+        return NextResponse.json(
+          { pro: false, count: snapshots.length, since: snapshots[0].captured_at, snapshots: out.slice(-1) },
+          { status: 402, headers: NO_STORE },
+        )
+      }
+    }
+
     // Drift between consecutive runs, so the tab can label each snapshot
     // without recomputing pairs client-side.
     for (let i = 1; i < snapshots.length; i++) {
@@ -62,7 +77,7 @@ export async function GET(
           screenshotHash: snapshots[i].screenshot_hash,
         },
       )
-      out[i].redesigned_vs_previous = drift.redesigned
+      out[i].redesigned_vs_previous = isConfirmedRedesign(drift)
     }
 
     // On-demand diff for any two snapshots the scrubber selects.
@@ -92,7 +107,7 @@ export async function GET(
       }
     }
 
-    return NextResponse.json({ snapshots: out, pair, pairMeta })
+    return NextResponse.json({ snapshots: out, pair, pairMeta }, { headers: NO_STORE })
   } catch (err) {
     console.error('[GET /api/design/[id]/history]', err)
     return NextResponse.json({ error: 'Internal error' }, { status: 500 })

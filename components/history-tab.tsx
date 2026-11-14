@@ -7,6 +7,9 @@
 import { useState, useEffect, useCallback } from 'react'
 import { TabEmptyState } from './tab-empty-state'
 import { Spinner } from './ui/spinner'
+import Link from 'next/link'
+import { BTN, CARD } from './member-card'
+import { useAccount, openSignIn } from '@/lib/account-client'
 
 interface HistorySnapshot {
   id: number
@@ -63,13 +66,19 @@ export function HistoryTab({ siteId }: { siteId: number }) {
   const [bId, setBId] = useState<number | null>(null)
   const [pair, setPair] = useState<PairDiff | null>(null)
   const [pairLoading, setPairLoading] = useState(false)
+  // Not Pro: how many looks are on record, and since when.
+  const [locked, setLocked] = useState<{ count: number; since: string } | null>(null)
+  const { status, pro } = useAccount()
 
   useEffect(() => {
     let cancelled = false
+    setLocked(null)
     fetch(`/api/design/${siteId}/history`)
       .then(r => r.json())
       .then(raw => {
-        if (cancelled || !Array.isArray(raw.snapshots)) return
+        if (cancelled) return
+        if (raw.pro === false) { setLocked({ count: raw.count, since: raw.since }); setSnapshots([]); return }
+        if (!Array.isArray(raw.snapshots)) return
         const list: HistorySnapshot[] = raw.snapshots
         setSnapshots(list)
         // Default view: newest against its predecessor.
@@ -82,7 +91,7 @@ export function HistoryTab({ siteId }: { siteId: number }) {
       })
       .catch(() => { if (!cancelled) setSnapshots([]) })
     return () => { cancelled = true }
-  }, [siteId])
+  }, [siteId, pro])
 
   useEffect(() => {
     if (aId == null || bId == null || aId === bId) { setPair(null); return }
@@ -126,10 +135,34 @@ export function HistoryTab({ siteId }: { siteId: number }) {
     )
   }
 
+  if (locked) {
+    return (
+      <div className="flex flex-1 items-start justify-center p-4">
+        <section className={CARD.shell + ' w-full max-w-[360px]'}>
+          <div className={CARD.head}>
+            <span>History</span>
+            <span className={CARD.proPill}>Pro</span>
+          </div>
+          <div className={CARD.pad + ' py-4'}>
+            <p className={CARD.title}>{locked.count} looks on record</p>
+            <p className={CARD.body + ' mt-1'}>Every version of this site since {formatDate(locked.since)}: captures side by side, and the colours and type that changed.</p>
+          </div>
+          <div className={CARD.foot + ' justify-end'}>
+            {status === 'signed-in'
+              ? <Link href="/pro" className={BTN.primary}>Get Pro</Link>
+              : <button onClick={() => openSignIn('join')} className={BTN.primary}>Join to see it</button>}
+          </div>
+        </section>
+      </div>
+    )
+  }
+
   if (snapshots.length < 2) {
     return (
       <TabEmptyState
-        message={snapshots.length === 0 ? 'No snapshots yet' : 'Only one snapshot so far — re-extract to start tracking drift.'}
+        message={snapshots.length === 0
+          ? 'No snapshots yet'
+          : `Tracking since ${formatDate(snapshots[0].captured_at)}. We re-check every week and keep each new look here.`}
       />
     )
   }

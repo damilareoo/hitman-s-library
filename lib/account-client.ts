@@ -16,7 +16,7 @@ export const KITS_EVENT = 'hl:kits-changed'
 
 export interface AccountUser { email: string; name: string | null; avatar: string | null; memberNo: number; since: string; google: boolean }
 export interface KitMeter { used: number; limit: number }
-type State = { status: 'loading' | 'signed-out' | 'signed-in'; user: AccountUser | null; pro?: boolean; kits?: KitMeter; paddleCustomerId?: string | null }
+type State = { status: 'loading' | 'signed-out' | 'signed-in'; user: AccountUser | null; pro?: boolean; kits?: KitMeter; paddleCustomerId?: string | null; watching?: number[] }
 
 const LOADING: State = { status: 'loading', user: null }
 let state: State = LOADING
@@ -85,7 +85,7 @@ async function load() {
   if (!signedInHint()) return set({ status: 'signed-out', user: null })
   const body = await fetch('/api/me', { credentials: 'same-origin' }).then(r => r.json()).catch(() => ({ user: null }))
   if (!body.user) return set({ status: 'signed-out', user: null })
-  set({ status: 'signed-in', user: body.user, pro: Boolean(body.pro), kits: body.kits, paddleCustomerId: body.paddleCustomerId ?? null })
+  set({ status: 'signed-in', user: body.user, pro: Boolean(body.pro), kits: body.kits, paddleCustomerId: body.paddleCustomerId ?? null, watching: Array.isArray(body.watching) ? body.watching : [] })
   await sync()
 }
 
@@ -143,4 +143,16 @@ export async function deleteAccount(): Promise<'ok' | 'subscribed' | 'failed'> {
   forgetLocal()
   set({ status: 'signed-out', user: null })
   return 'ok'
+}
+
+/** Watch or unwatch a site for redesigns (Pro). Optimistic; rolls back if refused. */
+export async function setWatching(siteId: number, on: boolean): Promise<boolean> {
+  const before = state.watching ?? []
+  set({ ...state, watching: on ? [...new Set([...before, siteId])] : before.filter(id => id !== siteId) })
+  const res = await fetch('/api/watch', {
+    method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ siteId, on }),
+  }).catch(() => null)
+  if (res?.ok) return true
+  set({ ...state, watching: before })
+  return false
 }

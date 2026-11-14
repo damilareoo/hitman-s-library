@@ -27,6 +27,7 @@ import { SiteLinks } from '@/components/site-links'
 import { ProWord } from '@/components/pro-word'
 import { NewThisWeek } from '@/components/new-this-week'
 import { siteSlug, isSiteId } from '@/lib/site-slug'
+import { isSystemFont } from '@/lib/trends/compute'
 import { EASE, DUR, MENU } from '@/lib/motion'
 import Link from 'next/link'
 import { useIsNarrow, useIsPhone } from '@/lib/use-is-narrow'
@@ -225,6 +226,23 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
     document.title = name ? `${name} · Hitman's Library` : baseTitle.current
   }, [selectedId, designs, initialSite])
 
+  // The digest card's teaser strip: the three newest sites, known from the
+  // first render, their thumbnails warmed while the page is idle so the card
+  // opens complete.
+  const [digestTeasers] = useState(() => initialDesigns.slice(0, 3).map(d => ({ id: d.id, title: d.title, thumbnail: d.thumbnail_url ?? null })))
+  useEffect(() => {
+    // The six newest also open ⌘K's Recently added list.
+    const warm = () => initialDesigns.slice(0, 6).forEach(d => { if (d.thumbnail_url) { const i = new Image(); i.decoding = 'async'; i.src = d.thumbnail_url } })
+    if ('requestIdleCallback' in window) { const id = window.requestIdleCallback(warm, { timeout: 4000 }); return () => window.cancelIdleCallback(id) }
+    const t = setTimeout(warm, 2500); return () => clearTimeout(t)
+  }, [initialDesigns])
+  // Typefaces the loaded sites use, most common first, for Refine's font
+  // suggestions (system fallbacks are not choices anyone makes).
+  const refineFonts = useMemo(() => {
+    const n = new Map<string, number>()
+    for (const d of designs) for (const f of d.typography ?? []) if (f && !isSystemFont(f)) n.set(f, (n.get(f) ?? 0) + 1)
+    return [...n.entries()].sort((a, b) => b[1] - a[1]).map(([f]) => f).slice(0, 40)
+  }, [designs])
   const [headerColors] = useState(() => initialDesigns.slice(0, 40).flatMap(d => d.colors ?? []))
   const [pagination, setPagination] = useState<Pagination>(initialPagination)
   const [categories, setCategories] = useState(initialCategories)
@@ -1056,7 +1074,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
               ⌘K
             </kbd>
           </button>
-          <Refine value={refine} onApply={applyRefine} className="hidden md:block" />
+          <Refine value={refine} onApply={applyRefine} fonts={refineFonts} className="hidden md:block" />
 
           {/* The switcher follows the mark and Pro, so the actions on the
               right always have their own room. */}
@@ -1229,7 +1247,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
                 <X className="w-3.5 h-3.5" weight="bold" />
               </button>
             </div>
-            <TasteSignup />
+            <TasteSignup latest={digestTeasers} />
             <div className={CARD.foot + ' px-4'}>
               <span className={CARD.meta}>Unsubscribe any time.</span>
               <button onClick={() => setDigestOpen(false)} className={CARD.footBtn + ' ml-auto -mr-2'}>Close <span className={CARD.kbd}>esc</span></button>
@@ -1307,8 +1325,8 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
                 <div className="flex flex-wrap items-center gap-1.5">
                   <span className="text-[12.5px] font-[600] text-ink mr-1">Refined</span>
                   {refine.palette.length > 0 && (
-                    <button onClick={() => applyRefine({ ...refine, palette: [] })} className="h-7 pl-2 pr-1.5 flex items-center gap-1.5 rounded-full bg-muted/70 text-[12px] text-ink-2 hover:bg-muted" title="Remove palette">
-                      {refine.palette.map(c => <span key={c} className="w-3 h-3 rounded-[3px] ring-1 ring-inset ring-foreground/10" style={{ background: c }} />)}
+                    <button onClick={() => applyRefine({ ...refine, palette: [] })} className={BTN.chip(false) + ' gap-1.5 !pl-2'} title="Remove palette">
+                      {refine.palette.map(c => <span key={c} className="w-3 h-3 rounded-full ring-1 ring-inset ring-foreground/10" style={{ background: c }} />)}
                       <X className="w-3 h-3 text-ink-4" weight="bold" />
                     </button>
                   )}
@@ -1323,7 +1341,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
                     </button>
                   )}
                   <button onClick={() => applyRefine({ palette: [], font: '', readable: '' })} className="ml-1 text-[12px] text-ink-4 hover:text-ink">Clear</button>
-                  {!refineNote && <span className="ml-auto text-[12px] text-ink-4">{pagination.total} {pagination.total === 1 ? 'site' : 'sites'}</span>}
+                  {!refineNote && <span className="ml-auto text-[12px] text-ink-4" aria-live="polite">{isRefetching ? 'Searching…' : `${pagination.total} ${pagination.total === 1 ? 'site' : 'sites'}`}</span>}
                 </div>
                 {refineNote && (
                   <p role="status" className="mt-3 text-[13.5px] text-ink-2">
@@ -1366,7 +1384,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
               ) : (
               <div className="flex items-center gap-2 shrink-0">
               {/* Below md the header has no room for Refine; it sits here. */}
-              <Refine value={refine} onApply={applyRefine} className="md:hidden" />
+              <Refine value={refine} onApply={applyRefine} fonts={refineFonts} className="md:hidden" />
               <div
                 className="flex items-center gap-0.5"
                 role="group"
@@ -1401,7 +1419,9 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
                         {/* Height is held during a swap so the page doesn't collapse and
                 rebound between result sets. */}
             <motion.div
-              className={`grid ${cardColumns} gap-4 xl:gap-5`}
+              // While a new result set loads, the old one steps back so the
+              // wait reads as work, not as nothing happening.
+              className={`grid ${cardColumns} gap-4 xl:gap-5 transition-opacity duration-150 ease-[var(--ease-sig)] aria-busy:opacity-55`}
               variants={gridVariants}
               initial={false}
               animate="show"

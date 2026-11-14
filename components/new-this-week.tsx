@@ -10,6 +10,7 @@ import { useEffect, useState } from 'react'
 import { X } from '@phosphor-icons/react'
 import { getDomain } from '@/lib/get-domain'
 import type { Design } from '@/components/design-card'
+import { BTN } from '@/components/member-card'
 
 const KEY = 'hl:new-seen'
 
@@ -35,7 +36,8 @@ export function NewThisWeek({ sites, onOpen }: { sites: Design[]; onOpen: (d: De
             key={d.id}
             onClick={() => onOpen(d)}
             title={d.title}
-            className="shrink-0 h-7 pl-0.5 pr-2.5 inline-flex items-center gap-1.5 rounded-full border border-edge text-[12px] font-[500] text-ink-2 hover:text-ink hover:border-edge-strong hover:bg-foreground/[0.04] transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#E8A04A]"
+            // The shared chip, with a round thumbnail 2px inside its round end.
+            className={BTN.chip(false) + ' !pl-0.5 !pr-2.5'}
           >
             <span className="w-6 h-6 rounded-full overflow-hidden bg-muted border border-edge shrink-0">
               {d.thumbnail_url && (
@@ -51,7 +53,7 @@ export function NewThisWeek({ sites, onOpen }: { sites: Design[]; onOpen: (d: De
         onClick={dismiss}
         aria-label="Hide new this week"
         title="Hide until something new arrives"
-        className="shrink-0 w-7 h-7 grid place-items-center rounded-[10px] text-ink-4 hover:text-ink hover:bg-foreground/[0.05] transition-colors"
+        className={BTN.icon}
       >
         <X className="w-3.5 h-3.5" weight="bold" />
       </button>

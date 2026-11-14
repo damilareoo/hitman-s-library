@@ -40,6 +40,7 @@ const NEVER = [
   '/api/design/extract', '/unsubscribe',
   // Pro: per-person metering and entitlement.
   '/api/kit', '/api/search', '/api/paddle', '/api/checkout', '/api/billing',
+  '/api/watch', '/api/keys', '/api/mcp', '/api/trends',
   // Accounts: personal by definition. Pages stay anonymous; these never cache.
   '/api/auth', '/api/me', '/account',
 ]
@@ -57,6 +58,8 @@ export function cacheKind(req: Request, url: URL): 'page' | 'api' | null {
   const path = url.pathname
   if (NEVER.some(p => path === p || path.startsWith(p + '/'))) return null
   if (path.startsWith('/_next/') || path.startsWith('/cdn-cgi/')) return null
+  // A site's History is answered per person (Pro), so it never caches.
+  if (/^\/api\/design\/[^/]+\/history$/.test(path)) return null
   if (path.startsWith('/api/')) return path.startsWith('/api/design/') || path === '/api/changelog' ? 'api' : null
   return 'page'
 }

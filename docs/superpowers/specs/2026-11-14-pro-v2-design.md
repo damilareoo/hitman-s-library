@@ -1,6 +1,6 @@
 # Pro v2: a library that works for you
 
-Date: 2026-11-14. Status: draft for approval.
+Date: 2026-11-14. Status: draft for approval. Analyse any site deferred (2026-11-14): can't run at $0 at scale.
 
 ## Why
 
@@ -28,6 +28,8 @@ Designers, developers and founders, all three. Each has a lead feature:
 5. **New this week** (free, for everyone). A slim strip above the grid showing this week's additions; hidden when filtering or once seen.
 
 ## Non-goals (this round)
+
+- **Analyse any site** (goal 1): deferred. The free browser allowance covers ~30–60 analyses a day for everyone; revisit with GitHub Actions or when revenue covers Cloudflare's paid plan.
 
 - Side-by-side compare, free font alternatives, Figma one-click, and shareable moodboards. Good later additions, not reasons to pay on their own.
 - Teams and seats. Collaboration. Public API pricing tiers.

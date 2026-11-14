@@ -1,0 +1,20 @@
+# Monthly trends briefing for Pro members (the 1st, 09:00 UTC).
+name: Monthly trends
+on:
+  schedule:
+    - cron: '0 9 1 * *'   # the 1st of each month
+  workflow_dispatch:
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - name: Send
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          RESEND_PRO_FROM: ${{ secrets.RESEND_PRO_FROM }}
+        run: bun scripts/send-trends.ts

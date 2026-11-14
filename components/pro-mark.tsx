@@ -25,8 +25,21 @@ const cl = (t: number) => Math.max(0, Math.min(1, t))
 const mix = (a: number, b: number, t: number) => a + (b - a) * t
 const SORT_AT = 1.15, SORT_SWEEP = 0.62, SORT_DUR = 0.42, INTRO_END = SORT_AT + SORT_SWEEP + 0.1 + SORT_DUR + 0.05
 
+// One fetch per set of hearts, shared: a menu that opens later finds the
+// colours already here instead of opening on an empty canvas.
+const swatchCache = new Map<string, Promise<Swatch[]>>()
+/** Fetch the colours ahead of time (e.g. once a Pro member is signed in). */
+export function warmProMark(ids?: number[]) { void loadSwatches(ids) }
+
 /** Real colours with the site each came from: your hearts, topped up from the newest sites. */
-async function loadSwatches(ids?: number[]): Promise<Swatch[]> {
+function loadSwatches(ids?: number[]): Promise<Swatch[]> {
+  const key = ids?.slice(0, 40).join(',') ?? ''
+  let p = swatchCache.get(key)
+  if (!p) { p = fetchSwatches(ids); swatchCache.set(key, p) }
+  return p
+}
+
+async function fetchSwatches(ids?: number[]): Promise<Swatch[]> {
   const pull = async (url: string): Promise<Swatch[]> => {
     try {
       const body = await (await fetch(url)).json() as { designs?: { url?: string; colors?: string[] }[] }

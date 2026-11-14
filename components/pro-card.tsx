@@ -7,7 +7,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Package, MagnifyingGlass, ArrowUp, ArrowRight } from '@phosphor-icons/react'
+import { Package, MagnifyingGlass, ArrowUp, ArrowRight, PlugsConnected, Eye, TrendUp } from '@phosphor-icons/react'
 import { ProMark } from '@/components/pro-mark'
 import { CARD, BTN } from '@/components/member-card'
 import { useAccount, openSignIn, KITS_EVENT } from '@/lib/account-client'
@@ -18,6 +18,9 @@ import { track } from '@/lib/analytics'
 const FEATURES = [
   { Icon: Package, text: 'Unlimited style kits' },
   { Icon: MagnifyingGlass, text: 'Search by palette, font and contrast' },
+  { Icon: PlugsConnected, text: 'The library inside Claude, Cursor and more' },
+  { Icon: Eye, text: 'Redesign alerts, and every site’s history' },
+  { Icon: TrendUp, text: 'Monthly trends: type and colour on the rise' },
   { Icon: ArrowUp, text: 'Your site requests reviewed first' },
 ]
 
@@ -130,7 +133,7 @@ export function ProCard() {
         <div className={CARD.foot + ' pl-4 pr-2'}>
           {pro ? (
             <>
-              <span className={CARD.meta}>Unlimited kits and search</span>
+              <span className={CARD.meta}>Everything below is yours</span>
               <button onClick={manage} className={CARD.footBtn + ' ml-auto'}>Manage subscription</button>
             </>
           ) : (
