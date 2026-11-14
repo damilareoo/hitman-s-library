@@ -1,22 +1,18 @@
 {
-  "studio": "Northwind",
+  "product": "Tempo",
   "references": [
-    "goodside.studio",
-    "compact.studio"
+    "plastic.audio",
+    "tomjohn.design"
   ],
   "fonts": [
-    "Instrument Serif",
-    "Geist"
-  ],
-  "skipped": [
-    "Epicene Text",
-    "BureauSerif"
+    "Geist",
+    "Geist Mono"
   ],
   "colors": [
-    "#ffffff",
-    "#1a1c27",
-    "#dccdc4",
-    "#ffffd0",
-    "#1f5c45"
+    "#0a0a0a",
+    "#1e1e1e",
+    "#e6e2da",
+    "#3a50fc",
+    "#ff4d8d"
   ]
 }
