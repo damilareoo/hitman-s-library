@@ -165,23 +165,38 @@ export function BrowsePanel({
     onOpenSite(id)
   }, [onClose, onOpenSite])
 
+  const searching = query.trim().length > 0
+  const sets = Object.entries(collections)
+  const recentRows = recents.slice(0, 6)
+
+  // Everything the keyboard can reach, in reading order: search results while
+  // searching; otherwise kinds, then sets, then the newest sites.
+  const kindCount = 1 + kinds.length
+  const items: (() => void)[] = searching
+    ? results.map(site => () => openResult(site.id))
+    : [
+        () => onKind('All'),
+        ...kinds.map(({ name }) => () => onKind(name)),
+        ...sets.map(([name]) => () => onSet(name)),
+        ...recentRows.map(design => () => openResult(design.id)),
+      ]
+  const setBase = kindCount, recentBase = kindCount + sets.length
+
   function onKeyDown(e: KeyboardEvent) {
-    if (!results.length) return
-    if (e.key === 'ArrowDown') {
+    if (!items.length) return
+    // In the kinds row, left and right move along the chips too.
+    const inChips = !searching && active < kindCount
+    if (e.key === 'ArrowDown' || (inChips && e.key === 'ArrowRight' && !query)) {
       e.preventDefault()
-      setActive(i => Math.min(i + 1, results.length - 1))
-    } else if (e.key === 'ArrowUp') {
+      setActive(i => Math.min(i + 1, items.length - 1))
+    } else if (e.key === 'ArrowUp' || (inChips && e.key === 'ArrowLeft' && !query)) {
       e.preventDefault()
       setActive(i => Math.max(i - 1, 0))
     } else if (e.key === 'Enter') {
       e.preventDefault()
-      const hit = results[active]
-      if (hit) openResult(hit.id)
+      items[Math.min(active, items.length - 1)]?.()
     }
   }
-
-  const searching = query.trim().length > 0
-  const sets = Object.entries(collections)
 
   return (
     <AnimatePresence>
@@ -259,7 +274,7 @@ export function BrowsePanel({
                         onClick={() => openResult(site.id)}
                         onMouseEnter={() => setActive(i)}
                         data-active={i === active}
-                        className="w-full flex items-center gap-3 py-2 px-2.5 rounded-[10px] text-left transition-colors duration-[var(--dur-2)] ease-[var(--ease-hover)] data-[active=true]:bg-muted hover:bg-muted"
+                        className="w-full flex items-center gap-3 py-2 px-2.5 rounded-[10px] text-left transition-colors duration-[var(--dur-2)] ease-[var(--ease-hover)] data-[active=true]:bg-foreground/[0.07] hover:bg-foreground/[0.07]"
                       >
                         <span className="w-[52px] h-8 rounded-[5px] overflow-hidden border border-edge bg-muted shrink-0">
                           {site.thumb && <img src={site.thumb} alt="" loading="lazy" className="w-full h-full object-cover object-top" />}
@@ -274,14 +289,16 @@ export function BrowsePanel({
                   <>
                     <div className="px-2.5 pt-3.5 pb-1.5 text-micro text-ink-4">Kinds</div>
                     <div className="flex flex-wrap gap-1.5 px-2.5 pb-3.5 mb-1 border-b border-edge">
-                      <button onClick={() => onKind('All')} className={BTN.chip(false) + ' gap-1'}>
+                      <button onClick={() => onKind('All')} onMouseEnter={() => setActive(0)} data-active={active === 0} className={BTN.chip(false) + ' gap-1 data-[active=true]:bg-foreground/[0.08] data-[active=true]:text-ink data-[active=true]:border-foreground/30'}>
                         All <span className="text-ink-4 tabular-nums">{total}</span>
                       </button>
-                      {kinds.map(({ name, count }) => (
+                      {kinds.map(({ name, count }, k) => (
                         <button
                           key={name}
                           onClick={() => onKind(name)}
-                          className={BTN.chip(false) + ' gap-1'}
+                          onMouseEnter={() => setActive(1 + k)}
+                          data-active={active === 1 + k}
+                          className={BTN.chip(false) + ' gap-1 data-[active=true]:bg-foreground/[0.08] data-[active=true]:text-ink data-[active=true]:border-foreground/30'}
                         >
                           {displayKind(name)} <span className="text-ink-4 tabular-nums">{count}</span>
                         </button>
@@ -291,11 +308,13 @@ export function BrowsePanel({
                     {sets.length > 0 && (
                       <>
                         <div className="px-2.5 pt-3.5 pb-1.5 text-micro text-ink-4">Sets</div>
-                        {sets.map(([name, ids]) => (
+                        {sets.map(([name, ids], k) => (
                           <div key={name} className="group flex items-center gap-1">
                             <button
                               onClick={() => onSet(name)}
-                              className="flex-1 min-w-0 flex items-center gap-3 py-2 px-2.5 rounded-[10px] text-left hover:bg-muted transition-colors"
+                              onMouseEnter={() => setActive(setBase + k)}
+                              data-active={active === setBase + k}
+                              className="flex-1 min-w-0 flex items-center gap-3 py-2 px-2.5 rounded-[10px] text-left hover:bg-foreground/[0.07] data-[active=true]:bg-foreground/[0.07] transition-colors"
                             >
                               <span className="flex-1 min-w-0 text-bodytext text-ink truncate">{name}</span>
                               <span className="text-meta text-ink-4 shrink-0">{ids.length} sites</span>
@@ -316,11 +335,13 @@ export function BrowsePanel({
                     )}
 
                     <div className="px-2.5 pt-3.5 pb-1.5 text-micro text-ink-4">Recently added</div>
-                    {recents.slice(0, 6).map(design => (
+                    {recentRows.map((design, k) => (
                       <button
                         key={design.id}
                         onClick={() => openResult(design.id)}
-                        className="w-full flex items-center gap-3 py-2 px-2.5 rounded-[10px] text-left hover:bg-muted transition-colors"
+                        onMouseEnter={() => setActive(recentBase + k)}
+                        data-active={active === recentBase + k}
+                        className="w-full flex items-center gap-3 py-2 px-2.5 rounded-[10px] text-left hover:bg-foreground/[0.07] data-[active=true]:bg-foreground/[0.07] transition-colors"
                       >
                         <span className="w-[52px] h-8 rounded-[5px] overflow-hidden border border-edge bg-muted shrink-0">
                           {design.thumbnail_url && (
