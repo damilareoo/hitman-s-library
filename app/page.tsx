@@ -69,7 +69,7 @@ export default async function Page(
   const rawColor = typeof params.color === 'string' ? params.color : ''
   const colorHex = isHexColor(rawColor) ? rawColor.toLowerCase() : null
   const siteParam = typeof params.site === 'string' ? params.site : ''
-  const [{ designs, pagination }, categories, initialSimilar, initialSite] = await Promise.all([
+  const [{ designs, pagination }, categories, initialSimilar, initialSite, recent] = await Promise.all([
     // A color view ships ranked as HTML, like every other view — the same
     // rows the client-side ranking would land on.
     colorHex ? queryColorRanked(colorHex) : queryDesigns({
@@ -86,7 +86,11 @@ export default async function Page(
     Number.isFinite(similarToId) ? querySimilar(similarToId, 24) : Promise.resolve(null),
     // ?site= may be a name (plastic.audio) or an old id; the panel needs the id.
     siteParam ? resolveSite(siteParam).catch(() => null) : Promise.resolve(null),
+    // This week's arrivals for the strip above the grid (newest first).
+    queryDesigns({ sortBy: 'recent', limit: 12, offset: 0 }).catch(() => ({ designs: [] as never[] })),
   ])
+  const weekAgo = Date.now() - 7 * 864e5
+  const newThisWeek = recent.designs.filter(d => new Date(d.addedDate).getTime() > weekAgo)
 
   return (
     <Suspense fallback={null}>
@@ -109,6 +113,7 @@ export default async function Page(
         initialCategories={categories}
         initialSimilar={initialSimilar}
         initialColor={colorHex}
+        newThisWeek={newThisWeek}
       />
 
       {/* Crawlable index of the full collection. The gallery above paginates as

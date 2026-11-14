@@ -25,6 +25,7 @@ import { BrowsePanel } from '@/components/browse-panel'
 import { Brand } from '@/components/brand'
 import { SiteLinks } from '@/components/site-links'
 import { ProWord } from '@/components/pro-word'
+import { NewThisWeek } from '@/components/new-this-week'
 import { siteSlug, isSiteId } from '@/lib/site-slug'
 import { EASE, DUR, MENU } from '@/lib/motion'
 import Link from 'next/link'
@@ -88,6 +89,8 @@ interface GalleryProps {
   initialSite?: { id: string; slug: string; title: string } | null
   /** The ?color= the server already ranked this first paint around. */
   initialColor?: string | null
+  /** Sites added in the last seven days, newest first (at most 12). */
+  newThisWeek?: Design[]
 }
 
 // Local regex rather than lib/color-distance's — that import would drag
@@ -133,7 +136,7 @@ function SkeletonCard() {
   )
 }
 
-export function Gallery({ initialDesigns, initialPagination, initialCategories, initialSimilar, initialParams, initialColor, initialSite }: GalleryProps) {
+export function Gallery({ initialDesigns, initialPagination, initialCategories, initialSimilar, initialParams, initialColor, initialSite, newThisWeek = [] }: GalleryProps) {
   // The URL is the source of truth for every filter, so views are shareable
   // and the back button steps through them. It is written through the history
   // API, not the router: this page is force-dynamic, so a router.push would
@@ -1390,6 +1393,10 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
             <p className={(refineKey ? 'hidden' : 'block') + ' text-meta text-ink-4 text-balance pb-3 -mt-2'}>
               {libraryTotal} of the web&apos;s best-designed sites, dissected. Colors, type, assets and screenshots, extracted automatically.
             </p>
+
+            {!hasFilters && !similarToId && !collectionName && !refineKey && (
+              <NewThisWeek sites={newThisWeek} onOpen={d => selectDesign(d)} />
+            )}
 
                         {/* Height is held during a swap so the page doesn't collapse and
                 rebound between result sets. */}
