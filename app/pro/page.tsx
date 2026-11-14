@@ -2,13 +2,19 @@ import type { Metadata } from 'next'
 import { Brand } from '@/components/brand'
 import { SiteLinks } from '@/components/site-links'
 import { ProCard } from '@/components/pro-card'
+import { ProExtras } from '@/components/pro-extras'
+import { loadProSample } from '@/lib/read/pro-sample'
 
 export const metadata: Metadata = {
   title: 'Pro',
-  description: "Unlimited style kits and Pro search across Hitman's Library.",
+  description: "Unlimited style kits, Pro search, redesign alerts, site history, monthly trends, and the library inside your AI tools.",
 }
 
-export default function ProPage() {
+// Live library data (trends, a featured site's kit), rendered per request.
+export const dynamic = 'force-dynamic'
+
+export default async function ProPage() {
+  const sample = await loadProSample().catch(() => ({ site: null, themeCss: null, trends: [] }))
   return (
     <div className="min-h-screen bg-background text-foreground">
       <nav className="sticky top-0 z-50 border-b border-edge bg-background/90 backdrop-blur-md">
@@ -18,8 +24,9 @@ export default function ProPage() {
         </div>
       </nav>
       <SiteLinks />
-      <main className="px-4 pt-16 pb-32 flex justify-center">
+      <main id="top" className="px-4 pt-16 pb-32 flex flex-col items-center gap-10">
         <ProCard />
+        <ProExtras sample={sample} />
       </main>
     </div>
   )
