@@ -69,3 +69,9 @@ describe('font kinds', () => {
   test('"sans" means a sans typeface', () => expect(q('sans').sort()).toEqual([1, 2, 3]))
   test('generic fallbacks are not fonts', () => expect(idx.find(e => e.id === 2)!.fonts).toEqual(['Inter']))
 })
+
+test('serifs whose names do not say so are still serifs', async () => {
+  const { isSerif } = await import('@/lib/tokens/font-kind')
+  expect(['Epicene Text', 'Tobias', 'Saol Display'].every(isSerif)).toBe(true)
+  expect(isSerif('Inter')).toBe(false)
+})
