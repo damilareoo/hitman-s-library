@@ -8,29 +8,17 @@ import { CARD, BTN, FIELD, FIELD_INPUT } from '@/components/member-card'
 
 import { useState, useEffect } from 'react'
 import { track } from '@/lib/analytics'
+import { FadeImg } from '@/components/fade-img'
 
-export function TasteSignup() {
+export interface Teaser { id: string; title: string; thumbnail: string | null }
+
+export function TasteSignup({ latest }: { latest?: Teaser[] }) {
   const [email, setEmail] = useState('')
   const [state, setState] = useState<'idle' | 'sending' | 'done' | { error: string }>('idle')
   // The invite sells with the goods: the three latest arrivals as a teaser
-  // strip, fetched once with the popover. Stale on failure — the form below
-  // is the point, the strip is the perfume.
-  const [teasers, setTeasers] = useState<Array<{ id: string; title: string; thumbnail: string | null }>>([])
-  useEffect(() => {
-    fetch('/api/design/filter-advanced?limit=3')
-      .then(r => r.json())
-      .then(data => {
-        const rows = Array.isArray(data.designs) ? data.designs : []
-        setTeasers(
-          rows.slice(0, 3).map((d: any) => ({
-            id: String(d.id),
-            title: d.title || d.url,
-            thumbnail: d.thumbnail_url ?? null,
-          })),
-        )
-      })
-      .catch(() => {})
-  }, [])
+  // strip. They come in with the page (no fetch on open), so the strip is
+  // there the moment the card opens; images fade into reserved boxes.
+  const teasers = (latest ?? []).slice(0, 3)
   // Hearts write this key; the count gates Join and tunes the hint. Read on
   // mount and on storage events — no shared state needed for one number.
   const [favoriteCount, setFavoriteCount] = useState(0)
@@ -85,10 +73,7 @@ export function TasteSignup() {
         <div className="flex gap-1.5 mb-4" aria-hidden="true">
           {teasers.map(t => (
             <span key={t.id} className="flex-1 h-[48px] rounded-[6px] overflow-hidden ring-1 ring-inset ring-foreground/10 bg-muted block">
-              {t.thumbnail ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={t.thumbnail} alt="" loading="lazy" className="w-full h-full object-cover object-top" />
-              ) : null}
+              {t.thumbnail ? <FadeImg src={t.thumbnail} className="w-full h-full object-cover object-top" /> : null}
             </span>
           ))}
         </div>

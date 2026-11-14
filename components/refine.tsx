@@ -14,7 +14,7 @@ import { CARD, BTN, INPUT } from '@/components/member-card'
 import { paletteFromFile } from '@/lib/palette-client'
 import { refineActive, type RefineQuery } from '@/lib/search/refine-params'
 
-export function Refine({ value, onApply, className = '' }: { value: RefineQuery; onApply: (q: RefineQuery) => void; className?: string }) {
+export function Refine({ value, onApply, className = '', fonts = [] }: { value: RefineQuery; onApply: (q: RefineQuery) => void; className?: string; fonts?: string[] }) {
   const [open, setOpen] = useState(false)
   const [q, setQ] = useState<RefineQuery>(value)
   const [reading, setReading] = useState(false)
@@ -101,9 +101,12 @@ export function Refine({ value, onApply, className = '' }: { value: RefineQuery;
 
               <section>
                 <label htmlFor="refine-font" className={CARD.label}>Font</label>
-                <input id="refine-font" value={q.font} maxLength={40} placeholder="Inter, Instrument Serif…"
+                <input id="refine-font" value={q.font} maxLength={40} placeholder={fonts.length ? `${fonts.slice(0, 2).join(', ')}…` : 'Inter, Instrument Serif…'}
+                  list={fonts.length ? 'refine-fonts' : undefined} autoComplete="off"
                   onChange={e => setQ(v => ({ ...v, font: e.target.value }))}
                   className={INPUT + ' mt-2'} />
+                {/* The typefaces sites in the library actually use, so nobody guesses. */}
+                {fonts.length > 0 && <datalist id="refine-fonts">{fonts.map(f => <option key={f} value={f} />)}</datalist>}
               </section>
 
               <section>
@@ -121,9 +124,16 @@ export function Refine({ value, onApply, className = '' }: { value: RefineQuery;
 
             <div className={CARD.foot}>
               <button onClick={() => setQ({ palette: [], font: '', readable: '' })} className={CARD.footBtn}>Reset</button>
-              <button disabled={!refineActive(q)} onClick={() => { onApply(q); setOpen(false) }} className={CARD.footBtn + ' ml-auto text-ink font-[600] disabled:opacity-40'}>
-                Show sites <span className={CARD.kbd}>↵</span>
-              </button>
+              {/* With filters already on and the card emptied, the action clears them. */}
+              {!refineActive(q) && refineActive(value) ? (
+                <button onClick={() => { onApply({ palette: [], font: '', readable: '' }); setOpen(false) }} className={CARD.footBtn + ' ml-auto text-ink font-[600]'}>
+                  Clear filters
+                </button>
+              ) : (
+                <button disabled={!refineActive(q)} onClick={() => { onApply(q); setOpen(false) }} className={CARD.footBtn + ' ml-auto text-ink font-[600] disabled:opacity-40'}>
+                  Show sites <span className={CARD.kbd}>↵</span>
+                </button>
+              )}
               <span aria-hidden className="w-px h-4 bg-edge" />
               <button onClick={() => setOpen(false)} className={CARD.footBtn}>Close <span className={CARD.kbd}>esc</span></button>
             </div>

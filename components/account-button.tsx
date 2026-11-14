@@ -12,7 +12,7 @@ import { useEffect, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
 import { SignIn, DownloadSimple, SignOut, EnvelopeSimple } from '@phosphor-icons/react'
 import { GoogleMark } from '@/components/google-mark'
-import { ProMark } from '@/components/pro-mark'
+import { ProMark, warmProMark } from '@/components/pro-mark'
 import { CARD } from '@/components/member-card'
 import { MENU } from '@/lib/motion'
 import { COLLECTIONS_EVENT } from '@/lib/collections'
@@ -73,6 +73,15 @@ export function AccountButton() {
   const ref = useRef<HTMLDivElement>(null)
   const counts = useSavedCounts()
   const heartIds = counts.ids.length ? counts.ids.slice(-40) : undefined
+  // The card opens complete: the Pro word's colours are fetched while idle.
+  const heartKey = heartIds?.join(',') ?? ''
+  useEffect(() => {
+    if (!pro) return
+    const go = () => warmProMark(heartIds)
+    if ('requestIdleCallback' in window) { const id = window.requestIdleCallback(go, { timeout: 3000 }); return () => window.cancelIdleCallback(id) }
+    const t = setTimeout(go, 1500); return () => clearTimeout(t)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pro, heartKey])
 
   useEffect(() => {
     if (!open) return

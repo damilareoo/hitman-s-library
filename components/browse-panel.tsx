@@ -7,6 +7,7 @@ import { displayKind } from '@/lib/categories'
 import type { CollectionMap } from '@/lib/collections'
 import type { Design } from '@/components/design-card'
 import { BTN, CARD } from '@/components/member-card'
+import { FadeImg } from '@/components/fade-img'
 
 interface BrowseSite {
   id: string
@@ -277,7 +278,7 @@ export function BrowsePanel({
                         className="w-full flex items-center gap-3 py-2 px-2.5 rounded-[10px] text-left transition-colors duration-[var(--dur-2)] ease-[var(--ease-hover)] data-[active=true]:bg-foreground/[0.07] hover:bg-foreground/[0.07]"
                       >
                         <span className="w-[52px] h-8 rounded-[5px] overflow-hidden border border-edge bg-muted shrink-0">
-                          {site.thumb && <img src={site.thumb} alt="" loading="lazy" className="w-full h-full object-cover object-top" />}
+                          {site.thumb && <FadeImg src={site.thumb} className="w-full h-full object-cover object-top" />}
                         </span>
                         <span className="flex-1 min-w-0 text-bodytext text-ink truncate">{site.title}</span>
                         <span className="text-meta text-ink-4 truncate max-w-[180px] shrink-0 max-sm:hidden">{domainOf(site.url)}</span>
@@ -344,9 +345,7 @@ export function BrowsePanel({
                         className="w-full flex items-center gap-3 py-2 px-2.5 rounded-[10px] text-left hover:bg-foreground/[0.07] data-[active=true]:bg-foreground/[0.07] transition-colors"
                       >
                         <span className="w-[52px] h-8 rounded-[5px] overflow-hidden border border-edge bg-muted shrink-0">
-                          {design.thumbnail_url && (
-                            <img src={design.thumbnail_url} alt="" loading="lazy" className="w-full h-full object-cover object-top" />
-                          )}
+                          {design.thumbnail_url && <FadeImg src={design.thumbnail_url} className="w-full h-full object-cover object-top" />}
                         </span>
                         <span className="flex-1 min-w-0 text-bodytext text-ink truncate">{design.title}</span>
                         <span className="text-meta text-ink-4 truncate max-w-[180px] shrink-0 max-sm:hidden">{domainOf(design.url)}</span>
