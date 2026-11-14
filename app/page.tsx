@@ -1,3 +1,4 @@
+import { resolveSite } from '@/lib/read/resolve-site'
 import { Suspense } from 'react'
 import type { Metadata } from 'next'
 import { Gallery } from '@/components/gallery'
@@ -43,7 +44,10 @@ export async function generateMetadata(
   const isFiltered = categories.length > 0 || Boolean(q) || Boolean(params.tag) || Boolean(params.site) || Boolean(params.similarTo) || Boolean(colorHex)
 
   let title = "Hitman's Library"
-  if (q) title = `Search: ${q}`
+  const siteParam = typeof params.site === 'string' ? params.site : ''
+  const site = siteParam ? await resolveSite(siteParam).catch(() => null) : null
+  if (site) title = `${site.title} · Hitman's Library`
+  else if (q) title = `Search: ${q}`
   else if (colorHex) title = `Near ${colorHex}`
   else if (categories.length === 1) title = `${categories[0]} design references`
 
@@ -64,7 +68,8 @@ export default async function Page(
   const similarToId = SIMILAR_ENABLED ? parseInt(similarToRaw, 10) : NaN
   const rawColor = typeof params.color === 'string' ? params.color : ''
   const colorHex = isHexColor(rawColor) ? rawColor.toLowerCase() : null
-  const [{ designs, pagination }, categories, initialSimilar] = await Promise.all([
+  const siteParam = typeof params.site === 'string' ? params.site : ''
+  const [{ designs, pagination }, categories, initialSimilar, initialSite] = await Promise.all([
     // A color view ships ranked as HTML, like every other view — the same
     // rows the client-side ranking would land on.
     colorHex ? queryColorRanked(colorHex) : queryDesigns({
@@ -79,6 +84,8 @@ export default async function Page(
     // The neighbor grid ships as HTML too, with the open site pinned first —
     // the same rows the client fetch would land on.
     Number.isFinite(similarToId) ? querySimilar(similarToId, 24) : Promise.resolve(null),
+    // ?site= may be a name (plastic.audio) or an old id; the panel needs the id.
+    siteParam ? resolveSite(siteParam).catch(() => null) : Promise.resolve(null),
   ])
 
   return (
@@ -88,6 +95,7 @@ export default async function Page(
         // click never costs a server round trip; these are the params the
         // first (server) render was painted from.
         initialParams={params}
+        initialSite={initialSite}
         initialDesigns={initialSimilar && initialSimilar.site ? [initialSimilar.site, ...initialSimilar.neighbors] : designs}
         initialPagination={
           initialSimilar && initialSimilar.site

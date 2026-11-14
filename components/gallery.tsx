@@ -10,7 +10,6 @@ import { IndexView } from '@/components/index-view'
 import { getLenis } from '@/lib/smooth-scroll'
 import { SIMILAR_ENABLED } from '@/lib/drift'
 import { UNSORTED, displayKind } from '@/lib/categories'
-import { FILTER_TAGS } from '@/lib/tagging'
 import { TasteSignup } from '@/components/taste-signup'
 import { useCollections, deleteCollection } from '@/lib/collections'
 import { FAVORITES_EVENT } from '@/lib/account-client'
@@ -26,6 +25,7 @@ import { BrowsePanel } from '@/components/browse-panel'
 import { Brand } from '@/components/brand'
 import { SiteLinks } from '@/components/site-links'
 import { ProWord } from '@/components/pro-word'
+import { siteSlug, isSiteId } from '@/lib/site-slug'
 import { EASE, DUR, MENU } from '@/lib/motion'
 import Link from 'next/link'
 import { useIsNarrow, useIsPhone } from '@/lib/use-is-narrow'
@@ -84,6 +84,8 @@ interface GalleryProps {
   initialCategories: { name: string; count: number }[]
   initialSimilar: { site: Design | null; neighbors: Design[] } | null
   initialParams: Record<string, string | string[] | undefined>
+  /** The site in ?site=, resolved on the server (it may arrive as a name or an old id). */
+  initialSite?: { id: string; slug: string; title: string } | null
   /** The ?color= the server already ranked this first paint around. */
   initialColor?: string | null
 }
@@ -102,17 +104,6 @@ function sortButton(isActive: boolean): string {
     isActive
       ? 'bg-muted text-ink border-edge-strong'
       : 'text-ink-4 border-transparent bg-transparent hover:text-ink-3 hover:bg-foreground/[0.055]',
-  ].join(' ')
-}
-
-function categoryPill(isActive: boolean): string {
-  return [
-    'shrink-0 h-8 px-3 rounded-[10px] text-meta whitespace-nowrap border',
-    'transition-[background-color,border-color,color,transform] duration-[var(--dur-2)] ease-[var(--ease-sig)] active:scale-[0.98]',
-    'focus:outline-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-foreground/20',
-    isActive
-      ? 'bg-muted text-ink border-transparent font-medium hover:bg-foreground/[0.09]'
-      : 'bg-foreground/[0.055] text-ink-2 border-transparent hover:text-ink hover:bg-foreground/[0.09]',
   ].join(' ')
 }
 
@@ -142,7 +133,7 @@ function SkeletonCard() {
   )
 }
 
-export function Gallery({ initialDesigns, initialPagination, initialCategories, initialSimilar, initialParams, initialColor }: GalleryProps) {
+export function Gallery({ initialDesigns, initialPagination, initialCategories, initialSimilar, initialParams, initialColor, initialSite }: GalleryProps) {
   // The URL is the source of truth for every filter, so views are shareable
   // and the back button steps through them. It is written through the history
   // API, not the router: this page is force-dynamic, so a router.push would
@@ -153,7 +144,16 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
   const tags = useMemo(() => searchParams.getAll('tag'), [searchParams])
   const search = searchParams.get('q') ?? ''
   const sortBy = SLUG_TO_SORT.get(searchParams.get('sort') ?? '') ?? 'recent'
-  const selectedId = searchParams.get('site')
+  // ?site= carries the site's name (plastic.audio); older links carry its id.
+  // Names map back to ids through what this page has seen: the server's
+  // resolution of the first URL, and every site opened since.
+  const slugIds = useRef(new Map<string, string>(initialSite ? [[initialSite.slug, initialSite.id]] : []))
+  const siteParam = searchParams.get('site')
+  const selectedId = !siteParam ? null
+    : isSiteId(siteParam) ? siteParam
+    : slugIds.current.get(siteParam.toLowerCase())
+      ?? initialDesigns.find(d => siteSlug(d.url) === siteParam.toLowerCase())?.id
+      ?? null
   // Deep-link tab (A1): ?site=415&tab=colors restores the exact tab.
   const rawTab = searchParams.get('tab')
   const panelTab: PanelTab = (
@@ -194,6 +194,34 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
   const [designs, setDesigns] = useState<Design[]>(initialDesigns)
   // The header's Pro word takes the first page's colours once, so it doesn't
   // shift as filters change.
+  /** The name to put in ?site= for this id (its id until we know its address). */
+  const siteParamFor = useCallback((id: string, url?: string) => {
+    const u = url ?? designs.find(d => d.id === id)?.url
+    const slug = u ? siteSlug(u) : ''
+    if (!slug) return id
+    slugIds.current.set(slug, id)
+    return slug
+  }, [designs])
+  // An old numeric link becomes the site's name as soon as we know its address.
+  useEffect(() => {
+    if (!siteParam || !isSiteId(siteParam)) return
+    const known = designs.find(d => d.id === siteParam)?.url
+    const slug = known ? siteSlug(known) : initialSite?.id === siteParam ? initialSite.slug : ''
+    if (!slug) return
+    slugIds.current.set(slug, siteParam)
+    replaceParams(p => p.set('site', slug))
+  }, [siteParam, designs, initialSite, replaceParams])
+
+  // The tab says which site is open.
+  const baseTitle = useRef<string | null>(null)
+  useEffect(() => {
+    if (baseTitle.current === null) baseTitle.current = initialSite && document.title.includes(initialSite.title) ? "Hitman's Library" : document.title
+    const name = selectedId
+      ? designs.find(d => d.id === selectedId)?.title ?? (initialSite?.id === selectedId ? initialSite.title : null)
+      : null
+    document.title = name ? `${name} · Hitman's Library` : baseTitle.current
+  }, [selectedId, designs, initialSite])
+
   const [headerColors] = useState(() => initialDesigns.slice(0, 40).flatMap(d => d.colors ?? []))
   const [pagination, setPagination] = useState<Pagination>(initialPagination)
   const [categories, setCategories] = useState(initialCategories)
@@ -633,8 +661,8 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
 
   /** Open the panel for an id we may not have a loaded card for. */
   const selectDesignById = useCallback((id: string) => {
-    updateParams(p => p.set('site', id))
-  }, [updateParams])
+    updateParams(p => p.set('site', siteParamFor(id)))
+  }, [updateParams, siteParamFor])
 
   // Nothing opens itself. A cold load lands on the grid at every width and a
   // site opens on a tap or from an explicit ?site= link — selecting the first
@@ -642,7 +670,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
   // kept reopening a panel nobody asked for.
   const selectDesign = useCallback((design: Design | null) => {
     updateParams(p => {
-      if (design) p.set('site', design.id)
+      if (design) p.set('site', siteParamFor(design.id, design.url))
       else {
         p.delete('site')
         p.delete('tab')
@@ -887,16 +915,16 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
       const next = current.includes(tag) ? current.filter(t => t !== tag) : [...current, tag]
       next.forEach(t => p.append('tag', t))
     })
-  }, [sounds, updateParams])
+  }, [sounds, updateParams, siteParamFor])
 
   const handleIndexOpen = useCallback((design: Design) => {
     sounds.playSelect()
     track('design_opened', { source_id: design.id, opening_surface: 'index' })
     updateParams(p => {
       p.delete('view')
-      p.set('site', design.id)
+      p.set('site', siteParamFor(design.id, design.url))
     })
-  }, [sounds, updateParams])
+  }, [sounds, updateParams, siteParamFor])
 
   // The browse layer is an index of the whole library, not of the current
   // filter, so every choice leaves the filter state behind — the same
@@ -911,7 +939,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
     handleIndexSet(name)
   }, [handleIndexSet])
 
-  const handleBrowseOpen = useCallback((id: string) => {
+  const handleBrowseOpen = useCallback((id: string, url?: string) => {
     sounds.playSelect()
     track('design_opened', { source_id: id, opening_surface: 'browse_panel' })
     updateParams(p => {
@@ -920,9 +948,9 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
       p.delete('similarTo')
       p.delete('color')
       p.delete('trail')
-      p.set('site', id)
+      p.set('site', siteParamFor(id, url))
     })
-  }, [sounds, updateParams])
+  }, [sounds, updateParams, siteParamFor])
 
   const handleBrowseRequest = useCallback((query: string) => {
     setBrowseOpen(false)
@@ -937,14 +965,6 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
     kinds.length === 1 && tags.length === 0 && !search ? displayKind(kinds[0]) :
     search && kinds.length === 0 && tags.length === 0 ? 'Search results' :
     'Filtered sites'
-  // Phones have no chip row, so a filtered grid names what it is showing and
-  // offers the way back. Search has its own field and count above.
-  const phoneFilterLabel = colorFilter
-    ? `Near ${colorFilter}`
-    : kinds.length > 0 ? kinds.map(displayKind).join(' · ') :
-    tags.length > 0 ? tags.join(' · ') :
-    ''
-
   // Two column tracks, because the grid gets the whole row back whenever no
   // panel is open. Each step is placed where the card would otherwise fall
   // under ~290px, the width below which titles start wrapping and the row
@@ -1019,26 +1039,25 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
           <span className="sm:hidden -ml-1"><ProWord colors={headerColors} /></span>
 
           {/* Search is a layer, not a field: the same keystroke that opens it
-              searches the whole library, not just the page on screen. Below xl
-              the filter block above the grid owns search, where a thumb is. */}
+              searches the whole library, not just the page on screen. The same
+              layer at every width: a field from sm, an icon on a phone. */}
           <button
             onClick={() => setBrowseOpen(true)}
             aria-label="Search the library"
             aria-keyshortcuts="Meta+K"
-            className="flex-1 max-w-xs h-8 pl-3 pr-1.5 hidden xl:flex items-center gap-2 rounded-[10px] border border-edge-strong text-[13px] text-ink-4 hover:border-foreground/30 hover:text-ink-2 transition-colors"
+            className="flex-1 max-w-xs h-8 pl-3 pr-1.5 hidden md:flex items-center gap-2 rounded-[10px] border border-edge-strong text-[13px] text-ink-4 hover:border-foreground/30 hover:text-ink-2 transition-colors"
           >
             <MagnifyingGlass className="w-3 h-3 shrink-0" weight="regular" />
             <span className="flex-1 text-left truncate">Search sites…</span>
-            <kbd className={CARD.kbd + ' pointer-events-none'}>
+            <kbd className={CARD.kbd + ' pointer-events-none max-md:hidden'}>
               ⌘K
             </kbd>
           </button>
-          <Refine value={refine} onApply={applyRefine} className="hidden xl:block" />
+          <Refine value={refine} onApply={applyRefine} className="hidden md:block" />
 
-          {/* On a phone the switcher sits on the window's centre line, the way
-              the prototype does, rather than in whatever space the mark and
-              the actions happen to leave. From sm it joins the row. */}
-          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 sm:static sm:translate-x-0 sm:translate-y-0 sm:flex-1 xl:flex-none">
+          {/* The switcher follows the mark and Pro, so the actions on the
+              right always have their own room. */}
+          <div className="sm:flex-1 xl:flex-none">
             <ViewSwitcher view={view} onChange={setView} />
           </div>
 
@@ -1052,7 +1071,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
               aria-expanded={digestOpen}
               aria-label="Weekly digest"
               title="Weekly digest"
-              className="relative flex items-center gap-1 text-meta text-ink-3 hover:text-ink transition-colors mr-1 max-sm:hidden after:absolute after:inset-x-0 after:top-1/2 after:h-11 after:-translate-y-1/2 after:content-['']"
+              className="relative flex items-center gap-1 text-meta text-ink-3 hover:text-ink transition-colors mr-1 max-lg:hidden after:absolute after:inset-x-0 after:top-1/2 after:h-11 after:-translate-y-1/2 after:content-['']"
             >
               <EnvelopeSimple className="w-3.5 h-3.5" weight="bold" />
               <span>Digest</span>
@@ -1060,6 +1079,9 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
             {/* Pro, in its own language: the pixel word from the Pro card.
                 Submit lives in the footer, the phone menu and the empty search. */}
             <span className="max-sm:hidden"><ProWord colors={headerColors} /></span>
+            <button onClick={() => setBrowseOpen(true)} aria-label="Search the library" title="Search" className={ICON_BUTTON + ' md:hidden'}>
+              <MagnifyingGlass className="w-4 h-4" weight="regular" />
+            </button>
             <SavedMenu />
             <AccountButton />
 
@@ -1068,7 +1090,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
                 if (!sounds.enabled) sounds.playThemeToggle(true)
                 sounds.setEnabled(p => !p)
               }}
-              className={ICON_BUTTON + ' max-sm:hidden'}
+              className={ICON_BUTTON + ' max-lg:hidden'}
               aria-label={sounds.enabled ? 'Mute sounds' : 'Enable sounds'}
               aria-pressed={sounds.enabled}
             >
@@ -1097,7 +1119,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
                 })
                 t.finished.then(() => { isThemeTransitioning.current = false })
               }}
-              className={ICON_BUTTON}
+              className={ICON_BUTTON + ' max-sm:hidden'}
               aria-label={mounted && resolvedTheme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
             >
               <motion.span key={mounted ? resolvedTheme : 'ssr'} initial={{ rotate: -20, scale: 0.8 }} animate={{ rotate: 0, scale: 1 }} style={{ display: 'flex' }}>
@@ -1105,9 +1127,10 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
               </motion.span>
             </button>
 
-            {/* On a phone the three secondary actions fold in here so the
-                view switcher has the middle of the bar to itself. */}
-            <div ref={moreRef} className="relative sm:hidden">
+            {/* Below lg the secondary actions fold in here, so the bar never
+                overflows: Digest, Submit and sound; on a phone Saved and the
+                theme switch too. */}
+            <div ref={moreRef} className="relative lg:hidden">
               <button
                 onClick={() => setMoreOpen(v => !v)}
                 aria-expanded={moreOpen}
@@ -1131,7 +1154,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
                     role="menuitem"
                     // Opened a tick later, so this tap doesn't count as a click outside it.
                     onClick={() => { setMoreOpen(false); setTimeout(() => window.dispatchEvent(new Event(OPEN_SAVED_EVENT)), 0) }}
-                    className="w-full flex items-center gap-2.5 h-9 px-2.5 rounded-[10px] text-bodytext text-ink-2 text-left hover:text-ink hover:bg-muted transition-colors"
+                    className="sm:hidden w-full flex items-center gap-2.5 h-9 px-2.5 rounded-[10px] text-bodytext text-ink-2 text-left hover:text-ink hover:bg-muted transition-colors"
                   >
                     <BookmarkSimple className="w-4 h-4" weight="bold" />
                     <span>Saved</span>
@@ -1166,6 +1189,15 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
                       ? <SpeakerHigh className="w-4 h-4" weight="regular" />
                       : <SpeakerSlash className="w-4 h-4" weight="regular" />}
                     <span>{sounds.enabled ? 'Mute sounds' : 'Enable sounds'}</span>
+                  </button>
+                  {/* On a phone the theme switch lives here, so search has room in the bar. */}
+                  <button
+                    role="menuitem"
+                    onClick={() => { setMoreOpen(false); sounds.playThemeToggle(); setTheme(resolvedTheme === 'dark' ? 'light' : 'dark') }}
+                    className="sm:hidden w-full flex items-center gap-2.5 h-9 px-2.5 rounded-[10px] text-bodytext text-ink-2 text-left hover:text-ink hover:bg-muted transition-colors"
+                  >
+                    {mounted && resolvedTheme === 'dark' ? <Sun className="w-4 h-4" weight="regular" /> : <Moon className="w-4 h-4" weight="regular" />}
+                    <span>{mounted && resolvedTheme === 'dark' ? 'Light mode' : 'Dark mode'}</span>
                   </button>
                   </motion.div>
                 )}
@@ -1232,118 +1264,6 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
         {/* tabIndex -1 so the skip link moves focus here and not just the
             scroll position; without it the next Tab returns to the header. */}
         <main id="gallery" tabIndex={-1} className="xl:col-span-8 min-[1920px]:col-span-9 flex flex-col min-w-0 focus:outline-none">
-          {/* Compact filters — mobile and tablet */}
-          <div className="xl:hidden sticky top-14 z-20 bg-background border-b border-edge-strong">
-            <div className="px-4 pt-3 pb-2 flex items-center gap-2">
-            <div className="relative flex-1 min-w-0">
-              <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-3 h-3 text-ink-3 pointer-events-none" weight="regular" />
-              <input
-                type="search"
-                placeholder="Search sites…"
-                aria-label="Search sites"
-                value={searchInput}
-                onChange={e => setSearchInput(e.target.value)}
-                className={INPUT + ' pl-8 pr-8 [&::-webkit-search-cancel-button]:hidden'}
-              />
-              {searchInput && (
-                <button
-                  onClick={() => setSearchInput('')}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-4 hover:text-ink-2 transition-colors"
-                  aria-label="Clear search"
-                >
-                  <X className="w-3 h-3" weight="bold" />
-                </button>
-              )}
-              {!searchInput && search && (
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-micro tabular-nums text-ink-4 pointer-events-none" aria-hidden="true">
-                  {pagination.total}
-                </span>
-              )}
-            </div>
-            <Refine value={refine} onApply={applyRefine} />
-            </div>
-
-            <p className="px-4 pt-1 pb-2 text-meta text-ink-4 text-balance">
-              {libraryTotal} of the web&apos;s best-designed sites, dissected.
-            </p>
-
-            {/* Categories and tags are the tablet's chip surface. On a phone
-                the overview already owns kinds, tags and sets, so the grid
-                keeps only search and a way out of whatever filter it arrived
-                with. */}
-            <div className="hidden sm:block">
-              {/* Categories */}
-              <div className="flex gap-2 overflow-x-auto px-4 pb-2 no-scrollbar" role="group" aria-label="Filter by kind of site">
-                {[{ name: 'All', count: libraryTotal }, ...categories].map(({ name, count }) => {
-                  const isActive = name === 'All' ? kinds.length === 0 : kinds.includes(name)
-                  return (
-                    <button
-                      key={name}
-                      onClick={() => handleFilterChange(name)}
-                      aria-pressed={isActive}
-                      className={categoryPill(isActive)}
-                    >
-                      {name === 'All' ? name : displayKind(name)} <span className="tabular-nums text-ink-4">{count}</span>
-                    </button>
-                  )
-                })}
-              </div>
-
-              {/* Tags and sort share one row: three stacked control rows read
-                  as clutter beside the categories above them. */}
-              <div className="flex items-center gap-2 px-4 pb-3 overflow-x-auto no-scrollbar">
-                <div className="flex gap-2 shrink-0" role="group" aria-label="Filter by tag">
-                  {FILTER_TAGS.map(t => {
-                    const isActive = tags.includes(t)
-                    return (
-                      <button
-                        key={t}
-                        onClick={() => handleTagClick(t)}
-                        aria-pressed={isActive}
-                        className={categoryPill(isActive)}
-                      >
-                        {t}
-                      </button>
-                    )
-                  })}
-                </div>
-                {!colorFilter && <span aria-hidden="true" className="shrink-0 w-px self-stretch bg-edge" />}
-                {/* overflow-x-auto clips vertically, which would cut the sort
-                    buttons' touch overlays off — same compensation as before,
-                    scoped to the sort group now. Ranking owns the order in a
-                    color view, so the sort group steps aside. */}
-                {!colorFilter && (
-                <div className="flex items-center gap-1.5 shrink-0 py-3 -my-3" role="group" aria-label="Sort sites">
-                  <span className="text-micro text-ink-4 shrink-0">Sort</span>
-                  {SORT_OPTIONS.map(({ value, label }) => (
-                    <button
-                      key={value}
-                      onClick={() => setSort(value)}
-                      aria-pressed={sortBy === value}
-                      className={`shrink-0 px-1.5 py-0.5 ${sortButton(sortBy === value)}`}
-                    >
-                      {label}
-                    </button>
-                  ))}
-                </div>
-                )}
-              </div>
-            </div>
-
-            {phoneFilterLabel && (
-              <div className="sm:hidden flex items-center gap-2 px-4 pb-3 text-meta text-ink-4">
-                <span className="text-ink-2 truncate">{phoneFilterLabel}</span>
-                <span className="tabular-nums shrink-0">{pagination.total}</span>
-                <button
-                  onClick={clearAll}
-                  className="ml-auto shrink-0 text-ink-3 hover:text-ink transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#E8A04A] rounded-[5px]"
-                >
-                  Clear
-                </button>
-              </div>
-            )}
-          </div>
-
           {/* pb-20 below xl clears the floating page links, which are centred
               over the last row on phones and tablets. */}
           <div className="flex-1 p-5 xl:p-6 max-xl:pb-20">
@@ -1411,19 +1331,9 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
                 )}
               </div>
             )}
-            {/* Below xl there is no grid heading, so a set or your hearts get
-                their own: what you're looking at, and the way back. */}
-            {collectionName && (
-              <div className="xl:hidden flex items-center justify-between gap-3 pb-3 mb-4 border-b border-edge">
-                <h2 className="min-w-0 truncate text-[13px] font-[600] tracking-[-0.01em] text-ink">
-                  {collectionTitle ?? collectionName} <span className="font-[500] text-ink-4">{pagination.total}</span>
-                </h2>
-                <Link href="/" scroll={false} className="shrink-0 text-[12px] text-ink-4 hover:text-ink transition-colors">Back to library</Link>
-              </div>
-            )}
-            <div className={(refineKey ? 'hidden' : 'hidden xl:flex') + ' items-center justify-between gap-4 pb-3 mb-5 border-b border-edge'}>
+            <div className={(refineKey ? 'hidden' : 'flex') + ' items-center justify-between gap-3 pb-3 mb-5 border-b border-edge'}>
               <div className="flex items-center gap-2 min-w-0">
-                <h2 className="flex items-center gap-1.5 text-meta text-ink font-medium">
+                <h2 className="flex items-center gap-1.5 text-meta text-ink font-medium whitespace-nowrap">
                   {colorFilter && (
                     <span
                       aria-hidden="true"
@@ -1451,12 +1361,15 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
                   Ordered by how close each palette sits
                 </span>
               ) : (
+              <div className="flex items-center gap-2 shrink-0">
+              {/* Below md the header has no room for Refine; it sits here. */}
+              <Refine value={refine} onApply={applyRefine} className="md:hidden" />
               <div
                 className="flex items-center gap-0.5"
                 role="group"
                 aria-label="Sort sites"
               >
-                <span className="text-micro text-ink-4 shrink-0 mr-0.5">Sort</span>
+                <span className="text-micro text-ink-4 shrink-0 mr-0.5 max-sm:hidden">Sort</span>
                 {SORT_OPTIONS.map(({ value, label }) => (
                   <button
                     key={value}
@@ -1468,12 +1381,13 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
                   </button>
                 ))}
               </div>
+              </div>
               )}
             </div>
 
             {/* One line of value proposition: nothing above the fold says
                 what this is, and shared-link visitors bounce on confusion. */}
-            <p className={(refineKey ? 'hidden' : 'hidden xl:block') + ' text-meta text-ink-4 text-balance pb-3 -mt-2'}>
+            <p className={(refineKey ? 'hidden' : 'block') + ' text-meta text-ink-4 text-balance pb-3 -mt-2'}>
               {libraryTotal} of the web&apos;s best-designed sites, dissected. Colors, type, assets and screenshots, extracted automatically.
             </p>
 
