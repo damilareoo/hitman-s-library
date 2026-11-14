@@ -47,7 +47,7 @@ export function Refine({ value, onApply, className = '' }: { value: RefineQuery;
     <div ref={ref} className={'relative ' + className}>
       <button
         onClick={() => setOpen(v => !v)} aria-expanded={open} aria-haspopup="dialog"
-        className={'h-8 max-xl:h-10 px-3 flex items-center gap-1.5 rounded-[10px] text-[13px] font-[500] transition-colors ' + (active ? 'bg-foreground text-background border border-foreground' : 'border border-edge-strong text-ink-3 hover:border-foreground/30 hover:text-ink-2')}
+        className={'h-8 px-3 max-sm:px-2.5 flex items-center gap-1.5 rounded-[10px] text-[13px] font-[500] transition-colors ' + (active ? 'bg-foreground text-background border border-foreground' : 'border border-edge-strong text-ink-3 hover:border-foreground/30 hover:text-ink-2')}
       >
         <SlidersHorizontal className="w-3.5 h-3.5" weight="bold" />
         <span>Refine</span>

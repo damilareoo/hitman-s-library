@@ -89,6 +89,9 @@ const changelog: ChangelogRelease[] = [
     title: 'Your Saves, Everywhere',
     items: [
       { type: 'new', author: 'damilare', text: 'Pro now lives in the top bar, its colours washing in from the library' },
+      { type: 'improved', author: 'damilare', text: 'Phones and tablets share the desktop search, Refine and sort, with ⌘K everywhere' },
+      { type: 'improved', author: 'damilare', text: 'An open site shows its name in the address bar and the browser tab' },
+      { type: 'fixed', author: 'damilare', text: 'Arrow keys and Enter now move through kinds, sets and recents in ⌘K' },
       { type: 'improved', author: 'damilare', text: 'Menus, panels and ⌘K respond faster, with quieter motion and no bounce' },
       { type: 'improved', author: 'damilare', text: 'Card images load faster and stay cached, so repeat visits show them instantly' },
       { type: 'improved', author: 'damilare', text: 'The ⌘K browser, Type tab and Submit page share the same cards, buttons and chips' },
