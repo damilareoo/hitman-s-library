@@ -34,7 +34,7 @@ const SECTIONS: { title: string; body: React.ReactNode }[] = [
   },
   {
     title: 'Pro features',
-    body: <>If you watch a site, we keep which site, so we can email you when it redesigns. Keys for your AI tools are stored only as a scrambled fingerprint; we can&apos;t read them back. Each month&apos;s trends email goes to Pro members, once. Style kits are retired; any record of past kit downloads (site and month) is in your data export.</>,
+    body: <>If you watch a site, we keep which site, so we can email you when it redesigns. Keys for your AI tools are stored only as a scrambled fingerprint; we can&apos;t read them back. Each month&apos;s trends email goes to Pro members, once.</>,
   },
   {
     title: 'Who handles it',
