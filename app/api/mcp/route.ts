@@ -16,6 +16,7 @@ import { buildTokenFiles } from '@/lib/tokens/files'
 import { siteSlug } from '@/lib/site-slug'
 import { displayKind } from '@/lib/categories'
 import { hexToOklab } from '@/lib/tokens/color'
+import { GUIDE_SHORT } from '@/lib/mcp/guide'
 
 const SITE = 'https://hitmanslibrary.xyz'
 // Travels with every site and token answer, so the AI reading it knows the rules.
@@ -75,18 +76,22 @@ export async function POST(req: Request) {
       site: async ref => {
         const d = await detailFor(ref)
         if (!d) return null
+        const [meta] = await getSql()`SELECT kind, tags FROM design_sources WHERE id = ${d.id}`
         const total = d.colors.reduce((s, c) => s + (c.area_share ?? 0), 0)
         return {
           site: siteSlug(d.url), name: d.title, url: d.url, page: `${SITE}/?site=${encodeURIComponent(siteSlug(d.url))}`,
           colors: d.colors.map(c => ({ hex: c.hex_value, oklch: c.oklch, share: total > 0 && c.area_share != null ? Math.round((c.area_share / total) * 100) / 100 : null })),
-          fonts: d.typography.map(t => ({ family: t.font_family, role: t.role, weight: t.primary_weight, size: t.sample_size_px })),
+          // Measured on the live page: what the site decided, not just what it named.
+          type: d.typography.map(t => ({ family: t.font_family, role: t.role, sizePx: t.sample_size_px, weight: t.primary_weight, lineHeight: t.sample_line_height })),
+          kind: meta?.kind ? displayKind(String(meta.kind)) : null,
+          traits: ((meta?.tags ?? []) as string[]).filter(t => ['dark', 'dense', 'sparse', 'serif'].includes(t)),
           captures: { desktop: d.screenshot_url, mobile: d.mobile_screenshot_url },
           usage: USAGE,
         }
       },
       tokens: async ref => {
         const d = await detailFor(ref)
-        return d ? { site: siteSlug(d.url), usage: USAGE, files: buildTokenFiles(d) } : null
+        return d ? { site: siteSlug(d.url), usage: USAGE, guidance: GUIDE_SHORT, files: buildTokenFiles(d) } : null
       },
     })
   } catch (err) {

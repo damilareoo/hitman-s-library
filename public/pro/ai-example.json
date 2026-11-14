@@ -1,18 +1,26 @@
 {
-  "product": "Tempo",
+  "product": "Margin",
+  "section": "pricing",
   "references": [
-    "plastic.audio",
-    "tomjohn.design"
+    "money.x.com",
+    "annnimate.com"
   ],
+  "measured": "48px at 500 on 52px; body 16/24",
   "fonts": [
     "Geist",
     "Geist Mono"
   ],
+  "skipped": [
+    "xVFDisplay",
+    "xVF",
+    "aktivGrotesk"
+  ],
   "colors": [
-    "#0a0a0a",
-    "#1e1e1e",
-    "#e6e2da",
-    "#3a50fc",
-    "#ff4d8d"
-  ]
+    "#ffffff",
+    "#141314",
+    "#ebebeb",
+    "#fffed7",
+    "#e5502e"
+  ],
+  "ratio": "1200 / 720"
 }

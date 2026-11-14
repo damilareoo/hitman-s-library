@@ -51,27 +51,24 @@ export function ProExtras({ sample }: { sample: ProSample }) {
 
       <Sample
         title="In your AI tools"
-        foot={<span className={CARD.meta}>Inspiration, not imitation: take colours and type as a starting point; don&apos;t copy logos, words, images or layouts, and license any paid font. <Link href="/terms" className="underline underline-offset-2 hover:text-ink">Terms</Link></span>}
+        foot={<span className={CARD.meta}>Inspiration, not imitation: references inform decisions; logos, words, images and layouts stay theirs, and paid fonts need a licence. <Link href="/terms" className="underline underline-offset-2 hover:text-ink">Terms</Link></span>}
       >
-        <p className="text-[14px] leading-[1.45] text-ink text-pretty">“Find dark product sites with one bright accent. Use their mood for {AI_EXAMPLE.product}, our focus-music app. Keep our pink, our layout and our words.”</p>
+        <p className="text-[14px] leading-[1.45] text-ink text-pretty">“Redesign our pricing section. Learn from dense, flat product sites in the library and follow its design brief. Keep {AI_EXAMPLE.product}&apos;s vermilion and our words.”</p>
         <div className="mt-3">
-          <CompareSlider before="/pro/ai-before.webp" after="/pro/ai-after.webp" alt={`${AI_EXAMPLE.product}'s landing page`} ratio="1200 / 620" />
+          <CompareSlider before="/pro/ai-before.webp" after="/pro/ai-after.webp" alt={`${AI_EXAMPLE.product}'s pricing section`} ratio={AI_EXAMPLE.ratio} />
         </div>
         <ol className="mt-3.5 flex flex-col gap-2.5">
           {[
-            <>Searched the library and found {AI_EXAMPLE.references.join(' and ')}.</>,
-            <>Borrowed the mood, not the look: near-black surfaces, warm off-white type, a mono face for numbers, one blue for data.</>,
-            <>Kept {AI_EXAMPLE.product}&apos;s own pink, layout and words, with free fonts ({AI_EXAMPLE.fonts.join(' and ')}).</>,
+            <>Found {AI_EXAMPLE.references.join(' and ')} and read their measured type: display {AI_EXAMPLE.measured}.</>,
+            <>Set the headline at that weight and leading instead of a heavy 800, and replaced three floating cards with one flat grid and hairlines.</>,
+            <>Kept colour near-monochrome: {AI_EXAMPLE.product}&apos;s vermilion appears once, on the plan worth choosing; greys darkened to pass AA.</>,
+            <>Wrote “Everything in Free, plus” instead of a tick on every line, and used free fonts ({AI_EXAMPLE.fonts.join(', ')}) for the references&apos; paid ones.</>,
           ].map((step, i) => (
             <li key={i} className="grid grid-cols-[18px_minmax(0,1fr)] gap-1.5 text-[13px] leading-[1.45] text-ink-2 text-pretty">
               <span className="text-ink-4 tabular-nums">{i + 1}</span><span>{step}</span>
             </li>
           ))}
         </ol>
-        <p className={CARD.meta + ' mt-3 flex items-center gap-1.5'}>
-          <span className="mr-0.5">Palette</span>
-          {AI_EXAMPLE.colors.map(c => <span key={c} title={c} className="w-3 h-3 rounded-full ring-1 ring-inset ring-foreground/15" style={{ background: c }} />)}
-        </p>
       </Sample>
 
       {sample.trends.length > 0 && (

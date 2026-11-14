@@ -1,13 +1,20 @@
 #!/usr/bin/env bun
 // scripts/render-ai-example.ts
 //
-// The before/after on the Pro page, and the ethical use it shows. A made-up
-// app, Tempo, keeps its own layout, words and brand pink; an AI tool looks up
-// two dark product sites in the library and borrows a mood, not a look:
-// near-black surfaces, warm off-white type, a mono face for numbers, one
-// second colour for data. Only free, openly licensed fonts. Every colour in
-// the "after" is one the library returned for a reference, or Tempo's own
-// pink, so the picture is a real result.
+// The before/after on the Pro page: a pricing section for Margin, a made-up
+// writing app, redesigned from principles an AI tool read from two library
+// sites, following the design brief the library sends (lib/mcp/guide.ts).
+//
+// Before: the section an AI produces with no references: centred title, three
+// identical shadowed cards, a gradient "Most popular" badge, ticks on every
+// line, the same gradient button three times.
+// After: decisions measured on the references, applied to Margin's own
+// content and brand:
+//   - display at weight 500 with tight leading, body 16/24 (both references)
+//   - one flat comparison grid with hairlines, no shadows (both are dense, flat)
+//   - near-monochrome; Margin's own accent used once, on the recommended plan
+//   - tabular prices; "Everything in Free, plus" instead of ticks everywhere
+//   - free fonts (Geist, Geist Mono) for the references' paid faces
 //
 //   bun scripts/render-ai-example.ts   → public/pro/ai-before.webp, ai-after.webp, ai-example.json
 import { writeFileSync } from 'node:fs'
@@ -16,97 +23,131 @@ import sharp from 'sharp'
 import { resolveSite } from '@/lib/read/resolve-site'
 import { getSiteDetail } from '@/lib/read/site-detail'
 
-// Two library sites as references: cues, not a copy of either.
-const REFERENCES = ['plastic.audio/drum-pad', 'tomjohn.design']
-// Tempo is made up; its pink is its own brand colour, taken from no one.
-const BRAND = '#ff4d8d'
-// Free, openly licensed (SIL OFL), on Google Fonts.
-const FONTS = { sans: 'Geist', mono: 'Geist Mono' }
+const REFERENCES = ['money.x.com/en', 'annnimate.com/kits/reveal']
+// Margin is made up; its vermilion is its own.
+const BRAND = '#e5502e'
+const W = 1200, H = 720
 
-// One page, Tempo's own: identical layout and words in both pictures; only the
-// type and colour variables change. The product is drawn in CSS.
-const page = (vars: string, head = '') => `<!doctype html><html><head><meta charset="utf-8">${head}<style>
-:root{${vars}}
+const PLANS = [
+  { name: 'Free', price: '0', note: 'For writing on your own.', cta: 'Start writing', lead: null as string | null, items: ['Unlimited documents', 'Version history for 30 days', 'Export to Markdown and PDF'] },
+  { name: 'Pro', price: '8', note: 'For publishing and review.', cta: 'Try Pro free', lead: 'Everything in Free, plus', items: ['Unlimited version history', 'Comments and suggestions', 'Publish to your own domain'] },
+  { name: 'Team', price: '14', note: 'Per member, for shared work.', cta: 'Talk to us', lead: 'Everything in Pro, plus', items: ['Shared workspaces', 'Roles and permissions', 'SSO and an audit log'] },
+]
+
+// ── Before: what you get without references ────────────────────────────────
+const before = `<!doctype html><html><head><meta charset="utf-8"><style>
 *{box-sizing:border-box}html,body{margin:0}
-body{background:var(--bg);color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased;height:620px;overflow:hidden}
-.wrap{padding:0 56px}
-nav{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;height:72px;border-bottom:1px solid var(--line)}
-.logo{display:flex;align-items:center;gap:10px;font-weight:700;font-size:19px;letter-spacing:-.02em}
-.logo i{width:22px;height:22px;border-radius:7px;background:var(--brand)}
-.links{display:flex;gap:30px;font-size:14px;color:var(--muted)}
-.cta{justify-self:end;font-size:13px;font-weight:600;padding:10px 16px;border-radius:var(--radius);background:var(--brand);color:var(--on-brand)}
-.hero{display:grid;grid-template-columns:5fr 6fr;gap:56px;align-items:center;padding:52px 0}
-.label{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:0 0 22px}
-.label b{width:7px;height:7px;border-radius:50%;background:var(--brand)}
-h1{font-weight:var(--h1-weight);font-size:58px;line-height:1.02;letter-spacing:-.035em;margin:0;text-wrap:balance;min-height:calc(3 * 1.02 * 58px)}
-.intro{font-size:16px;line-height:1.6;color:var(--muted);margin:22px 0 28px;max-width:36ch;text-wrap:pretty}
-.btns{display:flex;gap:12px}.btns span{font-size:14px;font-weight:600;padding:12px 18px;border-radius:var(--radius)}
-.b1{background:var(--brand);color:var(--on-brand)}.b2{border:1px solid var(--line);color:var(--ink)}
-.app{background:var(--surface);border:1px solid var(--line);border-radius:calc(var(--radius) * 1.6);padding:22px;box-shadow:var(--shadow)}
-.top{display:flex;justify-content:space-between;align-items:center;font-size:13px;color:var(--muted)}
-.chip{font-family:var(--mono);font-size:11px;padding:5px 9px;border-radius:999px;background:var(--chip);color:var(--ink)}
-.timer{font-family:var(--mono);font-size:76px;font-weight:500;letter-spacing:-.04em;line-height:1;margin:18px 0 6px}
-.sub{font-size:13px;color:var(--muted)}
-.wave{display:flex;align-items:end;gap:5px;height:84px;margin:22px 0 18px}
-.wave i{flex:1;border-radius:3px;background:var(--data)}
-.wave i.on{background:var(--brand)}
-.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-.stat{background:var(--chip);border-radius:var(--radius);padding:12px 14px}
-.stat small{display:block;font-size:11.5px;color:var(--muted)}
-.stat b{display:block;font-family:var(--mono);font-size:20px;font-weight:500;margin-top:6px;letter-spacing:-.02em}
-</style></head><body><div class="wrap">
-<nav><span class="logo"><i></i>Tempo</span><span class="links"><span>Features</span><span>Pricing</span><span>Changelog</span></span><span class="cta">Get the app</span></nav>
-<section class="hero"><div><p class="label"><b></b>Focus music, measured</p><h1>Deep work that keeps its rhythm all day.</h1>
-<p class="intro">Tempo plays sound tuned to how you work, and shows you when your focus actually happens.</p>
-<div class="btns"><span class="b1">Start free</span><span class="b2">See how it works</span></div></div>
-<div class="app"><div class="top"><span>Focus session</span><span class="chip">LIVE</span></div>
-<div class="timer">24:59</div><div class="sub">Deep work · Lo-fi at 72 BPM</div>
-<div class="wave">${[38, 52, 30, 64, 80, 58, 70, 92, 66, 48, 74, 88, 60, 42, 56, 78, 50, 34, 62, 46].map((h, i) => `<i class="${i > 4 && i < 13 ? 'on' : ''}" style="height:${h}%"></i>`).join('')}</div>
-<div class="stats"><div class="stat"><small>Streak</small><b>12 days</b></div><div class="stat"><small>Today</small><b>3h 20m</b></div><div class="stat"><small>In flow</small><b>86%</b></div></div></div>
-</section></div></body></html>`
+body{width:${W}px;height:${H}px;overflow:hidden;font-family:system-ui,-apple-system,sans-serif;color:#0f172a;background:#fff;position:relative}
+.blob{position:absolute;width:620px;height:420px;left:290px;top:-160px;background:radial-gradient(closest-side,#a78bfa,#f0abfc 55%,transparent);filter:blur(40px);opacity:.55}
+.in{position:relative;text-align:center;padding:52px 64px 0}
+h2{font-size:42px;font-weight:800;letter-spacing:-.02em;margin:0}
+.sub{margin:10px 0 0;font-size:17px;color:#64748b}
+.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin-top:40px;align-items:center;text-align:left}
+.card{background:#fff;border-radius:20px;padding:28px;box-shadow:0 20px 40px -12px rgba(30,27,75,.18)}
+.pop{transform:scale(1.04);border:2px solid transparent;background:linear-gradient(#fff,#fff) padding-box,linear-gradient(135deg,#6366f1,#ec4899) border-box}
+.badge{display:inline-block;font-size:12px;font-weight:700;color:#fff;padding:5px 10px;border-radius:999px;background:linear-gradient(90deg,#6366f1,#ec4899);margin-bottom:10px}
+.name{font-size:20px;font-weight:700}.note{font-size:14px;color:#64748b;margin-top:4px}
+.price{font-size:46px;font-weight:800;margin:16px 0 4px}.price small{font-size:16px;font-weight:500;color:#64748b}
+ul{list-style:none;padding:0;margin:18px 0 22px}li{font-size:14px;margin:9px 0;color:#334155}li:before{content:"✓";color:#22c55e;font-weight:800;margin-right:8px}
+.btn{display:block;text-align:center;font-weight:700;font-size:15px;color:#fff;padding:13px;border-radius:12px;background:linear-gradient(90deg,#6366f1,#8b5cf6)}
+</style></head><body><div class="blob"></div><div class="in">
+<h2>Choose Your Plan</h2><p class="sub">Simple, transparent pricing that grows with you.</p>
+<div class="cards">${PLANS.map((p, i) => `<div class="card${i === 1 ? ' pop' : ''}">${i === 1 ? '<span class="badge">🔥 Most Popular</span>' : ''}
+<div class="name">${p.name}</div><div class="note">${p.note}</div>
+<div class="price">$${p.price}<small>/month</small></div>
+<ul>${[...(p.lead ? [p.lead.replace(', plus', '')] : []), ...p.items].map(x => `<li>${x}</li>`).join('')}</ul><span class="btn">Get Started</span></div>`).join('')}</div>
+</div></body></html>`
 
-// The starter: the defaults a new project tends to have.
-const before = page(`--bg:#ffffff;--ink:#0f172a;--muted:#64748b;--line:#e2e8f0;--brand:#2563eb;--on-brand:#ffffff;--surface:#f8fafc;--chip:#eef2f7;--data:#cbd5e1;
---sans:system-ui,-apple-system,sans-serif;--mono:ui-monospace,Menlo,monospace;--h1-weight:800;--radius:10px;--shadow:0 10px 30px rgba(15,23,42,.08)`)
+// ── After: decisions from the references ───────────────────────────────────
+const after = (c: { bg: string; ink: string; line: string; muted: string; tint: string; brand: string }, t: { displayWeight: number; displayLeading: number; bodySize: number; bodyLeading: number }) => `<!doctype html><html><head><meta charset="utf-8">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
+<style>
+*{box-sizing:border-box}html,body{margin:0}
+body{width:${W}px;height:${H}px;overflow:hidden;font-family:"Geist",ui-sans-serif,system-ui,sans-serif;color:${c.ink};background:${c.bg};-webkit-font-smoothing:antialiased;font-feature-settings:"tnum" 1}
+.in{padding:56px 64px 0}
+.top{display:grid;grid-template-columns:7fr 5fr;gap:64px;align-items:end}
+.label{font-family:"Geist Mono",ui-monospace,monospace;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:${c.muted};margin:0 0 16px}
+h2{font-size:52px;font-weight:${t.displayWeight};line-height:${t.displayLeading};letter-spacing:-.03em;margin:0;text-wrap:balance}
+.lede{font-size:${t.bodySize}px;line-height:${t.bodyLeading}px;color:${c.muted};margin:0 0 20px;text-wrap:pretty}
+.seg{display:inline-flex;padding:3px;border-radius:10px;background:${c.line}}
+.seg span{font-size:13px;font-weight:500;padding:7px 12px;border-radius:7px;color:${c.muted}}
+.seg .on{background:${c.bg};color:${c.ink};box-shadow:0 1px 0 rgba(0,0,0,.04)}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);margin-top:40px;border:1px solid ${c.line};border-radius:16px;overflow:hidden}
+.col{padding:24px 24px 26px}.col+.col{border-left:1px solid ${c.line}}
+.rec{background:color-mix(in srgb,${c.tint} 50%,${c.bg})}
+.head{display:flex;justify-content:space-between;align-items:center}
+.name{font-size:15px;font-weight:600}
+.tag{display:inline-flex;align-items:center;gap:6px;font-family:"Geist Mono",monospace;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:${c.ink}}
+.tag i{width:6px;height:6px;border-radius:50%;background:${c.brand}}
+.note{font-size:14px;color:${c.muted};margin-top:4px}
+.price{display:flex;align-items:baseline;gap:6px;margin:22px 0 20px}
+.price b{font-size:44px;font-weight:500;letter-spacing:-.03em;line-height:1}
+.price span{font-size:14px;color:${c.muted}}
+.btn{display:block;text-align:center;font-size:14px;font-weight:500;padding:11px;border-radius:10px;border:1px solid ${c.line};color:${c.ink};background:${c.bg}}
+.btn.pri{background:${c.brand};border-color:${c.brand};color:#fff}
+.list{margin-top:22px;padding-top:18px;border-top:1px solid ${c.line}}
+.lead{font-size:13px;color:${c.muted};margin-bottom:10px}
+.list div{font-size:14px;line-height:22px;padding:4px 0}
+.fine{font-size:13px;color:${c.muted};margin-top:18px}
+</style></head><body><div class="in">
+<div class="top"><div><p class="label">Pricing</p><h2>Pay for what you publish, not for every seat.</h2></div>
+<div><p class="lede">Every plan keeps unlimited documents. Upgrade when you need review, history and your own domain.</p>
+<div class="seg"><span class="on">Monthly</span><span>Yearly · 2 months free</span></div></div></div>
+<div class="grid">${PLANS.map((p, i) => `<div class="col${i === 1 ? ' rec' : ''}">
+<div class="head"><span class="name">${p.name}</span>${i === 1 ? '<span class="tag"><i></i>Recommended</span>' : ''}</div>
+<div class="note">${p.note}</div>
+<div class="price"><b>$${p.price}</b><span>per month</span></div>
+<span class="btn${i === 1 ? ' pri' : ''}">${p.cta}</span>
+<div class="list">${p.lead ? `<div class="lead">${p.lead}</div>` : '<div class="lead">Includes</div>'}${p.items.map(x => `<div>${x}</div>`).join('')}</div></div>`).join('')}</div>
+<p class="fine">Prices in US dollars. Cancel any time. Half price for students and teachers.</p>
+</div></body></html>`
 
 async function main() {
-  const [a, b] = await Promise.all(REFERENCES.map(async s => {
+  const [x, an] = await Promise.all(REFERENCES.map(async s => {
     const r = await resolveSite(s); const d = r ? await getSiteDetail(Number(r.id)) : null
     if (!d) throw new Error(`${s} not found`)
     return d
   }))
-  const pick = (d: typeof a, h: string) => {
-    const c = d.colors.find(x => x.hex_value.toLowerCase() === h)?.hex_value
+  const has = (d: typeof x, h: string) => {
+    const c = d.colors.find(v => v.hex_value.toLowerCase() === h)?.hex_value
     if (!c) throw new Error(`${h} not returned for ${d.url}`)
     return c
   }
-  // The mood, from the colours the library returned for each reference.
-  const palette = {
-    background: pick(a, '#0a0a0a'),   // plastic.audio: near-black ground
-    surface: pick(a, '#1e1e1e'),      // plastic.audio: raised surface
-    text: pick(a, '#e6e2da'),         // plastic.audio: warm off-white type
-    muted: pick(b, '#a3a3a3'),        // tomjohn.design: quiet grey
-    chip: pick(b, '#222222'),         // tomjohn.design: inset surface
-    data: pick(b, '#3a50fc'),         // tomjohn.design: one electric blue, for data
+  const heading = x.typography.find(t => t.role === 'heading')!
+  const body = x.typography.find(t => t.role === 'body')!
+  // Measured on money.x.com: display 48px at 500 on 52px; body 16px on 24px.
+  const type = {
+    displayWeight: heading.primary_weight ?? 500,
+    displayLeading: Math.round((parseFloat(String(heading.sample_line_height)) / (heading.sample_size_px ?? 48)) * 100) / 100,
+    bodySize: body.sample_size_px ?? 16,
+    bodyLeading: parseFloat(String(body.sample_line_height)) || 24,
+  }
+  const colors = {
+    bg: has(x, '#ffffff'),       // money.x.com: white ground
+    ink: an.colors.find(c => c.hex_value === '#141314')?.hex_value ?? has(x, '#000000'), // annnimate: warm near-black ink
+    line: has(x, '#ebebeb'),     // money.x.com: hairline grey
+    // annnimate's quiet grey (#a3a3a3) reads at 2.5:1 on white; the same grey
+    // darkened to #6b6b6b clears AA (5.3:1) for body text, as the brief asks.
+    muted: '#6b6b6b',
+    tint: has(x, '#fffed7'),     // money.x.com: soft highlight, at half strength, for the recommended plan only
     brand: BRAND,
   }
-  const after = page(`--bg:${palette.background};--ink:${palette.text};--muted:${palette.muted};--line:${palette.surface};--brand:${palette.brand};--on-brand:${palette.background};--surface:${palette.surface};--chip:${palette.chip};--data:${palette.data};
---sans:"${FONTS.sans}", ui-sans-serif, system-ui, sans-serif;--mono:"${FONTS.mono}", ui-monospace, monospace;--h1-weight:600;--radius:12px;--shadow:0 30px 80px -30px rgba(0,0,0,.8)`,
-    '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap">')
-
   const br = await chromium.launch({ channel: 'chrome' })
-  const p = await br.newPage({ viewport: { width: 1200, height: 620 }, deviceScaleFactor: 2 })
-  for (const [name, html] of [['before', before], ['after', after]] as const) {
+  const p = await br.newPage({ viewport: { width: W, height: H }, deviceScaleFactor: 2 })
+  for (const [name, html] of [['before', before], ['after', after(colors, type)]] as const) {
     await p.setContent(html, { waitUntil: 'networkidle' }); await p.waitForTimeout(800)
-    const png = await p.screenshot()
-    await sharp(png).resize({ width: 1200 }).webp({ quality: 84 }).toFile(`public/pro/ai-${name}.webp`)
+    await sharp(await p.screenshot()).resize({ width: W }).webp({ quality: 86 }).toFile(`public/pro/ai-${name}.webp`)
   }
   await br.close()
   const example = {
-    product: 'Tempo',
-    references: REFERENCES.map(r => r.split('/')[0]),
-    fonts: [FONTS.sans, FONTS.mono],
-    colors: [palette.background, palette.surface, palette.text, palette.data, palette.brand],
+    product: 'Margin',
+    section: 'pricing',
+    references: ['money.x.com', 'annnimate.com'],
+    measured: `${heading.sample_size_px}px at ${type.displayWeight} on ${heading.sample_line_height}; body ${type.bodySize}/${type.bodyLeading}`,
+    fonts: ['Geist', 'Geist Mono'],
+    skipped: [heading.font_family, body.font_family, ...an.typography.map(t => t.font_family)].filter((v, i, a) => a.indexOf(v) === i),
+    colors: [colors.bg, colors.ink, colors.line, colors.tint, colors.brand],
+    ratio: `${W} / ${H}`,
   }
   writeFileSync('public/pro/ai-example.json', JSON.stringify(example, null, 2) + '\n')
   console.log(JSON.stringify(example))

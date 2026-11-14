@@ -7,7 +7,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { MagnifyingGlass, ArrowUp, ArrowRight, PlugsConnected, Eye, TrendUp, CaretDown } from '@phosphor-icons/react'
+import { ArrowRight, CaretDown } from '@phosphor-icons/react'
 import { ProMark } from '@/components/pro-mark'
 import { CARD, BTN, ICON } from '@/components/member-card'
 import { useAccount, openSignIn, ACCOUNT_EVENT } from '@/lib/account-client'
@@ -15,12 +15,14 @@ import { loadPaddle, localPrices, onPaddleEvent, setPaddleCustomer, type LocalPr
 import { DEFAULT_INTERVAL } from '@/data/price-groups'
 import { track } from '@/lib/analytics'
 
+// Plain lines, no icons: five different pictures for five ideas only added
+// noise. The words carry it.
 const FEATURES = [
-  { Icon: MagnifyingGlass, text: 'Search by palette, font and contrast' },
-  { Icon: PlugsConnected, text: 'The library inside Claude, Cursor and more' },
-  { Icon: Eye, text: 'Redesign alerts, and every site’s history' },
-  { Icon: TrendUp, text: 'Monthly trends: type and colour on the rise' },
-  { Icon: ArrowUp, text: 'Your site requests reviewed first' },
+  'Search by palette, font and contrast',
+  'The library inside Claude, Cursor and more',
+  'Redesign alerts, and every site’s history',
+  'Monthly trends: type and colour on the rise',
+  'Your site requests reviewed first',
 ]
 
 type Phase = 'idle' | 'opening' | 'finishing' | 'failed'
@@ -98,10 +100,8 @@ export function ProCard() {
             {pro || phase === 'finishing' ? (pro ? "You're Pro. Thanks for backing the library." : 'Finishing up…') : 'Every style in the library, ready to build with.'}
           </h1>
           <ul className="mt-3 space-y-1.5">
-            {FEATURES.map(({ Icon, text }) => (
-              <li key={text} className="flex items-center gap-2.5 text-[13.5px] text-ink-2">
-                <Icon className="w-3.5 h-3.5 shrink-0 text-ink-4" weight="bold" /> {text}
-              </li>
+            {FEATURES.map(text => (
+              <li key={text} className="text-[13.5px] leading-[1.45] text-ink-2">{text}</li>
             ))}
           </ul>
 
