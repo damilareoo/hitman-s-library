@@ -1,0 +1,40 @@
+# Weekly re-check (Pro: Watch alerts and History). Every watched site plus a
+# rolling quarter of the library is extracted again; only real redesigns are
+# filed and emailed. Runs on GitHub's free minutes, never on the Worker.
+name: Weekly re-check
+on:
+  schedule:
+    - cron: '0 6 * * 1'   # Mondays 06:00 UTC
+  workflow_dispatch:
+    inputs:
+      ids:
+        description: 'Only these site ids (comma-separated), optional'
+        required: false
+      dry:
+        description: 'Compare only, write nothing'
+        type: boolean
+        default: false
+concurrency: recheck
+jobs:
+  recheck:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - run: npx puppeteer browsers install chrome
+      - name: Re-check
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          BLOB_READ_WRITE_TOKEN: ${{ secrets.BLOB_READ_WRITE_TOKEN }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          RESEND_PRO_FROM: ${{ secrets.RESEND_PRO_FROM }}
+          # Inputs go through env, never straight into the script text.
+          IDS: ${{ inputs.ids }}
+          DRY: ${{ inputs.dry }}
+        run: |
+          ARGS=()
+          if [[ "$IDS" =~ ^[0-9,]+$ ]]; then ARGS+=(--ids "$IDS"); fi
+          if [ "$DRY" = "true" ]; then ARGS+=(--dry); fi
+          bun scripts/recheck.ts "${ARGS[@]}"

@@ -153,3 +153,18 @@ export function driftBetween(
     screenshotChanged === true
   return { appeared, vanished, typoChanges, paletteTurnover, screenshotChanged, redesigned }
 }
+
+/**
+ * Stricter than `redesigned`, for emails to people watching a site. The
+ * extractor can name a different heading face on two runs of the same page,
+ * and a hero carousel changes the capture without the design changing, so
+ * neither alone counts. A changed capture plus new colours or a new typeface
+ * does; with no capture to compare, it takes heavy colour turnover and a new
+ * typeface together.
+ */
+export function isConfirmedRedesign(d: DriftResult): boolean {
+  const newFace = d.typoChanges.some(c => c.familyChanged)
+  if (d.screenshotChanged === true) return d.paletteTurnover >= 0.3 || newFace
+  if (d.screenshotChanged === false) return false
+  return d.paletteTurnover >= 0.5 && newFace
+}

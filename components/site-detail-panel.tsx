@@ -12,7 +12,7 @@ import { ColorsTab } from './colors-tab'
 import { TypeTab } from './type-tab'
 import { HistoryTab } from './history-tab'
 import { ThemeExport } from './theme-export'
-import { CARD, INPUT_SM } from '@/components/member-card'
+import { BTN, CARD, INPUT_SM } from '@/components/member-card'
 import { KitTab } from './kit-tab'
 import { DRIFT_ENABLED } from '@/lib/drift'
 import { UNSORTED } from '@/lib/categories'
@@ -21,6 +21,7 @@ import { EASE, DUR, MENU } from '@/lib/motion'
 import type { Design } from './design-card'
 import { fetchDetail, getCachedDetail } from '@/lib/detail-cache'
 import { useAccount, openSignIn } from '@/lib/account-client'
+import { WatchButton } from '@/components/watch-button'
 import { track } from '@/lib/analytics'
 interface ColorRow { hex_value: string; oklch: string | null; area_share: number | null }
 interface TypographyRow { font_family: string; role: string; google_fonts_url: string | null; primary_weight: number | null; sample_size_px?: number | null; sample_line_height?: string | null }
@@ -210,13 +211,14 @@ export function SiteDetailPanel({ variant = 'desktop', sourceId, metadata, initi
           </p>
         </div>
         <div className="flex items-center gap-1 shrink-0 -mr-1.5">
+          <WatchButton siteId={sourceId} siteName={shortName} />
           <div ref={saveRef} className="relative">
             <button
               onClick={() => setSaveOpen(v => !v)}
               aria-expanded={saveOpen}
               aria-label="Save to a collection"
               title="Save to a collection"
-              className="w-8 h-8 flex items-center justify-center rounded-[10px] text-ink-3 hover:text-ink hover:bg-muted transition-colors"
+              className={BTN.icon}
             >
               <BookmarkSimple className="w-4 h-4" weight={Object.values(collections).some(ids => ids.includes(sourceId)) ? 'fill' : 'bold'} />
             </button>

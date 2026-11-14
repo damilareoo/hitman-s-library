@@ -7,7 +7,7 @@ import { MOVE_EASE, DUR } from '@/lib/motion'
 
 /** History tab ships separately from drift data: badges and the history API
  *  keep working underneath while the tab stays out of the panel. */
-export const HISTORY_TAB_ENABLED = false
+export const HISTORY_TAB_ENABLED = true
 
 export type PanelTab = 'preview' | 'mobile' | 'colors' | 'type' | 'kit' | 'history'
 
