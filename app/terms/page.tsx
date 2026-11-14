@@ -31,7 +31,7 @@ const SECTIONS: LegalSection[] = [
   },
   {
     title: 'Colours, type and tokens',
-    body: <>The library records the colours and type measured from public sites, and Pro hands them to your AI tools as design tokens. Use them for your own work and learning. Don&apos;t resell them or the library&apos;s data as a product, and respect the trademarks and copyright of the sites they come from.</>,
+    body: <>The library records the colours and type measured from public sites, and Pro hands them to your AI tools as design tokens. Use them as a starting point for your own work and for learning, not to copy a site: don&apos;t reproduce another site&apos;s logos, words, images or layouts, and license any paid font before you use it. Don&apos;t resell them or the library&apos;s data as a product, and respect the trademarks and copyright of the sites they come from.</>,
   },
   {
     title: 'Fair use',

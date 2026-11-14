@@ -7,9 +7,9 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { MagnifyingGlass, ArrowUp, ArrowRight, PlugsConnected, Eye, TrendUp } from '@phosphor-icons/react'
+import { MagnifyingGlass, ArrowUp, ArrowRight, PlugsConnected, Eye, TrendUp, CaretDown } from '@phosphor-icons/react'
 import { ProMark } from '@/components/pro-mark'
-import { CARD, BTN } from '@/components/member-card'
+import { CARD, BTN, ICON } from '@/components/member-card'
 import { useAccount, openSignIn, ACCOUNT_EVENT } from '@/lib/account-client'
 import { loadPaddle, localPrices, onPaddleEvent, setPaddleCustomer, type LocalPrices } from '@/lib/paddle/client'
 import { DEFAULT_INTERVAL } from '@/data/price-groups'
@@ -148,7 +148,15 @@ export function ProCard() {
           )}
         </div>
       </section>
-      <p className="mt-4 text-center text-[12.5px] text-ink-4">Browsing, hearts and sets stay free.</p>
+      <p className="mt-4 text-center text-[12.5px] text-ink-4">
+        {pro ? null : <>Browsing, hearts and sets stay free. </>}
+        {/* The card fills the first screen; this says there is more below. */}
+        <a href={pro ? '#ai-tools' : '#what-you-get'}
+          onClick={e => { const el = document.getElementById(pro ? 'ai-tools' : 'what-you-get'); if (el) { e.preventDefault(); el.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' }) } }}
+          className="inline-flex items-center gap-1 text-ink-2 hover:text-ink underline-offset-4 hover:underline">
+          {pro ? 'Your AI tools' : 'See what you get'} <CaretDown className={ICON.micro} weight="bold" />
+        </a>
+      </p>
     </div>
   )
 }

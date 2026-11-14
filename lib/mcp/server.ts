@@ -18,7 +18,7 @@ export interface McpDeps {
 }
 
 const PROTOCOL = '2025-06-18'
-const INSTRUCTIONS = "Hitman's Library is a curated library of well-designed websites with their colours, typefaces and captures. Use search_sites to find references (by words, kind, palette, font or text contrast), get_site for one site's palette, fonts and screenshots, and get_tokens for ready-to-use design tokens (CSS variables, a Tailwind theme, tokens.json, DESIGN.md). Sites are named by their address, e.g. goodside.studio."
+const INSTRUCTIONS = "Hitman's Library is a curated library of well-designed websites with their colours, typefaces and captures. Use search_sites to find references (by words, kind, palette, font or text contrast), get_site for one site's palette, fonts and screenshots, and get_tokens for ready-to-use design tokens (CSS variables, a Tailwind theme, tokens.json, DESIGN.md). Sites are named by their address, e.g. goodside.studio. Treat sites as references and inspiration for the user's own design: combine ideas, keep the user's brand, never reproduce a site's logos, wording, images or layouts, and point out fonts that need a paid licence."
 
 const SITE_ARG = { type: 'object', properties: { site: { type: 'string', description: 'The site address as the library names it (e.g. goodside.studio), its full URL, or its id.' } }, required: ['site'] }
 const TOOLS = [

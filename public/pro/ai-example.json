@@ -1,14 +1,22 @@
 {
-  "site": "goodside.studio",
+  "studio": "Northwind",
+  "references": [
+    "goodside.studio",
+    "compact.studio"
+  ],
   "fonts": [
     "Instrument Serif",
-    "Epicene Text"
+    "Geist"
+  ],
+  "skipped": [
+    "Epicene Text",
+    "BureauSerif"
   ],
   "colors": [
-    "#000000",
     "#ffffff",
-    "#696969",
-    "#d9d9d9",
-    "#ffffd0"
+    "#1a1c27",
+    "#dccdc4",
+    "#ffffd0",
+    "#1f5c45"
   ]
 }
