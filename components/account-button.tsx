@@ -68,7 +68,7 @@ export function useSavedCounts() {
 
 
 export function AccountButton() {
-  const { status, user, pro, kits } = useAccount()
+  const { status, user, pro, watching } = useAccount()
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
   const counts = useSavedCounts()
@@ -147,7 +147,7 @@ export function AccountButton() {
                 {[
                   { k: 'Hearts', v: String(counts.hearts) },
                   { k: 'Sets', v: String(counts.sets) },
-                  { k: pro ? 'Kits' : 'Kits left', v: pro ? 'Unlimited' : `${Math.max(0, (kits?.limit ?? 3) - (kits?.used ?? 0))} of ${kits?.limit ?? 3}` },
+                  { k: pro ? 'Watching' : 'Plan', v: pro ? String(watching?.length ?? 0) : 'Free' },
                 ].map(({ k, v }, i) => (
                   <div key={k} className={'flex flex-col-reverse ' + (i ? 'pl-3 border-l border-edge' : '')}>
                     <dt className="mt-1.5 text-[11.5px] text-ink-4">{k}</dt>

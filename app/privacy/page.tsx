@@ -9,7 +9,7 @@ export const metadata: Metadata = {
   description: "What Hitman's Library keeps about you, why, and how to remove it.",
 }
 
-const UPDATED = 'November 13, 2026'
+const UPDATED = 'November 14, 2026'
 
 const SECTIONS: { title: string; body: React.ReactNode }[] = [
   {
@@ -33,8 +33,8 @@ const SECTIONS: { title: string; body: React.ReactNode }[] = [
     body: <>We count visits and clicks with PostHog and Cloudflare Web Analytics, without your email or name. To stop spam we keep a scrambled form of your IP address for a short window, never the address itself.</>,
   },
   {
-    title: 'Style kits',
-    body: <>When you download a style kit, we note which site and which month, to count the three free kits a month. That's all.</>,
+    title: 'Pro features',
+    body: <>If you watch a site, we keep which site, so we can email you when it redesigns. Keys for your AI tools are stored only as a scrambled fingerprint; we can&apos;t read them back. Each month&apos;s trends email goes to Pro members, once.</>,
   },
   {
     title: 'Who handles it',

@@ -213,7 +213,7 @@ export function SubmitForm() {
         Your site&apos;s address
       </label>
       <div className="relative">
-        <Globe className="absolute left-3 top-[15px] w-3.5 h-3.5 text-ink-4 pointer-events-none" weight="regular" />
+        <Globe className="absolute left-3 top-[15px] w-3.5 h-3.5 text-ink-4 pointer-events-none" weight="bold" />
         <textarea
           id="submit-url"
           ref={inputRef}
@@ -296,7 +296,7 @@ export function SubmitForm() {
                 aria-expanded={extrasOpen}
                 className="inline-flex items-center gap-1.5 text-meta text-ink-3 hover:text-ink transition-colors"
               >
-                {extrasOpen ? <Minus className="w-3 h-3" weight="regular" /> : <Plus className="w-3 h-3" weight="regular" />}
+                {extrasOpen ? <Minus className="w-3 h-3" weight="bold" /> : <Plus className="w-3 h-3" weight="bold" />}
                 {extrasOpen ? 'Less' : 'Your name, email or a note'} — optional
               </button>
 

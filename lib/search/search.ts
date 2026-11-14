@@ -4,7 +4,7 @@
 // and best text contrast. Pure functions — the route loads the index (cached
 // at the edge) and asks these for ids, so the Worker does a few thousand
 // subtractions per query and nothing heavier.
-import { hexToOklab, contrastRatio } from '@/lib/kit/color'
+import { hexToOklab, contrastRatio } from '@/lib/tokens/color'
 
 type Lab = [number, number, number]
 /** labs: each colour in OKLab, worked out once when the index is built (and cached with it). */

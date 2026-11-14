@@ -245,7 +245,7 @@ export function ColorsTab({ colors, extractionError, onFindColor }: {
                   title="Find sites near this color"
                   className="w-10 shrink-0 flex items-center justify-center border-l border-black/[0.08] dark:border-white/[0.14] transition-colors hover:bg-black/[0.06] dark:hover:bg-white/[0.1] focus-visible:outline-none focus-visible:bg-black/[0.08] dark:focus-visible:bg-white/[0.12]"
                 >
-                  <MagnifyingGlass className="w-3.5 h-3.5 opacity-75 group-hover:opacity-100 transition-opacity" weight="regular" />
+                  <MagnifyingGlass className="w-3.5 h-3.5 opacity-75 group-hover:opacity-100 transition-opacity" weight="bold" />
                 </button>
               </div>
             )

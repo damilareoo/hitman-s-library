@@ -1,7 +1,7 @@
 // components/ai-tools-card.tsx
 // Pro: connect the library to Claude, Cursor and other AI tools. Make a key,
 // copy one ready-made line for your tool, and the library's search, sites and
-// kits are there while you build. The key is shown once; after that only its
+// design tokens are there while you build. The key is shown once; after that only its
 // first characters, with when it was last used and a way to revoke it.
 'use client'
 

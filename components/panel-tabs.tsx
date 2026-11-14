@@ -1,7 +1,7 @@
 'use client'
 
 import React from 'react'
-import { DeviceMobile, AppWindow, Palette, TextAa, ClockCounterClockwise, Package } from '@phosphor-icons/react'
+import { DeviceMobile, AppWindow, Palette, TextAa, ClockCounterClockwise } from '@phosphor-icons/react'
 import { useSoundsContext } from '@/contexts/sounds-context'
 import { MOVE_EASE, DUR } from '@/lib/motion'
 
@@ -9,7 +9,7 @@ import { MOVE_EASE, DUR } from '@/lib/motion'
  *  keep working underneath while the tab stays out of the panel. */
 export const HISTORY_TAB_ENABLED = true
 
-export type PanelTab = 'preview' | 'mobile' | 'colors' | 'type' | 'kit' | 'history'
+export type PanelTab = 'preview' | 'mobile' | 'colors' | 'type' | 'history'
 
 interface PanelTabsProps {
   active: PanelTab
@@ -27,12 +27,11 @@ const BASE_TABS: TabDef[] = [
   { key: 'mobile',  label: 'Mobile',  Icon: DeviceMobile },
   { key: 'colors', label: 'Colors', Icon: Palette },
   { key: 'type',   label: 'Type',    Icon: TextAa },
-  { key: 'kit',    label: 'Kit',     Icon: Package },
 ]
 
 // History sits beside Type; the whole tab vanishes with the flag.
 const ALL_TABS: TabDef[] = HISTORY_TAB_ENABLED
-  ? [...BASE_TABS.slice(0, 4), { key: 'history', label: 'History', Icon: ClockCounterClockwise }, BASE_TABS[4]]
+  ? [...BASE_TABS, { key: 'history', label: 'History', Icon: ClockCounterClockwise }]
   : BASE_TABS
 
 // Offering Mobile to someone already holding a phone is offering them the
@@ -161,7 +160,7 @@ export function PanelTabs({ active, onChange, variant = 'desktop', colorsCount, 
                 isActive ? 'text-ink' : 'text-ink-3 hover:text-ink',
               ].join(' ')}
             >
-              <Icon className="w-[15px] h-[15px] shrink-0" weight={isActive ? 'fill' : 'bold'} />
+              <Icon className="w-3.5 h-3.5 shrink-0" weight={isActive ? 'fill' : 'bold'} />
               {/* On a narrow phone the inactive tabs are icons; the label
                   names only the tab you're on, so nothing collides. */}
               <span className={'flex items-center gap-1 text-[12.5px] leading-none whitespace-nowrap ' + (isActive ? 'font-[600]' : 'font-[500] max-[420px]:hidden')}>

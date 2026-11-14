@@ -572,7 +572,7 @@ export default function AdminPage() {
               href="/"
               className="flex items-center gap-1.5 text-ui text-ink-3 hover:text-foreground transition-colors"
             >
-              <ArrowLeft className="w-3.5 h-3.5" weight="regular" />
+              <ArrowLeft className="w-3.5 h-3.5" weight="bold" />
               Gallery
             </Link>
           </div>
@@ -766,7 +766,7 @@ export default function AdminPage() {
             >
               {isDeduping
                 ? <><CircleNotch className="w-3 h-3 animate-spin" weight="bold" /> Deduplicating…</>
-                : <><ArrowCounterClockwise className="w-3 h-3" weight="regular" /> Remove duplicates</>
+                : <><ArrowCounterClockwise className="w-3 h-3" weight="bold" /> Remove duplicates</>
               }
             </button>
             <button
@@ -776,7 +776,7 @@ export default function AdminPage() {
             >
               {isDataBackfilling
                 ? <><CircleNotch className="w-3 h-3 animate-spin" weight="bold" /> {dataBackfillProgress?.done}/{dataBackfillProgress?.total}</>
-                : <><ArrowCounterClockwise className="w-3 h-3" weight="regular" /> Backfill colors &amp; type</>
+                : <><ArrowCounterClockwise className="w-3 h-3" weight="bold" /> Backfill colors &amp; type</>
               }
             </button>
             <button
@@ -786,7 +786,7 @@ export default function AdminPage() {
             >
               {isPreviewBackfilling
                 ? <><CircleNotch className="w-3 h-3 animate-spin" weight="bold" /> {previewBackfillProgress?.done}/{previewBackfillProgress?.total}</>
-                : <><ImageSquare className="w-3 h-3" weight="regular" /> Backfill previews</>
+                : <><ImageSquare className="w-3 h-3" weight="bold" /> Backfill previews</>
               }
             </button>
             <button
@@ -852,7 +852,7 @@ export default function AdminPage() {
         {/* Search + filters */}
         <div className="flex flex-wrap items-center gap-3">
           <div className="relative flex-1 max-w-xs">
-            <MagnifyingGlass className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-ink-3" weight="regular" />
+            <MagnifyingGlass className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-ink-3" weight="bold" />
             <input
               type="text"
               placeholder="Search sites…"
@@ -942,7 +942,7 @@ export default function AdminPage() {
                       aria-label={`Open live site for ${site.source_name}`}
                       title={`Open ${getDomain(site.source_url)}`}
                     >
-                      <ArrowUpRight className="w-3.5 h-3.5" weight="regular" />
+                      <ArrowUpRight className="w-3.5 h-3.5" weight="bold" />
                     </a>
                     <select
                       value={site.kind}
@@ -991,7 +991,7 @@ export default function AdminPage() {
                 >
                   {deletingId === site.id
                     ? <CircleNotch className="w-3 h-3 animate-spin" weight="bold" />
-                    : <Trash className="w-3 h-3" weight="regular" />}
+                    : <Trash className="w-3 h-3" weight="bold" />}
                 </button>
               </motion.div>
             ))}

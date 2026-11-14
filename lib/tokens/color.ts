@@ -1,4 +1,4 @@
-// lib/kit/color.ts
+// lib/tokens/color.ts
 // Colour maths from hex, the one value every extraction row stores cleanly:
 // OKLCH (via OKLab) for naming and display, WCAG luminance for contrast.
 

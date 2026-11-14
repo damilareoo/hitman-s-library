@@ -7,7 +7,7 @@ import { loadProSample } from '@/lib/read/pro-sample'
 
 export const metadata: Metadata = {
   title: 'Pro',
-  description: "Unlimited style kits, Pro search, redesign alerts, site history, monthly trends, and the library inside your AI tools.",
+  description: "Search by palette and font, redesign alerts, site history, monthly trends, and the library inside your AI tools.",
 }
 
 // Live library data (trends, a featured site's kit), rendered per request.

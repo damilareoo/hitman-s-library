@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
-import { Check, BookmarkSimple, Heart, X, ArrowRight } from '@phosphor-icons/react'
+import { Check, BookmarkSimple, Heart, X } from '@phosphor-icons/react'
 import { useCollections, toggleMembership, sanitizeName } from '@/lib/collections'
 import { PanelTabs, type PanelTab } from './panel-tabs'
 import { useSoundsContext } from '@/contexts/sounds-context'
@@ -13,7 +13,6 @@ import { TypeTab } from './type-tab'
 import { HistoryTab } from './history-tab'
 import { ThemeExport } from './theme-export'
 import { BTN, CARD, INPUT_SM } from '@/components/member-card'
-import { KitTab } from './kit-tab'
 import { DRIFT_ENABLED } from '@/lib/drift'
 import { UNSORTED } from '@/lib/categories'
 import { Spinner } from './ui/spinner'
@@ -375,14 +374,6 @@ export function SiteDetailPanel({ variant = 'desktop', sourceId, metadata, initi
                   <TypeTab typography={data.typography} extractionError={data.extraction_error} />
                 </motion.div>
               )}
-              {effectiveTab === 'kit' && (
-                <motion.div key="kit" className="flex flex-col flex-1 min-h-0"
-                  initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-                  transition={{ duration: 0.15, ease: EASE }}
-                  exit={{ opacity: 0, transition: { duration: 0 } }}>
-                  <KitTab siteId={data.id} siteUrl={data.url} hostname={hostname} colors={data.colors} typography={data.typography} />
-                </motion.div>
-              )}
               {DRIFT_ENABLED && effectiveTab === 'history' && (
                 <motion.div key="history" className="flex flex-col flex-1 min-h-0"
                   initial={{ opacity: 0 }} animate={{ opacity: 1 }}
@@ -421,9 +412,8 @@ export function SiteDetailPanel({ variant = 'desktop', sourceId, metadata, initi
         )}
       </AnimatePresence>
 
-      {/* One footer, like every card: the free theme copies on the left, the
-          way into the kit on the right. The Kit tab carries its own download. */}
-      {data && effectiveTab !== 'kit' && (
+      {/* One footer, like every card: the site's colours and type to copy. */}
+      {data && (
         <div className={CARD.foot + ' flex-shrink-0 pl-2 pr-2'}>
           <ThemeExport
             siteUrl={data.url}
@@ -431,9 +421,6 @@ export function SiteDetailPanel({ variant = 'desktop', sourceId, metadata, initi
             colors={data.colors}
             typography={data.typography}
           />
-          <button onClick={() => { setActiveTab('kit'); onTabChange?.('kit') }} className={CARD.footBtn + ' ml-auto text-ink font-[600]'}>
-            <span className="max-sm:hidden">Build in this style</span><span className="sm:hidden">Kit</span> <ArrowRight className="w-3.5 h-3.5" weight="bold" />
-          </button>
         </div>
       )}
     </div>

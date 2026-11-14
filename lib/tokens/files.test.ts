@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { buildKitFiles } from './kit'
+import { buildTokenFiles } from './files'
 import { colorRoles } from './roles'
 import { hexToOklch, formatOklch, contrastRatio } from './color'
 import type { SiteDetail } from '@/lib/read/site-detail'
@@ -47,7 +47,7 @@ describe('kit quality', () => {
     { font_family: 'true', role: 'body', google_fonts_url: null, primary_weight: 400, sample_size_px: null, sample_line_height: null },
     { font_family: 'DM Mono', role: 'mono', google_fonts_url: null, primary_weight: 400, sample_size_px: null, sample_line_height: null },
   ] }
-  const files = buildKitFiles(MESSY)
+  const files = buildTokenFiles(MESSY)
   const md = files.find(f => f.name === 'DESIGN.md')!.content
   test('OKLCH is rounded and readable', () => {
     expect(md).toContain('oklch(100% 0 0)')
@@ -76,8 +76,8 @@ describe('kit quality', () => {
   })
 })
 
-describe('buildKitFiles', () => {
-  const files = buildKitFiles(SITE)
+describe('buildTokenFiles', () => {
+  const files = buildTokenFiles(SITE)
   const get = (n: string) => files.find(f => f.name === n)!.content
   test('five files', () => expect(files.map(f => f.name)).toEqual(['DESIGN.md', 'figma-variables.json', 'theme.css', 'tailwind.css', 'tokens.json']))
   test('DESIGN.md names the source and every hex', () => {
@@ -99,12 +99,12 @@ describe('buildKitFiles', () => {
     expect(j.font.heading.$value).toBe('Instrument Serif')
   })
   test('no fonts: no Type section and no font group', () => {
-    const f = buildKitFiles({ ...SITE, typography: [] })
+    const f = buildTokenFiles({ ...SITE, typography: [] })
     const md = f.find(x => x.name === 'DESIGN.md')!.content
     expect(md).not.toContain('## Type')
     expect(JSON.parse(f.find(x => x.name === 'figma-variables.json')!.content).font).toBeUndefined()
   })
   test('no colours and no fonts: DESIGN.md only', () => {
-    expect(buildKitFiles({ ...SITE, colors: [], typography: [] }).map(f => f.name)).toEqual(['DESIGN.md'])
+    expect(buildTokenFiles({ ...SITE, colors: [], typography: [] }).map(f => f.name)).toEqual(['DESIGN.md'])
   })
 })

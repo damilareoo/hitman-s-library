@@ -11,7 +11,7 @@ const deps = (over: Partial<McpDeps> = {}): McpDeps => ({
   allowed: async () => true,
   search: async a => [{ site: 'goodside.studio', name: 'Goodside', url: 'https://goodside.studio', kind: 'Studio', colors: ['#111111'], fonts: ['Epicene'], query: a.query ?? null } as never],
   site: async ref => (ref === 'goodside.studio' ? { site: 'goodside.studio', name: 'Goodside' } as never : null),
-  kit: async ref => (ref === 'goodside.studio' ? { site: 'goodside.studio', files: [{ name: 'theme.css', content: ':root{}' }] } : null),
+  tokens: async ref => (ref === 'goodside.studio' ? { site: 'goodside.studio', files: [{ name: 'theme.css', content: ':root{}' }] } : null),
   ...over,
 })
 const json = async (r: Response) => r.json() as Promise<any>
@@ -32,12 +32,12 @@ describe('handleMcp', () => {
   test('a notification is accepted with no body', async () => {
     expect((await handleMcp(rpc({ jsonrpc: '2.0', method: 'notifications/initialized' }), deps())).status).toBe(202)
   })
-  test('tools/list: search_sites, get_site, get_kit', async () => {
+  test('tools/list: search_sites, get_site, get_tokens', async () => {
     const b = await json(await handleMcp(rpc({ jsonrpc: '2.0', id: 2, method: 'tools/list' }), deps()))
-    expect(b.result.tools.map((t: { name: string }) => t.name)).toEqual(['search_sites', 'get_site', 'get_kit'])
+    expect(b.result.tools.map((t: { name: string }) => t.name)).toEqual(['search_sites', 'get_site', 'get_tokens'])
   })
   test('tools/call returns text content', async () => {
-    const b = await json(await handleMcp(rpc({ jsonrpc: '2.0', id: 3, method: 'tools/call', params: { name: 'get_kit', arguments: { site: 'goodside.studio' } } }), deps()))
+    const b = await json(await handleMcp(rpc({ jsonrpc: '2.0', id: 3, method: 'tools/call', params: { name: 'get_tokens', arguments: { site: 'goodside.studio' } } }), deps()))
     expect(b.result.content[0].type).toBe('text')
     expect(b.result.content[0].text).toContain('theme.css')
   })
