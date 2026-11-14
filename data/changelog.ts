@@ -88,6 +88,7 @@ const changelog: ChangelogRelease[] = [
     date: '2026-11-13',
     title: 'Your Saves, Everywhere',
     items: [
+      { type: 'improved', author: 'damilare', text: 'The Pro page’s AI example ends in one tidy line, with fair use a tap away' },
       { type: 'new', author: 'damilare', text: 'Pro now lives in the top bar, its colours washing in from the library' },
       { type: 'improved', author: 'damilare', text: 'Phones and tablets share the desktop search, Refine and sort, with ⌘K everywhere' },
       { type: 'improved', author: 'damilare', text: 'An open site shows its name in the address bar and the browser tab' },
