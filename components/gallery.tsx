@@ -26,6 +26,7 @@ import { BrowsePanel } from '@/components/browse-panel'
 import { Brand } from '@/components/brand'
 import { SiteLinks } from '@/components/site-links'
 import { ProWord } from '@/components/pro-word'
+import { siteSlug, isSiteId } from '@/lib/site-slug'
 import { EASE, DUR, MENU } from '@/lib/motion'
 import Link from 'next/link'
 import { useIsNarrow, useIsPhone } from '@/lib/use-is-narrow'
@@ -84,6 +85,8 @@ interface GalleryProps {
   initialCategories: { name: string; count: number }[]
   initialSimilar: { site: Design | null; neighbors: Design[] } | null
   initialParams: Record<string, string | string[] | undefined>
+  /** The site in ?site=, resolved on the server (it may arrive as a name or an old id). */
+  initialSite?: { id: string; slug: string; title: string } | null
   /** The ?color= the server already ranked this first paint around. */
   initialColor?: string | null
 }
@@ -142,7 +145,7 @@ function SkeletonCard() {
   )
 }
 
-export function Gallery({ initialDesigns, initialPagination, initialCategories, initialSimilar, initialParams, initialColor }: GalleryProps) {
+export function Gallery({ initialDesigns, initialPagination, initialCategories, initialSimilar, initialParams, initialColor, initialSite }: GalleryProps) {
   // The URL is the source of truth for every filter, so views are shareable
   // and the back button steps through them. It is written through the history
   // API, not the router: this page is force-dynamic, so a router.push would
@@ -153,7 +156,16 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
   const tags = useMemo(() => searchParams.getAll('tag'), [searchParams])
   const search = searchParams.get('q') ?? ''
   const sortBy = SLUG_TO_SORT.get(searchParams.get('sort') ?? '') ?? 'recent'
-  const selectedId = searchParams.get('site')
+  // ?site= carries the site's name (plastic.audio); older links carry its id.
+  // Names map back to ids through what this page has seen: the server's
+  // resolution of the first URL, and every site opened since.
+  const slugIds = useRef(new Map<string, string>(initialSite ? [[initialSite.slug, initialSite.id]] : []))
+  const siteParam = searchParams.get('site')
+  const selectedId = !siteParam ? null
+    : isSiteId(siteParam) ? siteParam
+    : slugIds.current.get(siteParam.toLowerCase())
+      ?? initialDesigns.find(d => siteSlug(d.url) === siteParam.toLowerCase())?.id
+      ?? null
   // Deep-link tab (A1): ?site=415&tab=colors restores the exact tab.
   const rawTab = searchParams.get('tab')
   const panelTab: PanelTab = (
@@ -194,6 +206,34 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
   const [designs, setDesigns] = useState<Design[]>(initialDesigns)
   // The header's Pro word takes the first page's colours once, so it doesn't
   // shift as filters change.
+  /** The name to put in ?site= for this id (its id until we know its address). */
+  const siteParamFor = useCallback((id: string, url?: string) => {
+    const u = url ?? designs.find(d => d.id === id)?.url
+    const slug = u ? siteSlug(u) : ''
+    if (!slug) return id
+    slugIds.current.set(slug, id)
+    return slug
+  }, [designs])
+  // An old numeric link becomes the site's name as soon as we know its address.
+  useEffect(() => {
+    if (!siteParam || !isSiteId(siteParam)) return
+    const known = designs.find(d => d.id === siteParam)?.url
+    const slug = known ? siteSlug(known) : initialSite?.id === siteParam ? initialSite.slug : ''
+    if (!slug) return
+    slugIds.current.set(slug, siteParam)
+    replaceParams(p => p.set('site', slug))
+  }, [siteParam, designs, initialSite, replaceParams])
+
+  // The tab says which site is open.
+  const baseTitle = useRef<string | null>(null)
+  useEffect(() => {
+    if (baseTitle.current === null) baseTitle.current = initialSite && document.title.includes(initialSite.title) ? "Hitman's Library" : document.title
+    const name = selectedId
+      ? designs.find(d => d.id === selectedId)?.title ?? (initialSite?.id === selectedId ? initialSite.title : null)
+      : null
+    document.title = name ? `${name} · Hitman's Library` : baseTitle.current
+  }, [selectedId, designs, initialSite])
+
   const [headerColors] = useState(() => initialDesigns.slice(0, 40).flatMap(d => d.colors ?? []))
   const [pagination, setPagination] = useState<Pagination>(initialPagination)
   const [categories, setCategories] = useState(initialCategories)
@@ -633,8 +673,8 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
 
   /** Open the panel for an id we may not have a loaded card for. */
   const selectDesignById = useCallback((id: string) => {
-    updateParams(p => p.set('site', id))
-  }, [updateParams])
+    updateParams(p => p.set('site', siteParamFor(id)))
+  }, [updateParams, siteParamFor])
 
   // Nothing opens itself. A cold load lands on the grid at every width and a
   // site opens on a tap or from an explicit ?site= link — selecting the first
@@ -642,7 +682,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
   // kept reopening a panel nobody asked for.
   const selectDesign = useCallback((design: Design | null) => {
     updateParams(p => {
-      if (design) p.set('site', design.id)
+      if (design) p.set('site', siteParamFor(design.id, design.url))
       else {
         p.delete('site')
         p.delete('tab')
@@ -887,16 +927,16 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
       const next = current.includes(tag) ? current.filter(t => t !== tag) : [...current, tag]
       next.forEach(t => p.append('tag', t))
     })
-  }, [sounds, updateParams])
+  }, [sounds, updateParams, siteParamFor])
 
   const handleIndexOpen = useCallback((design: Design) => {
     sounds.playSelect()
     track('design_opened', { source_id: design.id, opening_surface: 'index' })
     updateParams(p => {
       p.delete('view')
-      p.set('site', design.id)
+      p.set('site', siteParamFor(design.id, design.url))
     })
-  }, [sounds, updateParams])
+  }, [sounds, updateParams, siteParamFor])
 
   // The browse layer is an index of the whole library, not of the current
   // filter, so every choice leaves the filter state behind — the same
@@ -911,7 +951,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
     handleIndexSet(name)
   }, [handleIndexSet])
 
-  const handleBrowseOpen = useCallback((id: string) => {
+  const handleBrowseOpen = useCallback((id: string, url?: string) => {
     sounds.playSelect()
     track('design_opened', { source_id: id, opening_surface: 'browse_panel' })
     updateParams(p => {
@@ -920,9 +960,9 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
       p.delete('similarTo')
       p.delete('color')
       p.delete('trail')
-      p.set('site', id)
+      p.set('site', siteParamFor(id, url))
     })
-  }, [sounds, updateParams])
+  }, [sounds, updateParams, siteParamFor])
 
   const handleBrowseRequest = useCallback((query: string) => {
     setBrowseOpen(false)

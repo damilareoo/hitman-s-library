@@ -27,7 +27,7 @@ interface BrowsePanelProps {
   onKind: (name: string) => void
   onSet: (name: string) => void
   onDeleteSet: (name: string) => void
-  onOpenSite: (id: string) => void
+  onOpenSite: (id: string, url?: string) => void
   onRequest: (query: string) => void
 }
 
@@ -160,9 +160,9 @@ export function BrowsePanel({
       ?.scrollIntoView({ block: 'nearest' })
   }, [active, results])
 
-  const openResult = useCallback((id: string) => {
+  const openResult = useCallback((id: string, url?: string) => {
     onClose()
-    onOpenSite(id)
+    onOpenSite(id, url)
   }, [onClose, onOpenSite])
 
   const searching = query.trim().length > 0
@@ -173,12 +173,12 @@ export function BrowsePanel({
   // searching; otherwise kinds, then sets, then the newest sites.
   const kindCount = 1 + kinds.length
   const items: (() => void)[] = searching
-    ? results.map(site => () => openResult(site.id))
+    ? results.map(site => () => openResult(site.id, site.url))
     : [
         () => onKind('All'),
         ...kinds.map(({ name }) => () => onKind(name)),
         ...sets.map(([name]) => () => onSet(name)),
-        ...recentRows.map(design => () => openResult(design.id)),
+        ...recentRows.map(design => () => openResult(design.id, design.url)),
       ]
   const setBase = kindCount, recentBase = kindCount + sets.length
 
@@ -271,7 +271,7 @@ export function BrowsePanel({
                     results.map((site, i) => (
                       <button
                         key={site.id}
-                        onClick={() => openResult(site.id)}
+                        onClick={() => openResult(site.id, site.url)}
                         onMouseEnter={() => setActive(i)}
                         data-active={i === active}
                         className="w-full flex items-center gap-3 py-2 px-2.5 rounded-[10px] text-left transition-colors duration-[var(--dur-2)] ease-[var(--ease-hover)] data-[active=true]:bg-foreground/[0.07] hover:bg-foreground/[0.07]"
@@ -338,7 +338,7 @@ export function BrowsePanel({
                     {recentRows.map((design, k) => (
                       <button
                         key={design.id}
-                        onClick={() => openResult(design.id)}
+                        onClick={() => openResult(design.id, design.url)}
                         onMouseEnter={() => setActive(recentBase + k)}
                         data-active={active === recentBase + k}
                         className="w-full flex items-center gap-3 py-2 px-2.5 rounded-[10px] text-left hover:bg-foreground/[0.07] data-[active=true]:bg-foreground/[0.07] transition-colors"
