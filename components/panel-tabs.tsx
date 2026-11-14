@@ -160,7 +160,7 @@ export function PanelTabs({ active, onChange, variant = 'desktop', colorsCount, 
                 isActive ? 'text-ink' : 'text-ink-3 hover:text-ink',
               ].join(' ')}
             >
-              <Icon className="w-[15px] h-[15px] shrink-0" weight={isActive ? 'fill' : 'bold'} />
+              <Icon className="w-3.5 h-3.5 shrink-0" weight={isActive ? 'fill' : 'bold'} />
               {/* On a narrow phone the inactive tabs are icons; the label
                   names only the tab you're on, so nothing collides. */}
               <span className={'flex items-center gap-1 text-[12.5px] leading-none whitespace-nowrap ' + (isActive ? 'font-[600]' : 'font-[500] max-[420px]:hidden')}>

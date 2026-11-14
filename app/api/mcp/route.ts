@@ -15,19 +15,26 @@ import { getSiteDetail } from '@/lib/read/site-detail'
 import { buildTokenFiles } from '@/lib/tokens/files'
 import { siteSlug } from '@/lib/site-slug'
 import { displayKind } from '@/lib/categories'
+import { hexToOklab } from '@/lib/tokens/color'
 
 const SITE = 'https://hitmanslibrary.xyz'
 
-function summary(d: { url: string; title: string; kind: string; colors: string[]; typography: string[] }): SiteSummary {
-  return { site: siteSlug(d.url), name: d.title, url: d.url, kind: displayKind(d.kind), colors: d.colors.slice(0, 8), fonts: d.typography.slice(0, 3) }
+function summary(d: { url: string; title: string; kind: string; colors: string[]; typography: string[] }, near: string[] = []): SiteSummary {
+  // With a palette asked for, the matching colours come first, so a reader
+  // (or an AI) sees why the site matched.
+  const labs = near.map(hexToOklab)
+  const dist = (c: string) => { const l = hexToOklab(c); return Math.min(...labs.map(w => Math.hypot(w[0] - l[0], w[1] - l[1], w[2] - l[2]))) }
+  const colors = labs.length ? [...d.colors].sort((a, b) => dist(a) - dist(b)) : d.colors
+  return { site: siteSlug(d.url), name: d.title, url: d.url, kind: displayKind(d.kind), colors: colors.slice(0, 8), fonts: d.typography.slice(0, 3) }
 }
 
 async function search(a: SearchArgs): Promise<SiteSummary[]> {
   const limit = a.limit ?? 10
   const kind = a.kind?.toLowerCase()
   if (a.palette?.length || a.font || a.readable) {
+    const palette = (a.palette ?? []).map(c => c.trim().toLowerCase()).filter(c => /^#?[0-9a-f]{6}$/.test(c)).map(c => (c.startsWith('#') ? c : '#' + c))
     const ids = searchIndex(await searchIndexCached(), {
-      palette: (a.palette ?? []).map(c => c.trim().toLowerCase()).filter(c => /^#?[0-9a-f]{6}$/.test(c)).map(c => (c.startsWith('#') ? c : '#' + c)),
+      palette,
       font: (a.font ?? '').toLowerCase(), contrast: a.readable ?? null, empty: false,
     })
     const rows = await queryDesignsByIds(ids.slice(0, 60))
@@ -35,10 +42,10 @@ async function search(a: SearchArgs): Promise<SiteSummary[]> {
     return rows
       .filter(d => !kind || displayKind(d.kind).toLowerCase() === kind)
       .filter(d => !q || `${d.title} ${d.url} ${d.kind} ${d.tags.join(' ')}`.toLowerCase().includes(q))
-      .slice(0, limit).map(summary)
+      .slice(0, limit).map(d => summary(d, palette))
   }
   const { designs } = await queryDesigns({ search: a.query ?? '', kinds: [], sortBy: 'recent', limit: 60, offset: 0 })
-  return designs.filter(d => !kind || displayKind(d.kind).toLowerCase() === kind).slice(0, limit).map(summary)
+  return designs.filter(d => !kind || displayKind(d.kind).toLowerCase() === kind).slice(0, limit).map(d => summary(d))
 }
 
 async function detailFor(ref: string) {

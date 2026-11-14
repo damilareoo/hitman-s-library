@@ -43,6 +43,18 @@ export const INPUT_SM = INPUT.replace('h-10 px-3', 'h-8 px-2.5').replace('text-[
 export const FIELD = `flex items-center gap-1 h-10 pl-3 pr-1 ${R.control} border border-edge-strong hover:border-foreground/30 focus-within:border-foreground/50 transition-colors`
 /** The bare input that sits inside a FIELD. */
 export const FIELD_INPUT = 'flex-1 min-w-0 h-full bg-transparent outline-none text-[14px] tracking-[-0.01em] text-ink placeholder:text-ink-4'
+/**
+ * Icons: one set (Phosphor), one weight. Bold everywhere so strokes match the
+ * 500–600 weight of the type beside them; fill only for an "on" state
+ * (watching, saved, the active tab, a heart). Three sizes, by place:
+ * 16px in an icon button, 14px beside text, 12px inside a chip or small label.
+ */
+export const ICON = {
+  button: 'w-4 h-4',
+  inline: 'w-3.5 h-3.5',
+  micro: 'w-3 h-3',
+} as const
+
 export const CARD = {
   shell: 'bg-popover text-popover-foreground border border-edge-strong rounded-[16px] overflow-hidden', // R.card
   pad: 'px-4',

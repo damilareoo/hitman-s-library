@@ -229,7 +229,7 @@ export function BrowsePanel({
               className="pointer-events-auto mt-[12vh] w-full max-w-[824px] max-h-[min(70vh,640px)] flex flex-col rounded-[16px] border border-edge-strong bg-popover text-popover-foreground shadow-[0_24px_64px_-16px_rgba(0,0,0,0.35)] overflow-hidden"
             >
               <div className="flex items-center gap-2.5 h-12 px-4 bg-foreground/[0.025] border-b border-edge shrink-0">
-                <MagnifyingGlass className="w-3.5 h-3.5 text-ink-3 shrink-0" weight="regular" />
+                <MagnifyingGlass className="w-3.5 h-3.5 text-ink-3 shrink-0" weight="bold" />
                 <input
                   ref={inputRef}
                   type="text"

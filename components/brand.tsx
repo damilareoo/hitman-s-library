@@ -93,7 +93,7 @@ export function Brand() {
           >
             {copied
               ? <><Check className="w-3.5 h-3.5 shrink-0" weight="bold" /> Copied</>
-              : <><Copy className="w-3.5 h-3.5 shrink-0" weight="regular" /> Copy logo</>}
+              : <><Copy className="w-3.5 h-3.5 shrink-0" weight="bold" /> Copy logo</>}
           </button>
 
           <button
@@ -102,7 +102,7 @@ export function Brand() {
             onClick={() => { downloadMarkSvg(); setOpen(false) }}
             className="w-full flex items-center gap-2 px-2.5 py-2 rounded-[7px] text-bodytext text-ink-2 hover:text-ink hover:bg-muted transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-foreground/25"
           >
-            <DownloadSimple className="w-3.5 h-3.5 shrink-0" weight="regular" />
+            <DownloadSimple className="w-3.5 h-3.5 shrink-0" weight="bold" />
             Download SVG
           </button>
         </div>

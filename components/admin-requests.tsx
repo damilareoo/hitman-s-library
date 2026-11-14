@@ -171,7 +171,7 @@ export function AdminRequests() {
                     className="shrink-0 inline-flex items-center gap-1 text-micro text-ink-3"
                     title={`${row.requestCount} people asked for this`}
                   >
-                    <Users className="w-3 h-3" weight="regular" />
+                    <Users className="w-3 h-3" weight="bold" />
                     <span className="tabular-nums">{row.requestCount}</span>
                   </span>
                 )}

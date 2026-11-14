@@ -1068,7 +1068,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
             aria-keyshortcuts="Meta+K"
             className="flex-1 max-w-xs h-8 pl-3 pr-1.5 hidden md:flex items-center gap-2 rounded-[10px] border border-edge-strong text-[13px] text-ink-4 hover:border-foreground/30 hover:text-ink-2 transition-colors"
           >
-            <MagnifyingGlass className="w-3 h-3 shrink-0" weight="regular" />
+            <MagnifyingGlass className="w-3.5 h-3.5 shrink-0" weight="bold" />
             <span className="flex-1 text-left truncate">Search sites…</span>
             <kbd className={CARD.kbd + ' pointer-events-none max-md:hidden'}>
               ⌘K
@@ -1101,7 +1101,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
                 Submit lives in the footer, the phone menu and the empty search. */}
             <span className="max-sm:hidden"><ProWord colors={headerColors} /></span>
             <button onClick={() => setBrowseOpen(true)} aria-label="Search the library" title="Search" className={ICON_BUTTON + ' md:hidden'}>
-              <MagnifyingGlass className="w-4 h-4" weight="regular" />
+              <MagnifyingGlass className="w-4 h-4" weight="bold" />
             </button>
             <SavedMenu />
             <AccountButton />
@@ -1115,7 +1115,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
               aria-label={sounds.enabled ? 'Mute sounds' : 'Enable sounds'}
               aria-pressed={sounds.enabled}
             >
-              {sounds.enabled ? <SpeakerHigh className="w-4 h-4" weight="regular" /> : <SpeakerSlash className="w-4 h-4" weight="regular" />}
+              {sounds.enabled ? <SpeakerHigh className="w-4 h-4" weight="bold" /> : <SpeakerSlash className="w-4 h-4" weight="bold" />}
             </button>
 
             <button
@@ -1144,7 +1144,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
               aria-label={mounted && resolvedTheme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
             >
               <motion.span key={mounted ? resolvedTheme : 'ssr'} initial={{ rotate: -20, scale: 0.8 }} animate={{ rotate: 0, scale: 1 }} style={{ display: 'flex' }}>
-                {mounted && resolvedTheme === 'dark' ? <Sun className="w-3.5 h-3.5" weight="regular" /> : <Moon className="w-3.5 h-3.5" weight="regular" />}
+                {mounted && resolvedTheme === 'dark' ? <Sun className="w-4 h-4" weight="bold" /> : <Moon className="w-4 h-4" weight="bold" />}
               </motion.span>
             </button>
 
@@ -1207,8 +1207,8 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
                     className="w-full flex items-center gap-2.5 h-9 px-2.5 rounded-[10px] text-bodytext text-ink-2 text-left hover:text-ink hover:bg-muted transition-colors"
                   >
                     {sounds.enabled
-                      ? <SpeakerHigh className="w-4 h-4" weight="regular" />
-                      : <SpeakerSlash className="w-4 h-4" weight="regular" />}
+                      ? <SpeakerHigh className="w-4 h-4" weight="bold" />
+                      : <SpeakerSlash className="w-4 h-4" weight="bold" />}
                     <span>{sounds.enabled ? 'Mute sounds' : 'Enable sounds'}</span>
                   </button>
                   {/* On a phone the theme switch lives here, so search has room in the bar. */}
@@ -1217,7 +1217,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
                     onClick={() => { setMoreOpen(false); sounds.playThemeToggle(); setTheme(resolvedTheme === 'dark' ? 'light' : 'dark') }}
                     className="sm:hidden w-full flex items-center gap-2.5 h-9 px-2.5 rounded-[10px] text-bodytext text-ink-2 text-left hover:text-ink hover:bg-muted transition-colors"
                   >
-                    {mounted && resolvedTheme === 'dark' ? <Sun className="w-4 h-4" weight="regular" /> : <Moon className="w-4 h-4" weight="regular" />}
+                    {mounted && resolvedTheme === 'dark' ? <Sun className="w-4 h-4" weight="bold" /> : <Moon className="w-4 h-4" weight="bold" />}
                     <span>{mounted && resolvedTheme === 'dark' ? 'Light mode' : 'Dark mode'}</span>
                   </button>
                   </motion.div>
