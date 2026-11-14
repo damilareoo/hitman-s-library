@@ -14,7 +14,7 @@ export const metadata: Metadata = {
 export const dynamic = 'force-dynamic'
 
 export default async function ProPage() {
-  const sample = await loadProSample().catch(() => ({ site: null, themeCss: null, trends: [] }))
+  const sample = await loadProSample().catch(() => ({ trends: [] as string[] }))
   return (
     <div className="min-h-screen bg-background text-foreground">
       <nav className="sticky top-0 z-50 border-b border-edge bg-background/90 backdrop-blur-md">
