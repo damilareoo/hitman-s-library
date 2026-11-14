@@ -1,9 +1,9 @@
 // components/pro-card.tsx
 //
 // The Pro offer: one card in the member-card language. One price for
-// everyone, shown by Paddle in your currency where it can, a Monthly/Yearly
-// switch, and one action. Checkout is a transaction our server
-// made for your account; Paddle's overlay takes the payment.
+// everyone, in US dollars, a Monthly/Yearly switch, and one action. Checkout
+// is a session our server made for your account; Bachs' overlay takes the
+// payment (or its hosted page, if the overlay can't load).
 'use client'
 
 import { useEffect, useState } from 'react'
@@ -11,8 +11,8 @@ import { ArrowRight, CaretDown } from '@phosphor-icons/react'
 import { ProMark } from '@/components/pro-mark'
 import { CARD, BTN, ICON } from '@/components/member-card'
 import { useAccount, openSignIn, ACCOUNT_EVENT } from '@/lib/account-client'
-import { loadPaddle, localPrices, onPaddleEvent, setPaddleCustomer, type LocalPrices } from '@/lib/paddle/client'
-import { DEFAULT_INTERVAL } from '@/data/price-groups'
+import { loadBachs, onBachsEvent } from '@/lib/bachs/client'
+import { DEFAULT_INTERVAL, PRICES } from '@/data/price-groups'
 import { track } from '@/lib/analytics'
 
 // Plain lines, no icons: five different pictures for five ideas only added
@@ -28,50 +28,50 @@ const FEATURES = [
 type Phase = 'idle' | 'opening' | 'finishing' | 'failed'
 
 export function ProCard() {
-  const { status, pro, paddleCustomerId } = useAccount()
-  useEffect(() => { setPaddleCustomer(paddleCustomerId) }, [paddleCustomerId])
-  const [prices, setPrices] = useState<LocalPrices | null>(null)
+  const { status, pro } = useAccount()
   const [interval, setInterval_] = useState<'month' | 'year'>(DEFAULT_INTERVAL)
   const [phase, setPhase] = useState<Phase>('idle')
 
   useEffect(() => {
     track('pricing_viewed')
-    localPrices().then(setPrices).catch(() => setPrices(null))
+    // Back from the hosted page after paying: wait for the webhook the same way.
+    if (new URLSearchParams(location.search).has('welcome')) finishing()
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   // After payment, wait for the webhook to land, then the account says Pro.
-  useEffect(() => onPaddleEvent(name => {
-    if (name === 'checkout.completed') {
-      setPhase('finishing')
-      track('upgraded')
-      let tries = 0
-      const t = window.setInterval(() => {
-        window.dispatchEvent(new Event(ACCOUNT_EVENT))
-        if (++tries > 15) window.clearInterval(t)
-      }, 1500)
-    }
-    if (name === 'checkout.closed') setPhase(p => (p === 'opening' ? 'idle' : p))
+  function finishing() {
+    setPhase('finishing')
+    let tries = 0
+    const t = window.setInterval(() => {
+      window.dispatchEvent(new Event(ACCOUNT_EVENT))
+      if (++tries > 15) window.clearInterval(t)
+    }, 1500)
+  }
+  useEffect(() => onBachsEvent(type => {
+    if (type === 'checkout.completed') { track('upgraded'); finishing() }
+    if (type === 'checkout.closed' || type === 'checkout.failed' || type === 'checkout.expired') setPhase(p => (p === 'opening' ? 'idle' : p))
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }), [])
+  // The account turned Pro: the wait is over.
+  useEffect(() => { if (pro) setPhase('idle') }, [pro])
 
   async function getPro() {
     if (status !== 'signed-in') return openSignIn('join')
     setPhase('opening')
     track('checkout_opened', { interval })
     try {
-      const [P, res] = await Promise.all([
-        loadPaddle(),
+      const [B, res] = await Promise.all([
+        loadBachs().catch(() => null),
         fetch('/api/checkout', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ interval }) }),
       ])
-      // A subscription that's past due: fix the card in Paddle, don't buy twice.
+      // A subscription that's past due: fix the card in the portal, don't buy twice.
       if (res.status === 409) { setPhase('idle'); return manage() }
       if (!res.ok) throw new Error(String(res.status))
-      const { transactionId, email } = await res.json()
-      P.Checkout.open({
-        transactionId,
-        customer: { email },
-        settings: { displayMode: 'overlay', theme: document.documentElement.classList.contains('dark') ? 'dark' : 'light', allowLogout: false },
-      })
+      const { checkoutUrl } = await res.json() as { checkoutUrl: string }
+      // No overlay (blocked script, old browser): the same checkout as a page.
+      if (!B) { window.location.href = checkoutUrl; return }
+      await B.Checkout.open({ checkoutUrl })
     } catch {
       setPhase('failed')
     }
@@ -83,8 +83,8 @@ export function ProCard() {
     if (body?.url) window.location.href = body.url
   }
 
-  const save = prices && prices.monthCents > 0 ? Math.round((1 - prices.yearCents / (prices.monthCents * 12)) * 100) : 20
-  const price = prices ? (interval === 'month' ? prices.month : prices.year) : null
+  const save = Math.round((1 - PRICES.year / (PRICES.month * 12)) * 100)
+  const price = `$${PRICES[interval] / 100}`
 
   return (
     <div className="w-full max-w-[380px]">
@@ -109,7 +109,7 @@ export function ProCard() {
             <>
               <div className="mt-5 flex items-end justify-between gap-3">
                 <p className="flex items-baseline gap-1">
-                  <span className="text-[26px] font-[640] tracking-[-0.03em] text-ink min-w-[3ch]">{price ?? '—'}</span>
+                  <span className="text-[26px] font-[640] tracking-[-0.03em] text-ink min-w-[3ch]">{price}</span>
                   <span className="text-[13px] text-ink-3">/ {interval === 'month' ? 'month' : 'year'}</span>
                 </p>
                 <div role="radiogroup" aria-label="Billing" className="flex gap-1.5 pb-1">
@@ -123,7 +123,7 @@ export function ProCard() {
                   ))}
                 </div>
               </div>
-              <p className={CARD.meta + ' mt-1'}>Shown in your currency where we can.</p>
+              <p className={CARD.meta + ' mt-1'}>Billed in US dollars.</p>
               {phase === 'failed' && <p role="status" className="mt-2 text-[12.5px] text-[#c8382f] dark:text-[#ff8a80]">Checkout didn&apos;t open. Try again.</p>}
             </>
           )}

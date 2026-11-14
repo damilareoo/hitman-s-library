@@ -1,6 +1,6 @@
 // lib/account/delete-account.ts
 // DELETE /api/me. A live subscription (active, trialing or past due) blocks
-// deletion: Paddle would keep billing a person whose account no longer exists,
+// deletion: Bachs would keep billing a person whose account no longer exists,
 // and no webhook could ever find them again. They cancel first, from Manage.
 import { problem, sameOriginWrite, NO_STORE } from '@/lib/auth/request'
 

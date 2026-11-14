@@ -43,7 +43,7 @@ export function proWelcomeEmail({ name, memberNo, swatches }: { name: string; me
   </table></td></tr>
   <tr><td style="background:${C.tint};border-top:1px solid ${C.line};border-radius:0 0 16px 16px;padding:10px 8px 10px 16px">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
-      <td style="font:400 12px ${FONT};color:${C.muted}">Paddle sends your receipt separately.</td>
+      <td style="font:400 12px ${FONT};color:${C.muted}">Bachs sends your receipt separately.</td>
       <td align="right"><a href="${SITE}/" style="display:inline-block;padding:8px 12px;border-radius:10px;background:${C.ink};color:#ffffff;font:600 13px ${FONT};text-decoration:none">Open the library</a></td>
     </tr></table>
   </td></tr>
@@ -62,7 +62,7 @@ ${name ? `${name.split(' ')[0]}, every` : 'Every'} colour in the library is your
 
 Open the library: ${SITE}/
 Manage your subscription: ${SITE}/pro
-Paddle sends your receipt separately.
+Bachs sends your receipt separately.
 
 Membership No. ${no}`
   return { subject: "You're Pro", html, text }

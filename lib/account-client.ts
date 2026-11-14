@@ -16,7 +16,7 @@ export const SIGN_IN_EVENT = 'hl:sign-in'
 export const ACCOUNT_EVENT = 'hl:account-changed'
 
 export interface AccountUser { email: string; name: string | null; avatar: string | null; memberNo: number; since: string; google: boolean }
-type State = { status: 'loading' | 'signed-out' | 'signed-in'; user: AccountUser | null; pro?: boolean; paddleCustomerId?: string | null; watching?: number[] }
+type State = { status: 'loading' | 'signed-out' | 'signed-in'; user: AccountUser | null; pro?: boolean; watching?: number[] }
 
 const LOADING: State = { status: 'loading', user: null }
 let state: State = LOADING
@@ -85,7 +85,7 @@ async function load() {
   if (!signedInHint()) return set({ status: 'signed-out', user: null })
   const body = await fetch('/api/me', { credentials: 'same-origin' }).then(r => r.json()).catch(() => ({ user: null }))
   if (!body.user) return set({ status: 'signed-out', user: null })
-  set({ status: 'signed-in', user: body.user, pro: Boolean(body.pro), paddleCustomerId: body.paddleCustomerId ?? null, watching: Array.isArray(body.watching) ? body.watching : [] })
+  set({ status: 'signed-in', user: body.user, pro: Boolean(body.pro), watching: Array.isArray(body.watching) ? body.watching : [] })
   await sync()
 }
 

@@ -23,11 +23,11 @@ const SECTIONS: LegalSection[] = [
   },
   {
     title: 'Pro',
-    body: <>Pro is a subscription, billed monthly or yearly. The price is the same everywhere and is shown in your currency, where possible, before you pay. It renews automatically until you cancel. Cancel any time from your receipt email or by writing to us; you keep Pro until the end of the period you paid for.</>,
+    body: <>Pro is a subscription, billed monthly or yearly. The price is the same everywhere and is charged in US dollars. It renews automatically until you cancel. Cancel any time from Manage subscription on the Pro page, or by writing to us; you keep Pro until the end of the period you paid for.</>,
   },
   {
     title: 'Payments',
-    body: <>Our order process is conducted by our online reseller Paddle.com. Paddle.com is the Merchant of Record for all our orders. Paddle provides all customer service inquiries and handles returns. Your card details go to Paddle, never to us.</>,
+    body: <>We sell Pro ourselves. Payments are processed by Bachs (bachs.io), and your card details go to Bachs, never to us. Questions about a charge come to us at {mail}.</>,
   },
   {
     title: 'Colours, type and tokens',
