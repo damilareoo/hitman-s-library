@@ -134,7 +134,7 @@ export function PanelTabs({ active, onChange, variant = 'desktop', colorsCount, 
       >
         <span
           aria-hidden="true"
-          className="absolute top-[3px] left-0 h-8 rounded-[7px] bg-card pointer-events-none shadow-[0_1px_2px_rgba(0,0,0,0.06),0_0_0_1px_rgba(0,0,0,0.03)] dark:bg-[color-mix(in_srgb,var(--foreground)_12%,var(--background))] dark:shadow-[0_1px_2px_rgba(0,0,0,0.4)]"
+          className="absolute top-[3px] left-0 h-8 rounded-[7px] bg-card pointer-events-none shadow-[0_1px_2px_rgba(0,0,0,0.06),0_0_0_1px_rgba(0,0,0,0.03)] dark:bg-[rgba(var(--foreground-rgb),0.12)] dark:shadow-[0_1px_2px_rgba(0,0,0,0.4)]"
           style={{
             width: thumb?.width ?? 0,
             transform: `translateX(${thumb?.left ?? 0}px)`,
@@ -151,6 +151,7 @@ export function PanelTabs({ active, onChange, variant = 'desktop', colorsCount, 
               role="tab"
               data-tab={key}
               aria-selected={isActive}
+              aria-label={label}
               tabIndex={isActive ? 0 : -1}
               onClick={() => { viaKeyboard.current = false; playTabChange(); onChange(key) }}
               className={[
@@ -161,10 +162,12 @@ export function PanelTabs({ active, onChange, variant = 'desktop', colorsCount, 
               ].join(' ')}
             >
               <Icon className="w-[15px] h-[15px] shrink-0" weight={isActive ? 'fill' : 'bold'} />
-              <span className={'flex items-center gap-1 text-[12.5px] leading-none whitespace-nowrap ' + (isActive ? 'font-[600]' : 'font-[500]')}>
+              {/* On a narrow phone the inactive tabs are icons; the label
+                  names only the tab you're on, so nothing collides. */}
+              <span className={'flex items-center gap-1 text-[12.5px] leading-none whitespace-nowrap ' + (isActive ? 'font-[600]' : 'font-[500] max-[420px]:hidden')}>
                 {label}
                 {typeof count === 'number' && (
-                  <span className="text-[11.5px] font-[500] text-ink-4">{count}</span>
+                  <span className="text-[11.5px] font-[500] text-ink-4 max-[420px]:hidden">{count}</span>
                 )}
               </span>
             </button>

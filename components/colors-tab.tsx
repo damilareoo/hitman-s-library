@@ -176,7 +176,7 @@ export function ColorsTab({ colors, extractionError, onFindColor }: {
             className={[
               'absolute top-[3px] left-0 h-[22px] rounded-[7px] bg-card pointer-events-none',
               'shadow-[0_1px_2px_rgba(0,0,0,0.06),0_0_0_1px_rgba(0,0,0,0.03)]',
-              'dark:bg-[color-mix(in_srgb,var(--foreground)_12%,var(--background))] dark:shadow-[0_1px_2px_rgba(0,0,0,0.4)]',
+              'dark:bg-[rgba(var(--foreground-rgb),0.12)] dark:shadow-[0_1px_2px_rgba(0,0,0,0.4)]',
               settled ? 'transition-[transform,width] duration-[var(--dur-2)] ease-[var(--ease-sig)] motion-reduce:transition-none' : '',
             ].join(' ')}
             style={{

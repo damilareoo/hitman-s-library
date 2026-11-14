@@ -92,6 +92,8 @@ const changelog: ChangelogRelease[] = [
       { type: 'improved', author: 'damilare', text: 'Phones and tablets share the desktop search, Refine and sort, with ⌘K everywhere' },
       { type: 'improved', author: 'damilare', text: 'An open site shows its name in the address bar and the browser tab' },
       { type: 'fixed', author: 'damilare', text: 'Arrow keys and Enter now move through kinds, sets and recents in ⌘K' },
+      { type: 'fixed', author: 'damilare', text: 'Older iPhones show the right colours, borders and labels instead of solid blocks' },
+      { type: 'improved', author: 'damilare', text: 'Small phones fit the header, sort row and site tabs without crowding' },
       { type: 'improved', author: 'damilare', text: 'Menus, panels and ⌘K respond faster, with quieter motion and no bounce' },
       { type: 'improved', author: 'damilare', text: 'Card images load faster and stay cached, so repeat visits show them instantly' },
       { type: 'improved', author: 'damilare', text: 'The ⌘K browser, Type tab and Submit page share the same cards, buttons and chips' },
