@@ -10,6 +10,9 @@ import { ArrowRight } from '@phosphor-icons/react'
 import { CARD } from '@/components/member-card'
 import { useAccount } from '@/lib/account-client'
 import { AiToolsCard } from '@/components/ai-tools-card'
+import { CompareSlider } from '@/components/compare-slider'
+// Rendered from the real test (scripts/render-ai-example.ts).
+import AI_EXAMPLE from '@/public/pro/ai-example.json'
 import type { ProSample } from '@/lib/read/pro-sample'
 
 function Sample({ title, children, foot }: { title: string; children: React.ReactNode; foot?: React.ReactNode }) {
@@ -46,12 +49,20 @@ export function ProExtras({ sample }: { sample: ProSample }) {
     <div className="w-full max-w-[380px] flex flex-col gap-4">
       <h2 className={CARD.label + ' px-1 pt-2'}>What you get, from today&apos;s library</h2>
 
-      {sample.themeCss && sample.site && (
-        <Sample title="In your AI tools" foot={<span className={CARD.meta}>Claude Code, Cursor and any MCP tool.</span>}>
-          <p className={CARD.body}><span className="text-ink">“Make this page feel like {sample.site.slug}.”</span> Your AI tool gets the real tokens:</p>
-          <pre className="mt-3 p-3 rounded-[10px] border border-edge bg-foreground/[0.025] text-[11.5px] leading-[1.55] text-ink-2 overflow-x-auto font-mono">{sample.themeCss}</pre>
-        </Sample>
-      )}
+      <Sample title="In your AI tools" foot={<span className={CARD.meta}>Claude Code, Cursor and any MCP tool.</span>}>
+        <p className="text-[14px] leading-[1.45] text-ink">“Restyle this landing page like {AI_EXAMPLE.site}.”</p>
+        <p className={CARD.body + ' mt-1'}>Your AI tool asks the library for the site and applies what it gets back. Drag to compare.</p>
+        <div className="mt-3">
+          <CompareSlider before="/pro/ai-before.webp" after="/pro/ai-after.webp" alt={`A landing page restyled like ${AI_EXAMPLE.site}`} />
+        </div>
+        <p className={CARD.meta + ' mt-2.5 flex flex-wrap items-center gap-x-2 gap-y-1'}>
+          <span>It used</span>
+          <span className="text-ink-2">{AI_EXAMPLE.fonts.join(' · ')}</span>
+          <span className="flex items-center gap-1">
+            {AI_EXAMPLE.colors.map(c => <span key={c} title={c} className="w-3 h-3 rounded-full ring-1 ring-inset ring-foreground/15" style={{ background: c }} />)}
+          </span>
+        </p>
+      </Sample>
 
       {sample.trends.length > 0 && (
         <Sample title="Trends this month" foot={<><span className={CARD.meta}>Emailed to you each month.</span><Link href="/trends" className={CARD.footBtn + ' ml-auto'}>See the page</Link></>}>
