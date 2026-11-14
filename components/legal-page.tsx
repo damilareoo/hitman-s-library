@@ -25,7 +25,7 @@ export function LegalPage({ title, lede, updated, sections, children }: {
         </div>
         <div className="space-y-10">
           {sections.map(s => (
-            <section key={s.title}>
+            <section key={s.title} id={s.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')} className="scroll-mt-20">
               <h2 className="text-heading text-foreground mb-2">{s.title}</h2>
               <div className="text-reading text-ink-2">{s.body}</div>
             </section>
