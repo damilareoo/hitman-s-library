@@ -51,7 +51,8 @@ export function ProExtras({ sample }: { sample: ProSample }) {
 
       <Sample
         title="In your AI tools"
-        foot={<span className={CARD.meta}>Inspiration, not imitation: references inform decisions; logos, words, images and layouts stay theirs, and paid fonts need a licence. <Link href="/terms" className="underline underline-offset-2 hover:text-ink">Terms</Link></span>}
+        // One line, like every card footer; the full rule lives in the Terms.
+        foot={<><span className={CARD.meta + ' truncate'}>Inspiration, not imitation</span><Link href="/terms#colours-type-and-tokens" className={CARD.footBtn + ' ml-auto shrink-0'}>Fair use</Link></>}
       >
         <p className="text-[14px] leading-[1.45] text-ink text-pretty">“Redesign our pricing section. Learn from dense, flat product sites in the library and follow its design brief. Keep {AI_EXAMPLE.product}&apos;s vermilion and our words.”</p>
         <div className="mt-3">
