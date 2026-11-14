@@ -161,7 +161,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
   // Deep-link tab (A1): ?site=415&tab=colors restores the exact tab.
   const rawTab = searchParams.get('tab')
   const panelTab: PanelTab = (
-    rawTab === 'mobile' || rawTab === 'colors' || rawTab === 'type' || rawTab === 'kit' ||
+    rawTab === 'mobile' || rawTab === 'colors' || rawTab === 'type' ||
     (rawTab === 'history' && HISTORY_TAB_ENABLED) || rawTab === 'preview'
   ) ? rawTab : 'preview'
   // Similar mode (Phase 2): the main pane shows one site's neighbors with

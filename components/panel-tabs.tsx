@@ -1,7 +1,7 @@
 'use client'
 
 import React from 'react'
-import { DeviceMobile, AppWindow, Palette, TextAa, ClockCounterClockwise, Package } from '@phosphor-icons/react'
+import { DeviceMobile, AppWindow, Palette, TextAa, ClockCounterClockwise } from '@phosphor-icons/react'
 import { useSoundsContext } from '@/contexts/sounds-context'
 import { MOVE_EASE, DUR } from '@/lib/motion'
 
@@ -9,7 +9,7 @@ import { MOVE_EASE, DUR } from '@/lib/motion'
  *  keep working underneath while the tab stays out of the panel. */
 export const HISTORY_TAB_ENABLED = true
 
-export type PanelTab = 'preview' | 'mobile' | 'colors' | 'type' | 'kit' | 'history'
+export type PanelTab = 'preview' | 'mobile' | 'colors' | 'type' | 'history'
 
 interface PanelTabsProps {
   active: PanelTab
@@ -27,12 +27,11 @@ const BASE_TABS: TabDef[] = [
   { key: 'mobile',  label: 'Mobile',  Icon: DeviceMobile },
   { key: 'colors', label: 'Colors', Icon: Palette },
   { key: 'type',   label: 'Type',    Icon: TextAa },
-  { key: 'kit',    label: 'Kit',     Icon: Package },
 ]
 
 // History sits beside Type; the whole tab vanishes with the flag.
 const ALL_TABS: TabDef[] = HISTORY_TAB_ENABLED
-  ? [...BASE_TABS.slice(0, 4), { key: 'history', label: 'History', Icon: ClockCounterClockwise }, BASE_TABS[4]]
+  ? [...BASE_TABS, { key: 'history', label: 'History', Icon: ClockCounterClockwise }]
   : BASE_TABS
 
 // Offering Mobile to someone already holding a phone is offering them the

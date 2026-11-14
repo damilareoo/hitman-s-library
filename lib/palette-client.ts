@@ -7,7 +7,7 @@
 // device.
 'use client'
 
-import { hexToOklab } from '@/lib/kit/color'
+import { hexToOklab } from '@/lib/tokens/color'
 
 const hex = (n: number) => n.toString(16).padStart(2, '0')
 const NEAR = 0.06 // OKLab distance under which two colours read as the same

@@ -12,7 +12,7 @@ import { searchIndexCached } from '@/lib/search/load'
 import { searchIndex } from '@/lib/search/search'
 import { resolveSite } from '@/lib/read/resolve-site'
 import { getSiteDetail } from '@/lib/read/site-detail'
-import { buildKitFiles } from '@/lib/kit/kit'
+import { buildTokenFiles } from '@/lib/tokens/files'
 import { siteSlug } from '@/lib/site-slug'
 import { displayKind } from '@/lib/categories'
 
@@ -74,9 +74,9 @@ export async function POST(req: Request) {
           captures: { desktop: d.screenshot_url, mobile: d.mobile_screenshot_url },
         }
       },
-      kit: async ref => {
+      tokens: async ref => {
         const d = await detailFor(ref)
-        return d ? { site: siteSlug(d.url), files: buildKitFiles(d) } : null
+        return d ? { site: siteSlug(d.url), files: buildTokenFiles(d) } : null
       },
     })
   } catch (err) {

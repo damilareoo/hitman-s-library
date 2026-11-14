@@ -1,4 +1,4 @@
-// lib/kit/kit.ts
+// lib/tokens/files.ts
 //
 // The style kit's text files, built from database rows with plain templates:
 // no model, no network, so a kit costs nothing to make. Tokens are named for
@@ -106,7 +106,7 @@ function tokens(colors: NamedColor[], fonts: KitFont[], meta: Record<string, str
   return JSON.stringify(out, null, 2)
 }
 
-export function buildKitFiles(site: SiteDetail): KitFile[] {
+export function buildTokenFiles(site: SiteDetail): KitFile[] {
   const colors = nameColors(site.colors)
   const fonts = kitFonts(site)
   const files: KitFile[] = [{ name: 'DESIGN.md', content: designMd(site, colors, fonts) }]

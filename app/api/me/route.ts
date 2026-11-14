@@ -28,7 +28,7 @@ export async function GET(req: Request) {
     // Sites this member watches for redesigns (Pro).
     const watchRows = await getSql()`SELECT source_id FROM watches WHERE user_id = ${me.user.id}`
     const { email, name, avatar_url, member_no, created_at, google } = me.user
-    return json({ user: { email, name, avatar: avatar_url, memberNo: member_no, since: created_at, google }, data: rows[0] ?? null, pro: ent.pro, kits: { used: ent.kitsUsed, limit: ent.kitsLimit }, paddleCustomerId: billing?.provider_customer_id ?? null, watching: watchRows.map(r => Number(r.source_id)) }, renewedCookies(req, me))
+    return json({ user: { email, name, avatar: avatar_url, memberNo: member_no, since: created_at, google }, data: rows[0] ?? null, pro: ent.pro, paddleCustomerId: billing?.provider_customer_id ?? null, watching: watchRows.map(r => Number(r.source_id)) }, renewedCookies(req, me))
   } catch (err) {
     console.error('[GET /api/me]', err)
     return problem(500, 'unavailable')

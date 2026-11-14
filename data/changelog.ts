@@ -92,6 +92,7 @@ const changelog: ChangelogRelease[] = [
       { type: 'improved', author: 'damilare', text: 'Phones and tablets share the desktop search, Refine and sort, with ⌘K everywhere' },
       { type: 'improved', author: 'damilare', text: 'An open site shows its name in the address bar and the browser tab' },
       { type: 'fixed', author: 'damilare', text: 'Arrow keys and Enter now move through kinds, sets and recents in ⌘K' },
+      { type: 'improved', author: 'damilare', text: 'Style kits are retired; a site’s colours and type now go straight to your AI tools' },
       { type: 'new', author: 'damilare', text: 'Pro: watch any site and get an email with its before and after when it redesigns' },
       { type: 'new', author: 'damilare', text: 'Pro: a History tab keeps every look of a site, re-checked weekly' },
       { type: 'new', author: 'damilare', text: 'Pro: a monthly Trends report on the typefaces and colours new sites use' },

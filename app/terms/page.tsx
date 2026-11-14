@@ -30,8 +30,8 @@ const SECTIONS: LegalSection[] = [
     body: <>Our order process is conducted by our online reseller Paddle.com. Paddle.com is the Merchant of Record for all our orders. Paddle provides all customer service inquiries and handles returns. Your card details go to Paddle, never to us.</>,
   },
   {
-    title: 'Style kits',
-    body: <>A style kit records the colours and type measured from a public site. Use kits for your own work and learning. Don&apos;t resell kits or the library&apos;s data as a product, and respect the trademarks and copyright of the sites they come from.</>,
+    title: 'Colours, type and tokens',
+    body: <>The library records the colours and type measured from public sites, and Pro hands them to your AI tools as design tokens. Use them for your own work and learning. Don&apos;t resell them or the library&apos;s data as a product, and respect the trademarks and copyright of the sites they come from.</>,
   },
   {
     title: 'Fair use',
@@ -48,5 +48,5 @@ const SECTIONS: LegalSection[] = [
 ]
 
 export default function TermsPage() {
-  return <LegalPage title="Terms" lede="The rules for using the library and Pro, in plain words" updated="November 13, 2026" sections={SECTIONS} />
+  return <LegalPage title="Terms" lede="The rules for using the library and Pro, in plain words" updated="November 14, 2026" sections={SECTIONS} />
 }

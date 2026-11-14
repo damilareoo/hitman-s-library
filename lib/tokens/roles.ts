@@ -1,4 +1,4 @@
-// lib/kit/roles.ts
+// lib/tokens/roles.ts
 //
 // What each colour does on the site, read from measurement rather than
 // guessed: the largest light colour is the background, the darkest is the

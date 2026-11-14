@@ -7,16 +7,15 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Package, MagnifyingGlass, ArrowUp, ArrowRight, PlugsConnected, Eye, TrendUp } from '@phosphor-icons/react'
+import { MagnifyingGlass, ArrowUp, ArrowRight, PlugsConnected, Eye, TrendUp } from '@phosphor-icons/react'
 import { ProMark } from '@/components/pro-mark'
 import { CARD, BTN } from '@/components/member-card'
-import { useAccount, openSignIn, KITS_EVENT } from '@/lib/account-client'
+import { useAccount, openSignIn, ACCOUNT_EVENT } from '@/lib/account-client'
 import { loadPaddle, localPrices, onPaddleEvent, setPaddleCustomer, type LocalPrices } from '@/lib/paddle/client'
 import { DEFAULT_INTERVAL } from '@/data/price-groups'
 import { track } from '@/lib/analytics'
 
 const FEATURES = [
-  { Icon: Package, text: 'Unlimited style kits' },
   { Icon: MagnifyingGlass, text: 'Search by palette, font and contrast' },
   { Icon: PlugsConnected, text: 'The library inside Claude, Cursor and more' },
   { Icon: Eye, text: 'Redesign alerts, and every site’s history' },
@@ -46,7 +45,7 @@ export function ProCard() {
       track('upgraded')
       let tries = 0
       const t = window.setInterval(() => {
-        window.dispatchEvent(new Event(KITS_EVENT))
+        window.dispatchEvent(new Event(ACCOUNT_EVENT))
         if (++tries > 15) window.clearInterval(t)
       }, 1500)
     }
@@ -149,7 +148,7 @@ export function ProCard() {
           )}
         </div>
       </section>
-      <p className="mt-4 text-center text-[12.5px] text-ink-4">Browsing, hearts, sets and three kits a month stay free.</p>
+      <p className="mt-4 text-center text-[12.5px] text-ink-4">Browsing, hearts and sets stay free.</p>
     </div>
   )
 }

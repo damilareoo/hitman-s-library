@@ -8,7 +8,7 @@ import { siteSlug } from '@/lib/site-slug'
 import { trendsCached } from '@/lib/trends/load'
 import { findings } from '@/lib/email/trends-briefing'
 import { getSiteDetail } from '@/lib/read/site-detail'
-import { buildKitFiles } from '@/lib/kit/kit'
+import { buildTokenFiles } from '@/lib/tokens/files'
 
 export interface ProSample { site: { slug: string } | null; themeCss: string | null; trends: string[] }
 
@@ -24,7 +24,7 @@ export async function loadProSample(): Promise<ProSample> {
     pick ? getSiteDetail(Number(pick.id)).catch(() => null) : Promise.resolve(null),
     trendsCached().then(findings).catch(() => [] as string[]),
   ])
-  const css = detail ? buildKitFiles(detail).find(f => f.name === 'theme.css')?.content ?? null : null
+  const css = detail ? buildTokenFiles(detail).find(f => f.name === 'theme.css')?.content ?? null : null
   return {
     site: detail ? { slug: siteSlug(detail.url) } : null,
     // The first lines are enough to show what arrives; the rest is the same shape.

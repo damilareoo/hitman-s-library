@@ -2,7 +2,7 @@
 //
 // Hitman's Library as an MCP server (Streamable HTTP, JSON responses only).
 // A Pro member's personal key lets Claude, Cursor and similar tools search the
-// library, open a site, and pull its style kit while they build. Read-only:
+// library, open a site, and pull its design tokens while they build. Read-only:
 // a key can never write, and every call is rate-limited per key.
 import { NO_STORE } from '@/lib/auth/request'
 
@@ -14,11 +14,11 @@ export interface McpDeps {
   allowed: (keyId: string) => Promise<boolean>
   search: (args: SearchArgs) => Promise<SiteSummary[]>
   site: (ref: string) => Promise<Record<string, unknown> | null>
-  kit: (ref: string) => Promise<{ site: string; files: { name: string; content: string }[] } | null>
+  tokens: (ref: string) => Promise<{ site: string; files: { name: string; content: string }[] } | null>
 }
 
 const PROTOCOL = '2025-06-18'
-const INSTRUCTIONS = "Hitman's Library is a curated library of well-designed websites with their colours, typefaces and captures. Use search_sites to find references (by words, kind, palette, font or text contrast), get_site for one site's palette, fonts and screenshots, and get_kit for ready-to-use design tokens (CSS variables, a Tailwind theme, tokens.json, DESIGN.md). Sites are named by their address, e.g. goodside.studio."
+const INSTRUCTIONS = "Hitman's Library is a curated library of well-designed websites with their colours, typefaces and captures. Use search_sites to find references (by words, kind, palette, font or text contrast), get_site for one site's palette, fonts and screenshots, and get_tokens for ready-to-use design tokens (CSS variables, a Tailwind theme, tokens.json, DESIGN.md). Sites are named by their address, e.g. goodside.studio."
 
 const SITE_ARG = { type: 'object', properties: { site: { type: 'string', description: 'The site address as the library names it (e.g. goodside.studio), its full URL, or its id.' } }, required: ['site'] }
 const TOOLS = [
@@ -40,7 +40,7 @@ const TOOLS = [
     annotations: { readOnlyHint: true },
   },
   { name: 'get_site', title: 'Open a site', description: "One site's palette (with each colour's share of the page), typefaces by role, and desktop and mobile capture URLs.", inputSchema: SITE_ARG, annotations: { readOnlyHint: true } },
-  { name: 'get_kit', title: "Get a site's style kit", description: "A site's design tokens as files: theme.css (CSS variables), tailwind.css (Tailwind v4 theme), tokens.json, figma-variables.json and DESIGN.md.", inputSchema: SITE_ARG, annotations: { readOnlyHint: true } },
+  { name: 'get_tokens', title: "Get a site's design tokens", description: "A site's design tokens as files: theme.css (CSS variables), tailwind.css (Tailwind v4 theme), tokens.json, figma-variables.json and DESIGN.md.", inputSchema: SITE_ARG, annotations: { readOnlyHint: true } },
 ]
 
 const reply = (body: unknown, status = 200, extra: Record<string, string> = {}) =>
@@ -93,9 +93,9 @@ export async function handleMcp(req: Request, deps: McpDeps): Promise<Response> 
           })
           return toolText(msg.id, sites.length ? { sites } : 'No sites match. Try fewer filters or other words.')
         }
-        if (name === 'get_site' || name === 'get_kit') {
+        if (name === 'get_site' || name === 'get_tokens') {
           if (!ref) return toolText(msg.id, 'Give the site as its address, e.g. goodside.studio.', true)
-          const out = name === 'get_site' ? await deps.site(ref) : await deps.kit(ref)
+          const out = name === 'get_site' ? await deps.site(ref) : await deps.tokens(ref)
           return out ? toolText(msg.id, out) : toolText(msg.id, `${ref} isn't in the library. Use search_sites to find a site.`, true)
         }
         return rpcError(msg.id, -32602, `Unknown tool: ${String(name)}`)
