@@ -47,7 +47,7 @@ async function sendEmail(to: string, m: { subject: string; html: string; text: s
   const res = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: { authorization: `Bearer ${process.env.RESEND_API_KEY}`, 'content-type': 'application/json' },
-    body: JSON.stringify({ from: process.env.RESEND_PRO_FROM ?? "Hitman's Library <pro@hitmanslibrary.xyz>", to, ...m }),
+    body: JSON.stringify({ from: process.env.RESEND_PRO_FROM || "Hitman's Library <pro@hitmanslibrary.xyz>", to, ...m }),
   }).catch(() => null)
   return Boolean(res?.ok)
 }

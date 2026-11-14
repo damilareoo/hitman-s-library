@@ -29,7 +29,7 @@ async function main() {
     const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: { authorization: `Bearer ${process.env.RESEND_API_KEY}`, 'content-type': 'application/json' },
-      body: JSON.stringify({ from: process.env.RESEND_PRO_FROM ?? "Hitman's Library <pro@hitmanslibrary.xyz>", to: m.email, ...mail }),
+      body: JSON.stringify({ from: process.env.RESEND_PRO_FROM || "Hitman's Library <pro@hitmanslibrary.xyz>", to: m.email, ...mail }),
     }).catch(() => null)
     if (res?.ok) { await sql`INSERT INTO trend_sends (user_id, month) VALUES (${m.id}, ${monthKey}::date) ON CONFLICT DO NOTHING`; sent++ }
   }
