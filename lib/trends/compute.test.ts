@@ -1,8 +1,9 @@
 import { describe, expect, test } from 'bun:test'
 import { computeTrends, isSerif, hueFamily } from './compute'
 
+let n = 0
 const site = (daysAgo: number, fonts: string[], colors: string[], kind = 'Studio') =>
-  ({ addedAt: new Date(Date.UTC(2026, 10, 14) - daysAgo * 864e5).toISOString(), fonts, colors, kind })
+  ({ id: ++n, slug: `site${n}.com`, thumb: `https://x/${n}.webp`, addedAt: new Date(Date.UTC(2026, 10, 14) - daysAgo * 864e5).toISOString(), fonts, colors, kind })
 
 describe('isSerif', () => {
   test('known serifs and "Serif" in the name', () => {
@@ -41,7 +42,7 @@ describe('computeTrends', () => {
     expect(t.serif.earlier).toBeCloseTo(0)
   })
   test('top fonts are counted per site, most first; system fallbacks never count', () => {
-    expect(t.fonts[0]).toEqual({ name: 'Inter', recent: 2, earlier: 2 })
+    expect(t.fonts[0]).toMatchObject({ name: 'Inter', recent: 2, earlier: 2 })
     const withFallback = computeTrends([site(1, ['SFMono-Regular', 'Georgia', 'Satoshi'], ['#ffffff'])], now)
     expect(withFallback.fonts.map(f => f.name)).toEqual(['Satoshi'])
     expect(withFallback.serif.recent).toBe(0)
@@ -53,4 +54,14 @@ describe('computeTrends', () => {
     expect(blue.recent).toBeLessThan(blue.earlier)
   })
   test('dark share: a site whose largest colour is dark', () => expect(t.dark.recent).toBeCloseTo(1 / 3))
+  test('each typeface and colour row brings up to three of the newest sites as examples', () => {
+    const inter = t.fonts.find(f => f.name === 'Inter')!
+    expect(inter.examples.map(e => e.slug)).toEqual(['site1.com', 'site3.com'])
+    const orange = t.hues.find(h => h.name === 'Orange')!
+    expect(orange.examples.length).toBe(2)
+    expect(orange.hex).toMatch(/^#[0-9a-f]{6}$/)
+  })
+  test('the report no longer carries kinds of site (they follow our curation)', () => {
+    expect('kinds' in t).toBe(false)
+  })
 })

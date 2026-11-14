@@ -5,6 +5,7 @@
 // what they are (background, text, accent, orange-300, neutral-700), values
 // are recomputed from hex so they're always clean, and DESIGN.md opens with
 // how to use the kit in plain words.
+import { isMono, isSerif } from './font-kind'
 import type { SiteDetail } from '@/lib/read/site-detail'
 import { nameColors, type NamedColor } from './roles'
 import { contrastRatio } from './color'
@@ -32,7 +33,7 @@ export function kitFonts(site: SiteDetail): KitFont[] {
     }))
 }
 
-const fallback = (f: KitFont) => (f.role === 'mono' ? 'ui-monospace, monospace' : 'ui-sans-serif, system-ui, sans-serif')
+const fallback = (f: KitFont) => (f.role === 'mono' || isMono(f.family) ? 'ui-monospace, monospace' : isSerif(f.family) ? 'ui-serif, Georgia, serif' : 'ui-sans-serif, system-ui, sans-serif')
 const stack = (f: KitFont) => `"${f.family}", ${fallback(f)}`
 const tokenRole = (role: string) => role.toLowerCase().replace(/[^a-z0-9-]/g, '') || 'text'
 

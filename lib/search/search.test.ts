@@ -56,3 +56,16 @@ describe('searchIndex', () => {
     expect(searchIndex(INDEX, { palette: ['#ff6000'], font: 'inter', contrast: 'AAA', empty: false })).toEqual([1])
   })
 })
+
+describe('font kinds', () => {
+  const idx = buildSearchIndex([
+    { id: 1, colors: ['#ffffff'], typography: ['Instrument Serif', 'Inter'] },
+    { id: 2, colors: ['#ffffff'], typography: ['Inter', 'sans-serif'] },
+    { id: 3, colors: ['#ffffff'], typography: ['Geist Mono', 'Geist'] },
+  ])
+  const q = (font: string) => searchIndex(idx, parseSearchQuery(new URLSearchParams({ font })))
+  test('"serif" means a serif typeface, not the sans-serif fallback', () => expect(q('serif')).toEqual([1]))
+  test('"mono" means a monospaced typeface', () => expect(q('mono')).toEqual([3]))
+  test('"sans" means a sans typeface', () => expect(q('sans').sort()).toEqual([1, 2, 3]))
+  test('generic fallbacks are not fonts', () => expect(idx.find(e => e.id === 2)!.fonts).toEqual(['Inter']))
+})

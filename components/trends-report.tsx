@@ -1,52 +1,75 @@
 // components/trends-report.tsx
-// The trends report: what the last 30 days of additions do differently from
-// everything before them. The display-type card is open to everyone; the rest
-// is Pro, and a Pro card says so in its place. Every section is one card with
-// the shared anatomy: tinted header, one idea, quiet footer note.
+// Trends: what the sites added to the library in the last 30 days do
+// differently from the ones before them. It leads with three plain findings
+// (open to everyone). Pro members then get each typeface and accent colour as
+// a row they can read in words ("6% of new sites · was 1%"), see in two
+// labelled bars, and open: three of the newest sites that show it, and the
+// whole row runs the search for the rest. Every section is one card.
 'use client'
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { BTN, CARD } from '@/components/member-card'
+import { CaretRight } from '@phosphor-icons/react'
+import { BTN, CARD, ICON } from '@/components/member-card'
+import { FadeImg } from '@/components/fade-img'
 import { useAccount, openSignIn } from '@/lib/account-client'
-import type { Trends } from '@/lib/trends/compute'
+import type { Trends, TrendRow } from '@/lib/trends/compute'
 
-type Report = (Trends & { pro: true }) | { pro: false; recentCount: number; earlierCount: number; serif: Trends['serif'] }
+type Report =
+  | (Trends & { pro: true; findings: string[] })
+  | { pro: false; findings: string[]; recentCount: number; earlierCount: number }
 
 const pct = (x: number) => `${Math.round(x * 100)}%`
 const FAMILY_SWATCH: Record<string, string> = { Red: '#d9412b', Orange: '#e8862a', Yellow: '#e2b52a', Green: '#3f9d5a', Teal: '#2a9d9a', Blue: '#2f6be0', Purple: '#7a4fd6', Pink: '#d65a9a' }
 
-function Delta({ now, before }: { now: number; before: number }) {
-  const d = Math.round((now - before) * 100)
-  if (Math.abs(d) < 2) return <span className="text-ink-4">steady</span>
-  return <span className={d > 0 ? 'text-ink' : 'text-ink-4'}>{d > 0 ? '↑' : '↓'} {Math.abs(d)} pts</span>
-}
-
-function Card({ title, note, children }: { title: string; note?: string; children: React.ReactNode }) {
+function Card({ title, aside, note, children }: { title: string; aside?: React.ReactNode; note?: string; children: React.ReactNode }) {
   return (
     <section className={CARD.shell}>
-      <div className={CARD.head}><span>{title}</span></div>
-      <div className={CARD.pad + ' py-4'}>{children}</div>
+      <div className={CARD.head}><span>{title}</span>{aside}</div>
+      <div className={CARD.pad + ' py-2'}>{children}</div>
       {note && <div className={CARD.foot + ' px-4'}><span className={CARD.meta}>{note}</span></div>}
     </section>
   )
 }
 
-/** One row: a label, a bar for the newest sites, a tick for the earlier ones.
- *  Bars are scaled to the largest value in their card, so small shares read. */
-function Row({ label, swatch, now, before, max }: { label: string; swatch?: string; now: number; before: number; max: number }) {
-  const w = (x: number) => pct(max > 0 ? Math.min(1, x / max) : 0)
+/** The legend, once per card: what the two bars mean. */
+const Legend = () => (
+  <span className="flex items-center gap-3 text-[11.5px] text-ink-4">
+    <span className="flex items-center gap-1.5"><span className="w-3 h-1.5 rounded-full bg-foreground/70" />Now</span>
+    <span className="flex items-center gap-1.5"><span className="w-3 h-1.5 rounded-full bg-foreground/20" />Before</span>
+  </span>
+)
+
+/** One trend: its name, the change in words, two bars, three sites, and a way in. */
+function Row({ href, label, swatch, now, before, max, examples }: {
+  href: string; label: string; swatch?: string; now: number; before: number; max: number; examples: TrendRow['examples']
+}) {
+  const w = (x: number) => `${max > 0 ? Math.max(2, Math.round((x / max) * 100)) : 0}%`
   return (
-    <li className="grid grid-cols-[minmax(0,1fr)_96px_72px] items-center gap-3 py-2 border-t border-edge-faint first:border-t-0">
-      <span className="flex items-center gap-2 min-w-0 text-[13.5px] text-ink truncate">
-        {swatch && <span aria-hidden="true" className="w-3 h-3 rounded-full shrink-0" style={{ background: swatch }} />}
-        {label}
-      </span>
-      <span className="relative h-1.5 rounded-full bg-foreground/[0.07]" aria-hidden="true">
-        <span className="absolute inset-y-0 left-0 rounded-full bg-foreground/60" style={{ width: w(now) }} />
-        <span className="absolute -top-1 w-px h-3.5 bg-foreground/40" style={{ left: w(before) }} />
-      </span>
-      <span className="text-right text-[12.5px] tabular-nums"><span className="sr-only">{pct(now)} now, {pct(before)} before: </span><Delta now={now} before={before} /></span>
+    <li className="border-t border-edge-faint first:border-t-0">
+      <Link href={href} className="group -mx-2 px-2 py-3 rounded-[10px] grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 hover:bg-foreground/[0.03] transition-colors focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[#E8A04A]">
+        <span className="min-w-0">
+          <span className="flex items-center gap-2 text-[14px] font-[560] text-ink truncate">
+            {swatch && <span aria-hidden="true" className="w-3 h-3 rounded-full shrink-0" style={{ background: swatch }} />}
+            {label}
+          </span>
+          <span className="block mt-0.5 text-[12.5px] text-ink-3">{pct(now)} of new sites · was {pct(before)}</span>
+          <span className="mt-2 flex flex-col gap-1 max-w-[240px]" aria-hidden="true">
+            <span className="h-1.5 rounded-full bg-foreground/70" style={{ width: w(now) }} />
+            <span className="h-1.5 rounded-full bg-foreground/20" style={{ width: w(before) }} />
+          </span>
+        </span>
+        <span className="flex items-center gap-2">
+          <span className="flex -space-x-2 max-sm:hidden">
+            {examples.map(e => (
+              <span key={e.slug} title={e.slug} className="w-9 h-9 rounded-full overflow-hidden border-2 border-popover bg-muted">
+                {e.thumb && <FadeImg src={e.thumb} className="w-full h-full object-cover object-top" />}
+              </span>
+            ))}
+          </span>
+          <CaretRight className={ICON.inline + ' text-ink-4 group-hover:text-ink transition-colors'} weight="bold" />
+        </span>
+      </Link>
     </li>
   )
 }
@@ -67,60 +90,70 @@ export function TrendsReport() {
   return (
     <div>
       <div className="mb-10">
-        <h1 className="text-display text-foreground mb-2">Trends</h1>
-        <p className="text-bodytext text-ink-3">
-          {r ? <>What the {r.recentCount} sites added in the last 30 days do differently from the {r.earlierCount} before them.</> : <>What the newest sites do differently.</>}
-          {' '}{month}.
+        <p className={CARD.label}>{month}</p>
+        <h1 className="mt-2 text-display text-foreground">Trends</h1>
+        <p className="mt-2 text-bodytext text-ink-3 text-balance">
+          {r
+            ? <>What the {r.recentCount} sites added to the library in the last 30 days do differently from the {r.earlierCount} before them.</>
+            : <>What the newest sites in the library do differently.</>}
         </p>
       </div>
 
       {failed && <p className="text-meta text-ink-4">Trends are unavailable right now.</p>}
-      {!r && !failed && <div className="h-40 rounded-[16px] bg-foreground/[0.03]" aria-busy="true" />}
+      {!r && !failed && <div className="h-48 rounded-[16px] bg-foreground/[0.03]" aria-busy="true" />}
 
       {r && (
         <div className="flex flex-col gap-4">
-          <Card title="Display type" note="A serif anywhere in a site's headings or body counts.">
-            <p className="flex items-baseline gap-3">
-              <span className="text-[40px] font-[640] tracking-[-0.03em] leading-none text-ink tabular-nums">{pct(r.serif.recent)}</span>
-              <span className="text-[13.5px] text-ink-3">of new sites set a serif, against {pct(r.serif.earlier)} before. <Delta now={r.serif.recent} before={r.serif.earlier} /></span>
-            </p>
+          <Card title="This month" note="From sites added to Hitman’s Library, not the whole web.">
+            <ol className="py-2 flex flex-col gap-3">
+              {r.findings.map((f, i) => (
+                <li key={f} className="grid grid-cols-[20px_minmax(0,1fr)] gap-2 text-[15px] leading-[1.45] text-ink">
+                  <span className="text-ink-4 tabular-nums">{i + 1}</span>{f}
+                </li>
+              ))}
+            </ol>
           </Card>
 
           {r.pro ? (
             <>
-              <Card title="Typefaces" note="Share of sites using each face. Bar: last 30 days. Tick: before.">
-                {(() => {
-                  const rows = r.fonts.slice(0, 8).map(f => ({ name: f.name, now: r.recentCount ? f.recent / r.recentCount : 0, before: r.earlierCount ? f.earlier / r.earlierCount : 0 }))
-                  const max = Math.max(...rows.flatMap(x => [x.now, x.before]))
-                  return <ul>{rows.map(x => <Row key={x.name} label={x.name} now={x.now} before={x.before} max={max} />)}</ul>
-                })()}
-              </Card>
-              <Card title="Accent colours" note="Each site's most saturated colour, by family.">
-                {(() => {
-                  const rows = r.hues.filter(h => h.name !== 'Neutral')
-                  const max = Math.max(...rows.flatMap(x => [x.recent, x.earlier]))
-                  return <ul>{rows.map(h => <Row key={h.name} label={h.name} swatch={FAMILY_SWATCH[h.name]} now={h.recent} before={h.earlier} max={max} />)}</ul>
-                })()}
-              </Card>
-              <Card title="Kinds of site">
-                {(() => {
-                  const max = Math.max(...r.kinds.flatMap(x => [x.recent, x.earlier]))
-                  return <ul>{r.kinds.map(k => <Row key={k.name} label={k.name} now={k.recent} before={k.earlier} max={max} />)}</ul>
-                })()}
-              </Card>
-              <Card title="Dark pages" note="A page whose largest colour is near black.">
-                <p className="flex items-baseline gap-3">
-                  <span className="text-[40px] font-[640] tracking-[-0.03em] leading-none text-ink tabular-nums">{pct(r.dark.recent)}</span>
-                  <span className="text-[13.5px] text-ink-3">of new sites are dark, against {pct(r.dark.earlier)} before. <Delta now={r.dark.recent} before={r.dark.earlier} /></span>
-                </p>
+              {(() => {
+                const rows = r.fonts.slice(0, 8).map(f => ({ ...f, now: r.recentCount ? f.recent / r.recentCount : 0, before: r.earlierCount ? f.earlier / r.earlierCount : 0 }))
+                const max = Math.max(...rows.flatMap(x => [x.now, x.before]))
+                return (
+                  <Card title="Typefaces" aside={<Legend />} note="Open a typeface to see every site using it.">
+                    <ul>{rows.map(x => <Row key={x.name} href={`/?font=${encodeURIComponent(x.name)}`} label={x.name} now={x.now} before={x.before} max={max} examples={x.examples} />)}</ul>
+                  </Card>
+                )
+              })()}
+              {(() => {
+                const rows = r.hues.filter(h => h.name !== 'Neutral' && h.hex)
+                const max = Math.max(...rows.flatMap(x => [x.recent, x.earlier]))
+                return (
+                  <Card title="Accent colours" aside={<Legend />} note="Each site’s most vivid colour, grouped by family. Open one to see sites near it.">
+                    <ul>{rows.map(h => <Row key={h.name} href={`/?pal=${h.hex!.replace('#', '')}`} label={h.name} swatch={FAMILY_SWATCH[h.name]} now={h.recent} before={h.earlier} max={max} examples={h.examples} />)}</ul>
+                  </Card>
+                )
+              })()}
+              <Card title="At a glance">
+                <dl className="py-2 grid grid-cols-2">
+                  {[
+                    { k: 'set a serif', v: r.serif },
+                    { k: 'are dark pages', v: r.dark },
+                  ].map(({ k, v }, i) => (
+                    <div key={k} className={i ? 'pl-4 border-l border-edge' : ''}>
+                      <dd className="text-[32px] font-[640] tracking-[-0.03em] leading-none text-ink tabular-nums">{pct(v.recent)}</dd>
+                      <dt className="mt-2 text-[12.5px] text-ink-3">of new sites {k} · was {pct(v.earlier)}</dt>
+                    </div>
+                  ))}
+                </dl>
               </Card>
             </>
           ) : (
             <section className={CARD.shell}>
               <div className={CARD.head}><span>The full report</span><span className={CARD.proPill}>Pro</span></div>
               <div className={CARD.pad + ' py-4'}>
-                <p className={CARD.title}>Typefaces, colours and kinds on the rise</p>
-                <p className={CARD.body + ' mt-1'}>Which faces are spreading, which accent colours are fading, how many new sites go dark. Updated daily, and emailed to you each month.</p>
+                <p className={CARD.title}>See the sites behind every trend</p>
+                <p className={CARD.body + ' mt-1'}>Each typeface and colour on the rise, with the newest sites using it, one tap from all of them. Updated daily, and emailed to you each month.</p>
               </div>
               <div className={CARD.foot + ' justify-end'}>
                 {status === 'signed-in'
