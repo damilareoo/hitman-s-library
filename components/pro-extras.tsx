@@ -53,17 +53,17 @@ export function ProExtras({ sample }: { sample: ProSample }) {
         title="In your AI tools"
         foot={<span className={CARD.meta}>Inspiration, not imitation: take colours and type as a starting point; don&apos;t copy logos, words, images or layouts, and license any paid font. <Link href="/terms" className="underline underline-offset-2 hover:text-ink">Terms</Link></span>}
       >
-        <p className="text-[14px] leading-[1.45] text-ink">“Find studios with a serif display face. Use their type and colour mood as a starting point for {AI_EXAMPLE.studio}. Keep our green, our layout and our words.”</p>
+        <p className="text-[14px] leading-[1.45] text-ink text-pretty">“Find dark product sites with one bright accent. Use their mood for {AI_EXAMPLE.product}, our focus-music app. Keep our pink, our layout and our words.”</p>
         <div className="mt-3">
-          <CompareSlider before="/pro/ai-before.webp" after="/pro/ai-after.webp" alt={`${AI_EXAMPLE.studio}'s landing page`} />
+          <CompareSlider before="/pro/ai-before.webp" after="/pro/ai-after.webp" alt={`${AI_EXAMPLE.product}'s landing page`} ratio="1200 / 620" />
         </div>
         <ol className="mt-3.5 flex flex-col gap-2.5">
           {[
             <>Searched the library and found {AI_EXAMPLE.references.join(' and ')}.</>,
-            <>Borrowed the principle, not the look: a serif headline over a plain sans body, quiet warm neutrals, one soft highlight.</>,
-            <>Kept {AI_EXAMPLE.studio}&apos;s own green, layout and words, and chose free fonts ({AI_EXAMPLE.fonts.join(', ')}) over the references&apos; paid ones ({AI_EXAMPLE.skipped.join(', ')}).</>,
+            <>Borrowed the mood, not the look: near-black surfaces, warm off-white type, a mono face for numbers, one blue for data.</>,
+            <>Kept {AI_EXAMPLE.product}&apos;s own pink, layout and words, with free fonts ({AI_EXAMPLE.fonts.join(' and ')}).</>,
           ].map((step, i) => (
-            <li key={i} className="grid grid-cols-[18px_minmax(0,1fr)] gap-1.5 text-[13px] leading-[1.45] text-ink-2">
+            <li key={i} className="grid grid-cols-[18px_minmax(0,1fr)] gap-1.5 text-[13px] leading-[1.45] text-ink-2 text-pretty">
               <span className="text-ink-4 tabular-nums">{i + 1}</span><span>{step}</span>
             </li>
           ))}
