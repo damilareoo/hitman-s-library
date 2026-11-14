@@ -12,9 +12,9 @@ async function bachs<T>(path: string, body?: unknown): Promise<T> {
     headers: { Authorization: `Bearer ${key}`, ...(body === undefined ? {} : { 'Content-Type': 'application/json' }) },
     body: body === undefined ? undefined : JSON.stringify(body),
   })
-  const json = await res.json().catch(() => ({})) as T & { error?: { code?: string } }
+  const json = await res.json().catch(() => ({})) as T & { error_code?: string }
   // The status and Bachs' error code only: never the body, which may echo the email.
-  if (!res.ok) throw new Error(`bachs POST ${path} → ${res.status} ${json?.error?.code ?? ''}`)
+  if (!res.ok) throw new Error(`bachs POST ${path} → ${res.status} ${json?.error_code ?? ''}`)
   return json
 }
 

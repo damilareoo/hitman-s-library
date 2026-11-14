@@ -33,7 +33,7 @@ async function api(method, path, body) {
     body: body ? JSON.stringify(body) : undefined,
   })
   const json = await res.json().catch(() => ({}))
-  if (!res.ok) throw new Error(`${method} ${path} → ${res.status} ${json?.error?.code ?? ''} ${json?.error?.message ?? ''}`.trim())
+  if (!res.ok) throw new Error(`${method} ${path} → ${res.status} ${json?.error_code ?? ''} ${json?.detail ?? ''}`.trim())
   return json
 }
 function store(name, value) {
