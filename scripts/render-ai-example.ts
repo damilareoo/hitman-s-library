@@ -1,11 +1,13 @@
 #!/usr/bin/env bun
 // scripts/render-ai-example.ts
 //
-// The before/after on the Pro page. One landing page, written twice: as a
-// plain starter, and after an AI tool asked the library for goodside.studio
-// and applied what came back. The "after" uses exactly the theme.css that
-// get_tokens returns for the site (the same buildTokenFiles output), so the
-// picture is the real result, not a mock-up.
+// The before/after on the Pro page, and the ethical use it shows. A made-up
+// studio, Northwind, keeps its own layout, words and brand green; an AI tool
+// looks up two studios in the library and borrows principles, not a look: a
+// serif headline over a plain sans body, quiet warm neutrals, one soft
+// highlight. Only free, openly licensed fonts; the references' paid faces are
+// skipped. Every colour in the "after" is one the library returned for a
+// reference (or Northwind's own green), so the picture is a real result.
 //
 //   bun scripts/render-ai-example.ts   → public/pro/ai-before.webp, ai-after.webp, ai-example.json
 import { writeFileSync } from 'node:fs'
@@ -13,9 +15,9 @@ import { chromium } from 'playwright'
 import sharp from 'sharp'
 import { resolveSite } from '@/lib/read/resolve-site'
 import { getSiteDetail } from '@/lib/read/site-detail'
-import { buildTokenFiles } from '@/lib/tokens/files'
 
-const SITE = 'goodside.studio'
+// Two library sites as references: cues, not a copy of either.
+const REFERENCES = ['goodside.studio', 'compact.studio']
 
 const page = (style: string, head = '') => `<!doctype html><html><head><meta charset="utf-8">${head}<style>${style}
 *{box-sizing:border-box}body{margin:0}
@@ -34,35 +36,53 @@ nav{border-bottom:1px solid #e2e8f0}.logo{font-weight:700;font-size:20px}.menu{f
 h1{font-size:56px;font-weight:800;letter-spacing:-.02em;line-height:1.1}p{color:#64748b}
 a{background:#2563eb;color:#fff;border-radius:8px;font-weight:600}.band{background:#e2e8f0;border-radius:12px}`)
 
-async function main() {
-  const resolved = await resolveSite(SITE)
-  const detail = resolved ? await getSiteDetail(Number(resolved.id)) : null
-  if (!detail) throw new Error(`${SITE} not found`)
-  const theme = buildTokenFiles(detail).find(f => f.name === 'theme.css')!.content
-  // Instrument Serif is on Google Fonts; Epicene Text is a commercial face, so
-  // the browser shows its serif fallback, as it would in your project.
-  const after = page(`${theme}
-body{font-family:var(--font-body);background:var(--color-background);color:var(--color-text)}
-nav{border-bottom:1px solid var(--color-text)}.logo{font-family:var(--font-heading);font-size:30px}.menu{font-size:13px;letter-spacing:.06em;text-transform:uppercase}
-h1{font-family:var(--font-heading);font-weight:400;font-size:72px;line-height:1.02;letter-spacing:-.02em}p{color:var(--color-neutral-700)}
-a{background:var(--color-text);color:var(--color-background)}.band{background:var(--color-accent);border:1px solid var(--color-neutral-200)}`,
-    '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif&display=swap">')
+// Northwind is a made-up studio; its green is its own brand colour, not taken
+// from anyone.
+const BRAND = '#1f5c45'
+// Free, openly licensed faces only (SIL OFL), both on Google Fonts. The paid
+// faces the references use (Epicene Text, BureauSerif) are skipped.
+const FONTS = { heading: 'Instrument Serif', body: 'Geist' }
 
-  const b = await chromium.launch({ channel: 'chrome' })
-  const p = await b.newPage({ viewport: { width: 1200, height: 750 }, deviceScaleFactor: 1 })
+async function main() {
+  const [a, b] = await Promise.all(REFERENCES.map(async s => {
+    const r = await resolveSite(s); const d = r ? await getSiteDetail(Number(r.id)) : null
+    if (!d) throw new Error(`${s} not found`)
+    return d
+  }))
+  const hex = (d: typeof a, h: string) => d.colors.find(c => c.hex_value.toLowerCase() === h)?.hex_value
+  // The palette mood, from the colours the library returned for each site.
+  const palette = {
+    background: hex(a, '#ffffff')!,          // goodside.studio: white ground
+    text: hex(b, '#1a1c27')!,                // compact.studio: deep ink, not pure black
+    stone: hex(b, '#dccdc4')!,               // compact.studio: warm stone neutral
+    muted: hex(a, '#696969')!,               // goodside.studio: quiet grey
+    highlight: hex(a, '#ffffd0')!,           // goodside.studio: soft highlight
+    brand: BRAND,
+  }
+  const after = page(`:root{--bg:${palette.background};--ink:${palette.text};--stone:${palette.stone};--muted:${palette.muted};--highlight:${palette.highlight};--brand:${palette.brand};--font-heading:"${FONTS.heading}", ui-serif, Georgia, serif;--font-body:"${FONTS.body}", ui-sans-serif, system-ui, sans-serif}
+body{font-family:var(--font-body);background:var(--bg);color:var(--ink)}
+nav{border-bottom:1px solid var(--stone)}.logo{font-family:var(--font-heading);font-size:30px;color:var(--brand)}.menu{font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+h1{font-family:var(--font-heading);font-weight:400;font-size:72px;line-height:1.02;letter-spacing:-.02em}p{color:var(--muted)}
+a{background:var(--brand);color:#fff;border-radius:999px}.band{background:linear-gradient(90deg,var(--stone) 0 70%,var(--highlight) 70%)}`,
+    '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif&family=Geist:wght@400;600&display=swap">')
+
+  const br = await chromium.launch({ channel: 'chrome' })
+  const p = await br.newPage({ viewport: { width: 1200, height: 750 }, deviceScaleFactor: 1 })
   for (const [name, html] of [['before', before], ['after', after]] as const) {
     await p.setContent(html, { waitUntil: 'networkidle' }); await p.waitForTimeout(800)
     const png = await p.screenshot()
     await sharp(png).resize({ width: 960 }).webp({ quality: 82 }).toFile(`public/pro/ai-${name}.webp`)
   }
-  await b.close()
-  const used = {
-    site: SITE,
-    fonts: [...new Set(detail.typography.map(t => t.font_family))],
-    colors: detail.colors.map(c => c.hex_value).slice(0, 6),
+  await br.close()
+  const example = {
+    studio: 'Northwind',
+    references: REFERENCES,
+    fonts: [FONTS.heading, FONTS.body],
+    skipped: [...new Set([...a.typography, ...b.typography].map(t => t.font_family).filter(f => !Object.values(FONTS).includes(f) && f !== 'Instrument Serif'))],
+    colors: [palette.background, palette.text, palette.stone, palette.highlight, palette.brand],
   }
-  writeFileSync('public/pro/ai-example.json', JSON.stringify(used, null, 2) + '\n')
-  console.log(JSON.stringify(used))
+  writeFileSync('public/pro/ai-example.json', JSON.stringify(example, null, 2) + '\n')
+  console.log(JSON.stringify(example))
 }
 
 main().then(() => process.exit(0), e => { console.error(e); process.exit(1) })

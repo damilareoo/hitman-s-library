@@ -24,7 +24,7 @@ export default async function ProPage() {
         </div>
       </nav>
       <SiteLinks />
-      <main id="top" className="px-4 pt-16 pb-32 flex flex-col items-center gap-10">
+      <main id="top" className="px-4 pt-8 sm:pt-12 pb-32 flex flex-col items-center gap-8">
         <ProCard />
         <ProExtras sample={sample} />
       </main>

@@ -64,7 +64,7 @@ export function AiToolsCard() {
       </div>
       <div className={CARD.pad + ' py-4'}>
         <p className={CARD.title}>Build with the library</p>
-        <p className={CARD.body + ' mt-1'}>Ask your AI tool to “make this feel like goodside.studio” and it pulls the real colours, fonts and tokens from here.</p>
+        <p className={CARD.body + ' mt-1'}>Ask your AI tool for a site’s type and colours as a starting point for your own design, and it pulls the real values from here.</p>
 
         <div role="tablist" aria-label="Your tool" className="mt-4 flex gap-1.5">
           {TOOLS.map(x => (

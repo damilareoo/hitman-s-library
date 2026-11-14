@@ -18,6 +18,8 @@ import { displayKind } from '@/lib/categories'
 import { hexToOklab } from '@/lib/tokens/color'
 
 const SITE = 'https://hitmanslibrary.xyz'
+// Travels with every site and token answer, so the AI reading it knows the rules.
+const USAGE = "Reference material measured from a public site. Use it as a starting point for the user's own design. Don't reproduce this site's logos, wording, images or layouts. Fonts may need a licence: check before use, and suggest free alternatives for paid faces."
 
 function summary(d: { url: string; title: string; kind: string; colors: string[]; typography: string[] }, near: string[] = []): SiteSummary {
   // With a palette asked for, the matching colours come first, so a reader
@@ -79,11 +81,12 @@ export async function POST(req: Request) {
           colors: d.colors.map(c => ({ hex: c.hex_value, oklch: c.oklch, share: total > 0 && c.area_share != null ? Math.round((c.area_share / total) * 100) / 100 : null })),
           fonts: d.typography.map(t => ({ family: t.font_family, role: t.role, weight: t.primary_weight, size: t.sample_size_px })),
           captures: { desktop: d.screenshot_url, mobile: d.mobile_screenshot_url },
+          usage: USAGE,
         }
       },
       tokens: async ref => {
         const d = await detailFor(ref)
-        return d ? { site: siteSlug(d.url), files: buildTokenFiles(d) } : null
+        return d ? { site: siteSlug(d.url), usage: USAGE, files: buildTokenFiles(d) } : null
       },
     })
   } catch (err) {

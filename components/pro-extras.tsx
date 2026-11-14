@@ -30,7 +30,7 @@ export function ProExtras({ sample }: { sample: ProSample }) {
 
   if (pro) {
     return (
-      <div className="w-full max-w-[380px] flex flex-col gap-4">
+      <div id="ai-tools" className="w-full max-w-[380px] flex flex-col gap-4 scroll-mt-16">
         <AiToolsCard />
         <Link href="/trends" className={CARD.shell + ' block hover:border-foreground/30 transition-colors'}>
           <div className={CARD.pad + ' py-3.5 flex items-center gap-3'}>
@@ -46,21 +46,31 @@ export function ProExtras({ sample }: { sample: ProSample }) {
   }
 
   return (
-    <div className="w-full max-w-[380px] flex flex-col gap-4">
+    <div id="what-you-get" className="w-full max-w-[380px] flex flex-col gap-4 scroll-mt-16">
       <h2 className={CARD.label + ' px-1 pt-2'}>What you get, from today&apos;s library</h2>
 
-      <Sample title="In your AI tools" foot={<span className={CARD.meta}>Claude Code, Cursor and any MCP tool.</span>}>
-        <p className="text-[14px] leading-[1.45] text-ink">“Restyle this landing page like {AI_EXAMPLE.site}.”</p>
-        <p className={CARD.body + ' mt-1'}>Your AI tool asks the library for the site and applies what it gets back. Drag to compare.</p>
+      <Sample
+        title="In your AI tools"
+        foot={<span className={CARD.meta}>Inspiration, not imitation: take colours and type as a starting point; don&apos;t copy logos, words, images or layouts, and license any paid font. <Link href="/terms" className="underline underline-offset-2 hover:text-ink">Terms</Link></span>}
+      >
+        <p className="text-[14px] leading-[1.45] text-ink">“Find studios with a serif display face. Use their type and colour mood as a starting point for {AI_EXAMPLE.studio}. Keep our green, our layout and our words.”</p>
         <div className="mt-3">
-          <CompareSlider before="/pro/ai-before.webp" after="/pro/ai-after.webp" alt={`A landing page restyled like ${AI_EXAMPLE.site}`} />
+          <CompareSlider before="/pro/ai-before.webp" after="/pro/ai-after.webp" alt={`${AI_EXAMPLE.studio}'s landing page`} />
         </div>
-        <p className={CARD.meta + ' mt-2.5 flex flex-wrap items-center gap-x-2 gap-y-1'}>
-          <span>It used</span>
-          <span className="text-ink-2">{AI_EXAMPLE.fonts.join(' · ')}</span>
-          <span className="flex items-center gap-1">
-            {AI_EXAMPLE.colors.map(c => <span key={c} title={c} className="w-3 h-3 rounded-full ring-1 ring-inset ring-foreground/15" style={{ background: c }} />)}
-          </span>
+        <ol className="mt-3.5 flex flex-col gap-2.5">
+          {[
+            <>Searched the library and found {AI_EXAMPLE.references.join(' and ')}.</>,
+            <>Borrowed the principle, not the look: a serif headline over a plain sans body, quiet warm neutrals, one soft highlight.</>,
+            <>Kept {AI_EXAMPLE.studio}&apos;s own green, layout and words, and chose free fonts ({AI_EXAMPLE.fonts.join(', ')}) over the references&apos; paid ones ({AI_EXAMPLE.skipped.join(', ')}).</>,
+          ].map((step, i) => (
+            <li key={i} className="grid grid-cols-[18px_minmax(0,1fr)] gap-1.5 text-[13px] leading-[1.45] text-ink-2">
+              <span className="text-ink-4 tabular-nums">{i + 1}</span><span>{step}</span>
+            </li>
+          ))}
+        </ol>
+        <p className={CARD.meta + ' mt-3 flex items-center gap-1.5'}>
+          <span className="mr-0.5">Palette</span>
+          {AI_EXAMPLE.colors.map(c => <span key={c} title={c} className="w-3 h-3 rounded-full ring-1 ring-inset ring-foreground/15" style={{ background: c }} />)}
         </p>
       </Sample>
 
