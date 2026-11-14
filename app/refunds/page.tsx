@@ -13,7 +13,7 @@ const SECTIONS: LegalSection[] = [
   },
   {
     title: 'How to ask',
-    body: <>Use the link in your Paddle receipt email, or write to <a className="underline underline-offset-2 hover:text-ink" href="mailto:hello@damilare.works">hello@damilare.works</a> from the email you paid with. Paddle, our reseller, processes the refund back to the way you paid.</>,
+    body: <>Write to <a className="underline underline-offset-2 hover:text-ink" href="mailto:hello@damilare.works">hello@damilare.works</a> from the email you paid with. We refund it through Bachs, our payment processor, to the card you paid with.</>,
   },
   {
     title: 'After 14 days',
@@ -22,5 +22,5 @@ const SECTIONS: LegalSection[] = [
 ]
 
 export default function RefundsPage() {
-  return <LegalPage title="Refunds" lede="Simple, and on your side" updated="November 13, 2026" sections={SECTIONS} />
+  return <LegalPage title="Refunds" lede="Simple, and on your side" updated="November 14, 2026" sections={SECTIONS} />
 }

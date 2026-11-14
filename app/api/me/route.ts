@@ -23,12 +23,10 @@ export async function GET(req: Request) {
       getSql()`SELECT favorite_ids, collections FROM user_data WHERE user_id = ${me.user.id}`,
       getEntitlement(me.user.id),
     ])
-    // Paddle's own customer id (never ours, never the email), for Paddle Retain.
-    const [billing] = await getSql()`SELECT provider_customer_id FROM subscriptions WHERE user_id = ${me.user.id} AND provider = 'paddle'`
     // Sites this member watches for redesigns (Pro).
     const watchRows = await getSql()`SELECT source_id FROM watches WHERE user_id = ${me.user.id}`
     const { email, name, avatar_url, member_no, created_at, google } = me.user
-    return json({ user: { email, name, avatar: avatar_url, memberNo: member_no, since: created_at, google }, data: rows[0] ?? null, pro: ent.pro, paddleCustomerId: billing?.provider_customer_id ?? null, watching: watchRows.map(r => Number(r.source_id)) }, renewedCookies(req, me))
+    return json({ user: { email, name, avatar: avatar_url, memberNo: member_no, since: created_at, google }, data: rows[0] ?? null, pro: ent.pro, watching: watchRows.map(r => Number(r.source_id)) }, renewedCookies(req, me))
   } catch (err) {
     console.error('[GET /api/me]', err)
     return problem(500, 'unavailable')

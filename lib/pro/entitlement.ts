@@ -14,7 +14,7 @@ const defaultDeps = (): EntitlementDeps => ({ sql: getSql(), now: () => new Date
 
 export interface SubscriptionState { status: string | null; current_period_end: Date | string | null }
 
-/** Paddle charges at the period end and tells us after; a day's grace covers the gap. */
+/** Bachs charges at the period end and tells us after; a day's grace covers the gap. */
 export const RENEWAL_GRACE_MS = 24 * 60 * 60 * 1000
 
 /** Pro while the subscription is active (or trialing) and its paid period (plus a day's grace) hasn't ended. The pro_users view applies the same rule in SQL. */

@@ -38,7 +38,7 @@ const SECTIONS: { title: string; body: React.ReactNode }[] = [
   },
   {
     title: 'Who handles it',
-    body: <>The site runs on Cloudflare. Accounts and the library live in a Neon database. Emails are sent by Resend. Screenshots are stored with Vercel Blob. Google handles Google sign-in. If you buy Pro, Paddle handles the payment as our reseller and keeps your card details; we only learn that you subscribed. None of them may use your data for anything else, and we never sell it.</>,
+    body: <>The site runs on Cloudflare. Accounts and the library live in a Neon database. Emails are sent by Resend. Screenshots are stored with Vercel Blob. Google handles Google sign-in. If you buy Pro, Bachs processes the payment and keeps your card details; we learn your plan and whether it is paid, never the card. None of them may use your data for anything else, and we never sell it.</>,
   },
   {
     title: 'Your control',

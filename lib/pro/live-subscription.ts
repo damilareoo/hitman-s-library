@@ -1,5 +1,5 @@
 // lib/pro/live-subscription.ts
-// A subscription Paddle may still bill: active, trialing, or past due.
+// A subscription Bachs may still bill: active, trialing, or past due.
 import { getSql } from '@/lib/db'
 
 export async function hasLiveSubscription(userId: string): Promise<boolean> {

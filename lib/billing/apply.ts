@@ -1,21 +1,25 @@
-// lib/paddle/apply.ts
-// The one statement that applies a Paddle subscription event: the event id
+// lib/billing/apply.ts
+// The one statement that applies a subscription event from the payment
+// provider (Bachs): the event id
 // is recorded and the row written together, only for a user that exists, and
 // only if this event is not older than the one already applied. A live
 // subscription always takes the row; an ending one only ends itself, so a
 // second or old subscription being cancelled never takes Pro from a live one.
 import { getSql } from '@/lib/db'
-import type { SubscriptionRow } from './webhook'
+import type { SubscriptionRow } from '@/lib/bachs/webhook'
+
+// The event log table kept its first name (paddle_events); ids are namespaced
+// by provider ("bachs:evt_…"), so they never collide.
 
 /** True when this event was new and changed the row (false for a retry or an older event). */
-export async function applySubscriptionEvent(eventId: string, row: SubscriptionRow, occurredAt: string, sql = getSql()): Promise<boolean> {
+export async function applySubscriptionEvent(eventId: string, row: SubscriptionRow, occurredAt: string, provider = 'bachs', sql = getSql()): Promise<boolean> {
   const rows = await sql`
     WITH ev AS (
       INSERT INTO paddle_events (id) VALUES (${eventId}) ON CONFLICT DO NOTHING RETURNING id
     )
     INSERT INTO subscriptions (user_id, status, plan, interval, current_period_end, provider,
                                provider_customer_id, provider_subscription_id, provider_updated_at, updated_at)
-    SELECT u.id, ${row.status}, ${row.plan}, ${row.interval}, ${row.currentPeriodEnd}::timestamptz, 'paddle',
+    SELECT u.id, ${row.status}, ${row.plan}, ${row.interval}, ${row.currentPeriodEnd}::timestamptz, ${provider},
            ${row.providerCustomerId}, ${row.providerSubscriptionId}, ${occurredAt}::timestamptz, now()
       FROM users u, ev
      WHERE u.id = ${row.userId}::uuid
