@@ -21,12 +21,6 @@ const SECTIONS: LegalSection[] = [
     title: 'Cancel any time',
     body: <>Cancelling stops the next renewal. You keep Pro until the end of the period you paid for.</>,
   },
-  {
-    // The page promised 14 days, no questions, until this date. A payment made
-    // under that promise keeps it.
-    title: 'Paid before November 16, 2026?',
-    body: <>The 14-day refund you signed up under still applies to that payment.</>,
-  },
 ]
 
 export default function RefundsPage() {
