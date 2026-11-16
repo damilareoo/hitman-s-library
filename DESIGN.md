@@ -4,6 +4,11 @@ The rules every surface on hitmanslibrary.xyz follows, as of 16 November 2026.
 Read this before building anything new. The live reference, with every token
 and component rendered from the real code, is at `/system` (hidden, noindex).
 
+The Figma library (variables, text and effect styles, icons, components, and a
+capture of `/system`): https://www.figma.com/design/EXmkCniW1fwaw1cVQYhX9q
+Type there is set in Inter standing in for BDO Grotesk, and colour tokens sit in
+`light/` and `dark/` groups because the plan allows one mode per collection.
+
 If something you need is not here, extend the system in `components/member-card.ts`
 or `lib/motion.ts` first, then use it. Never hand-roll a one-off.
 
