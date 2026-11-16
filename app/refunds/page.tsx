@@ -6,21 +6,23 @@ export const metadata: Metadata = {
   description: "How refunds work for Hitman's Library Pro.",
 }
 
+const mail = <a className="underline underline-offset-2 hover:text-ink" href="mailto:hello@damilare.works">hello@damilare.works</a>
+
 const SECTIONS: LegalSection[] = [
   {
-    title: '14 days, no questions',
-    body: <>If Pro isn&apos;t for you, ask for a full refund within 14 days of any payment, first or renewal. You don&apos;t need to give a reason.</>,
+    title: 'Payments are final',
+    body: <>Pro is $5 a month or $48 a year, and it starts the moment you pay, so payments aren&apos;t refundable.</>,
   },
   {
-    title: 'How to ask',
-    body: <>Write to <a className="underline underline-offset-2 hover:text-ink" href="mailto:hello@damilare.works">hello@damilare.works</a> from the email you paid with. We refund it through Bachs, our payment processor, to the card you paid with.</>,
+    title: 'When we do refund',
+    body: <>A duplicate charge, a billing mistake on our side, or anywhere the law requires it. Write to {mail} from the email you paid with, and we refund it through Bachs, our payment processor, to the card you paid with.</>,
   },
   {
-    title: 'After 14 days',
-    body: <>Cancel any time to stop the next renewal. You keep Pro until the end of the period you paid for.</>,
+    title: 'Cancel any time',
+    body: <>Cancelling stops the next renewal. You keep Pro until the end of the period you paid for.</>,
   },
 ]
 
 export default function RefundsPage() {
-  return <LegalPage title="Refunds" lede="Simple, and on your side" updated="November 14, 2026" sections={SECTIONS} />
+  return <LegalPage title="Refunds" lede="Simple, and clear before you pay" updated="November 16, 2026" sections={SECTIONS} />
 }
