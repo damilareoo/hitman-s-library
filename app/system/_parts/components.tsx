@@ -62,11 +62,11 @@ export function ButtonSection() {
           <button className={BTN.chip(false) + ' gap-1.5'}>Font: Inter <X className={ICON.micro + ' text-ink-4'} weight="bold" /></button>
         </Specimen>
       </div>
-      <Specimen name="Header icon button · 36px" file="gallery.tsx · ICON_BUTTON">
+      <Specimen name="BTN.iconHeader · 36px" file="member-card.ts" code={BTN.iconHeader}>
         {[MagnifyingGlass, SpeakerHigh, Moon, DotsThree].map((I, i) => (
-          <span key={i} className="w-9 h-9 grid place-items-center rounded-[10px] bg-muted/60 text-ink-3 hover:text-ink hover:bg-muted transition-colors"><I className={ICON.button} weight="bold" /></span>
+          <span key={i} className={BTN.iconHeader}><I className={ICON.button} weight="bold" /></span>
         ))}
-        <span className="text-meta text-ink-4 basis-full text-center">Header only. Use BTN.icon everywhere else.</span>
+        <span className="text-meta text-ink-4 basis-full text-center">The site header only. Use BTN.icon everywhere else.</span>
       </Specimen>
       <Rows head={['State', 'Look', 'Rule']} rows={[
         ['Hover', 'Primary opacity .9 · others tint .04–.05', 'Colour only, 200ms, ease-hover'],
@@ -299,12 +299,15 @@ export function PopoverSection() {
           </div>
         </Specimen>
 
-        <Specimen name="More menu · 208 (legacy)" file="gallery.tsx">
-          <div className="w-[208px] rounded-[10px] border border-edge-strong bg-card p-1 shadow-[0_12px_32px_-8px_rgba(0,0,0,0.28)] text-left">
-            {[[BookmarkSimple, 'Saved'], [EnvelopeSimple, 'Digest'], [Plus, 'Submit a site'], [SpeakerHigh, 'Sounds on'], [Moon, 'Dark mode']].map(([I, l]) => {
-              const Ic = I as typeof Plus
-              return <div key={l as string} className="w-full flex items-center gap-2.5 h-9 px-2.5 rounded-[10px] text-bodytext text-ink-2"><Ic className={ICON.button} weight="bold" />{l as string}</div>
-            })}
+        <Specimen name="More · 232" file="gallery.tsx">
+          <div className={POP + ' w-full max-w-[232px]'}>
+            <div className={CARD.head}><span>More</span></div>
+            <div className="p-1.5">
+              {[[BookmarkSimple, 'Saved'], [EnvelopeSimple, 'Digest'], [Plus, 'Submit'], [SpeakerHigh, 'Mute sounds'], [Moon, 'Dark mode']].map(([I, l]) => {
+                const Ic = I as typeof Plus
+                return <div key={l as string} className="w-full flex items-center gap-2.5 h-9 px-2.5 rounded-[10px] text-[13.5px] font-[500] text-ink"><Ic className={ICON.inline + ' text-ink-3'} weight="bold" />{l as string}</div>
+              })}
+            </div>
           </div>
         </Specimen>
       </div>
@@ -314,7 +317,6 @@ export function PopoverSection() {
         <>Outside <C>mousedown</C> closes. <C>Escape</C> closes. Choosing a row closes.</>,
         <>Under 640 a popover becomes <C>fixed inset-x-3</C> at a fixed top: full width, same card.</>,
         <>Menu rows: 36px, radius 10, 13.5/500, 14px icon, count in a key cap, hover tint .045.</>,
-        <>The More menu predates the card anatomy. New menus use <C>CARD</C>.</>,
       ]} />
     </Section>
   )
@@ -390,7 +392,7 @@ export function ModalSection() {
 
       <Specimen name="Destructive: two-step inline confirm" file="delete-account.tsx" stage="start">
         <div className="flex items-center gap-3 text-meta">
-          <span className="font-[600] text-[#c8382f] dark:text-[#ff8a80] underline underline-offset-4">Delete everything, for good</span>
+          <span className="font-[600] text-error-ink underline underline-offset-4">Delete everything, for good</span>
           <span className="text-ink-4">Keep it</span>
         </div>
         <span className="basis-full text-meta text-ink-4">The first tap arms it. The second only counts after 600ms, so a double click can never delete.</span>
@@ -435,9 +437,9 @@ export function ContentSection() {
           <span className="basis-full text-center text-meta text-ink-4">Colours wash across once, then rest. Nothing on hover.</span>
         </Specimen>
         <Specimen name="Refine button states" file="refine.tsx">
-          <span className="relative h-8 px-3 flex items-center gap-1.5 rounded-[10px] text-[13px] font-[500] border border-edge-strong text-ink-3"><SlidersHorizontal className={ICON.inline} weight="bold" />Refine<span className="text-[10.5px] font-[600] tracking-[0.06em] text-[#E8A04A]">PRO</span></span>
+          <span className="relative h-8 px-3 flex items-center gap-1.5 rounded-[10px] text-[13px] font-[500] border border-edge-strong text-ink-3"><SlidersHorizontal className={ICON.inline} weight="bold" />Refine<span className="text-[10.5px] font-[600] tracking-[0.06em] text-pro">PRO</span></span>
           <span className="relative h-8 px-3 flex items-center gap-1.5 rounded-[10px] text-[13px] font-[500] bg-foreground text-background border border-foreground"><SlidersHorizontal className={ICON.inline} weight="bold" />Refine<span className="text-[10.5px] font-[600] tracking-[0.06em] text-background/70">PRO</span></span>
-          <span className="relative w-8 h-8 grid place-items-center rounded-[10px] border border-edge-strong text-ink-3"><SlidersHorizontal className={ICON.inline} weight="bold" /><span className="absolute top-[5px] right-[5px] w-1.5 h-1.5 rounded-full bg-[#E8A04A]" /></span>
+          <span className="relative w-8 h-8 grid place-items-center rounded-[10px] border border-edge-strong text-ink-3"><SlidersHorizontal className={ICON.inline} weight="bold" /><span className="absolute top-[5px] right-[5px] w-1.5 h-1.5 rounded-full bg-pro" /></span>
           <span className="basis-full text-center text-meta text-ink-4">Idle · active · phone (an amber dot stands in for PRO)</span>
         </Specimen>
       </div>

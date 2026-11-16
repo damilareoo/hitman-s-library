@@ -134,7 +134,7 @@ export function SignInSheet() {
                         ? 'Keep your hearts and sets on every device. Free.'
                         : 'Pick up your hearts and sets where you left them.'}
                   </p>
-                  {note && step !== 'sent' && <p role="status" className="mt-2 text-[13px] leading-[1.45] text-[#c8382f] dark:text-[#ff8a80]">{note}</p>}
+                  {note && step !== 'sent' && <p role="status" className="mt-2 text-[13px] leading-[1.45] text-error-ink">{note}</p>}
 
                   {step === 'sent' ? (
                     <button className={CARD.footBtn + ' -ml-2 mt-3'} onClick={() => { setStep('choose'); setNote(null) }}>

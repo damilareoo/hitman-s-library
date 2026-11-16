@@ -41,7 +41,7 @@ export function CompareSlider({ before, after, alt, ratio = '960 / 600' }: { bef
           if (e.key === 'ArrowRight') { e.preventDefault(); setAt(v => Math.min(100, v + 5)) }
         }}
         data-no-press
-        className="absolute top-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white text-black shadow-[0_2px_10px_rgba(0,0,0,0.25)] grid place-items-center focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#E8A04A]"
+        className="absolute top-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white text-black shadow-[0_2px_10px_rgba(0,0,0,0.25)] grid place-items-center focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pro"
         style={{ left: `${at}%` }}
       >
         <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M5 3 1.5 7 5 11M9 3l3.5 4L9 11" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" /></svg>

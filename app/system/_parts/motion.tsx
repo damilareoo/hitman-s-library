@@ -41,7 +41,7 @@ export function MotionSection() {
   const [side, setSide] = useState(true)
 
   return (
-    <Section id="motion" n="15" title="Motion" lede="Fast and quiet. A strong ease-out for anything entering or leaving, no bounce in everyday UI, exits quicker than entrances, nothing over 300ms in everyday UI.">
+    <Section id="motion" n="17" title="Motion" lede="Fast and quiet. A strong ease-out for anything entering or leaving, no bounce in everyday UI, exits quicker than entrances, nothing over 300ms in everyday UI.">
       <Sub title="Curves" note={<Replay onClick={replayCurves} />}>
         <div className="flex flex-col gap-4">
           {CURVES.map(([n, c, u, d]) => (
@@ -210,7 +210,7 @@ export function SoundSection() {
     ['playSuccess', s.playSuccess, 'Something finished', 'C5 E5 G5 arpeggio'],
   ]
   return (
-    <Section id="sound" n="16" title="Sound" lede="Synthesised, very quiet, silent until the visitor has interacted, and switchable from the header. Each sound has one job.">
+    <Section id="sound" n="18" title="Sound" lede="Synthesised, very quiet, silent until the visitor has interacted, and switchable from the header. Each sound has one job.">
       <div className="flex items-center gap-3">
         <button onClick={() => s.setEnabled(v => !v)} className={BTN.secondary} aria-pressed={s.enabled}>
           {s.enabled ? <SpeakerHigh className={ICON.inline} weight="bold" /> : <SpeakerSlash className={ICON.inline} weight="bold" />}

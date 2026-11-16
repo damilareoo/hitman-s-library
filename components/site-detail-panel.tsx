@@ -296,7 +296,7 @@ export function SiteDetailPanel({ variant = 'desktop', sourceId, metadata, initi
           {onClose && (
             <button
               onClick={() => { playClose(); onClose() }}
-              className="w-8 h-8 flex items-center justify-center rounded-[10px] text-ink-3 hover:text-ink hover:bg-muted transition-colors"
+              className={BTN.icon}
               aria-label="Close panel"
             >
               <X className="w-4 h-4" weight="bold" />

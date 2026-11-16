@@ -15,10 +15,11 @@ import { Section, Rules, Rows, C } from './kit'
 import { ColourSection, TypeSection, SpacingSection, RadiusSection, ElevationSection, IconSection } from './foundations'
 import { ButtonSection, InputSection, SegmentedSection, CardSection, PopoverSection, ModalSection, ContentSection, StateSection } from './components'
 import { MotionSection, SoundSection } from './motion'
+import { ProSection, SystemPagesSection } from './pro'
 
 const NAV: [string, [string, string][]][] = [
   ['Foundations', [['principles', 'Principles'], ['colour', 'Colour'], ['type', 'Typography'], ['spacing', 'Spacing'], ['radius', 'Radius'], ['elevation', 'Elevation'], ['icons', 'Icons']]],
-  ['Components', [['buttons', 'Buttons'], ['inputs', 'Inputs'], ['segmented', 'Segmented'], ['cards', 'Cards'], ['popovers', 'Popovers'], ['modals', 'Modals'], ['content', 'Library pieces'], ['states', 'States']]],
+  ['Components', [['buttons', 'Buttons'], ['inputs', 'Inputs'], ['segmented', 'Segmented'], ['cards', 'Cards'], ['popovers', 'Popovers'], ['modals', 'Modals'], ['content', 'Library pieces'], ['states', 'States'], ['pro', 'Pro'], ['pages', 'System pages']]],
   ['Behaviour', [['motion', 'Motion'], ['sound', 'Sound'], ['a11y', 'Accessibility'], ['copy', 'Copy']]],
   ['Shipping', [['checklist', 'Checklist'], ['drift', 'Known drift']]],
 ]
@@ -139,12 +140,14 @@ export function SystemPage() {
           <ModalSection />
           <ContentSection />
           <StateSection />
+          <ProSection />
+          <SystemPagesSection />
           <MotionSection />
           <SoundSection />
 
-          <Section id="a11y" n="17" title="Accessibility" lede="Built in, not checked at the end.">
+          <Section id="a11y" n="19" title="Accessibility" lede="Built in, not checked at the end.">
             <Rows head={['Area', 'Rule', 'How']} rows={[
-              ['Focus', 'Amber ring for keyboard focus', <C key="a">outline-2 outline-offset-2 outline-[#E8A04A]</C>],
+              ['Focus', 'Amber ring for keyboard focus', <C key="a">outline-2 outline-offset-2 outline-pro</C>],
               ['Inputs', 'The border is the focus state', 'foreground/50 on focus, no ring'],
               ['Contrast', 'Text never lighter than ink-4', '4.5:1 in both themes'],
               ['Targets', '44px hit area', <C key="a">after:</C>],
@@ -158,7 +161,7 @@ export function SystemPage() {
             ]} />
           </Section>
 
-          <Section id="copy" n="18" title="Copy" lede="The interface speaks the way the changelog does.">
+          <Section id="copy" n="20" title="Copy" lede="The interface speaks the way the changelog does.">
             <Rules items={[
               'One line per idea. Say what it does and stop.',
               'Sentence case. No exclamation marks, no “Oops”.',
@@ -171,7 +174,7 @@ export function SystemPage() {
             ]} />
           </Section>
 
-          <Section id="checklist" n="19" title="Checklist for anything new" lede="Run this before you ship a new surface.">
+          <Section id="checklist" n="21" title="Checklist for anything new" lede="Run this before you ship a new surface.">
             <ul className="flex flex-col">
               {[
                 <>Built from <C>BTN</C>, <C>INPUT</C> / <C>FIELD</C>, <C>CARD</C>, <C>R</C>, <C>ICON</C>; no hand-rolled sizes</>,
@@ -194,16 +197,10 @@ export function SystemPage() {
             </ul>
           </Section>
 
-          <Section id="drift" n="20" title="Known drift" lede="Places the code doesn’t follow the system yet. Fix them when you’re in the file; don’t copy them.">
+          <Section id="drift" n="22" title="Known drift" lede="What’s left after the 16 Nov clean-up. Everything else on this page matches the code.">
             <Rows head={['Where', 'What', 'Fix']} rows={[
-              ['Several files', 'Error red hard-coded (#c8382f / #ff8a80)', 'One token beside --color-error'],
-              ['Several files', 'Amber #E8A04A hard-coded', 'A --pro CSS variable'],
-              ['gallery.tsx', 'More menu predates the card anatomy', 'Rebuild on CARD'],
-              ['gallery.tsx, site-detail-panel.tsx', 'Header ICON_BUTTON and panel close skip BTN.icon', 'Fold into BTN'],
-              ['globals.css', '--sidebar-* and --chart-* unused', 'Remove'],
-              ['globals.css', 'text-ui duplicates text-meta', 'Replace and remove'],
-              ['design-card.tsx, gallery.tsx', 'Radius 12 and 14 sit off the ladder', 'Leave; don’t add more'],
-              ['components/ui/*', 'shadcn leftovers, unused except spinner', 'Remove'],
+              ['design-card.tsx, gallery.tsx', 'Radius 12 (gallery card) and 14 (tablet sheet) sit off the ladder', 'Leave; don’t add more'],
+              ['lib/email/*, auth callback', 'Hex colours inline (#E8A04A, #A8611A)', 'Correct: email and bare HTML can’t read CSS variables'],
             ]} />
           </Section>
         </main>

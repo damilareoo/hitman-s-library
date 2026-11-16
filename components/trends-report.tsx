@@ -47,7 +47,7 @@ function Row({ href, label, swatch, now, before, max, examples }: {
   const w = (x: number) => `${max > 0 ? Math.max(2, Math.round((x / max) * 100)) : 0}%`
   return (
     <li className="border-t border-edge-faint first:border-t-0">
-      <Link href={href} className="group -mx-2 px-2 py-3 rounded-[10px] grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 hover:bg-foreground/[0.03] transition-colors focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[#E8A04A]">
+      <Link href={href} className="group -mx-2 px-2 py-3 rounded-[10px] grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 hover:bg-foreground/[0.03] transition-colors focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-pro">
         <span className="min-w-0">
           <span className="flex items-center gap-2 text-[14px] font-[560] text-ink truncate">
             {swatch && <span aria-hidden="true" className="w-3 h-3 rounded-full shrink-0" style={{ background: swatch }} />}

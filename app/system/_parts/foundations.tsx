@@ -98,12 +98,9 @@ export function ColourSection() {
 
       <Sub title="Accent and status" note="Amber means Pro or focus. Nothing else.">
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-6">
-          <div>
-            <div className="h-16 rounded-[10px] bg-[#E8A04A]" />
-            <p className="mt-2 text-[13px] font-[600] text-ink">Amber</p>
-            <p className="text-meta text-ink-4">#E8A04A</p>
-            <p className="mt-0.5 text-meta text-ink-3">Pro pill, PRO tag, focus ring</p>
-          </div>
+          <Swatch v="--pro" name="pro" use="Pro pill, PRO tag, focus ring" />
+          <Swatch v="--pro-ink" name="pro-ink" use="Text on the Pro wash" />
+          <Swatch v="--error-ink" name="error-ink" use="Inline error copy" />
           <Swatch v="--color-success" name="success" use="Done" />
           <Swatch v="--color-error" name="error" use="Heart fill, errors" />
           <Swatch v="--color-running" name="running" use="In progress" />
@@ -111,7 +108,7 @@ export function ColourSection() {
         <div className="mt-6 flex flex-wrap items-center gap-3">
           <span className={CARD.proPill}>Pro</span>
           <span className={CARD.pill}>Neutral pill</span>
-          <span className="text-[12.5px] text-[#c8382f] dark:text-[#ff8a80]">That link has expired. Send yourself a new one.</span>
+          <span className="text-[12.5px] text-error-ink">That link has expired. Send yourself a new one.</span>
         </div>
       </Sub>
 
@@ -175,7 +172,7 @@ export function TypeSection() {
             </div>
           ))}
         </div>
-        <p className="mt-3 text-meta text-ink-4"><C>text-ui</C> is a 12px alias of <C>text-meta</C>; prefer <C>text-meta</C>. Metadata floor is 12px; nothing under 11px.</p>
+        <p className="mt-3 text-meta text-ink-4">Metadata floor is 12px; nothing under 11px.</p>
       </Sub>
 
       <Sub title="Inside cards" note="member-card.ts · CARD">
@@ -246,15 +243,15 @@ export function SpacingSection() {
       <Sub title="Card anatomy, measured" note="CARD.head · body · CARD.foot">
         <div className="grid sm:grid-cols-[minmax(0,320px)_minmax(0,1fr)] gap-6 items-start">
           <div className={CARD.shell + ' relative'}>
-            <div className={CARD.head + ' outline-1 outline-dashed outline-[#E8A04A]/60 -outline-offset-1'}><span>Saved</span><span className="text-ink-4">3 sets</span></div>
-            <div className="p-1.5 outline-1 outline-dashed outline-[#E8A04A]/60 -outline-offset-1">
+            <div className={CARD.head + ' outline-1 outline-dashed outline-[rgba(var(--pro-rgb),0.6)] -outline-offset-1'}><span>Saved</span><span className="text-ink-4">3 sets</span></div>
+            <div className="p-1.5 outline-1 outline-dashed outline-[rgba(var(--pro-rgb),0.6)] -outline-offset-1">
               {['Hearts', 'Type I like', 'Pricing pages'].map((r, i) => (
                 <div key={r} className="h-9 px-2.5 flex items-center justify-between rounded-[10px] text-[13.5px] font-[500] text-ink" style={i === 0 ? { background: 'rgba(var(--foreground-rgb), .045)' } : undefined}>
                   <span>{r}</span><span className={CARD.kbd}>{[12, 4, 7][i]}</span>
                 </div>
               ))}
             </div>
-            <div className={CARD.foot + ' px-4 outline-1 outline-dashed outline-[#E8A04A]/60 -outline-offset-1'}><span className={CARD.meta}>Add to a set with the bookmark.</span></div>
+            <div className={CARD.foot + ' px-4 outline-1 outline-dashed outline-[rgba(var(--pro-rgb),0.6)] -outline-offset-1'}><span className={CARD.meta}>Add to a set with the bookmark.</span></div>
           </div>
           <Rows head={['Part', 'Size', 'Rule']} rows={[
             ['Header', '40px · px 16', 'Tint 0.025, edge hairline under, title left, one detail right'],
@@ -294,7 +291,7 @@ export function SpacingSection() {
         <div className="flex flex-wrap items-center gap-8">
           <div className="relative w-8 h-8 grid place-items-center rounded-[10px] text-ink-3 bg-foreground/[0.05]">
             <BookmarkSimple className={ICON.button} weight="bold" />
-            <span className="absolute -inset-1.5 rounded-[12px] border border-dashed border-[#E8A04A]" />
+            <span className="absolute -inset-1.5 rounded-[12px] border border-dashed border-pro" />
           </div>
           <p className="text-meta text-ink-3 max-w-[420px]">Controls are drawn at 32–36px. An <C>after:</C> overlay takes the hit area to 44px; between neighbours it stops at 42 so it doesn’t steal the next one’s edge.</p>
         </div>
@@ -345,7 +342,7 @@ export function RadiusSection() {
 
 const SHADOWS = [
   ['Thumb', 'shadow-[0_1px_2px_rgba(0,0,0,0.06),0_0_0_1px_rgba(0,0,0,0.03)]', 'Segmented thumb'],
-  ['Small menu', 'shadow-[0_12px_32px_-8px_rgba(0,0,0,0.28)]', 'More menu'],
+  ['Small menu', 'shadow-[0_12px_32px_-8px_rgba(0,0,0,0.28)]', 'Brand menu, origin peek'],
   ['Popover', 'shadow-[0_24px_56px_-20px_rgba(0,0,0,0.35)]', 'Every CARD popover'],
   ['Layer', 'shadow-[0_24px_64px_-16px_rgba(0,0,0,0.35)]', 'Browse layer'],
   ['Sheet', 'shadow-[0_28px_70px_-24px_rgba(0,0,0,0.4)]', 'Sign-in, Pro card'],

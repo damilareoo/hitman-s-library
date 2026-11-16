@@ -30,14 +30,14 @@ function Avatar({ user, size, pro = false }: { user: AccountUser; size: number; 
       <img
         src={user.avatar} alt="" width={size} height={size} referrerPolicy="no-referrer"
         onError={() => setBroken(true)}
-        className={'rounded-full object-cover shrink-0 ' + (pro ? 'ring-2 ring-[#E8A04A] ring-offset-2 ring-offset-popover' : 'ring-1 ring-foreground/10')}
+        className={'rounded-full object-cover shrink-0 ' + (pro ? 'ring-2 ring-pro ring-offset-2 ring-offset-popover' : 'ring-1 ring-foreground/10')}
         style={{ width: size, height: size }}
       />
     )
   }
   return (
     <span
-      className={'rounded-full grid place-items-center shrink-0 bg-foreground text-background font-[640] ' + (pro ? 'ring-2 ring-[#E8A04A] ring-offset-2 ring-offset-popover' : '')}
+      className={'rounded-full grid place-items-center shrink-0 bg-foreground text-background font-[640] ' + (pro ? 'ring-2 ring-pro ring-offset-2 ring-offset-popover' : '')}
       style={{ width: size, height: size, fontSize: Math.round(size * 0.43) }}
     >
       {initial}
@@ -110,7 +110,7 @@ export function AccountButton() {
       <button
         onClick={() => setOpen(v => !v)}
         aria-expanded={open} aria-haspopup="menu" aria-label="Your account"
-        className="rounded-full grid place-items-center transition-opacity hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#E8A04A]"
+        className="rounded-full grid place-items-center transition-opacity hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pro"
       >
         <Avatar user={user} size={28} pro={pro} />
       </button>

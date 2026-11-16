@@ -27,12 +27,14 @@ const FEATURES = [
 
 type Phase = 'idle' | 'opening' | 'finishing' | 'failed'
 
-export function ProCard() {
+/** `preview` (the design system page): no analytics, and the action goes to /pro instead of checkout. */
+export function ProCard({ preview = false }: { preview?: boolean } = {}) {
   const { status, pro } = useAccount()
   const [interval, setInterval_] = useState<'month' | 'year'>(DEFAULT_INTERVAL)
   const [phase, setPhase] = useState<Phase>('idle')
 
   useEffect(() => {
+    if (preview) return
     track('pricing_viewed')
     // Back from the hosted page after paying: wait for the webhook the same way.
     if (new URLSearchParams(location.search).has('welcome')) finishing()
@@ -57,6 +59,7 @@ export function ProCard() {
   useEffect(() => { if (pro) setPhase('idle') }, [pro])
 
   async function getPro() {
+    if (preview) { window.location.href = '/pro'; return }
     if (status !== 'signed-in') return openSignIn('join')
     setPhase('opening')
     track('checkout_opened', { interval })
@@ -124,7 +127,7 @@ export function ProCard() {
                 </div>
               </div>
               <p className={CARD.meta + ' mt-1'}>Billed in US dollars.</p>
-              {phase === 'failed' && <p role="status" className="mt-2 text-[12.5px] text-[#c8382f] dark:text-[#ff8a80]">Checkout didn&apos;t open. Try again.</p>}
+              {phase === 'failed' && <p role="status" className="mt-2 text-[12.5px] text-error-ink">Checkout didn&apos;t open. Try again.</p>}
             </>
           )}
         </div>

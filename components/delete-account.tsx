@@ -27,7 +27,7 @@ export function DeleteAccount() {
       ) : (
         <>
           <button
-            className="font-[600] text-[#c8382f] dark:text-[#ff8a80] underline underline-offset-4"
+            className="font-[600] text-error-ink underline underline-offset-4"
             onClick={async () => {
               if (Date.now() - armedAt < 600) return
               const r = await deleteAccount()

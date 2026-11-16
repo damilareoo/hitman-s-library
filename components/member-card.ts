@@ -15,7 +15,7 @@ export const R = {
   chip: 'rounded-full',
 }
 
-const btnBase = 'inline-flex items-center justify-center gap-1.5 shrink-0 font-[600] tracking-[-0.01em] whitespace-nowrap transition disabled:opacity-40 disabled:pointer-events-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#E8A04A]'
+const btnBase = 'inline-flex items-center justify-center gap-1.5 shrink-0 font-[600] tracking-[-0.01em] whitespace-nowrap transition disabled:opacity-40 disabled:pointer-events-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pro'
 
 /** Buttons: two sizes, three looks. md is 32px (cards, toolbars), lg is 40px (forms, full-width). */
 export const BTN = {
@@ -27,7 +27,13 @@ export const BTN = {
   /** A button inside a 40px field, 4px from its edge: 32px tall, corner 10 − 4 = 6. */
   inField: `${btnBase} h-8 px-3 ${R.nested} text-[12.5px] bg-foreground text-background hover:opacity-90 active:scale-[0.98]`,
   /** Square icon buttons (close, etc). */
-  icon: `inline-grid place-items-center shrink-0 w-8 h-8 ${R.control} text-ink-4 hover:text-ink hover:bg-foreground/[0.06] transition-colors focus-visible:outline-2 focus-visible:outline-[#E8A04A]`,
+  icon: `inline-grid place-items-center shrink-0 w-8 h-8 ${R.control} text-ink-4 hover:text-ink hover:bg-foreground/[0.06] transition-colors focus-visible:outline-2 focus-visible:outline-pro`,
+  /**
+   * The site header's icon buttons only: drawn at 36px on a muted ground so the
+   * bar reads as one row of controls; the overlay takes the target to 44×42
+   * (42 because neighbours sit 6px apart). Use `icon` everywhere else.
+   */
+  iconHeader: "relative w-9 h-9 flex items-center justify-center rounded-[10px] border border-transparent bg-muted/60 text-ink-3 hover:text-ink hover:bg-muted active:scale-[0.98] transition-[background-color,border-color,color,transform] duration-[var(--dur-2)] ease-[var(--ease-sig)] focus-visible:outline-2 focus-visible:outline-pro after:absolute after:left-1/2 after:top-1/2 after:h-11 after:w-[42px] after:-translate-x-1/2 after:-translate-y-1/2 after:content-['']",
   /** Toggle chips; pass the active state through `chip(active)`. */
   chip: (active: boolean) => `${btnBase} h-7 px-3 ${R.chip} border text-[12px] ${active ? 'border-foreground bg-foreground text-background' : 'border-edge text-ink-3 hover:text-ink'}`,
 }
@@ -59,17 +65,17 @@ export const CARD = {
   shell: 'bg-popover text-popover-foreground border border-edge-strong rounded-[16px] overflow-hidden', // R.card
   pad: 'px-4',
   label: 'text-[11px] leading-none font-[600] tracking-[0.12em] uppercase text-ink-4',
-  number: 'text-[11px] leading-none font-[600] tracking-[0.06em] text-[#E8A04A] whitespace-nowrap',
+  number: 'text-[11px] leading-none font-[600] tracking-[0.06em] text-pro whitespace-nowrap',
   body: 'text-[13.5px] leading-[1.45] text-ink-3',
   meta: 'text-[12px] leading-[1.4] text-ink-4',
   // The anatomy every small card shares: a quiet tinted header with a short
   // title, a white body with one idea, a tinted footer for the actions.
   head: 'h-10 px-4 flex items-center justify-between gap-3 bg-foreground/[0.025] border-b border-edge text-[12.5px] font-[500] text-ink-3',
   foot: 'h-11 px-2 flex items-center gap-1 bg-foreground/[0.025] border-t border-edge',
-  footBtn: 'inline-flex items-center gap-1.5 h-8 px-2.5 rounded-[10px] text-[13px] font-[500] text-ink-3 hover:text-ink hover:bg-foreground/[0.05] transition-colors focus-visible:outline-2 focus-visible:outline-[#E8A04A]', // = BTN.ghost
+  footBtn: 'inline-flex items-center gap-1.5 h-8 px-2.5 rounded-[10px] text-[13px] font-[500] text-ink-3 hover:text-ink hover:bg-foreground/[0.05] transition-colors focus-visible:outline-2 focus-visible:outline-pro', // = BTN.ghost
   title: 'text-[15px] font-[620] tracking-[-0.02em] leading-tight text-ink',
   pill: 'h-6 px-2 inline-flex items-center rounded-full border border-edge text-[11.5px] font-[600] text-ink-3',
-  proPill: 'h-6 px-2 inline-flex items-center gap-1 rounded-full bg-[#E8A04A]/[0.14] text-[11.5px] font-[650] text-[#A8611A] dark:text-[#F0B36A]',
+  proPill: 'h-6 px-2 inline-flex items-center gap-1 rounded-full bg-[rgba(var(--pro-rgb),0.14)] text-[11.5px] font-[650] text-pro-ink',
   kbd: 'h-5 min-w-5 px-1 inline-grid place-items-center rounded-[5px] bg-foreground/[0.07] text-[10.5px] font-[600] text-ink-3',
-  action: 'flex items-center gap-2 h-10 text-[13.5px] font-[600] tracking-[-0.01em] text-ink hover:bg-foreground/[0.04] active:bg-foreground/[0.07] transition-colors focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[#E8A04A]',
+  action: 'flex items-center gap-2 h-10 text-[13.5px] font-[600] tracking-[-0.01em] text-ink hover:bg-foreground/[0.04] active:bg-foreground/[0.07] transition-colors focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-pro',
 }

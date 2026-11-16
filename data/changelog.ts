@@ -85,6 +85,16 @@ export function releaseAuthors(release: ChangelogRelease): Author[] {
 // only case where the question is actually being asked.
 const changelog: ChangelogRelease[] = [
   {
+    date: '2026-11-16',
+    title: 'Lost and Found',
+    items: [
+      { type: 'new', author: 'damilare', text: 'A missing page now shows 404 in library colours, with a way back' },
+      { type: 'improved', author: 'damilare', text: 'Search ⌘K on the 404 page opens the library’s search directly' },
+      { type: 'improved', author: 'damilare', text: 'Errors show one calm card with Try again, instead of a bare message' },
+      { type: 'improved', author: 'damilare', text: 'The More menu on smaller screens now matches the other header cards' },
+    ],
+  },
+  {
     date: '2026-11-13',
     title: 'Your Saves, Everywhere',
     items: [

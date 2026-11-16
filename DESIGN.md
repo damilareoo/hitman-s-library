@@ -20,7 +20,7 @@ or `lib/motion.ts` first, then use it. Never hand-roll a one-off.
    hierarchy, quieter accents. Do not add modules, stats or badges unless asked.
 2. **One idea per card.** A card shows a title, one key value or visual, and
    one muted line. Nothing stacked, nothing repeated.
-3. **Monochrome first, one accent.** Ink on paper. Amber (`#E8A04A`) is the
+3. **Monochrome first, one accent.** Ink on paper. Amber (`--pro`, `#E8A04A`) is the
    only UI accent and it means Pro or focus. Colour otherwise comes from the
    library's own sites.
 4. **Fast and quiet motion.** Strong ease-out, no bounce in everyday UI, exits
@@ -107,12 +107,13 @@ Interactive borders firm up with the foreground: `hover:border-foreground/30`,
 
 | Token | Value | Use |
 | --- | --- | --- |
-| Amber | `#E8A04A` | Pro (pill, PRO tag, dot, avatar ring, Pro word), focus ring. Nothing else. |
-| Pro pill text | `#A8611A` light, `#F0B36A` dark | Text on the 14% amber pill |
+| `--pro` · `text-pro` `bg-pro` `ring-pro` `outline-pro` | `#E8A04A` | Pro (pill, PRO tag, dot, avatar ring, Pro word), focus ring. Nothing else. |
+| `--pro-rgb` | `232, 160, 74` | Alpha uses: `bg-[rgba(var(--pro-rgb),0.14)]` |
+| `--pro-ink` · `text-pro-ink` | `#A8611A` light, `#F0B36A` dark | Text on the 14% amber pill |
 | `--color-success` | `#15803d` / `#22c55e` | Done states |
 | `--color-error` | `#dc2626` / `#f87171` | Heart fill, errors |
 | `--color-running` | `#2563eb` / `#60a5fa` | In-progress |
-| Error copy | `#c8382f` / `#ff8a80` | Inline error lines, destructive confirm |
+| `--error-ink` · `text-error-ink` | `#c8382f` / `#ff8a80` | Inline error lines, destructive confirm |
 
 Library colours (swatches, the Pro word, the colour strip) are content, not UI.
 Swatches get a `border-black/[0.06] dark:border-white/[0.22]` hairline so pale
@@ -142,7 +143,6 @@ Use `tabular-nums` for counts that update.
 | `text-meta` | 12px / 400 / 0 | Metadata, counts, quiet links |
 | `text-micro` | 12px / uppercase / 0.08em / 1 | Kind labels, section labels in lists |
 
-`text-ui` is a 12px alias of `text-meta`. Prefer `text-meta`.
 
 ### Card type (inside `CARD` surfaces)
 
@@ -193,7 +193,7 @@ popovers go full width (`fixed inset-x-3`), header actions fold into the More
 menu, labels collapse to icons with `sr-only` text.
 
 **Touch targets.** Draw controls at 32–36px, then extend the hit area to 44px
-with an `after:` overlay (see `ICON_BUTTON`, the Sign in link, sort pills).
+with an `after:` overlay (see `BTN.iconHeader`, the Sign in link, sort pills).
 
 ---
 
@@ -222,7 +222,7 @@ Elevation is a border plus one soft, low shadow. Never glow, never a gradient.
 | Level | Shadow | Use |
 | --- | --- | --- |
 | Inset thumb | `0 1px 2px rgba(0,0,0,.06), 0 0 0 1px rgba(0,0,0,.03)` (dark `0 1px 2px rgba(0,0,0,.4)`) | Segmented control thumb |
-| Small menu | `0 12px 32px -8px rgba(0,0,0,.28)` | More menu |
+| Small menu | `0 12px 32px -8px rgba(0,0,0,.28)` | Brand menu, origin peek |
 | Popover | `0 24px 56px -20px rgba(0,0,0,.35)` | Every `CARD` popover |
 | Layer | `0 24px 64px -16px rgba(0,0,0,.35)` | Browse layer (⌘K) |
 | Sheet | `0 28px 70px -24px rgba(0,0,0,.4)` | Sign-in sheet, Pro card |
@@ -288,13 +288,14 @@ Always compose from the tokens. Copy the class strings from
 | `primaryLg` / `secondaryLg` | 40px, 13.5px | Forms and full-width actions |
 | `inField` | 32px, radius 6 | The button inside a `FIELD` |
 | `icon` | 32×32 | Square icon button (close, save, watch) |
+| `iconHeader` | 36×36 | The site header's icon buttons only |
 | `chip(active)` | 28px, full radius, 12px | Toggles and filters; active = ink fill |
 
 One primary per surface, pushed right. Disabled is `opacity-40`, no pointer.
 Button labels are verbs: "Get Pro", "Show sites", "Make a key". A forward
 action may carry `ArrowRight` (14px) after the label.
 
-The header's `ICON_BUTTON` (36px, `bg-muted/60`) is the one header-only
+`BTN.iconHeader` (36px, `bg-muted/60`, 44×42 hit area) is the one header-only
 variant; use `BTN.icon` everywhere else.
 
 ### Inputs
@@ -357,7 +358,7 @@ from `lib/motion` and `transformOrigin` set to the corner nearest the trigger.
 | Refine (Pro search) | 320 | top left | `refine.tsx` |
 | Watch (upsell) | 280 | top right | `watch-button.tsx` |
 | Digest | 340 | fixed top right | `gallery.tsx` |
-| More (header, under 1024) | 208 | top right | `gallery.tsx` |
+| More (header, under 1024) | 232 | top right | `gallery.tsx` |
 
 **Dismissal contract:** outside `mousedown` closes; `Escape` closes; the
 trigger toggles and carries `aria-expanded` and `aria-haspopup`.
@@ -402,6 +403,38 @@ halo. Cards never scale on press: the border answers instead.
 | Inline error | 12.5–13px in the error red, `role="status"` |
 | Copied | Icon swaps Copy to Check; copy sound |
 | Pro, not yet | A small card saying what it does and how to get it, never a dead or blurred control |
+
+### Pro
+
+Pro uses the same card as everything else; the mark is what sets it apart.
+
+| Part | Spec |
+| --- | --- |
+| Pro card (`pro-card.tsx`) | `CARD.shell`, 380 max, Sheet shadow. Head "Membership" / "Cancel any time" (an Active pill for members). `<ProMark />` in the visual slot. 20/630 promise, plain feature lines (13.5, ink-2, no icons), 26/640 price, Monthly/Yearly `BTN.chip` radiogroup, foot with refund + Terms left and `BTN.primary` right |
+| Pro mark (`pro-mark.tsx`) | A word in 3px squares on a 4px pitch, each a real library colour. Gathers, sorts in one sweep, rests. Hover lens, drag a square to copy it, replay on hover. `word` prop: "Pro" (default) or "404" |
+| Pro word (`pro-word.tsx`) | The header's Pro: the word in BDO Grotesk 760, washed with library colours once (900ms), then still |
+| AI tools card (`ai-tools-card.tsx`) | Tool chips, the snippet in a tinted 10px well with a copy `BTN.icon`, key rows on `edge-faint` hairlines, "New key" primary |
+| Sample cards (`pro-extras.tsx`) | `CARD` with "Pro" in the head in ink-4 (not amber), real library data in the body |
+| Watch upsell (`watch-button.tsx`) | The "Pro, not yet" pattern: what it does, how to get it |
+
+Rules: one Pro signal per surface (the mark, a pill, or the PRO tag, never two).
+No blurred, locked or dead controls. No glow, gradient or sparkle.
+
+### System pages
+
+`app/not-found.tsx` and `app/error.tsx` use the Pro card's frame: the
+secondary nav, one card centred, a head naming what happened, two ways out.
+
+| | 404 | Error |
+| --- | --- | --- |
+| Head | Not found · the missing path | Something went wrong · error id |
+| Visual | `<ProMark word="404" />` | None (a failed page fetches nothing) |
+| Line | This page isn't in the library. | This page didn't load. |
+| Quiet action | Search ⌘K (to `/?browse=1`) | Back to the library |
+| Primary | Back to the library → | Try again |
+
+`/?browse=1` opens the gallery with the browse layer open. On the 404, ⌘K and
+/ go there too.
 
 ---
 
@@ -482,7 +515,7 @@ a second.
 ## 12. Accessibility
 
 - **Focus:** keyboard focus is the amber ring, `outline-2 outline-offset-2
-  outline-[#E8A04A]`. The global fallback is a 2px ring in `--ring`. Inputs
+  outline-pro`. The global fallback is a 2px ring in `--ring`. Inputs
   show focus through their border instead.
 - **Contrast:** text never lighter than `ink-4` (4.5:1 in both themes).
 - **Targets:** 44px hit area via `after:` overlays on small controls.
@@ -524,13 +557,7 @@ a second.
 
 ## 15. Known drift
 
-Places the code does not yet follow this document. Fix them when you are
-in the file; don't copy them.
+Cleaned up on 16 Nov 2026. What's left on purpose:
 
-- Error red is hard-coded (`#c8382f` / `#ff8a80`) in several files instead of a token.
-- Amber `#E8A04A` is hard-coded rather than a CSS variable.
-- The More menu (`gallery.tsx`) uses an older 10px-radius menu, not `CARD`.
-- The panel close button and header `ICON_BUTTON` don't use `BTN.icon`.
-- `--sidebar-*` and `--chart-*` tokens are unused.
-- `text-ui` duplicates `text-meta`.
-- Gallery card radius 12 and tablet sheet radius 14 sit off the ladder.
+- Gallery card radius 12 and tablet sheet radius 14 sit off the ladder. Leave them; don't add more.
+- Emails (`lib/email/*`) and the bare-HTML auth callback use hex colours inline, because they can't read CSS variables.
