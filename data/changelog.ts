@@ -88,6 +88,7 @@ const changelog: ChangelogRelease[] = [
     date: '2026-11-16',
     title: 'Lost and Found',
     items: [
+      { type: 'improved', author: 'florence', text: 'Pro payments are now final, with refunds for billing mistakes; you can still cancel any time' },
       { type: 'new', author: 'damilare', text: 'A missing page now shows 404 in library colours, with a way back' },
       { type: 'improved', author: 'damilare', text: 'Search ⌘K on the 404 page opens the library’s search directly' },
       { type: 'improved', author: 'damilare', text: 'Errors show one calm card with Try again, instead of a bare message' },

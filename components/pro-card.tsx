@@ -140,7 +140,7 @@ export function ProCard({ preview = false }: { preview?: boolean } = {}) {
             </>
           ) : (
             <>
-              <span className={CARD.meta}>14-day refund · <a href="/terms" className="underline underline-offset-2 hover:text-ink">Terms</a></span>
+              <span className={CARD.meta}><a href="/refunds" className="underline underline-offset-2 hover:text-ink">Payments are final</a> · <a href="/terms" className="underline underline-offset-2 hover:text-ink">Terms</a></span>
               <button
                 onClick={getPro} disabled={phase === 'opening' || phase === 'finishing'}
                 className={BTN.primary + ' ml-auto'}
