@@ -5,10 +5,11 @@ import { usePathname } from 'next/navigation'
 
 const PAGES: { href: string; label: string; legal?: boolean }[] = [
   { href: '/', label: 'Gallery' },
+  // First of the pages: it is the one that changes every month, so it leads.
+  { href: '/trends', label: 'Trends' },
   { href: '/about', label: 'About' },
   { href: '/changelog', label: 'Changelog' },
   { href: '/submit', label: 'Submit' },
-  { href: '/trends', label: 'Trends' },
   { href: '/privacy', label: 'Privacy' },
   // The policies live with Privacy: listed only on the legal pages, so the
   // row everywhere else stays short. Privacy itself links to both.

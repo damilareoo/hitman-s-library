@@ -93,6 +93,7 @@ const changelog: ChangelogRelease[] = [
       { type: 'improved', author: 'damilare', text: 'Errors show one calm card with Try again, instead of a bare message' },
       { type: 'fixed', author: 'damilare', text: 'Fresh clones now build: a stray ignore rule had hidden a styling file' },
       { type: 'improved', author: 'damilare', text: 'The More menu on smaller screens now matches the other header cards' },
+      { type: 'improved', author: 'florence', text: 'Trends now leads the page links at the bottom of the window' },
     ],
   },
   {
