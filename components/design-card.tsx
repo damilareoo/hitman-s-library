@@ -124,7 +124,7 @@ export function DesignCard({ design, index, isSelected, onClick, onHover, onTagC
         // (an outline follows the radius, so the halo stays concentric).
         'outline outline-[3px] outline-offset-0 ' +
         // Keyboard focus anywhere in the card shows a ring in the accent.
-        'has-[:focus-visible]:outline-[#E8A04A] has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-[3px] ' +
+        'has-[:focus-visible]:outline-pro has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-[3px] ' +
         (isSelected
           ? 'bg-foreground/[0.025] border-foreground/25 outline-foreground/[0.07]'
           : 'border-edge outline-transparent hover:border-edge-strong active:border-foreground/30')

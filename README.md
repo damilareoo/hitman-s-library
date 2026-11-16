@@ -368,15 +368,14 @@ caught mid-transition, which the first scores as healthy.
 
 ## Design system
 
-The UI runs on a small token system defined in `app/globals.css`:
+The full system is written down in [`DESIGN.md`](DESIGN.md) and rendered live, from the real components, at `/system` (hidden from search and unlinked). Read both before building anything new.
 
-- **Type scale** — micro 10px / meta 11px / ui 12px / body 13px / title 14px / reading 15px / heading 20px / display 26–32px. The first five are mono-led and carry labels, data and dense UI; the last three are sans and carry prose, sections and identity. Nothing in the UI renders below 10px
-- **Ink levels** — foreground at 100 / 62 / 40 / 24 percent, replacing ad-hoc text opacities
-- **Edges** — border at 70 / 50 / 30 percent for structural, default, and faint hairlines
-- **Radius** — 4px for boxes, full for pills and swatches
-- **Motion** — one easing (`cubic-bezier(0.22, 1, 0.36, 1)`) with tokenized durations (120 / 200 / 300 / 450 ms), mirrored in `lib/motion.ts` for motion/react
+- **Tokens** live in `app/globals.css`: surfaces, four ink levels (100 / 80 / 68 / 58 percent, each clearing 4.5:1), three edge weights, `--pro` amber (Pro or focus only), `--error-ink`, and the motion curves and durations mirrored in `lib/motion.ts`
+- **Primitives** live in `components/member-card.ts`: the radius ladder `R` (16 / 10 / 6 / 5 / full, concentric), buttons `BTN`, inputs `INPUT` / `FIELD`, icon sizes `ICON`, and the card anatomy `CARD` (tinted head, one-idea body, tinted foot) that every card, popover, sheet and system page uses
+- **Type** is BDO Grotesk throughout, on seven utilities from `text-display` to `text-micro`
+- **Figma**: a matching library (variables, text and effect styles, icons, components) at https://www.figma.com/design/EXmkCniW1fwaw1cVQYhX9q
 
-Shared primitives live in `components/ui` (Spinner, SectionLabel) and `lib/use-copied.ts` (copy feedback).
+The only other shared primitive in `components/ui` is the Spinner.
 
 ### Layout
 

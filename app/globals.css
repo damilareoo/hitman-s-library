@@ -27,11 +27,6 @@
   --border: #e2e2de;
   --input: #f7f7f5;
   --ring: #111111;
-  --chart-1: #3b82f6;
-  --chart-2: #8b5cf6;
-  --chart-3: #ec4899;
-  --chart-4: #14b8a6;
-  --chart-5: #f59e0b;
   --radius: 0.5rem;
 
   /* RGB values for rgba() calculations */
@@ -42,15 +37,6 @@
   --secondary-rgb: 239, 239, 236;
   --foreground-rgb: 17, 17, 17;
 
-  /* Sidebar colors */
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
 
   /* Semantic status colors — the light-theme green is the dark one pulled
@@ -58,6 +44,14 @@
   --color-success: #15803d;
   --color-error:   #dc2626;
   --color-running: #2563eb;
+
+  /* Pro amber: the one UI accent. It means Pro or keyboard focus, nothing
+     else. --pro-ink is the text colour on its 14% wash; --error-ink carries
+     inline error copy (darker than --color-error so 12-13px lines clear AA). */
+  --pro: #E8A04A;
+  --pro-rgb: 232, 160, 74;
+  --pro-ink: #A8611A;
+  --error-ink: #c8382f;
 
   /* Ink levels — all muted text derives from these.
      Every one of these carries text at 11-15px, so every one of them is held
@@ -114,11 +108,6 @@
   --border: #2c2c2c;
   --input: #1b1b1b;
   --ring: #e8e4dc;
-  --chart-1: #60a5fa;
-  --chart-2: #a78bfa;
-  --chart-3: #f472b6;
-  --chart-4: #2dd4bf;
-  --chart-5: #fbbf24;
 
   /* RGB values for dark mode */
   --background-rgb: 16, 16, 16;
@@ -132,16 +121,9 @@
   --color-success: #22c55e;
   --color-error:   #f87171;
   --color-running: #60a5fa;
+  --pro-ink: #F0B36A;
+  --error-ink: #ff8a80;
 
-  /* Sidebar colors */
-  --sidebar: #121212;
-  --sidebar-foreground: #e8e4dc;
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: #f7f3ec;
-  --sidebar-accent: #1b1b1b;
-  --sidebar-accent-foreground: #e8e4dc;
-  --sidebar-border: #2c2c2c;
-  --sidebar-ring: #777777;
 }
 
 /* BDO Grotesk (variable, wght 300–900) carries the whole sans UI at the
@@ -181,23 +163,10 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
-  --color-chart-1: var(--chart-1);
-  --color-chart-2: var(--chart-2);
-  --color-chart-3: var(--chart-3);
-  --color-chart-4: var(--chart-4);
-  --color-chart-5: var(--chart-5);
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
-  --color-sidebar: var(--sidebar);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-ring: var(--sidebar-ring);
   --color-ink: var(--ink);
   --color-ink-2: var(--ink-2);
   --color-ink-3: var(--ink-3);
@@ -205,6 +174,9 @@
   --color-edge-strong: var(--edge-strong);
   --color-edge: var(--edge);
   --color-edge-faint: var(--edge-faint);
+  --color-pro: var(--pro);
+  --color-pro-ink: var(--pro-ink);
+  --color-error-ink: var(--error-ink);
 }
 
 /* ============================================================================
@@ -425,11 +397,6 @@ a[href] *,
   }
 }
 
-@utility text-ui {
-  font-family: var(--font-mono);
-  /* Two-size text scale: labels read 12, bodies read 14. */
-  font-size: 12px;
-}
 
 @utility text-bodytext {
   font-family: var(--font-sans);

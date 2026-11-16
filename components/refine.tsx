@@ -52,8 +52,8 @@ export function Refine({ value, onApply, className = '', fonts = [] }: { value: 
       >
         <SlidersHorizontal className="w-3.5 h-3.5" weight="bold" />
         <span className="max-sm:hidden">Refine</span>
-        <span className={'max-sm:hidden text-[10.5px] font-[600] tracking-[0.06em] ' + (active ? 'text-background/70' : 'text-[#E8A04A]')}>PRO</span>
-        {!active && <span aria-hidden="true" className="sm:hidden absolute top-[5px] right-[5px] w-1.5 h-1.5 rounded-full bg-[#E8A04A]" />}
+        <span className={'max-sm:hidden text-[10.5px] font-[600] tracking-[0.06em] ' + (active ? 'text-background/70' : 'text-pro')}>PRO</span>
+        {!active && <span aria-hidden="true" className="sm:hidden absolute top-[5px] right-[5px] w-1.5 h-1.5 rounded-full bg-pro" />}
       </button>
 
       <AnimatePresence>

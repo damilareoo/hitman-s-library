@@ -56,7 +56,8 @@ async function fetchSwatches(ids?: number[]): Promise<Swatch[]> {
 
 interface Tile { c: string; site: string; home: [number, number]; noise: [number, number]; cx: number; cy: number; d1: number; j: number; gone: boolean; refill: number }
 
-export function ProMark({ ids, pad = 16, className = '' }: { ids?: number[]; pad?: number; className?: string }) {
+/** `word` is what the squares spell: "Pro" everywhere Pro is shown, "404" on the not-found page. */
+export function ProMark({ ids, pad = 16, className = '', word = 'Pro', label }: { ids?: number[]; pad?: number; className?: string; word?: string; label?: string }) {
   const ref = useRef<HTMLCanvasElement>(null)
   const replayRef = useRef<() => void>(() => {})
   const key = ids?.slice(0, 40).join(',') ?? ''
@@ -77,16 +78,16 @@ export function ProMark({ ids, pad = 16, className = '' }: { ids?: number[]; pad
     function wordSlots() {
       const g = document.createElement('canvas').getContext('2d')!
       g.font = FONT(100); (g as CanvasRenderingContext2D & { letterSpacing: string }).letterSpacing = '-4px'
-      const m = g.measureText('Pro'), inkW = m.actualBoundingBoxLeft + m.actualBoundingBoxRight
+      const m = g.measureText(word), inkW = m.actualBoundingBoxLeft + m.actualBoundingBoxRight
       const FS = Math.floor(100 * (W - 2 * pad) / inkW)
       g.font = FONT(FS); (g as CanvasRenderingContext2D & { letterSpacing: string }).letterSpacing = `${-FS * 0.04}px`
-      const m2 = g.measureText('Pro'), asc = m2.actualBoundingBoxAscent, desc = m2.actualBoundingBoxDescent
+      const m2 = g.measureText(word), asc = m2.actualBoundingBoxAscent, desc = m2.actualBoundingBoxDescent
       H = Math.ceil((pad + 4 + asc + desc + 14) / PITCH) * PITCH
       cv!.width = W * DPR; cv!.height = H * DPR; cv!.style.width = W + 'px'; cv!.style.height = H + 'px'
       const c = document.createElement('canvas'); c.width = W; c.height = H
       const h = c.getContext('2d')!
       h.font = FONT(FS); (h as CanvasRenderingContext2D & { letterSpacing: string }).letterSpacing = `${-FS * 0.04}px`
-      h.fillStyle = '#000'; h.fillText('Pro', pad + m2.actualBoundingBoxLeft, pad + 4 + asc)
+      h.fillStyle = '#000'; h.fillText(word, pad + m2.actualBoundingBoxLeft, pad + 4 + asc)
       const d = h.getImageData(0, 0, W, H).data, o: [number, number][] = []
       for (let y = PITCH / 2; y < H; y += PITCH)
         for (let k = pad + TILE / 2; k < W; k += PITCH)
@@ -258,11 +259,11 @@ export function ProMark({ ids, pad = 16, className = '' }: { ids?: number[]; pad
       cv.removeEventListener('pointerdown', onDown); cv.removeEventListener('pointerup', onUp); cv.removeEventListener('pointercancel', onUp)
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [key, pad])
+  }, [key, pad, word])
 
   return (
     <div className={'group/pro relative w-full ' + className}>
-      <canvas ref={ref} role="img" aria-label="Pro, made of colours from the library" className="block touch-none" />
+      <canvas ref={ref} role="img" aria-label={label ?? `${word}, made of colours from the library`} className="block touch-none" />
       <button
         type="button" onClick={() => replayRef.current()} aria-label="Replay" title="Replay"
         className="absolute top-2.5 right-2.5 w-8 h-8 grid place-items-center rounded-[10px] text-ink-4 hover:text-ink hover:bg-foreground/[0.05] opacity-0 rotate-[30deg] group-hover/pro:opacity-100 group-hover/pro:rotate-0 focus-visible:opacity-100 focus-visible:rotate-0 [@media(hover:none)]:opacity-70 [@media(hover:none)]:rotate-0 transition-[opacity,transform,background-color,color] duration-200 ease-[var(--ease-sig)]"

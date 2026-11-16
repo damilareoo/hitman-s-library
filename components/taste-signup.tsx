@@ -110,7 +110,7 @@ export function TasteSignup({ latest }: { latest?: Teaser[] }) {
             </button>
           </div>
           {favoriteCount === 0 && <p className={CARD.meta + ' mt-2'}>Heart a few sites first to tune it to your taste.</p>}
-          {typeof state === 'object' && <p className="mt-2 text-[12.5px] text-[#c8382f] dark:text-[#ff8a80]">{state.error}</p>}
+          {typeof state === 'object' && <p className="mt-2 text-[12.5px] text-error-ink">{state.error}</p>}
         </>
       )}
     </div>

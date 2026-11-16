@@ -111,14 +111,8 @@ function sortButton(isActive: boolean): string {
   ].join(' ')
 }
 
-// Drawn at 36px, which is comfortable with a mouse and small under a thumb.
-// The overlay takes the target to 44 tall and 42 wide — 42 rather than 44
-// because the buttons sit 6px apart, and a 44th pixel would reach into the
-// neighbour and steal its edge.
-const ICON_BUTTON =
-  'relative w-9 h-9 flex items-center justify-center rounded-[10px] border border-transparent bg-muted/60 ' +
-  'text-ink-3 hover:text-ink hover:bg-muted active:scale-[0.98] transition-[background-color,border-color,color,transform] duration-[var(--dur-2)] ease-[var(--ease-sig)] ' +
-  "after:absolute after:left-1/2 after:top-1/2 after:h-11 after:w-[42px] after:-translate-x-1/2 after:-translate-y-1/2 after:content-['']"
+// The header's icon buttons: BTN.iconHeader (36px drawn, 44px hit area).
+const ICON_BUTTON = BTN.iconHeader
 
 function SkeletonCard() {
   return (
@@ -254,6 +248,16 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
   const [moreOpen, setMoreOpen] = useState(false)
   const digestRef = useRef<HTMLDivElement>(null)
   const moreRef = useRef<HTMLDivElement>(null)
+
+  // ?browse=1 (the 404 page's Search) lands with the browse layer open, then
+  // drops the flag so a reload or the back button doesn't reopen it.
+  useEffect(() => {
+    const url = new URL(window.location.href)
+    if (!url.searchParams.has('browse')) return
+    setBrowseOpen(true)
+    url.searchParams.delete('browse')
+    window.history.replaceState(window.history.state, '', url.pathname + url.search + url.hash)
+  }, [])
 
   // Dismiss the digest popover on outside click or Escape. One effect for
   // both, torn down with the popover.
@@ -1169,32 +1173,35 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
                     role="menu"
                     {...MENU}
                     style={{ transformOrigin: 'top right' }}
-                    className="absolute right-0 top-[calc(100%+6px)] z-[60] w-[208px] rounded-[10px] border border-edge-strong bg-card p-1 shadow-[0_12px_32px_-8px_rgba(0,0,0,0.28)]"
+                    className={CARD.shell + ' absolute right-0 top-[calc(100%+6px)] z-[60] w-[232px] shadow-[0_24px_56px_-20px_rgba(0,0,0,0.35)]'}
                   >
+                  {/* The same card as every other header popover: a quiet head, then rows in a 6px inset. */}
+                  <div className={CARD.head}><span>More</span></div>
+                  <div className="p-1.5">
                   <button
                     role="menuitem"
                     // Opened a tick later, so this tap doesn't count as a click outside it.
                     onClick={() => { setMoreOpen(false); setTimeout(() => window.dispatchEvent(new Event(OPEN_SAVED_EVENT)), 0) }}
-                    className="sm:hidden w-full flex items-center gap-2.5 h-9 px-2.5 rounded-[10px] text-bodytext text-ink-2 text-left hover:text-ink hover:bg-muted transition-colors"
+                    className="sm:hidden w-full flex items-center gap-2.5 h-9 px-2.5 rounded-[10px] text-[13.5px] font-[500] text-ink text-left hover:bg-foreground/[0.045] focus-visible:bg-foreground/[0.045] outline-none transition-colors"
                   >
-                    <BookmarkSimple className="w-4 h-4" weight="bold" />
+                    <BookmarkSimple className="w-3.5 h-3.5 text-ink-3" weight="bold" />
                     <span>Saved</span>
                   </button>
                   <button
                     role="menuitem"
                     onClick={() => { setMoreOpen(false); setDigestOpen(true) }}
-                    className="w-full flex items-center gap-2.5 h-9 px-2.5 rounded-[10px] text-bodytext text-ink-2 text-left hover:text-ink hover:bg-muted transition-colors"
+                    className="w-full flex items-center gap-2.5 h-9 px-2.5 rounded-[10px] text-[13.5px] font-[500] text-ink text-left hover:bg-foreground/[0.045] focus-visible:bg-foreground/[0.045] outline-none transition-colors"
                   >
-                    <EnvelopeSimple className="w-4 h-4" weight="bold" />
+                    <EnvelopeSimple className="w-3.5 h-3.5 text-ink-3" weight="bold" />
                     <span>Digest</span>
                   </button>
                   <Link
                     role="menuitem"
                     href="/submit"
                     onClick={() => setMoreOpen(false)}
-                    className="w-full flex items-center gap-2.5 h-9 px-2.5 rounded-[10px] text-bodytext text-ink-2 text-left hover:text-ink hover:bg-muted transition-colors"
+                    className="w-full flex items-center gap-2.5 h-9 px-2.5 rounded-[10px] text-[13.5px] font-[500] text-ink text-left hover:bg-foreground/[0.045] focus-visible:bg-foreground/[0.045] outline-none transition-colors"
                   >
-                    <Plus className="w-4 h-4" weight="bold" />
+                    <Plus className="w-3.5 h-3.5 text-ink-3" weight="bold" />
                     <span>Submit</span>
                   </Link>
                   <button
@@ -1204,22 +1211,23 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
                       if (!sounds.enabled) sounds.playThemeToggle(true)
                       sounds.setEnabled(p => !p)
                     }}
-                    className="w-full flex items-center gap-2.5 h-9 px-2.5 rounded-[10px] text-bodytext text-ink-2 text-left hover:text-ink hover:bg-muted transition-colors"
+                    className="w-full flex items-center gap-2.5 h-9 px-2.5 rounded-[10px] text-[13.5px] font-[500] text-ink text-left hover:bg-foreground/[0.045] focus-visible:bg-foreground/[0.045] outline-none transition-colors"
                   >
                     {sounds.enabled
-                      ? <SpeakerHigh className="w-4 h-4" weight="bold" />
-                      : <SpeakerSlash className="w-4 h-4" weight="bold" />}
+                      ? <SpeakerHigh className="w-3.5 h-3.5 text-ink-3" weight="bold" />
+                      : <SpeakerSlash className="w-3.5 h-3.5 text-ink-3" weight="bold" />}
                     <span>{sounds.enabled ? 'Mute sounds' : 'Enable sounds'}</span>
                   </button>
                   {/* On a phone the theme switch lives here, so search has room in the bar. */}
                   <button
                     role="menuitem"
                     onClick={() => { setMoreOpen(false); sounds.playThemeToggle(); setTheme(resolvedTheme === 'dark' ? 'light' : 'dark') }}
-                    className="sm:hidden w-full flex items-center gap-2.5 h-9 px-2.5 rounded-[10px] text-bodytext text-ink-2 text-left hover:text-ink hover:bg-muted transition-colors"
+                    className="sm:hidden w-full flex items-center gap-2.5 h-9 px-2.5 rounded-[10px] text-[13.5px] font-[500] text-ink text-left hover:bg-foreground/[0.045] focus-visible:bg-foreground/[0.045] outline-none transition-colors"
                   >
-                    {mounted && resolvedTheme === 'dark' ? <Sun className="w-4 h-4" weight="bold" /> : <Moon className="w-4 h-4" weight="bold" />}
+                    {mounted && resolvedTheme === 'dark' ? <Sun className="w-3.5 h-3.5 text-ink-3" weight="bold" /> : <Moon className="w-3.5 h-3.5 text-ink-3" weight="bold" />}
                     <span>{mounted && resolvedTheme === 'dark' ? 'Light mode' : 'Dark mode'}</span>
                   </button>
+                  </div>
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -1369,7 +1377,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
                   <Link
                     href="/"
                     scroll={false}
-                    className="text-meta text-ink-4 hover:text-ink transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#E8A04A] rounded-[5px]"
+                    className="text-meta text-ink-4 hover:text-ink transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pro rounded-[5px]"
                   >
                     Clear
                   </Link>
