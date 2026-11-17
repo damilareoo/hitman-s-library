@@ -91,6 +91,7 @@ const changelog: ChangelogRelease[] = [
       { type: 'new', author: 'damilare', text: 'Every site has its own address now, like /site/cotool.ai, ready to share' },
       { type: 'improved', author: 'damilare', text: 'Search engines can find each site by name, palette and typeface' },
       { type: 'improved', author: 'damilare', text: 'Copied CSS, Tailwind and kit files note which site they were measured from' },
+      { type: 'fixed', author: 'damilare', text: 'Link previews on X now credit the right account' },
     ],
   },
   {

@@ -55,3 +55,14 @@ describe('oauth', () => {
   })
 })
 test('a CSS "font" prefix is dropped', () => { expect(prettyFont('fontSeasonSans')).toBe('Season Sans') })
+
+import { pickField } from './card'
+describe('card field', () => {
+  test('the accent when it stands clear of the background', () => {
+    expect(pickField([{ role: 'background', hex: '#ffffff' }, { role: 'accent', hex: '#030de9' }])).toBe('#030de9')
+  })
+  test('ink or paper when nothing does', () => {
+    expect(pickField([{ role: 'background', hex: '#ffffff' }, { role: 'accent', hex: '#fafafa' }])).toBe('#0d0d0c')
+    expect(pickField([{ role: 'background', hex: '#000000' }])).toBe('#f3f3f0')
+  })
+})

@@ -91,7 +91,7 @@ export const metadata: Metadata = {
     description:
       "A curated library of the web's best-designed sites, with each one's colours, type and screenshots measured. Free to browse. Pro adds unlimited style kits and deeper search.",
     images: ["https://hitmanslibrary.xyz/og-2026-09.png"],
-    creator: "@damilareoo",
+    creator: "@damilare_oo",
   },
   robots: {
     index: true,

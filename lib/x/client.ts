@@ -41,13 +41,29 @@ export async function oauthHeader(method: string, url: string, c: XCreds, nonce:
   return 'OAuth ' + Object.keys(all).sort().map(k => `${pct(k)}="${pct(all[k as keyof typeof all])}"`).join(', ')
 }
 
-export async function postToX(text: string, c: XCreds, f: typeof fetch = fetch): Promise<{ id: string }> {
-  const nonce = crypto.randomUUID().replace(/-/g, '')
-  const timestamp = String(Math.floor(Date.now() / 1000))
+const MEDIA = 'https://api.x.com/2/media/upload'
+const fresh = () => ({ nonce: crypto.randomUUID().replace(/-/g, ''), timestamp: String(Math.floor(Date.now() / 1000)) })
+
+/** Uploads one image (multipart; the body is not part of the signature). */
+export async function uploadImage(bytes: ArrayBuffer, type: string, c: XCreds, f: typeof fetch = fetch): Promise<string> {
+  const { nonce, timestamp } = fresh()
+  const form = new FormData()
+  form.append('media', new Blob([bytes], { type }), 'card.png')
+  form.append('media_category', 'tweet_image')
+  const res = await f(MEDIA, { method: 'POST', headers: { authorization: await oauthHeader('POST', MEDIA, c, nonce, timestamp) }, body: form })
+  const body = await res.text()
+  if (!res.ok) throw new Error(`X media ${res.status}: ${body.slice(0, 300)}`)
+  const id = (JSON.parse(body) as { data?: { id?: string } }).data?.id
+  if (!id) throw new Error(`X media returned no id: ${body.slice(0, 200)}`)
+  return id
+}
+
+export async function postToX(text: string, c: XCreds, f: typeof fetch = fetch, mediaIds: string[] = []): Promise<{ id: string }> {
+  const { nonce, timestamp } = fresh()
   const res = await f(ENDPOINT, {
     method: 'POST',
     headers: { authorization: await oauthHeader('POST', ENDPOINT, c, nonce, timestamp), 'content-type': 'application/json' },
-    body: JSON.stringify({ text }),
+    body: JSON.stringify(mediaIds.length ? { text, media: { media_ids: mediaIds } } : { text }),
   })
   const body = await res.text()
   if (!res.ok) throw new Error(`X ${res.status}: ${body.slice(0, 300)}`)

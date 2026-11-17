@@ -444,6 +444,11 @@ every hex and typeface is real) and records it in `x_posts` (`scripts/032-x-post
   arrivals, Mon/Wed/Fri show one site's palette, Tue/Thu/Sat its typefaces.
 - No site is featured twice within 60 days, and the route never posts twice in a day.
 - Preview any day: `curl -H "authorization: Bearer $CRON_SECRET" "https://hitmanslibrary.xyz/api/cron/x-post?dry=1&at=2026-11-22"`.
+- Each post carries an image: the site's capture on a field of its own colour
+  (`lib/x/card.ts`). `.github/workflows/x-card.yml` renders it at 12:30 UTC with
+  `scripts/x-card.ts` (picks the same site the route will), uploads to Blob and files
+  it in `x_cards` (`scripts/033-x-cards.sql`). No card, or a failed upload, means a
+  text-only post, never a missed one.
 - Pause it with `X_POSTING=off`.
 
 ---
