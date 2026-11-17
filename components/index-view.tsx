@@ -60,10 +60,12 @@ export function IndexView({ designs, total, selectedId, busy = false, onKind, on
       aria-busy={busy}
       className="@container text-bodytext transition-opacity duration-150 ease-[var(--ease-sig)] aria-busy:opacity-55"
     >
-      {/* Sticks under the header (56px) and the gallery bar (55px). */}
+      {/* Sticks under the header (56px) and the gallery bar (55px). The
+          labels are text-micro at 10.5px, a step under the 11px floor, so
+          six column names stay quieter than the rows they label. */}
       <div
         role="row"
-        className={ROW + ' sticky top-[111px] z-10 bg-background py-2.5 border-b border-edge-strong text-micro text-ink-4'}
+        className={ROW + ' sticky top-[111px] z-10 bg-background py-2.5 border-b border-edge-strong text-micro !text-[10.5px] text-ink-4'}
       >
         <span role="columnheader" className="@max-md:hidden">#</span>
         <span role="columnheader">Site</span>
