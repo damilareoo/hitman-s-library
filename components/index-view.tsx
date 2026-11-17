@@ -49,6 +49,43 @@ function hostOf(design: Design) {
   try { return new URL(design.url).hostname.replace(/^www\./, '') } catch { return design.title }
 }
 
+function rgb(hex: string): [number, number, number] | null {
+  const h = hex.replace('#', '')
+  const full = h.length === 3 ? h.split('').map(c => c + c).join('') : h
+  if (!/^[0-9a-f]{6}$/i.test(full)) return null
+  return [0, 2, 4].map(i => parseInt(full.slice(i, i + 2), 16)) as [number, number, number]
+}
+/** 0 (black) to 1 (white), as the eye weighs the channels. */
+const lightness = ([r, g, b]: number[]) => (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255
+/** How far from grey, 0 to 255. */
+const chroma = (c: number[]) => Math.max(...c) - Math.min(...c)
+
+/**
+ * Three swatches that say what the site looks like: the colour it is mostly
+ * (first in the list), the colour that reads against it (its text), and its
+ * loudest colour (the accent). The first three of the raw list are usually
+ * near-black, white and grey, and the colour that gives a site its identity
+ * sits further down.
+ */
+export function paletteOf(colors: string[]): string[] {
+  const list = colors.map(hex => ({ hex, c: rgb(hex) })).filter((x): x is { hex: string; c: [number, number, number] } => x.c !== null)
+  if (list.length === 0) return []
+  const base = list[0]
+  const picked = [base]
+  const text = list.find(x => Math.abs(lightness(x.c) - lightness(base.c)) > 0.45)
+  if (text) picked.push(text)
+  const accent = list
+    .filter(x => !picked.includes(x) && chroma(x.c) > 70)
+    .sort((a, b) => chroma(b.c) - chroma(a.c))[0]
+  if (accent) picked.push(accent)
+  // A site with no strong text or no accent: fill from the list in order.
+  for (const x of list) {
+    if (picked.length >= 3) break
+    if (!picked.some(p => p.hex.toLowerCase() === x.hex.toLowerCase())) picked.push(x)
+  }
+  return picked.map(x => x.hex)
+}
+
 const DATE = new Intl.DateTimeFormat('en-US', { month: 'short', day: '2-digit' })
 function added(iso: string) {
   const d = new Date(iso)
@@ -67,7 +104,7 @@ export function IndexView({ designs, total, selectedId, busy = false, onKind, on
       role="table"
       aria-label="Sites"
       aria-busy={busy}
-      className="@container text-bodytext transition-opacity duration-150 ease-[var(--ease-sig)] aria-busy:opacity-55"
+      className="@container text-[13.5px] leading-[1.4] transition-opacity duration-150 ease-[var(--ease-sig)] aria-busy:opacity-55"
     >
       {/* Sticks under the header (56px) and the gallery bar (55px). The
           labels are text-micro at 10.5px, a step under the 11px floor, so
@@ -86,6 +123,7 @@ export function IndexView({ designs, total, selectedId, busy = false, onKind, on
 
       {designs.map((design, i) => {
         const font = design.typography?.find(f => f && !isSystemFont(f))
+        const palette = paletteOf(design.colors)
         const selected = design.id === selectedId
         return (
           <div
@@ -116,8 +154,8 @@ export function IndexView({ designs, total, selectedId, busy = false, onKind, on
               {font ?? <span className="text-ink-4">—</span>}
             </span>
             <span role="cell" className="@max-md:hidden flex gap-[3px]">
-              {design.colors.slice(0, 3).map((hex, k) => <Dot key={k} hex={hex} size="w-4 h-4" />)}
-              {Array.from({ length: Math.max(0, 3 - design.colors.length) }, (_, k) => <EmptyDot key={'e' + k} />)}
+              {palette.map((hex, k) => <Dot key={k} hex={hex} size="w-4 h-4" />)}
+              {Array.from({ length: Math.max(0, 3 - palette.length) }, (_, k) => <EmptyDot key={'e' + k} />)}
             </span>
             <span role="cell" className="text-right text-meta text-ink-4 tabular-nums whitespace-nowrap">
               {added(design.addedDate)}
