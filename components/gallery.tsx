@@ -1496,7 +1496,10 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
 
       {/* Detail panel — the column is always here. The empty state names
             what the panel holds, which is how you learn the tabs exist. */}
-        <div className={(view === 'index' ? 'hidden md:flex' : 'hidden xl:flex') + ' xl:col-span-4 track-panel' + ' flex-col sticky top-14 z-40 h-[calc(100vh-56px)] border-l border-edge-strong bg-background'}>
+        {/* The page under it never takes this column's wheel: Lenis skips it
+            (data-lenis-prevent), and a scroll inside that reaches its end
+            stops here instead of carrying on to the page. */}
+        <div data-lenis-prevent className={(view === 'index' ? 'hidden md:flex' : 'hidden xl:flex') + ' xl:col-span-4 track-panel' + ' flex-col sticky top-14 z-40 h-[calc(100vh-56px)] overflow-hidden overscroll-contain border-l border-edge-strong bg-background'}>
           <AnimatePresence mode="wait">
             {isPanelOpen && !panelIsSheet ? (
               <motion.div

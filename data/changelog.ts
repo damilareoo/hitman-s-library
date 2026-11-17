@@ -92,6 +92,8 @@ const changelog: ChangelogRelease[] = [
       { type: 'improved', author: 'florence', text: 'Each Index row shows the site’s screenshot, and Type skips icon and maths fonts' },
       { type: 'improved', author: 'florence', text: 'Refine, Sort and the Grid/Index switch now sit on the All sites bar' },
       { type: 'fixed', author: 'florence', text: 'Switching between Grid and Index no longer shifts the page width' },
+      { type: 'improved', author: 'florence', text: 'Search opens narrower, with the kinds on one line' },
+      { type: 'fixed', author: 'florence', text: 'Scrolling the preview no longer scrolls the page behind it' },
     ],
   },
   {
