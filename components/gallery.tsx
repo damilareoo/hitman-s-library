@@ -30,7 +30,7 @@ import { siteSlug, isSiteId } from '@/lib/site-slug'
 import { isSystemFont } from '@/lib/trends/compute'
 import { EASE, DUR, MENU } from '@/lib/motion'
 import Link from 'next/link'
-import { useIsNarrow, useIsPhone } from '@/lib/use-is-narrow'
+import { useIsBelowMd, useIsNarrow, useIsPhone } from '@/lib/use-is-narrow'
 import { useUrlParams } from '@/lib/use-url-params'
 import { Refine } from '@/components/refine'
 import { CARD, BTN, INPUT } from '@/components/member-card'
@@ -705,13 +705,17 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
   }, [updateParams])
 
   const isNarrow = useIsNarrow()
+  const isBelowMd = useIsBelowMd()
+  // Where the panel is a sheet over the page instead of a column. The index
+  // table keeps the column down to tablet width; the card grid needs xl.
+  const panelIsSheet = view === 'index' ? isBelowMd : isNarrow
   const isPhone = useIsPhone()
 
   // Lock the page under anything modal: the sheet below the 3-pane split and
   // the browse layer. Lenis has to be told as well — an overflow rule stops
   // the native scrollbar but not a wheel it has already claimed.
   useEffect(() => {
-    const lock = browseOpen || (isPanelOpen && window.matchMedia('(max-width: 1279px)').matches)
+    const lock = browseOpen || (isPanelOpen && panelIsSheet)
     const lenis = getLenis()
     if (lock) lenis?.stop()
     else lenis?.start()
@@ -720,7 +724,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
       getLenis()?.start()
       document.body.style.overflow = ''
     }
-  }, [isPanelOpen, browseOpen])
+  }, [isPanelOpen, browseOpen, panelIsSheet])
 
   // Escape closes the panel at any breakpoint; the focus trap only runs where
   // the sheet does, since that is where the panel is genuinely modal.
@@ -1259,12 +1263,15 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
           not the desktop one squeezed into it. Two tracks: the grid takes
           everything the panel does not, and the panel is part of the layout
           rather than something the grid borrows. */}
-      <div className="grid grid-cols-1 xl:grid-cols-12 min-h-[calc(100vh-56px)]">
+      <div className={'grid grid-cols-1 min-h-[calc(100vh-56px)] ' + (view === 'index'
+        // The table and the panel, as in the mockup: the panel a fixed share.
+        ? 'md:grid-cols-[minmax(0,1fr)_clamp(300px,30vw,420px)]'
+        : 'xl:grid-cols-12')}>
 
         {/* Gallery */}
         {/* tabIndex -1 so the skip link moves focus here and not just the
             scroll position; without it the next Tab returns to the header. */}
-        <main id="gallery" tabIndex={-1} className="xl:col-span-8 min-[1920px]:col-span-9 flex flex-col min-w-0 focus:outline-none">
+        <main id="gallery" tabIndex={-1} className={(view === 'index' ? '' : 'xl:col-span-8 min-[1920px]:col-span-9 ') + 'flex flex-col min-w-0 focus:outline-none'}>
           {/* pb-20 below xl clears the floating page links, which are centred
               over the last row on phones and tablets. */}
           <div className="flex-1 p-5 xl:p-6 max-xl:pb-20">
@@ -1524,9 +1531,9 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
 
       {/* Detail panel — the column is always here. The empty state names
             what the panel holds, which is how you learn the tabs exist. */}
-        <div className="hidden xl:flex xl:col-span-4 track-panel flex-col sticky top-14 z-40 h-[calc(100vh-56px)] border-l border-edge-strong bg-background">
+        <div className={(view === 'index' ? 'hidden md:flex' : 'hidden xl:flex xl:col-span-4 track-panel') + ' flex-col sticky top-14 z-40 h-[calc(100vh-56px)] border-l border-edge-strong bg-background'}>
           <AnimatePresence mode="wait">
-            {isPanelOpen && !isNarrow ? (
+            {isPanelOpen && !panelIsSheet ? (
               <motion.div
                 key={selectedId}
                 // Switching sites is constant: the new one fades up at once,
@@ -1562,7 +1569,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
       {/* The sheet covers this corner on a phone, so the links hide only
           there. On desktop the corner stays visible and reachable with a card
           open — hiding them there stranded About/Changelog behind the panel. */}
-      <SiteLinks hidden={isPanelOpen && isNarrow} />
+      <SiteLinks hidden={isPanelOpen && panelIsSheet} />
 
       <BrowsePanel
         open={browseOpen}
@@ -1582,7 +1589,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
           drawer the prototype draws: a card floating 10px inside the viewport,
           not a sheet bolted to the bottom. Under 640 it becomes the page. */}
       <AnimatePresence>
-        {isNarrow && isPanelOpen && (
+        {panelIsSheet && isPanelOpen && (
           <>
             <motion.div
               key="sheet-backdrop"

@@ -21,14 +21,13 @@ interface IndexViewProps {
 // stack straight down the column.
 const MONO = GeistMono.className
 
-// One template for the header and every row, so the columns line up. As the
-// column narrows, type goes first, then category, then the number and palette.
+// One template for the header and every row, so the columns line up. Beside
+// the panel every column stays and long names cut short, as in the mockup;
+// only on a phone-wide table does it drop to the site and the date.
 const ROW = [
   'grid items-center gap-4 px-2',
   'grid-cols-[minmax(0,1fr)_64px]',
-  'sm:grid-cols-[44px_minmax(0,1fr)_76px_64px]',
-  'md:grid-cols-[44px_minmax(0,2.2fr)_minmax(0,1.2fr)_76px_64px]',
-  'lg:grid-cols-[44px_minmax(0,2.2fr)_minmax(0,1.2fr)_minmax(0,1.4fr)_76px_64px]',
+  '@md:grid-cols-[44px_minmax(0,2.2fr)_minmax(0,1.2fr)_minmax(0,1.4fr)_76px_64px]',
 ].join(' ')
 
 function Dot({ hex, size }: { hex?: string; size: string }) {
@@ -64,18 +63,18 @@ export function IndexView({ designs, total, selectedId, busy = false, onKind, on
       role="table"
       aria-label="Sites"
       aria-busy={busy}
-      className="text-[13.5px] transition-opacity duration-150 ease-[var(--ease-sig)] aria-busy:opacity-55"
+      className="@container text-[13.5px] transition-opacity duration-150 ease-[var(--ease-sig)] aria-busy:opacity-55"
     >
       {/* Sticks under the header (56px) and the gallery bar (55px). */}
       <div
         role="row"
         className={ROW + ' ' + MONO + ' sticky top-[111px] z-10 bg-background py-2.5 border-b border-edge-strong text-[10.5px] font-medium uppercase tracking-[0.08em] text-ink-4'}
       >
-        <span role="columnheader" className="max-sm:hidden">#</span>
+        <span role="columnheader" className="@max-md:hidden">#</span>
         <span role="columnheader">Site</span>
-        <span role="columnheader" className="max-md:hidden">Category</span>
-        <span role="columnheader" className="max-lg:hidden">Type</span>
-        <span role="columnheader" className="max-sm:hidden">Palette</span>
+        <span role="columnheader" className="@max-md:hidden">Category</span>
+        <span role="columnheader" className="@max-md:hidden">Type</span>
+        <span role="columnheader" className="@max-md:hidden">Palette</span>
         <span role="columnheader" className="text-right">Added</span>
       </div>
 
@@ -92,14 +91,14 @@ export function IndexView({ designs, total, selectedId, busy = false, onKind, on
             onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpenDesign(design) } }}
             className={ROW + ' py-2.5 border-b border-edge cursor-pointer hover:bg-foreground/[0.035] aria-selected:bg-foreground/[0.05] transition-colors duration-[var(--dur-1)] focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-pro'}
           >
-            <span role="cell" className={MONO + ' max-sm:hidden text-[11.5px] text-ink-4 tabular-nums'}>
+            <span role="cell" className={MONO + ' @max-md:hidden text-[11.5px] text-ink-4 tabular-nums'}>
               {String(i + 1).padStart(3, '0')}
             </span>
             <span role="cell" className="flex items-center gap-2.5 min-w-0">
               <Dot hex={design.colors[0]} size="w-5 h-5" />
               <span className="truncate text-ink">{hostOf(design)}</span>
             </span>
-            <span role="cell" className="max-md:hidden min-w-0 flex">
+            <span role="cell" className="@max-md:hidden min-w-0 flex">
               <button
                 onClick={e => { e.stopPropagation(); onKind(design.kind) }}
                 className="truncate text-ink-3 hover:text-ink transition-colors"
@@ -107,10 +106,10 @@ export function IndexView({ designs, total, selectedId, busy = false, onKind, on
                 {displayKind(design.kind)}
               </button>
             </span>
-            <span role="cell" className="max-lg:hidden truncate text-ink-3">
+            <span role="cell" className="@max-md:hidden truncate text-ink-3">
               {font ?? <span className="text-ink-4">—</span>}
             </span>
-            <span role="cell" className="max-sm:hidden flex gap-[3px]">
+            <span role="cell" className="@max-md:hidden flex gap-[3px]">
               {design.colors.slice(0, 3).map((hex, k) => <Dot key={k} hex={hex} size="w-4 h-4" />)}
             </span>
             <span role="cell" className={MONO + ' text-right text-[12px] text-ink-4 tabular-nums whitespace-nowrap'}>
