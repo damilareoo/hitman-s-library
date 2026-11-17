@@ -226,7 +226,7 @@ export function BrowsePanel({
               exit={{ opacity: 0 }}
               transition={{ duration: 0 }}
               onKeyDown={onKeyDown}
-              className="pointer-events-auto mt-[12vh] w-full max-w-[824px] max-h-[min(70vh,640px)] flex flex-col rounded-[16px] border border-edge-strong bg-popover text-popover-foreground shadow-[0_24px_64px_-16px_rgba(0,0,0,0.35)] overflow-hidden"
+              className="pointer-events-auto mt-[12vh] w-full max-w-[720px] max-h-[min(70vh,640px)] flex flex-col rounded-[16px] border border-edge-strong bg-popover text-popover-foreground shadow-[0_24px_64px_-16px_rgba(0,0,0,0.35)] overflow-hidden"
             >
               <div className="flex items-center gap-2.5 h-12 px-4 bg-foreground/[0.025] border-b border-edge shrink-0">
                 <MagnifyingGlass className="w-3.5 h-3.5 text-ink-3 shrink-0" weight="bold" />
@@ -239,7 +239,7 @@ export function BrowsePanel({
                   aria-label="Search the library"
                   autoComplete="off"
                   spellCheck={false}
-                  className="flex-1 min-w-0 bg-transparent outline-none text-[16px] tracking-[-0.005em] text-foreground placeholder:text-ink-4"
+                  className="flex-1 min-w-0 bg-transparent outline-none text-[16px] md:text-[14px] tracking-[-0.005em] text-foreground placeholder:text-ink-4"
                 />
                 <kbd className={`${KBD} max-md:hidden`}>esc</kbd>
               </div>
@@ -288,8 +288,9 @@ export function BrowsePanel({
                   )
                 ) : (
                   <>
-                    <div className="px-2.5 pt-3.5 pb-1.5 text-micro text-ink-4">Kinds</div>
-                    <div className="flex flex-wrap gap-1.5 px-2.5 pb-3.5 mb-1 border-b border-edge">
+                    <div className="px-2.5 pt-3.5 pb-1.5 text-micro text-ink-4 opacity-75">Kinds</div>
+                    {/* One row: the kinds scroll sideways instead of wrapping to a second line. */}
+                    <div className="flex gap-1.5 px-2.5 pb-3.5 mb-1 border-b border-edge overflow-x-auto no-scrollbar [&>button]:shrink-0">
                       <button onClick={() => onKind('All')} onMouseEnter={() => setActive(0)} data-active={active === 0} className={BTN.chip(false) + ' gap-1 data-[active=true]:bg-foreground/[0.08] data-[active=true]:text-ink data-[active=true]:border-foreground/30'}>
                         All <span className="text-ink-4 tabular-nums">{total}</span>
                       </button>
@@ -308,7 +309,7 @@ export function BrowsePanel({
 
                     {sets.length > 0 && (
                       <>
-                        <div className="px-2.5 pt-3.5 pb-1.5 text-micro text-ink-4">Sets</div>
+                        <div className="px-2.5 pt-3.5 pb-1.5 text-micro text-ink-4 opacity-75">Sets</div>
                         {sets.map(([name, ids], k) => (
                           <div key={name} className="group flex items-center gap-1">
                             <button
@@ -335,7 +336,7 @@ export function BrowsePanel({
                       </>
                     )}
 
-                    <div className="px-2.5 pt-3.5 pb-1.5 text-micro text-ink-4">Recently added</div>
+                    <div className="px-2.5 pt-3.5 pb-1.5 text-micro text-ink-4 opacity-75">Recently added</div>
                     {recentRows.map((design, k) => (
                       <button
                         key={design.id}
