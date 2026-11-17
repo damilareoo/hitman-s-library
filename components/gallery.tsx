@@ -30,7 +30,7 @@ import { siteSlug, isSiteId } from '@/lib/site-slug'
 import { isSystemFont } from '@/lib/trends/compute'
 import { EASE, DUR, MENU } from '@/lib/motion'
 import Link from 'next/link'
-import { useIsNarrow, useIsPhone } from '@/lib/use-is-narrow'
+import { useIsBelowMd, useIsNarrow, useIsPhone } from '@/lib/use-is-narrow'
 import { useUrlParams } from '@/lib/use-url-params'
 import { Refine } from '@/components/refine'
 import { CARD, BTN, INPUT } from '@/components/member-card'
@@ -345,8 +345,8 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
 
   // A shared ?site= link may point at a site outside the loaded page. The panel
   // fetches its own detail by id, so it opens regardless; the card metadata is
-  // layered on only when we happen to have it. Index has no panel of its own.
-  const isPanelOpen = view === 'grid' && Boolean(selectedId) && Number.isFinite(Number(selectedId))
+  // layered on only when we happen to have it. Grid and index share the panel.
+  const isPanelOpen = Boolean(selectedId) && Number.isFinite(Number(selectedId))
 
   // pagination.total is how many match the current filters, so it cannot label
   // the "All" row — that would read "All 13" while Finance is selected. The
@@ -682,7 +682,8 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
     )
     obs.observe(sentinel)
     return () => obs.disconnect()
-  }, [pagination.hasMore, pagination.offset, isLoadingMore, isRefetching, loadDesigns])
+    // view: the sentinel moves between the grid and the index table.
+  }, [pagination.hasMore, pagination.offset, isLoadingMore, isRefetching, loadDesigns, view])
 
   /** Open the panel for an id we may not have a loaded card for. */
   const selectDesignById = useCallback((id: string) => {
@@ -704,13 +705,17 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
   }, [updateParams])
 
   const isNarrow = useIsNarrow()
+  const isBelowMd = useIsBelowMd()
+  // Where the panel is a sheet over the page instead of a column. The index
+  // table keeps the column down to tablet width; the card grid needs xl.
+  const panelIsSheet = view === 'index' ? isBelowMd : isNarrow
   const isPhone = useIsPhone()
 
   // Lock the page under anything modal: the sheet below the 3-pane split and
   // the browse layer. Lenis has to be told as well — an overflow rule stops
   // the native scrollbar but not a wheel it has already claimed.
   useEffect(() => {
-    const lock = browseOpen || (isPanelOpen && window.matchMedia('(max-width: 1279px)').matches)
+    const lock = browseOpen || (isPanelOpen && panelIsSheet)
     const lenis = getLenis()
     if (lock) lenis?.stop()
     else lenis?.start()
@@ -719,7 +724,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
       getLenis()?.start()
       document.body.style.overflow = ''
     }
-  }, [isPanelOpen, browseOpen])
+  }, [isPanelOpen, browseOpen, panelIsSheet])
 
   // Escape closes the panel at any breakpoint; the focus trap only runs where
   // the sheet does, since that is where the panel is genuinely modal.
@@ -880,11 +885,8 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
     sounds.playFilterClick()
     updateParams(p => {
       if (next === 'index') {
-        // The overview is not a place a site is open; carrying ?site= into it
-        // and back out would reopen a panel nobody asked for.
+        // The table is the same list as the grid, so an open site stays open.
         p.set('view', 'index')
-        p.delete('site')
-        p.delete('tab')
         p.delete('similarTo')
         p.delete('color')
         p.delete('trail')
@@ -914,6 +916,16 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
     })
   }, [sounds, updateParams])
 
+  // A category picked in the table filters the table; it does not leave it.
+  const handleTableKind = useCallback((kind: string) => {
+    sounds.playFilterClick()
+    updateParams(p => {
+      p.delete('category')
+      p.set('category', kind)
+    })
+    scrollToTop()
+  }, [sounds, updateParams, scrollToTop])
+
   const handleIndexSet = useCallback((name: string) => {
     sounds.playFilterClick()
     updateParams(p => {
@@ -927,28 +939,10 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
     })
   }, [sounds, updateParams])
 
-  const handleIndexTag = useCallback((tag: string) => {
-    sounds.playFilterClick()
-    updateParams(p => {
-      p.delete('view')
-      p.delete('site')
-      p.delete('tab')
-      p.delete('color')
-      p.delete('trail')
-      const current = p.getAll('tag')
-      p.delete('tag')
-      const next = current.includes(tag) ? current.filter(t => t !== tag) : [...current, tag]
-      next.forEach(t => p.append('tag', t))
-    })
-  }, [sounds, updateParams, siteParamFor])
-
   const handleIndexOpen = useCallback((design: Design) => {
     sounds.playSelect()
     track('design_opened', { source_id: design.id, opening_surface: 'index' })
-    updateParams(p => {
-      p.delete('view')
-      p.set('site', siteParamFor(design.id, design.url))
-    })
+    updateParams(p => p.set('site', siteParamFor(design.id, design.url)))
   }, [sounds, updateParams, siteParamFor])
 
   // The browse layer is an index of the whole library, not of the current
@@ -1264,35 +1258,20 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
         )}
       </AnimatePresence>
 
-      {view === 'index' ? (
-        /* The overview owns the whole width. It repeats what the sidebar and
-           the sheet would say anyway, so the 3-pane shell steps aside. */
-        <main id="gallery" tabIndex={-1} className="min-h-[calc(100vh-56px)] focus:outline-none">
-          <IndexView
-            total={libraryTotal}
-            categories={categories}
-            collections={collections}
-            designs={designs}
-            favorites={favorites}
-            activeTags={tags}
-            onKind={handleIndexKind}
-            onOpenSet={handleIndexSet}
-            onOpenDesign={handleIndexOpen}
-            onTag={handleIndexTag}
-          />
-        </main>
-      ) : (
-      /* Body — the 3-pane split waits for xl. Below it, phones and tablets
+      {/* Body — the 3-pane split waits for xl. Below it, phones and tablets
           share one layout: a tablet gets the mobile treatment with more room,
           not the desktop one squeezed into it. Two tracks: the grid takes
           everything the panel does not, and the panel is part of the layout
-          rather than something the grid borrows. */
-      <div className="grid grid-cols-1 xl:grid-cols-12 min-h-[calc(100vh-56px)]">
+          rather than something the grid borrows. */}
+      <div className={'grid grid-cols-1 min-h-[calc(100vh-56px)] ' + (view === 'index'
+        // The table and the panel, as in the mockup: the panel a fixed share.
+        ? 'md:grid-cols-[minmax(0,1fr)_clamp(300px,30vw,420px)]'
+        : 'xl:grid-cols-12')}>
 
         {/* Gallery */}
         {/* tabIndex -1 so the skip link moves focus here and not just the
             scroll position; without it the next Tab returns to the header. */}
-        <main id="gallery" tabIndex={-1} className="xl:col-span-8 min-[1920px]:col-span-9 flex flex-col min-w-0 focus:outline-none">
+        <main id="gallery" tabIndex={-1} className={(view === 'index' ? '' : 'xl:col-span-8 min-[1920px]:col-span-9 ') + 'flex flex-col min-w-0 focus:outline-none'}>
           {/* pb-20 below xl clears the floating page links, which are centred
               over the last row on phones and tablets. */}
           <div className="flex-1 p-5 xl:p-6 max-xl:pb-20">
@@ -1360,7 +1339,11 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
                 )}
               </div>
             )}
-            <div className={(refineKey ? 'hidden' : 'flex') + ' items-center justify-between gap-3 pb-3 mb-5 border-b border-edge'}>
+            <div className={(refineKey ? 'hidden' : 'flex') + ' items-center justify-between gap-3 border-b border-edge ' + (view === 'index'
+              // In the table the bar holds still under the header, and the
+              // column names hold still under it.
+              ? 'sticky top-14 z-20 h-[55px] -mt-5 xl:-mt-6 mb-4 -mx-5 px-5 xl:-mx-6 xl:px-6 bg-background'
+              : 'pb-3 mb-5')}>
               <div className="flex items-center gap-2 min-w-0">
                 <h2 className="flex items-center gap-1.5 text-meta text-ink font-medium whitespace-nowrap">
                   {colorFilter && (
@@ -1416,16 +1399,26 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
 
             {/* One line of value proposition: nothing above the fold says
                 what this is, and shared-link visitors bounce on confusion. */}
-            <p className={(refineKey ? 'hidden' : 'block') + ' text-meta text-ink-4 text-balance pb-3 -mt-2'}>
+            <p className={(refineKey || view === 'index' ? 'hidden' : 'block') + ' text-meta text-ink-4 text-balance pb-3 -mt-2'}>
               {libraryTotal} of the web&apos;s best-designed sites, dissected. Colors, type, assets and screenshots, extracted automatically.
             </p>
 
-            {!hasFilters && !similarToId && !collectionName && !refineKey && (
+            {view === 'grid' && !hasFilters && !similarToId && !collectionName && !refineKey && (
               <NewThisWeek sites={newThisWeek} onOpen={d => selectDesign(d)} />
             )}
 
                         {/* Height is held during a swap so the page doesn't collapse and
                 rebound between result sets. */}
+            {view === 'index' ? (
+              <IndexView
+                designs={designs}
+                total={pagination.total}
+                selectedId={selectedId}
+                busy={isRefetching}
+                onKind={handleTableKind}
+                onOpenDesign={handleIndexOpen}
+              />
+            ) : (
             <motion.div
               // While a new result set loads, the old one steps back so the
               // wait reads as work, not as nothing happening.
@@ -1519,6 +1512,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
                 }
               </AnimatePresence>
             </motion.div>
+            )}
 
             <div ref={sentinelRef} className="h-1 mt-4" />
             {isLoadingMore && (
@@ -1537,9 +1531,9 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
 
       {/* Detail panel — the column is always here. The empty state names
             what the panel holds, which is how you learn the tabs exist. */}
-        <div className="hidden xl:flex xl:col-span-4 track-panel flex-col sticky top-14 z-40 h-[calc(100vh-56px)] border-l border-edge-strong bg-background">
+        <div className={(view === 'index' ? 'hidden md:flex' : 'hidden xl:flex xl:col-span-4 track-panel') + ' flex-col sticky top-14 z-40 h-[calc(100vh-56px)] border-l border-edge-strong bg-background'}>
           <AnimatePresence mode="wait">
-            {isPanelOpen && !isNarrow ? (
+            {isPanelOpen && !panelIsSheet ? (
               <motion.div
                 key={selectedId}
                 // Switching sites is constant: the new one fades up at once,
@@ -1571,12 +1565,11 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
         </div>
 
       </div>
-      )}
 
       {/* The sheet covers this corner on a phone, so the links hide only
           there. On desktop the corner stays visible and reachable with a card
           open — hiding them there stranded About/Changelog behind the panel. */}
-      <SiteLinks hidden={isPanelOpen && isNarrow} />
+      <SiteLinks hidden={isPanelOpen && panelIsSheet} />
 
       <BrowsePanel
         open={browseOpen}
@@ -1596,7 +1589,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
           drawer the prototype draws: a card floating 10px inside the viewport,
           not a sheet bolted to the bottom. Under 640 it becomes the page. */}
       <AnimatePresence>
-        {isNarrow && isPanelOpen && (
+        {panelIsSheet && isPanelOpen && (
           <>
             <motion.div
               key="sheet-backdrop"

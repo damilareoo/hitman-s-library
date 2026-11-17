@@ -85,6 +85,13 @@ export function releaseAuthors(release: ChangelogRelease): Author[] {
 // only case where the question is actually being asked.
 const changelog: ChangelogRelease[] = [
   {
+    date: '2026-11-17',
+    title: 'Row by Row',
+    items: [
+      { type: 'improved', author: 'florence', text: 'Index lists every site as a row: kind, typeface, palette and the day it arrived' },
+    ],
+  },
+  {
     date: '2026-11-16',
     title: 'Lost and Found',
     items: [

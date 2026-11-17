@@ -44,6 +44,11 @@ export function useIsNarrow(): boolean {
   return useMedia(SHEET_QUERY)
 }
 
+/** True below 768px: under this the index table has no room for the panel beside it. */
+export function useIsBelowMd(): boolean {
+  return useMedia('(max-width: 767px)')
+}
+
 /** True on a phone, where the panel is the page and the mobile layout is the only one. */
 export function useIsPhone(): boolean {
   return useMedia(PHONE_QUERY)
