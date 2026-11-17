@@ -6,6 +6,7 @@ import { Sun, Moon, SpeakerHigh, SpeakerSlash, MagnifyingGlass, X, ArrowRight, P
 import dynamic from 'next/dynamic'
 import { DesignCard, type Design } from '@/components/design-card'
 import { ViewSwitcher, type LibraryView } from '@/components/view-switcher'
+import { SortMenu } from '@/components/sort-menu'
 import { IndexView } from '@/components/index-view'
 import { getLenis } from '@/lib/smooth-scroll'
 import { SIMILAR_ENABLED } from '@/lib/drift'
@@ -97,19 +98,6 @@ interface GalleryProps {
 // Local regex rather than lib/color-distance's — that import would drag
 // culori into the gallery bundle, and the ranking is loaded on demand.
 const COLOR_FILTER_RE = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i
-
-// Direction H keeps active rows obvious through fill, not a leading rule.
-function sortButton(isActive: boolean): string {
-  return [
-    'relative rounded-[10px] text-meta border transition-[background-color,border-color,color,transform] duration-[var(--dur-2)] ease-[var(--ease-sig)] active:scale-[0.98]',
-    // The pill is 23px tall; the overlay reaches full height.
-    // Nothing sits above or below it inside the 56px header.
-    "after:absolute after:inset-x-0 after:top-1/2 after:h-11 after:-translate-y-1/2 after:content-['']",
-    isActive
-      ? 'bg-muted text-ink border-edge-strong'
-      : 'text-ink-4 border-transparent bg-transparent hover:text-ink-3 hover:bg-foreground/[0.055]',
-  ].join(' ')
-}
 
 // The header's icon buttons: BTN.iconHeader (36px drawn, 44px hit area).
 const ICON_BUTTON = BTN.iconHeader
@@ -1072,13 +1060,6 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
               ⌘K
             </kbd>
           </button>
-          <Refine value={refine} onApply={applyRefine} fonts={refineFonts} className="hidden md:block" />
-
-          {/* The switcher follows the mark and Pro, so the actions on the
-              right always have their own room. */}
-          <div className="sm:flex-1 xl:flex-none">
-            <ViewSwitcher view={view} onChange={setView} />
-          </div>
 
           <div className="flex items-center gap-1.5 max-sm:gap-0.5 ml-auto">
             {/* Deliberately in the same quiet register as Changelog rather
@@ -1264,14 +1245,16 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
           everything the panel does not, and the panel is part of the layout
           rather than something the grid borrows. */}
       <div className={'grid grid-cols-1 min-h-[calc(100vh-56px)] ' + (view === 'index'
-        // The table and the panel, as in the mockup: the panel a fixed share.
-        ? 'md:grid-cols-[minmax(0,1fr)_clamp(300px,30vw,420px)]'
+        // Tablets get the table and a fixed-share panel. From xl both views
+        // share the same twelve tracks, so switching views never moves the
+        // bar or the panel edge.
+        ? 'md:grid-cols-[minmax(0,1fr)_clamp(300px,30vw,420px)] xl:grid-cols-12'
         : 'xl:grid-cols-12')}>
 
         {/* Gallery */}
         {/* tabIndex -1 so the skip link moves focus here and not just the
             scroll position; without it the next Tab returns to the header. */}
-        <main id="gallery" tabIndex={-1} className={(view === 'index' ? '' : 'xl:col-span-8 min-[1920px]:col-span-9 ') + 'flex flex-col min-w-0 focus:outline-none'}>
+        <main id="gallery" tabIndex={-1} className="xl:col-span-8 min-[1920px]:col-span-9 flex flex-col min-w-0 focus:outline-none">
           {/* pb-20 below xl clears the floating page links, which are centred
               over the last row on phones and tablets. */}
           <div className="flex-1 p-5 xl:p-6 max-xl:pb-20">
@@ -1307,10 +1290,51 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
                 </span>
               </div>
             )}
+            {/* The bar holds still under the header in both views, with the
+                controls on it, so sorting, refining or switching view never
+                means scrolling back up. In the table the column names hold
+                still under it. */}
+            <div className={'sticky top-14 z-30 flex items-center justify-between gap-3 h-[55px] -mx-5 px-5 xl:-mx-6 xl:px-6 border-b border-edge bg-background '
+              + (trailFilter.length > 0 && colorFilter ? '' : '-mt-5 xl:-mt-6 ') + (view === 'index' || refineKey ? 'mb-4' : 'mb-5')}>
+              <div className="flex items-center gap-2 min-w-0">
+                <h2 className="flex items-center gap-1.5 text-meta text-ink font-medium whitespace-nowrap">
+                  {colorFilter && (
+                    <span
+                      aria-hidden="true"
+                      className="inline-block w-3.5 h-3.5 rounded-full border border-black/[0.06] dark:border-white/[0.22] shrink-0"
+                      style={{ backgroundColor: colorFilter }}
+                    />
+                  )}
+                  {refineKey ? 'Refined' : similarToId ? `Similar to ${similarTitle ?? '…'}` : collectionName ? collectionTitle ?? collectionName : galleryHeading}{' '}
+                  <span className="text-ink-4 tabular-nums" aria-live={refineKey ? 'polite' : undefined}>{refineKey && isRefetching ? '…' : pagination.total}</span>
+                </h2>
+                {(hasFilters || similarToId || collectionName) && (
+                  <Link
+                    href="/"
+                    scroll={false}
+                    className="text-meta text-ink-4 hover:text-ink transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pro rounded-[5px]"
+                  >
+                    Clear
+                  </Link>
+                )}
+              </div>
+
+              <div className="flex items-center gap-2 shrink-0">
+                {colorFilter ? (
+                  // Ranking is the sort here; naming it keeps the grid honest.
+                  <span className="text-micro text-ink-4 max-md:hidden">Ordered by closeness</span>
+                ) : (
+                  <Refine value={refine} onApply={applyRefine} fonts={refineFonts} align="right" />
+                )}
+                {/* A refined list is ranked by match, so there is no sort to pick. */}
+                {!colorFilter && !refineKey && <SortMenu options={SORT_OPTIONS} value={sortBy} onChange={setSort} />}
+                <ViewSwitcher view={view} onChange={setView} />
+              </div>
+            </div>
+
             {refineKey && (
-              <div className="pb-3 mb-4 border-b border-edge">
+              <div className="-mt-1 pb-3 mb-5 border-b border-edge">
                 <div className="flex flex-wrap items-center gap-1.5">
-                  <span className="text-[12.5px] font-[600] text-ink mr-1">Refined</span>
                   {refine.palette.length > 0 && (
                     <button onClick={() => applyRefine({ ...refine, palette: [] })} className={BTN.chip(false) + ' gap-1.5 !pl-2'} title="Remove palette">
                       {refine.palette.map(c => <span key={c} className="w-3 h-3 rounded-full ring-1 ring-inset ring-foreground/10" style={{ background: c }} />)}
@@ -1328,7 +1352,6 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
                     </button>
                   )}
                   <button onClick={() => applyRefine({ palette: [], font: '', readable: '' })} className="ml-1 text-[12px] text-ink-4 hover:text-ink">Clear</button>
-                  {!refineNote && <span className="ml-auto text-[12px] text-ink-4" aria-live="polite">{isRefetching ? 'Searching…' : `${pagination.total} ${pagination.total === 1 ? 'site' : 'sites'}`}</span>}
                 </div>
                 {refineNote && (
                   <p role="status" className="mt-3 text-[13.5px] text-ink-2">
@@ -1339,64 +1362,6 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
                 )}
               </div>
             )}
-            <div className={(refineKey ? 'hidden' : 'flex') + ' items-center justify-between gap-3 border-b border-edge ' + (view === 'index'
-              // In the table the bar holds still under the header, and the
-              // column names hold still under it.
-              ? 'sticky top-14 z-20 h-[55px] -mt-5 xl:-mt-6 mb-4 -mx-5 px-5 xl:-mx-6 xl:px-6 bg-background'
-              : 'pb-3 mb-5')}>
-              <div className="flex items-center gap-2 min-w-0">
-                <h2 className="flex items-center gap-1.5 text-meta text-ink font-medium whitespace-nowrap">
-                  {colorFilter && (
-                    <span
-                      aria-hidden="true"
-                      className="inline-block w-3.5 h-3.5 rounded-full border border-black/[0.06] dark:border-white/[0.22] shrink-0"
-                      style={{ backgroundColor: colorFilter }}
-                    />
-                  )}
-                  {similarToId ? `Similar to ${similarTitle ?? '…'}` : collectionName ? collectionTitle ?? collectionName : galleryHeading}{' '}
-                  <span className="text-ink-4 tabular-nums">{pagination.total}</span>
-                </h2>
-                {(hasFilters || similarToId || collectionName) && (
-                  <Link
-                    href="/"
-                    scroll={false}
-                    className="text-meta text-ink-4 hover:text-ink transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pro rounded-[5px]"
-                  >
-                    Clear
-                  </Link>
-                )}
-              </div>
-
-              {colorFilter ? (
-                // Ranking is the sort here; naming it keeps the grid honest.
-                <span className="text-micro text-ink-4 shrink-0">
-                  Ordered by how close each palette sits
-                </span>
-              ) : (
-              <div className="flex items-center gap-2 shrink-0">
-              {/* Below md the header has no room for Refine; it sits here. */}
-              <Refine value={refine} onApply={applyRefine} fonts={refineFonts} className="md:hidden" />
-              <div
-                className="flex items-center gap-0.5"
-                role="group"
-                aria-label="Sort sites"
-              >
-                <span className="text-micro text-ink-4 shrink-0 mr-0.5 max-sm:hidden">Sort</span>
-                {SORT_OPTIONS.map(({ value, label }) => (
-                  <button
-                    key={value}
-                    onClick={() => setSort(value)}
-                    aria-pressed={sortBy === value}
-                    className={`shrink-0 px-1.5 py-0.5 ${sortButton(sortBy === value)}`}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
-              </div>
-              )}
-            </div>
-
             {/* One line of value proposition: nothing above the fold says
                 what this is, and shared-link visitors bounce on confusion. */}
             <p className={(refineKey || view === 'index' ? 'hidden' : 'block') + ' text-meta text-ink-4 text-balance pb-3 -mt-2'}>
@@ -1531,7 +1496,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
 
       {/* Detail panel — the column is always here. The empty state names
             what the panel holds, which is how you learn the tabs exist. */}
-        <div className={(view === 'index' ? 'hidden md:flex' : 'hidden xl:flex xl:col-span-4 track-panel') + ' flex-col sticky top-14 z-40 h-[calc(100vh-56px)] border-l border-edge-strong bg-background'}>
+        <div className={(view === 'index' ? 'hidden md:flex' : 'hidden xl:flex') + ' xl:col-span-4 track-panel' + ' flex-col sticky top-14 z-40 h-[calc(100vh-56px)] border-l border-edge-strong bg-background'}>
           <AnimatePresence mode="wait">
             {isPanelOpen && !panelIsSheet ? (
               <motion.div

@@ -14,7 +14,7 @@ import { CARD, BTN, INPUT } from '@/components/member-card'
 import { paletteFromFile } from '@/lib/palette-client'
 import { refineActive, type RefineQuery } from '@/lib/search/refine-params'
 
-export function Refine({ value, onApply, className = '', fonts = [] }: { value: RefineQuery; onApply: (q: RefineQuery) => void; className?: string; fonts?: string[] }) {
+export function Refine({ value, onApply, className = '', fonts = [], align = 'left' }: { value: RefineQuery; onApply: (q: RefineQuery) => void; className?: string; fonts?: string[]; /** Which edge of the button the card hangs from. */ align?: 'left' | 'right' }) {
   const [open, setOpen] = useState(false)
   const [q, setQ] = useState<RefineQuery>(value)
   const [reading, setReading] = useState(false)
@@ -62,7 +62,7 @@ export function Refine({ value, onApply, className = '', fonts = [] }: { value: 
             role="dialog" aria-label="Refine by palette, font and readable text"
             {...MENU}
             style={{ transformOrigin: 'top left' }}
-            className={CARD.shell + ' absolute left-0 top-9 z-50 w-[320px] max-sm:fixed max-sm:inset-x-3 max-sm:top-[118px] max-sm:w-auto shadow-[0_24px_56px_-20px_rgba(0,0,0,0.35)]'}
+            className={CARD.shell + ' absolute ' + (align === 'right' ? 'right-0' : 'left-0') + ' top-9 z-50 w-[320px] max-sm:fixed max-sm:inset-x-3 max-sm:top-[118px] max-sm:w-auto shadow-[0_24px_56px_-20px_rgba(0,0,0,0.35)]'}
             onDragOver={e => e.preventDefault()}
             onDrop={e => { e.preventDefault(); void takeImage(e.dataTransfer.files?.[0]) }}
             onKeyDown={e => { if (e.key === 'Enter' && refineActive(q)) { onApply(q); setOpen(false) } }}
