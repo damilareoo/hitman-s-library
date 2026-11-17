@@ -36,7 +36,7 @@ export const loadSitePage = cache(async (slug: string): Promise<SitePage | null>
   const id = Number(resolved.id)
   const [detail, rows] = await Promise.all([
     getSiteDetail(id),
-    getSql()`SELECT kind, thumbnail_optimized_url, thumbnail_url FROM design_sources WHERE id = ${id}`,
+    getSql()`SELECT ds.kind, ds.thumbnail_optimized_url, ds.thumbnail_url, xc.image_url AS card_url FROM design_sources ds LEFT JOIN x_cards xc ON xc.source_id = ds.id WHERE ds.id = ${id}`,
   ])
   if (!detail) return null
   const row: any = rows[0] ?? {}
@@ -50,7 +50,8 @@ export const loadSitePage = cache(async (slug: string): Promise<SitePage | null>
     url: detail.url,
     domain: getDomain(detail.url),
     kind: row.kind && row.kind !== UNSORTED ? displayKind(row.kind) : null,
-    image: toHttps(row.thumbnail_optimized_url) ?? toHttps(row.thumbnail_url) ?? detail.screenshot_url,
+    // Our card first (the capture on its own colour), then what the site had.
+    image: toHttps(row.card_url) ?? toHttps(row.thumbnail_optimized_url) ?? toHttps(row.thumbnail_url) ?? detail.screenshot_url,
     addedAt: detail.created_at,
     colors,
     fonts,

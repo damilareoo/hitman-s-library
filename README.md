@@ -429,6 +429,7 @@ Touch targets are expanded with pseudo-element overlays rather than padding, so 
 | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Google sign-in (Worker secrets). Without them the sheet offers email only |
 | `RESEND_SIGNIN_FROM` | Optional. Sender for sign-in emails; defaults to signin@hitmanslibrary.xyz |
 | `NEXT_PUBLIC_PREVIEW_ORIGIN` | Optional. Host that serves the live preview. Derived from the current hostname when unset |
+| `X_DRAFT_TO` | Email address that gets the daily X post as a draft with a share link (free). Worker secret |
 | `X_POSTING` | `on` lets the daily X post send. Anything else, or `?dry=1`, only answers with the post it would send |
 | `X_API_KEY`, `X_API_SECRET`, `X_ACCESS_TOKEN`, `X_ACCESS_SECRET` | Worker secrets for @hitmanslibrary (OAuth 1.0a, read and write). Set with `wrangler secret put`, never in a file |
 
@@ -438,17 +439,24 @@ Touch targets are expanded with pseudo-element overlays rather than padding, so 
 
 `/api/cron/x-post` runs every day at 14:00 UTC from the `cron/` worker. It writes
 one post from stored rows with plain templates (`lib/x/compose.ts`, no model, so
-every hex and typeface is real) and records it in `x_posts` (`scripts/032-x-posts.sql`).
+every hex and typeface is real) and records it in `x_posts` (`scripts/032-x-posts.sql`,
+`034-x-drafts.sql`). It runs in one of two modes:
+
+- **Draft (free, the default in use):** with `X_DRAFT_TO` set, the post is emailed
+  there with a "Post on X" share link (`lib/email/x-draft.ts`). The link in the text
+  pulls the site's card onto the post, so no image upload is needed.
+- **Direct (paid X API):** with `X_POSTING=on` and the four `X_*` secrets, it posts
+  and attaches the card itself.
 
 - A site added in the last two days goes first. Otherwise Sunday counts the week's
   arrivals, Mon/Wed/Fri show one site's palette, Tue/Thu/Sat its typefaces.
 - No site is featured twice within 60 days, and the route never posts twice in a day.
 - Preview any day: `curl -H "authorization: Bearer $CRON_SECRET" "https://hitmanslibrary.xyz/api/cron/x-post?dry=1&at=2026-11-22"`.
-- Each post carries an image: the site's capture on a field of its own colour
-  (`lib/x/card.ts`). `.github/workflows/x-card.yml` renders it at 12:30 UTC with
-  `scripts/x-card.ts` (picks the same site the route will), uploads to Blob and files
-  it in `x_cards` (`scripts/033-x-cards.sql`). No card, or a failed upload, means a
-  text-only post, never a missed one.
+- **Cards:** every site has one: its capture on a field of its own colour
+  (`lib/x/card.ts`), used as the `/site/` page's `og:image`, so any link to a site
+  page shows it on X. `.github/workflows/x-card.yml` runs `scripts/x-card.ts` at
+  12:30 UTC: today's site first, then up to 40 sites still missing one. Stored in
+  Blob and filed in `x_cards` (`scripts/033-x-cards.sql`). `--all` backfills.
 - Pause it with `X_POSTING=off`.
 
 ---

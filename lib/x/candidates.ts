@@ -18,7 +18,7 @@ export async function loadCandidates(sql: Sql): Promise<CandidateRow[]> {
   const [sites, colors, fonts] = await Promise.all([
     sql`
       SELECT ds.id, ds.source_url, ds.source_name, ds.created_at, ds.screenshot_url,
-             (SELECT max(p.posted_at) FROM x_posts p WHERE p.source_id = ds.id AND p.tweet_id IS NOT NULL) AS last_posted_at
+             (SELECT max(p.posted_at) FROM x_posts p WHERE p.source_id = ds.id AND (p.tweet_id IS NOT NULL OR p.drafted)) AS last_posted_at
       FROM design_sources ds
       WHERE ds.screenshot_url IS NOT NULL
     `,

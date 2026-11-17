@@ -4,14 +4,18 @@
 // model), attaches the site's card when scripts/x-card.ts has rendered one,
 // sends it, and records it in x_posts.
 //
-// Sends only when X_POSTING=on and the four X_* secrets are set; otherwise, or
-// with ?dry=1, it answers with the post it would have sent. ?dry=1&at=YYYY-MM-DD
-// previews another day.
+// Three modes:
+// - X_POSTING=on and the four X_* secrets set: posts through the X API (paid).
+// - X_DRAFT_TO set: emails the post to that address with a one-tap "Post on X"
+//   share link (free), and counts it as featured.
+// - ?dry=1 (or neither set): answers with the post it would send.
+// ?dry=1&at=YYYY-MM-DD previews another day.
 import { NextRequest, NextResponse } from 'next/server'
 import { getSql } from '@/lib/db'
 import { composeDailyPost } from '@/lib/x/compose'
 import { loadCandidates, postTime } from '@/lib/x/candidates'
 import { postToX, uploadImage, xCredsFromEnv } from '@/lib/x/client'
+import { sendXDraft } from '@/lib/email/x-draft'
 
 export const maxDuration = 30
 
@@ -26,7 +30,7 @@ export async function GET(req: NextRequest) {
 
   // Never twice in one day, whatever fires the route.
   if (!dryRun && req.nextUrl.searchParams.get('force') !== '1') {
-    const today = await sql`SELECT 1 FROM x_posts WHERE tweet_id IS NOT NULL AND posted_at > now() - interval '20 hours' LIMIT 1`
+    const today = await sql`SELECT 1 FROM x_posts WHERE (tweet_id IS NOT NULL OR drafted) AND posted_at > now() - interval '20 hours' LIMIT 1`
     if (today.length) return NextResponse.json({ done: true, skipped: 'already posted today' })
   }
 
@@ -38,6 +42,13 @@ export async function GET(req: NextRequest) {
 
   const creds = xCredsFromEnv()
   const live = process.env.X_POSTING === 'on' && creds && !dryRun
+  const draftTo = process.env.X_DRAFT_TO
+  if (!live && draftTo && !dryRun) {
+    const sent = await sendXDraft(draftTo, post, card)
+    if (!sent) return NextResponse.json({ error: 'Draft email failed' }, { status: 502 })
+    await sql`INSERT INTO x_posts (kind, source_id, text, drafted) VALUES (${post.kind}, ${post.sourceId}, ${post.text}, true)`
+    return NextResponse.json({ done: true, drafted: true, post })
+  }
   if (!live) return NextResponse.json({ done: true, dry: true, post, card, reason: creds ? undefined : 'X credentials not set' })
 
   // A card that fails to load or upload never blocks the post.
