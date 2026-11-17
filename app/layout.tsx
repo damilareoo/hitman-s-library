@@ -36,6 +36,7 @@ export const metadata: Metadata = {
     telephone: false,
   },
   metadataBase: new URL("https://hitmanslibrary.xyz"),
+  alternates: { types: { "application/rss+xml": [{ url: "/feed.xml", title: "Hitman's Library: new sites" }] } },
   icons: {
     // SVG first — it stays sharp at every size and answers the browser's own
     // theme; the PNG is the fallback for clients that don't take SVG favicons.

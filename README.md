@@ -432,6 +432,14 @@ Touch targets are expanded with pseudo-element overlays rather than padding, so 
 
 ---
 
+## Feed
+
+`/feed.xml` (`app/feed.xml/route.ts`, data in `lib/read/feed.ts`) is RSS of the 30
+newest sites. Each item links to the site's `/site/` page and says, in plain words,
+its background, text and accent hex, its palette and its typefaces, with its link
+card as the enclosure image. Feed readers, automations and the bot that posts for
+@hitmanslibrary read it. Cached an hour at the edge.
+
 ## Link cards
 
 Every site has a link card: its capture on a flat field of one of its own colours,

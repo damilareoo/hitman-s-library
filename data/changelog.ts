@@ -92,6 +92,7 @@ const changelog: ChangelogRelease[] = [
       { type: 'improved', author: 'damilare', text: 'Search engines can find each site by name, palette and typeface' },
       { type: 'improved', author: 'damilare', text: 'Copied CSS, Tailwind and kit files note which site they were measured from' },
       { type: 'improved', author: 'damilare', text: 'Sharing a site link shows its capture on a field of its own colour' },
+      { type: 'new', author: 'damilare', text: 'Follow new sites by RSS at /feed.xml, with each palette and typeface' },
       { type: 'fixed', author: 'damilare', text: 'Link previews on X now credit the right account' },
     ],
   },
