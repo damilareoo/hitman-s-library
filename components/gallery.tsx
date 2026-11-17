@@ -682,7 +682,8 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
     )
     obs.observe(sentinel)
     return () => obs.disconnect()
-  }, [pagination.hasMore, pagination.offset, isLoadingMore, isRefetching, loadDesigns])
+    // view: the sentinel moves between the grid and the index table.
+  }, [pagination.hasMore, pagination.offset, isLoadingMore, isRefetching, loadDesigns, view])
 
   /** Open the panel for an id we may not have a loaded card for. */
   const selectDesignById = useCallback((id: string) => {
@@ -926,21 +927,6 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
       p.set('collection', name)
     })
   }, [sounds, updateParams])
-
-  const handleIndexTag = useCallback((tag: string) => {
-    sounds.playFilterClick()
-    updateParams(p => {
-      p.delete('view')
-      p.delete('site')
-      p.delete('tab')
-      p.delete('color')
-      p.delete('trail')
-      const current = p.getAll('tag')
-      p.delete('tag')
-      const next = current.includes(tag) ? current.filter(t => t !== tag) : [...current, tag]
-      next.forEach(t => p.append('tag', t))
-    })
-  }, [sounds, updateParams, siteParamFor])
 
   const handleIndexOpen = useCallback((design: Design) => {
     sounds.playSelect()
@@ -1274,12 +1260,11 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
             collections={collections}
             designs={designs}
             favorites={favorites}
-            activeTags={tags}
             onKind={handleIndexKind}
-            onOpenSet={handleIndexSet}
             onOpenDesign={handleIndexOpen}
-            onTag={handleIndexTag}
           />
+          {/* The same sentinel the grid uses, so the table keeps loading rows. */}
+          <div ref={sentinelRef} className="h-1" />
         </main>
       ) : (
       /* Body — the 3-pane split waits for xl. Below it, phones and tablets

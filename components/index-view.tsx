@@ -1,10 +1,9 @@
 'use client'
 
-import type { ReactNode } from 'react'
 import type { Design } from '@/components/design-card'
 import { displayKind } from '@/lib/categories'
 import type { CollectionMap } from '@/lib/collections'
-import { FILTER_TAGS } from '@/lib/tagging'
+import { isSystemFont } from '@/lib/trends/compute'
 
 interface IndexViewProps {
   total: number
@@ -12,11 +11,8 @@ interface IndexViewProps {
   collections: CollectionMap
   designs: Design[]
   favorites: number[]
-  activeTags: string[]
   onKind: (name: string) => void
-  onOpenSet: (name: string) => void
   onOpenDesign: (design: Design) => void
-  onTag: (tag: string) => void
 }
 
 function Stat({ value, label }: { value: number; label: string }) {
@@ -30,14 +26,28 @@ function Stat({ value, label }: { value: number; label: string }) {
   )
 }
 
-function SectionLabel({ children }: { children: ReactNode }) {
-  return <h3 className="text-micro text-ink-4 font-normal mb-3">{children}</h3>
+// One template for the header and every row, so the columns line up.
+const ROW = 'grid items-center gap-4 px-2 border-b border-edge grid-cols-[minmax(0,1fr)_64px] sm:grid-cols-[40px_minmax(0,1fr)_64px_64px] md:grid-cols-[40px_minmax(0,2fr)_minmax(0,1fr)_64px_64px] lg:grid-cols-[40px_minmax(0,2.2fr)_minmax(0,1.2fr)_minmax(0,1.4fr)_64px_64px]'
+
+function Dot({ hex, size }: { hex?: string; size: string }) {
+  return <span aria-hidden className={size + ' shrink-0 rounded-full border border-edge'} style={{ background: hex ?? 'transparent' }} />
+}
+
+/** The domain reads better than the page title in a column of names. */
+function hostOf(design: Design) {
+  try { return new URL(design.url).hostname.replace(/^www\./, '') } catch { return design.title }
+}
+
+const DATE = new Intl.DateTimeFormat('en-US', { month: 'short', day: '2-digit' })
+function added(iso: string) {
+  const d = new Date(iso)
+  return Number.isNaN(d.getTime()) ? '' : DATE.format(d)
 }
 
 /**
- * The library seen from above: size, kinds, sets and the most recent arrivals.
- * No images, no fetch — it is built from what the gallery already holds, so
- * switching to it costs a render and nothing else.
+ * The library as a list: its size, then one row per site with the kind, type,
+ * palette and date a card only shows on hover. No images and no fetch of its
+ * own; it reads what the gallery already holds.
  */
 export function IndexView({
   total,
@@ -45,21 +55,15 @@ export function IndexView({
   collections,
   designs,
   favorites,
-  activeTags,
   onKind,
-  onOpenSet,
   onOpenDesign,
-  onTag,
 }: IndexViewProps) {
   const setNames = Object.keys(collections)
-  const recent = designs.slice(0, 8)
-  // Kinds are a ranking here, not a rail: the biggest shelf comes first.
-  const ranked = [...categories].sort((a, b) => b.count - a.count)
 
   return (
     <div className="mx-auto w-full max-w-[1440px] px-5 xl:px-8 pt-8 pb-28">
 
-      <div className="flex flex-wrap gap-x-9 gap-y-6 pb-10">
+      <div className="flex flex-wrap gap-x-9 gap-y-6 pb-8">
         <Stat value={total} label="Sites" />
         <Stat value={categories.length} label="Kinds" />
         {/* Personal numbers stay out of the way until there are any. A fresh
@@ -69,88 +73,53 @@ export function IndexView({
         {favorites.length > 0 && <Stat value={favorites.length} label="Favorites" />}
       </div>
 
-      <div className="border-t border-edge">
-        {ranked.map(({ name, count }) => (
-          <button
-            key={name}
-            onClick={() => onKind(name)}
-            className="w-full flex items-baseline justify-between gap-4 py-3.5 border-b border-edge text-left text-ink-2 hover:text-ink transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pro"
-          >
-            <span className="text-[22px] font-semibold tracking-[-0.03em] leading-none max-sm:text-[20px]">
-              {displayKind(name)}
-            </span>
-            <span className="text-meta text-ink-4 tabular-nums shrink-0">{count} sites</span>
-          </button>
-        ))}
-      </div>
-
-      {/* grid-cols-1 is load-bearing: without it the single implicit column
-          sizes to the longest title and the page slides sideways on a phone. */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-12 gap-y-10 pt-10">
-        <section className="min-w-0">
-          <SectionLabel>Sets</SectionLabel>
-          {setNames.length === 0 ? (
-            <p className="text-meta text-ink-4">
-              No sets yet — open a site and save it to one.
-            </p>
-          ) : (
-            <ul className="border-t border-edge" role="list">
-              {setNames.map(name => (
-                <li key={name}>
-                  <button
-                    onClick={() => onOpenSet(name)}
-                    className="w-full flex items-baseline justify-between gap-4 py-2.5 border-b border-edge text-left text-bodytext text-ink-2 hover:text-ink transition-colors"
-                  >
-                    <span className="truncate">{name}</span>
-                    <span className="text-micro text-ink-4 tabular-nums shrink-0">
-                      {collections[name].length} sites
-                    </span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
-
-        <section className="min-w-0">
-          <SectionLabel>Recently added</SectionLabel>
-          <ul className="border-t border-edge" role="list">
-            {recent.map(design => (
-              <li key={design.id}>
-                <button
-                  onClick={() => onOpenDesign(design)}
-                  className="w-full flex items-baseline justify-between gap-4 py-2.5 border-b border-edge text-left text-bodytext text-ink-2 hover:text-ink transition-colors"
-                >
-                  <span className="truncate">{design.title}</span>
-                  <span className="text-micro text-ink-4 uppercase tracking-[0.08em] truncate max-w-[45%] shrink-0">
-                    {displayKind(design.kind)}
-                  </span>
-                </button>
-              </li>
-            ))}
-          </ul>
-        </section>
-      </div>
-
-      <div className="flex flex-wrap gap-2 pt-10">
-        {FILTER_TAGS.map(tag => {
-          const active = activeTags.includes(tag)
+      {/* Every site as a row: the details a card hides behind a hover, read
+          down a column. It lists what the gallery has loaded, so the current
+          filters and sort hold, and scrolling loads more like the grid does. */}
+      <div role="table" aria-label="Sites" className="text-bodytext">
+        <div role="row" className={ROW + ' sticky top-14 z-10 bg-background py-2.5 text-micro text-ink-4 uppercase tracking-[0.08em]'}>
+          <span role="columnheader" className="max-sm:hidden">#</span>
+          <span role="columnheader">Site</span>
+          <span role="columnheader" className="max-md:hidden">Category</span>
+          <span role="columnheader" className="max-lg:hidden">Type</span>
+          <span role="columnheader" className="max-sm:hidden">Palette</span>
+          <span role="columnheader" className="text-right">Added</span>
+        </div>
+        {designs.map((design, i) => {
+          const font = design.typography?.find(f => f && !isSystemFont(f))
           return (
-            <button
-              key={tag}
-              onClick={() => onTag(tag)}
-              aria-pressed={active}
-              className={[
-                'h-8 px-3 rounded-[10px] text-meta border transition-[background-color,border-color,color,transform] duration-[var(--dur-2)] ease-[var(--ease-sig)] active:scale-[0.98]',
-                active
-                  ? 'bg-muted text-ink border-transparent font-medium hover:bg-foreground/[0.09]'
-                  : 'bg-foreground/[0.055] text-ink-2 border-transparent hover:text-ink hover:bg-foreground/[0.09]',
-              ].join(' ')}
+            <div
+              key={design.id}
+              role="row"
+              tabIndex={0}
+              onClick={() => onOpenDesign(design)}
+              onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpenDesign(design) } }}
+              className={ROW + ' py-3 cursor-pointer text-ink-2 hover:text-ink hover:bg-foreground/[0.03] transition-colors focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-pro'}
             >
-              {tag}
-            </button>
+              <span role="cell" className="max-sm:hidden font-mono text-micro text-ink-4 tabular-nums">{String(i + 1).padStart(3, '0')}</span>
+              <span role="cell" className="flex items-center gap-3 min-w-0">
+                <Dot hex={design.colors[0]} size="w-5 h-5" />
+                <span className="truncate text-ink">{hostOf(design)}</span>
+              </span>
+              <span role="cell" className="max-md:hidden min-w-0">
+                <button
+                  onClick={e => { e.stopPropagation(); onKind(design.kind) }}
+                  className="truncate max-w-full hover:text-ink hover:underline underline-offset-4"
+                >
+                  {displayKind(design.kind)}
+                </button>
+              </span>
+              <span role="cell" className="max-lg:hidden truncate">{font ?? <span className="text-ink-4">—</span>}</span>
+              <span role="cell" className="max-sm:hidden flex gap-1">
+                {design.colors.slice(0, 3).map((hex, k) => <Dot key={k} hex={hex} size="w-4 h-4" />)}
+              </span>
+              <span role="cell" className="text-right font-mono text-micro text-ink-4 tabular-nums whitespace-nowrap">{added(design.addedDate)}</span>
+            </div>
           )
         })}
+        {designs.length === 0 && (
+          <p className="py-10 text-meta text-ink-4">No sites match these filters.</p>
+        )}
       </div>
     </div>
   )
