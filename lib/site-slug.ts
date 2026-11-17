@@ -15,3 +15,13 @@ export function siteSlug(url: string): string {
 
 /** True for the numeric ids older links carry. */
 export const isSiteId = (s: string) => /^\d+$/.test(s)
+
+const HOME = 'https://hitmanslibrary.xyz'
+
+/** A site's own page in the library: /site/plastic.audio. */
+export const sitePath = (url: string) => `/site/${siteSlug(url)}`
+export const sitePageUrl = (url: string) => HOME + sitePath(url)
+
+/** One comment line that travels with every copied or downloaded export, so a
+ *  kit pasted into a repo still says where it came from. */
+export const sourceComment = (url: string) => `/* Measured from ${url} by Hitman's Library: ${sitePageUrl(url)} */`

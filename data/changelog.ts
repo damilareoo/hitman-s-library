@@ -86,6 +86,18 @@ export function releaseAuthors(release: ChangelogRelease): Author[] {
 const changelog: ChangelogRelease[] = [
   {
     date: '2026-11-17',
+    title: 'Every Site, Its Own Page',
+    items: [
+      { type: 'new', author: 'damilare', text: 'Every site has its own address now, like /site/cotool.ai, ready to share' },
+      { type: 'improved', author: 'damilare', text: 'Search engines can find each site by name, palette and typeface' },
+      { type: 'improved', author: 'damilare', text: 'Copied CSS, Tailwind and kit files note which site they were measured from' },
+      { type: 'improved', author: 'damilare', text: 'Sharing a site link shows its capture on a field of its own colour' },
+      { type: 'new', author: 'damilare', text: 'Follow new sites by RSS at /feed.xml, with each palette and typeface' },
+      { type: 'fixed', author: 'damilare', text: 'Link previews on X now credit the right account' },
+    ],
+  },
+  {
+    date: '2026-11-17',
     title: 'Row by Row',
     items: [
       { type: 'improved', author: 'florence', text: 'Index lists every site as a row: kind, typeface, palette and the day it arrived' },

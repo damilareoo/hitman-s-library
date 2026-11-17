@@ -152,8 +152,20 @@ HTML rather than being fetched after hydration.
 
 - Filter state is read from `searchParams`, so a shared link server-renders the
   view it describes.
-- Filtered views (`?q=`, `?category=`, `?tag=`, `?site=`) are marked `noindex` to
-  avoid competing with the index page.
+- **Every site has its own page: `/site/<slug>`** (`app/site/[...slug]/page.tsx`),
+  e.g. `/site/cotool.ai` or `/site/vercel.com/design/guidelines`. It renders the
+  gallery with that site's panel open, with its own title, description, canonical,
+  link card and JSON-LD, built from stored rows in `lib/read/site-page.ts`. Names
+  come from `siteName()`: the page title when it names the site, else the domain.
+- One address per site: the client writes `/site/<slug>` when a site is open on its
+  own and `/?site=…&…` when anything else is in the view (`urlForParams` in
+  `lib/use-url-params.ts`). `middleware.ts` 308s old `/?site=<slug>` links and
+  mixed-case paths before any HTML streams; numeric ids still render and rewrite.
+- The sitemap lists every site page; the crawlable index under the gallery links to
+  them. Filtered views (`?q=`, `?category=`, `?tag=`, `?site=` with other params)
+  stay `noindex`.
+- Every export (CSS, Tailwind, tokens.json, the style kit's DESIGN.md) carries one
+  line naming the site it came from and its library page (`sourceComment`).
 - `app/robots.ts`, `app/sitemap.ts`, and `app/manifest.ts` generate their routes.
 - **The canonical host is the apex, `hitmanslibrary.xyz`.** `metadataBase`, the
   sitemap's `BASE`, `robots.host`, and the `og:image` URL all say so, and
@@ -417,6 +429,29 @@ Touch targets are expanded with pseudo-element overlays rather than padding, so 
 | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Google sign-in (Worker secrets). Without them the sheet offers email only |
 | `RESEND_SIGNIN_FROM` | Optional. Sender for sign-in emails; defaults to signin@hitmanslibrary.xyz |
 | `NEXT_PUBLIC_PREVIEW_ORIGIN` | Optional. Host that serves the live preview. Derived from the current hostname when unset |
+
+---
+
+## Feed
+
+`/feed.xml` (`app/feed.xml/route.ts`, data in `lib/read/feed.ts`) is RSS of the 30
+newest sites. Each item links to the site's `/site/` page and says, in plain words,
+its background, text and accent hex, its palette and its typefaces, with its link
+card as the enclosure image. Feed readers, automations and the bot that posts for
+@hitmanslibrary read it. Cached an hour at the edge.
+
+## Link cards
+
+Every site has a link card: its capture on a flat field of one of its own colours,
+1600x900, no text (`lib/link-card.ts`). It is the `/site/` page's `og:image`, so a
+shared site link shows it on X, LinkedIn and in chat apps.
+
+- `scripts/site-cards.ts` renders cards for sites without one, uploads them to Blob
+  and files them in `site_cards` (`scripts/032-site-cards.sql`). `--all` backfills,
+  `--ids 12,40 --force` redoes chosen sites.
+- `.github/workflows/site-cards.yml` runs it daily at 12:30 UTC for new sites.
+- The field is the site's accent when it reaches 4.5:1 against the site's
+  background, else another palette colour that does, else ink or paper.
 
 ---
 

@@ -9,6 +9,7 @@ import { isMono, isSerif } from './font-kind'
 import type { SiteDetail } from '@/lib/read/site-detail'
 import { nameColors, type NamedColor } from './roles'
 import { contrastRatio } from './color'
+import { sitePageUrl, sourceComment } from '@/lib/site-slug'
 
 export interface KitFile { name: string; content: string }
 export interface KitFont { role: string; family: string; weight: number | null; size: number | null; lineHeight: string | null; source: string | null }
@@ -55,7 +56,7 @@ function designMd(site: SiteDetail, colors: NamedColor[], fonts: KitFont[]): str
   const out = [
     `# ${md(site.title)}`,
     '',
-    `A style kit from Hitman's Library, measured from ${site.url}`,
+    `A style kit from Hitman's Library, measured from ${site.url}. More sites like this: ${sitePageUrl(site.url)}`,
     '',
     '## How to use this kit',
     '',
@@ -116,9 +117,9 @@ export function buildTokenFiles(site: SiteDetail): KitFile[] {
   const head = fontImport ? [`@import url('${fontImport}');`] : []
   files.push(
     { name: 'figma-variables.json', content: tokens(colors, fonts, null) },
-    { name: 'theme.css', content: [...head, ...(head.length ? [''] : []), ':root {', ...cssBody(colors, fonts), '}', ''].join('\n') },
-    { name: 'tailwind.css', content: [...head, '@import "tailwindcss";', '', '@theme {', ...cssBody(colors, fonts), '}', ''].join('\n') },
-    { name: 'tokens.json', content: tokens(colors, fonts, { source: site.url, title: site.title, generator: "Hitman's Library" }) },
+    { name: 'theme.css', content: [sourceComment(site.url), ...head, ...(head.length ? [''] : []), ':root {', ...cssBody(colors, fonts), '}', ''].join('\n') },
+    { name: 'tailwind.css', content: [sourceComment(site.url), ...head, '@import "tailwindcss";', '', '@theme {', ...cssBody(colors, fonts), '}', ''].join('\n') },
+    { name: 'tokens.json', content: tokens(colors, fonts, { source: site.url, title: site.title, generator: "Hitman's Library", library: sitePageUrl(site.url) }) },
   )
   return files
 }

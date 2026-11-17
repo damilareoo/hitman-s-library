@@ -74,7 +74,7 @@ export function ThemeExport({
       <span className="pl-2 pr-1 text-[12px] text-ink-4 max-[380px]:hidden">Copy</span>
       <button
         type="button"
-        onClick={() => copyText(buildCssVars(colors, typography, fontImport), 'css')}
+        onClick={() => copyText(buildCssVars(colors, typography, fontImport, siteUrl), 'css')}
         className={btn}
         title="Copy OKLCH custom properties"
       >
@@ -82,7 +82,7 @@ export function ThemeExport({
       </button>
       <button
         type="button"
-        onClick={() => copyText(buildTailwindTheme(colors, typography, fontImport), 'tw')}
+        onClick={() => copyText(buildTailwindTheme(colors, typography, fontImport, siteUrl), 'tw')}
         className={btn}
         title="Copy Tailwind v4 @theme block"
       >

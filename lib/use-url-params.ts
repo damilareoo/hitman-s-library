@@ -16,6 +16,28 @@ type ParamInput = Record<string, string | string[] | undefined>
 // history methods to announce every URL write; the hook below adopts a URL
 // it did not write itself.
 const NAV_EVENT = 'hl:urlchange'
+
+// A site open on its own, with nothing else in the view, has its own address:
+// /site/plastic.audio, the page search engines index. Anything more (a
+// filter, a tab, a search) stays a query on / so the panel keeps its context.
+const SITE_PATH = /^\/site\/(.+)$/
+
+/** The gallery's params as the address bar holds them, path included. */
+export function paramsFromLocation(loc: { pathname: string; search: string }): URLSearchParams {
+  const p = new URLSearchParams(loc.search)
+  const m = loc.pathname.match(SITE_PATH)
+  if (m && !p.has('site')) p.set('site', decodeURIComponent(m[1]))
+  return p
+}
+
+/** The address for a set of gallery params. */
+export function urlForParams(p: URLSearchParams): string {
+  const keys = [...new Set(p.keys())]
+  const site = p.get('site')
+  if (site && keys.length === 1 && !/^\d+$/.test(site)) return `/site/${site.split('/').map(encodeURIComponent).join('/')}`
+  const qs = p.toString()
+  return qs ? `/?${qs}` : '/'
+}
 let historyPatched = false
 if (typeof window !== 'undefined' && !historyPatched) {
   historyPatched = true
@@ -48,10 +70,10 @@ export function useUrlParams(initial: ParamInput) {
   // brand link, the Clear link): re-read the URL.
   useEffect(() => {
     function onPop() {
-      setParams(new URLSearchParams(window.location.search))
+      setParams(paramsFromLocation(window.location))
     }
     function onNav() {
-      const next = new URLSearchParams(window.location.search)
+      const next = paramsFromLocation(window.location)
       if (next.toString() !== latest.current.toString()) setParams(next)
     }
     window.addEventListener('popstate', onPop)
@@ -66,8 +88,7 @@ export function useUrlParams(initial: ParamInput) {
     const next = new URLSearchParams(latest.current)
     mutate(next)
     latest.current = next
-    const qs = next.toString()
-    const url = qs ? `/?${qs}` : '/'
+    const url = urlForParams(next)
     if (replace) window.history.replaceState(null, '', url)
     else window.history.pushState(null, '', url)
     setParams(next)
