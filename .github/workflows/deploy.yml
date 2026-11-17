@@ -1,0 +1,33 @@
+# Deploy to Cloudflare on every push to main, so merged PRs go live on their own.
+name: Deploy
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# One deploy at a time; a newer push cancels an older one still building.
+concurrency:
+  group: deploy-production
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    # Skips until the Cloudflare token is set, rather than failing every push.
+    if: ${{ vars.AUTO_DEPLOY == 'on' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - name: Type-check
+        run: bunx tsc --noEmit
+      - name: Build and deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          # Read at build time: the PostHog token is inlined into the client
+          # bundle, and server pages may query the database while prerendering.
+          NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN: ${{ secrets.NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: bun run deploy
