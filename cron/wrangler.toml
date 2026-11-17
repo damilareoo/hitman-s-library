@@ -9,4 +9,5 @@ service = "hitmans-library"
 
 [triggers]
 # Mondays 08:00 UTC — the weekly taste-radar digest.
-crons = ["0 8 * * 1"]
+# Every day 14:00 UTC — the daily X post.
+crons = ["0 8 * * 1", "0 14 * * *"]

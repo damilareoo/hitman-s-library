@@ -152,8 +152,20 @@ HTML rather than being fetched after hydration.
 
 - Filter state is read from `searchParams`, so a shared link server-renders the
   view it describes.
-- Filtered views (`?q=`, `?category=`, `?tag=`, `?site=`) are marked `noindex` to
-  avoid competing with the index page.
+- **Every site has its own page: `/site/<slug>`** (`app/site/[...slug]/page.tsx`),
+  e.g. `/site/cotool.ai` or `/site/vercel.com/design/guidelines`. It renders the
+  gallery with that site's panel open, with its own title, description, canonical,
+  link card and JSON-LD, built from stored rows in `lib/read/site-page.ts`. Names
+  come from `siteName()`: the page title when it names the site, else the domain.
+- One address per site: the client writes `/site/<slug>` when a site is open on its
+  own and `/?site=…&…` when anything else is in the view (`urlForParams` in
+  `lib/use-url-params.ts`). `middleware.ts` 308s old `/?site=<slug>` links and
+  mixed-case paths before any HTML streams; numeric ids still render and rewrite.
+- The sitemap lists every site page; the crawlable index under the gallery links to
+  them. Filtered views (`?q=`, `?category=`, `?tag=`, `?site=` with other params)
+  stay `noindex`.
+- Every export (CSS, Tailwind, tokens.json, the style kit's DESIGN.md) carries one
+  line naming the site it came from and its library page (`sourceComment`).
 - `app/robots.ts`, `app/sitemap.ts`, and `app/manifest.ts` generate their routes.
 - **The canonical host is the apex, `hitmanslibrary.xyz`.** `metadataBase`, the
   sitemap's `BASE`, `robots.host`, and the `og:image` URL all say so, and
@@ -417,6 +429,22 @@ Touch targets are expanded with pseudo-element overlays rather than padding, so 
 | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Google sign-in (Worker secrets). Without them the sheet offers email only |
 | `RESEND_SIGNIN_FROM` | Optional. Sender for sign-in emails; defaults to signin@hitmanslibrary.xyz |
 | `NEXT_PUBLIC_PREVIEW_ORIGIN` | Optional. Host that serves the live preview. Derived from the current hostname when unset |
+| `X_POSTING` | `on` lets the daily X post send. Anything else, or `?dry=1`, only answers with the post it would send |
+| `X_API_KEY`, `X_API_SECRET`, `X_ACCESS_TOKEN`, `X_ACCESS_SECRET` | Worker secrets for @hitmanslibrary (OAuth 1.0a, read and write). Set with `wrangler secret put`, never in a file |
+
+---
+
+## Daily X post
+
+`/api/cron/x-post` runs every day at 14:00 UTC from the `cron/` worker. It writes
+one post from stored rows with plain templates (`lib/x/compose.ts`, no model, so
+every hex and typeface is real) and records it in `x_posts` (`scripts/032-x-posts.sql`).
+
+- A site added in the last two days goes first. Otherwise Sunday counts the week's
+  arrivals, Mon/Wed/Fri show one site's palette, Tue/Thu/Sat its typefaces.
+- No site is featured twice within 60 days, and the route never posts twice in a day.
+- Preview any day: `curl -H "authorization: Bearer $CRON_SECRET" "https://hitmanslibrary.xyz/api/cron/x-post?dry=1&at=2026-11-22"`.
+- Pause it with `X_POSTING=off`.
 
 ---
 

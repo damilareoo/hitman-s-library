@@ -5,6 +5,7 @@ import { Gallery } from '@/components/gallery'
 import { queryDesigns, type SortBy } from '@/lib/design-queries'
 import { queryCategoriesCached, queryAllSitesIndex } from '@/lib/design-queries-cached'
 import { getDomain } from '@/lib/get-domain'
+import { sitePath } from '@/lib/site-slug'
 import { SIMILAR_ENABLED, querySimilar } from '@/lib/similarity'
 import { rankDesignsByColor, COLOR_RADIUS, COLOR_CAP, isHexColor } from '@/lib/color-distance'
 
@@ -147,7 +148,7 @@ async function AllSitesIndex() {
       <ul>
         {sites.map(site => (
           <li key={site.id}>
-            <a href={site.url} rel="noopener noreferrer">
+            <a href={sitePath(site.url)}>
               {site.title} — {getDomain(site.url)}
             </a>
           </li>

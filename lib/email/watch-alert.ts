@@ -33,7 +33,7 @@ function side(label: string, s: WatchAlert['before']) {
 
 export function watchAlertEmail(a: WatchAlert) {
   const name = esc(a.siteName)
-  const link = `${SITE}/?site=${encodeURIComponent(a.siteSlug)}`
+  const link = `${SITE}/site/${a.siteSlug}`
   const html = `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><meta name="color-scheme" content="light"><title>${name} has redesigned</title></head>
 <body style="margin:0;padding:0;background:#f4f3ef">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f4f3ef"><tr><td align="center" style="padding:32px 16px">

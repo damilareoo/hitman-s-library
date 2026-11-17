@@ -1,6 +1,7 @@
 // lib/theme-tokens.ts
 // Pure token-kit builders (no react): OKLCH custom properties, Tailwind v4
 // @theme, tokens.json. Shared by the panel footer and any test or script.
+import { sourceComment, sitePageUrl } from './site-slug'
 
 export interface TokenColorRow {
   hex_value: string
@@ -57,8 +58,10 @@ export function buildCssVars(
   colors: TokenColorRow[],
   typography: TokenTypographyRow[],
   fontImport: string | null,
+  siteUrl?: string,
 ): string {
   const lines = [
+    ...(siteUrl ? [sourceComment(siteUrl)] : []),
     ...(fontImport ? [`@import url('${fontImport}');`, ''] : []),
     ':root {',
     ...tokenColors(colors).map(c => `  --color-${c.name}: ${c.value};`),
@@ -76,8 +79,10 @@ export function buildTailwindTheme(
   colors: TokenColorRow[],
   typography: TokenTypographyRow[],
   fontImport: string | null,
+  siteUrl?: string,
 ): string {
   const lines = [
+    ...(siteUrl ? [sourceComment(siteUrl)] : []),
     ...(fontImport ? [`@import url('${fontImport}');`] : []),
     '@import "tailwindcss";',
     '',
@@ -102,7 +107,7 @@ export function buildTokensJson(
   }
   return JSON.stringify(
     {
-      $meta: { source: source.url, title: source.title, generator: "hitman's library" },
+      $meta: { source: source.url, title: source.title, generator: "hitman's library", library: sitePageUrl(source.url) },
       color: colorEntries,
       font: fontEntries,
     },
