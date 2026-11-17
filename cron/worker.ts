@@ -25,8 +25,6 @@ interface CronExecutionContext {
 // yet, so the repair job would spend every night failing to capture.
 const ROUTES: Record<string, string[]> = {
   '0 8 * * 1': ['/api/cron/digest'],
-  // Every day 14:00 UTC: the @hitmanslibrary post (morning in the US, afternoon in Europe and Lagos).
-  '0 14 * * *': ['/api/cron/x-post'],
 }
 
 export default {

@@ -1,23 +1,22 @@
-# The image for the daily X post, rendered 90 minutes before it sends
-# (/api/cron/x-post runs at 14:00 UTC). Runs on GitHub's free minutes,
-# never on the Worker.
-name: X post card
+# Link cards for sites added since the last run (the /site/ page's og:image).
+# Runs on GitHub's free minutes, never on the Worker.
+name: Site cards
 on:
   schedule:
     - cron: '30 12 * * *'
   workflow_dispatch:
-concurrency: x-card
+concurrency: site-cards
 jobs:
-  card:
+  cards:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
       - run: bun install --frozen-lockfile
       - run: npx puppeteer browsers install chrome
-      - name: Render card
+      - name: Render cards
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           BLOB_READ_WRITE_TOKEN: ${{ secrets.BLOB_READ_WRITE_TOKEN }}
-        run: bun scripts/x-card.ts
+        run: bun scripts/site-cards.ts

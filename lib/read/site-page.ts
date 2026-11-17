@@ -36,7 +36,7 @@ export const loadSitePage = cache(async (slug: string): Promise<SitePage | null>
   const id = Number(resolved.id)
   const [detail, rows] = await Promise.all([
     getSiteDetail(id),
-    getSql()`SELECT ds.kind, ds.thumbnail_optimized_url, ds.thumbnail_url, xc.image_url AS card_url FROM design_sources ds LEFT JOIN x_cards xc ON xc.source_id = ds.id WHERE ds.id = ${id}`,
+    getSql()`SELECT ds.kind, ds.thumbnail_optimized_url, ds.thumbnail_url, xc.image_url AS card_url FROM design_sources ds LEFT JOIN site_cards xc ON xc.source_id = ds.id WHERE ds.id = ${id}`,
   ])
   if (!detail) return null
   const row: any = rows[0] ?? {}

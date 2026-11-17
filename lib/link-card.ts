@@ -1,7 +1,7 @@
-// lib/x/card.ts
-// The daily post's image: the site's capture on a flat field of one of its
-// own colours (the Hitman's Shots look). No text on the image. Pure; the
-// script renders the HTML with a headless browser.
+// lib/link-card.ts
+// A site's link card: its capture on a flat field of one of its own colours
+// (the Hitman's Shots look), no text. The /site/ page's og:image, so a shared
+// link shows it. Pure; scripts/site-cards.ts renders the HTML.
 import { contrastRatio } from '@/lib/tokens/color'
 
 export const CARD_W = 1600
