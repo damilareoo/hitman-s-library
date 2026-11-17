@@ -25,14 +25,23 @@ const ROW = [
   '@md:grid-cols-[44px_minmax(0,2.2fr)_minmax(0,1.2fr)_minmax(0,1.4fr)_76px_64px]',
 ].join(' ')
 
+// The rim is the page's own ink at a low alpha, laid inside the dot: it
+// vanishes on a swatch close to the ink (white on dark, black on light) and
+// shows on one close to the page, so a near-black swatch on the dark page
+// still reads as a dot, and white ones don't get a heavier grey ring.
 function Dot({ hex, size }: { hex?: string; size: string }) {
   return (
     <span
       aria-hidden
-      className={size + ' shrink-0 rounded-full border border-edge'}
+      className={size + ' shrink-0 rounded-full shadow-[inset_0_0_0_1px_rgba(var(--foreground-rgb),0.16)]'}
       style={{ background: hex ?? 'transparent' }}
     />
   )
+}
+
+/** A slot the palette doesn't fill: keeps every row three wide. */
+function EmptyDot() {
+  return <span aria-hidden className="w-4 h-4 shrink-0 rounded-full border border-dashed border-edge" />
 }
 
 /** The domain reads better than the page title in a column of names. */
@@ -108,6 +117,7 @@ export function IndexView({ designs, total, selectedId, busy = false, onKind, on
             </span>
             <span role="cell" className="@max-md:hidden flex gap-[3px]">
               {design.colors.slice(0, 3).map((hex, k) => <Dot key={k} hex={hex} size="w-4 h-4" />)}
+              {Array.from({ length: Math.max(0, 3 - design.colors.length) }, (_, k) => <EmptyDot key={'e' + k} />)}
             </span>
             <span role="cell" className="text-right text-meta text-ink-4 tabular-nums whitespace-nowrap">
               {added(design.addedDate)}
