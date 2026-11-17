@@ -1,6 +1,5 @@
 'use client'
 
-import { GeistMono } from 'geist/font/mono'
 import type { Design } from '@/components/design-card'
 import { displayKind } from '@/lib/categories'
 import { isSystemFont } from '@/lib/trends/compute'
@@ -16,10 +15,6 @@ interface IndexViewProps {
   onKind: (name: string) => void
   onOpenDesign: (design: Design) => void
 }
-
-// Numbers, column names and dates are set in a true monospace so the digits
-// stack straight down the column.
-const MONO = GeistMono.className
 
 // One template for the header and every row, so the columns line up. Beside
 // the panel every column stays and long names cut short, as in the mockup;
@@ -63,12 +58,12 @@ export function IndexView({ designs, total, selectedId, busy = false, onKind, on
       role="table"
       aria-label="Sites"
       aria-busy={busy}
-      className="@container text-[13.5px] transition-opacity duration-150 ease-[var(--ease-sig)] aria-busy:opacity-55"
+      className="@container text-bodytext transition-opacity duration-150 ease-[var(--ease-sig)] aria-busy:opacity-55"
     >
       {/* Sticks under the header (56px) and the gallery bar (55px). */}
       <div
         role="row"
-        className={ROW + ' ' + MONO + ' sticky top-[111px] z-10 bg-background py-2.5 border-b border-edge-strong text-[10.5px] font-medium uppercase tracking-[0.08em] text-ink-4'}
+        className={ROW + ' sticky top-[111px] z-10 bg-background py-2.5 border-b border-edge-strong text-micro text-ink-4'}
       >
         <span role="columnheader" className="@max-md:hidden">#</span>
         <span role="columnheader">Site</span>
@@ -91,7 +86,7 @@ export function IndexView({ designs, total, selectedId, busy = false, onKind, on
             onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpenDesign(design) } }}
             className={ROW + ' py-2.5 border-b border-edge cursor-pointer hover:bg-foreground/[0.035] aria-selected:bg-foreground/[0.05] transition-colors duration-[var(--dur-1)] focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-pro'}
           >
-            <span role="cell" className={MONO + ' @max-md:hidden text-[11.5px] text-ink-4 tabular-nums'}>
+            <span role="cell" className="@max-md:hidden text-meta text-ink-4 tabular-nums">
               {String(i + 1).padStart(3, '0')}
             </span>
             <span role="cell" className="flex items-center gap-2.5 min-w-0">
@@ -112,7 +107,7 @@ export function IndexView({ designs, total, selectedId, busy = false, onKind, on
             <span role="cell" className="@max-md:hidden flex gap-[3px]">
               {design.colors.slice(0, 3).map((hex, k) => <Dot key={k} hex={hex} size="w-4 h-4" />)}
             </span>
-            <span role="cell" className={MONO + ' text-right text-[12px] text-ink-4 tabular-nums whitespace-nowrap'}>
+            <span role="cell" className="text-right text-meta text-ink-4 tabular-nums whitespace-nowrap">
               {added(design.addedDate)}
             </span>
           </div>
@@ -122,7 +117,7 @@ export function IndexView({ designs, total, selectedId, busy = false, onKind, on
       {designs.length === 0 ? (
         <p className="py-10 px-2 text-meta text-ink-4">No sites match these filters.</p>
       ) : designs.length >= total && (
-        <p className="py-5 px-2 text-[12.5px] text-ink-4">End of list · {total} sites</p>
+        <p className="py-5 px-2 text-meta text-ink-4">End of list · {total} sites</p>
       )}
     </div>
   )
