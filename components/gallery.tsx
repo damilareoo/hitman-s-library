@@ -345,8 +345,8 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
 
   // A shared ?site= link may point at a site outside the loaded page. The panel
   // fetches its own detail by id, so it opens regardless; the card metadata is
-  // layered on only when we happen to have it. Index has no panel of its own.
-  const isPanelOpen = view === 'grid' && Boolean(selectedId) && Number.isFinite(Number(selectedId))
+  // layered on only when we happen to have it. Grid and index share the panel.
+  const isPanelOpen = Boolean(selectedId) && Number.isFinite(Number(selectedId))
 
   // pagination.total is how many match the current filters, so it cannot label
   // the "All" row — that would read "All 13" while Finance is selected. The
@@ -881,11 +881,8 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
     sounds.playFilterClick()
     updateParams(p => {
       if (next === 'index') {
-        // The overview is not a place a site is open; carrying ?site= into it
-        // and back out would reopen a panel nobody asked for.
+        // The table is the same list as the grid, so an open site stays open.
         p.set('view', 'index')
-        p.delete('site')
-        p.delete('tab')
         p.delete('similarTo')
         p.delete('color')
         p.delete('trail')
@@ -941,10 +938,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
   const handleIndexOpen = useCallback((design: Design) => {
     sounds.playSelect()
     track('design_opened', { source_id: design.id, opening_surface: 'index' })
-    updateParams(p => {
-      p.delete('view')
-      p.set('site', siteParamFor(design.id, design.url))
-    })
+    updateParams(p => p.set('site', siteParamFor(design.id, design.url)))
   }, [sounds, updateParams, siteParamFor])
 
   // The browse layer is an index of the whole library, not of the current
@@ -997,27 +991,6 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
   // nondeterministic for overlapping same-property queries, so the wide
   // breakpoints live in plain CSS.
   const cardColumns = 'grid-cols-1 sm:grid-cols-2 gallery-grid'
-
-  // One sort control, shown above the grid and above the index table.
-  const sortControl = (
-    <div
-      className="flex items-center gap-0.5"
-      role="group"
-      aria-label="Sort sites"
-    >
-      <span className="text-micro text-ink-4 shrink-0 mr-0.5 max-sm:hidden">Sort</span>
-      {SORT_OPTIONS.map(({ value, label }) => (
-        <button
-          key={value}
-          onClick={() => setSort(value)}
-          aria-pressed={sortBy === value}
-          className={`shrink-0 px-1.5 py-0.5 ${sortButton(sortBy === value)}`}
-        >
-          {label}
-        </button>
-      ))}
-    </div>
-  )
 
   // The browse layer ranks the biggest shelf first, like the overview does.
   const browseKinds = useMemo(
@@ -1281,27 +1254,11 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
         )}
       </AnimatePresence>
 
-      {view === 'index' ? (
-        /* The overview owns the whole width. It repeats what the sidebar and
-           the sheet would say anyway, so the 3-pane shell steps aside. */
-        <main id="gallery" tabIndex={-1} className="min-h-[calc(100vh-56px)] focus:outline-none">
-          <IndexView
-            heading={galleryHeading}
-            total={pagination.total}
-            designs={designs}
-            toolbar={sortControl}
-            onKind={handleTableKind}
-            onOpenDesign={handleIndexOpen}
-          />
-          {/* The same sentinel the grid uses, so the table keeps loading rows. */}
-          <div ref={sentinelRef} className="h-1" />
-        </main>
-      ) : (
-      /* Body — the 3-pane split waits for xl. Below it, phones and tablets
+      {/* Body — the 3-pane split waits for xl. Below it, phones and tablets
           share one layout: a tablet gets the mobile treatment with more room,
           not the desktop one squeezed into it. Two tracks: the grid takes
           everything the panel does not, and the panel is part of the layout
-          rather than something the grid borrows. */
+          rather than something the grid borrows. */}
       <div className="grid grid-cols-1 xl:grid-cols-12 min-h-[calc(100vh-56px)]">
 
         {/* Gallery */}
@@ -1375,7 +1332,11 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
                 )}
               </div>
             )}
-            <div className={(refineKey ? 'hidden' : 'flex') + ' items-center justify-between gap-3 pb-3 mb-5 border-b border-edge'}>
+            <div className={(refineKey ? 'hidden' : 'flex') + ' items-center justify-between gap-3 border-b border-edge ' + (view === 'index'
+              // In the table the bar holds still under the header, and the
+              // column names hold still under it.
+              ? 'sticky top-14 z-20 h-[55px] -mt-5 xl:-mt-6 mb-4 -mx-5 px-5 xl:-mx-6 xl:px-6 bg-background'
+              : 'pb-3 mb-5')}>
               <div className="flex items-center gap-2 min-w-0">
                 <h2 className="flex items-center gap-1.5 text-meta text-ink font-medium whitespace-nowrap">
                   {colorFilter && (
@@ -1408,23 +1369,49 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
               <div className="flex items-center gap-2 shrink-0">
               {/* Below md the header has no room for Refine; it sits here. */}
               <Refine value={refine} onApply={applyRefine} fonts={refineFonts} className="md:hidden" />
-              {sortControl}
+              <div
+                className="flex items-center gap-0.5"
+                role="group"
+                aria-label="Sort sites"
+              >
+                <span className="text-micro text-ink-4 shrink-0 mr-0.5 max-sm:hidden">Sort</span>
+                {SORT_OPTIONS.map(({ value, label }) => (
+                  <button
+                    key={value}
+                    onClick={() => setSort(value)}
+                    aria-pressed={sortBy === value}
+                    className={`shrink-0 px-1.5 py-0.5 ${sortButton(sortBy === value)}`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
               </div>
               )}
             </div>
 
             {/* One line of value proposition: nothing above the fold says
                 what this is, and shared-link visitors bounce on confusion. */}
-            <p className={(refineKey ? 'hidden' : 'block') + ' text-meta text-ink-4 text-balance pb-3 -mt-2'}>
+            <p className={(refineKey || view === 'index' ? 'hidden' : 'block') + ' text-meta text-ink-4 text-balance pb-3 -mt-2'}>
               {libraryTotal} of the web&apos;s best-designed sites, dissected. Colors, type, assets and screenshots, extracted automatically.
             </p>
 
-            {!hasFilters && !similarToId && !collectionName && !refineKey && (
+            {view === 'grid' && !hasFilters && !similarToId && !collectionName && !refineKey && (
               <NewThisWeek sites={newThisWeek} onOpen={d => selectDesign(d)} />
             )}
 
                         {/* Height is held during a swap so the page doesn't collapse and
                 rebound between result sets. */}
+            {view === 'index' ? (
+              <IndexView
+                designs={designs}
+                total={pagination.total}
+                selectedId={selectedId}
+                busy={isRefetching}
+                onKind={handleTableKind}
+                onOpenDesign={handleIndexOpen}
+              />
+            ) : (
             <motion.div
               // While a new result set loads, the old one steps back so the
               // wait reads as work, not as nothing happening.
@@ -1518,6 +1505,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
                 }
               </AnimatePresence>
             </motion.div>
+            )}
 
             <div ref={sentinelRef} className="h-1 mt-4" />
             {isLoadingMore && (
@@ -1570,7 +1558,6 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
         </div>
 
       </div>
-      )}
 
       {/* The sheet covers this corner on a phone, so the links hide only
           there. On desktop the corner stays visible and reachable with a card
