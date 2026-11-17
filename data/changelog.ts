@@ -89,6 +89,7 @@ const changelog: ChangelogRelease[] = [
     title: 'Row by Row',
     items: [
       { type: 'improved', author: 'florence', text: 'Index lists every site as a row: kind, typeface, palette and the day it arrived' },
+      { type: 'improved', author: 'florence', text: 'Each Index row shows the site’s screenshot, and Type skips icon and maths fonts' },
     ],
   },
   {
