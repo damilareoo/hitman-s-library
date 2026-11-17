@@ -915,6 +915,16 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
     })
   }, [sounds, updateParams])
 
+  // A category picked in the table filters the table; it does not leave it.
+  const handleTableKind = useCallback((kind: string) => {
+    sounds.playFilterClick()
+    updateParams(p => {
+      p.delete('category')
+      p.set('category', kind)
+    })
+    scrollToTop()
+  }, [sounds, updateParams, scrollToTop])
+
   const handleIndexSet = useCallback((name: string) => {
     sounds.playFilterClick()
     updateParams(p => {
@@ -987,6 +997,27 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
   // nondeterministic for overlapping same-property queries, so the wide
   // breakpoints live in plain CSS.
   const cardColumns = 'grid-cols-1 sm:grid-cols-2 gallery-grid'
+
+  // One sort control, shown above the grid and above the index table.
+  const sortControl = (
+    <div
+      className="flex items-center gap-0.5"
+      role="group"
+      aria-label="Sort sites"
+    >
+      <span className="text-micro text-ink-4 shrink-0 mr-0.5 max-sm:hidden">Sort</span>
+      {SORT_OPTIONS.map(({ value, label }) => (
+        <button
+          key={value}
+          onClick={() => setSort(value)}
+          aria-pressed={sortBy === value}
+          className={`shrink-0 px-1.5 py-0.5 ${sortButton(sortBy === value)}`}
+        >
+          {label}
+        </button>
+      ))}
+    </div>
+  )
 
   // The browse layer ranks the biggest shelf first, like the overview does.
   const browseKinds = useMemo(
@@ -1255,12 +1286,11 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
            the sheet would say anyway, so the 3-pane shell steps aside. */
         <main id="gallery" tabIndex={-1} className="min-h-[calc(100vh-56px)] focus:outline-none">
           <IndexView
-            total={libraryTotal}
-            categories={categories}
-            collections={collections}
+            heading={galleryHeading}
+            total={pagination.total}
             designs={designs}
-            favorites={favorites}
-            onKind={handleIndexKind}
+            toolbar={sortControl}
+            onKind={handleTableKind}
             onOpenDesign={handleIndexOpen}
           />
           {/* The same sentinel the grid uses, so the table keeps loading rows. */}
@@ -1378,23 +1408,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
               <div className="flex items-center gap-2 shrink-0">
               {/* Below md the header has no room for Refine; it sits here. */}
               <Refine value={refine} onApply={applyRefine} fonts={refineFonts} className="md:hidden" />
-              <div
-                className="flex items-center gap-0.5"
-                role="group"
-                aria-label="Sort sites"
-              >
-                <span className="text-micro text-ink-4 shrink-0 mr-0.5 max-sm:hidden">Sort</span>
-                {SORT_OPTIONS.map(({ value, label }) => (
-                  <button
-                    key={value}
-                    onClick={() => setSort(value)}
-                    aria-pressed={sortBy === value}
-                    className={`shrink-0 px-1.5 py-0.5 ${sortButton(sortBy === value)}`}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
+              {sortControl}
               </div>
               )}
             </div>
