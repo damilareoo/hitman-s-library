@@ -31,19 +31,50 @@ const PLATFORMS: [RegExp, string][] = [
 ]
 
 /**
- * The platform a visit came from. A campaign tag (?utm_source=, ?ref=) wins
- * over the referrer, because apps like X and Slack strip the referrer.
+ * Android apps report themselves as android-app://<package>, which reaches us
+ * as a "host" like com.linkedin.android.
  */
-export function sourceOf(referrerHost: string | null, tag: string | null, ownHost = 'hitmanslibrary.xyz'): string {
+const ANDROID_APPS: [RegExp, string][] = [
+  [/^com\.linkedin\./, 'LinkedIn'],
+  [/^com\.twitter\.|^com\.x\./, 'X'],
+  [/^com\.instagram\./, 'Instagram'],
+  [/^com\.facebook\./, 'Facebook'],
+  [/^com\.reddit\./, 'Reddit'],
+  [/^com\.slack/, 'Slack'],
+  [/^com\.whatsapp/, 'WhatsApp'],
+  [/^org\.telegram\./, 'Telegram'],
+  [/^com\.discord/, 'Discord'],
+  [/^com\.google\.android\.gm/, 'Email'],
+  [/^com\.google\.android\.googlequicksearchbox/, 'Google'],
+]
+
+/** The platform an in-app browser belongs to, from agentOf().browser. */
+const IN_APP: Record<string, string> = {
+  'X app': 'X',
+  'LinkedIn app': 'LinkedIn',
+  'Instagram app': 'Instagram',
+  'Facebook app': 'Facebook',
+}
+
+/**
+ * The platform a visit came from, best evidence first: a campaign tag
+ * (?utm_source=, ?ref=), then the referrer, then the app whose built-in
+ * browser the visit is in (those often send no referrer at all).
+ */
+export function sourceOf(referrerHost: string | null, tag: string | null, ownHost = 'hitmanslibrary.xyz', browser?: string): string {
   const t = tag?.trim().toLowerCase()
   if (t) {
     for (const [re, name] of PLATFORMS) if (re.test(t)) return name
     return t.slice(0, 40)
   }
   const host = referrerHost?.toLowerCase().replace(/^www\./, '') ?? ''
-  if (!host || host === ownHost || host.endsWith('.' + ownHost)) return 'Direct'
-  for (const [re, name] of PLATFORMS) if (re.test(host)) return name
-  return host.slice(0, 60)
+  if (host && host !== ownHost && !host.endsWith('.' + ownHost)) {
+    // Package names first: com.google.android.gm would otherwise read as Google.
+    for (const [re, name] of ANDROID_APPS) if (re.test(host)) return name
+    for (const [re, name] of PLATFORMS) if (re.test(host)) return name
+    return host.slice(0, 60)
+  }
+  return (browser && IN_APP[browser]) || 'Direct'
 }
 
 const BOT = /bot|crawl|spider|slurp|headless|lighthouse|puppeteer|playwright|phantom|preview|facebookexternalhit|embedly|quora link|vercel|cloudflare|python|curl|wget|httpclient|axios|node-fetch|go-http/i
