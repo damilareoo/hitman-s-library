@@ -20,7 +20,7 @@ import { EASE, DUR, MENU } from '@/lib/motion'
 import type { Design } from './design-card'
 import { fetchDetail, getCachedDetail } from '@/lib/detail-cache'
 import { useAccount, openSignIn } from '@/lib/account-client'
-import { WatchButton } from '@/components/watch-button'
+import { WatchRow } from '@/components/watch-button'
 import { track } from '@/lib/analytics'
 interface ColorRow { hex_value: string; oklch: string | null; area_share: number | null }
 interface TypographyRow { font_family: string; role: string; google_fonts_url: string | null; primary_weight: number | null; sample_size_px?: number | null; sample_line_height?: string | null }
@@ -210,7 +210,6 @@ export function SiteDetailPanel({ variant = 'desktop', sourceId, metadata, initi
           </p>
         </div>
         <div className="flex items-center gap-1 shrink-0 -mr-1.5">
-          <WatchButton siteId={sourceId} siteName={shortName} />
           <div ref={saveRef} className="relative">
             <button
               onClick={() => setSaveOpen(v => !v)}
@@ -257,6 +256,9 @@ export function SiteDetailPanel({ variant = 'desktop', sourceId, metadata, initi
                       </button>
                     )
                   })}
+                </div>
+                <div className="p-1.5 border-t border-edge-faint">
+                  <WatchRow siteId={sourceId} siteName={shortName} />
                 </div>
                 <div className={CARD.foot + ' px-2'}>
                   <input

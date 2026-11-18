@@ -1,69 +1,37 @@
 // components/watch-button.tsx
-// Watch a site for redesigns, beside Save in the panel header. Pro members
-// toggle it (filled eye = watching). Anyone else gets a small card saying
-// what it does and how to get it, rather than a dead button.
+// Watch a site for redesigns: one row at the foot of the panel's Save menu,
+// beside the sets, drawn like them. Pro members tick it; anyone else sees
+// the Pro tag and is taken to Pro (or to join, when signed out).
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
-import Link from 'next/link'
-import { motion, AnimatePresence } from 'motion/react'
-import { Eye } from '@phosphor-icons/react'
+import { useRouter } from 'next/navigation'
+import { Check } from '@phosphor-icons/react'
 import { useAccount, setWatching, openSignIn } from '@/lib/account-client'
-import { BTN, CARD } from '@/components/member-card'
-import { MENU } from '@/lib/motion'
+import { CARD } from '@/components/member-card'
 
-export function WatchButton({ siteId, siteName }: { siteId: number; siteName: string }) {
+export function WatchRow({ siteId, siteName }: { siteId: number; siteName: string }) {
   const { status, pro, watching } = useAccount()
-  const on = Boolean(watching?.includes(siteId))
-  const [open, setOpen] = useState(false)
-  const ref = useRef<HTMLDivElement>(null)
+  const router = useRouter()
+  const on = Boolean(pro && watching?.includes(siteId))
 
-  useEffect(() => {
-    if (!open) return
-    const onDown = (e: MouseEvent) => { if (!ref.current?.contains(e.target as Node)) setOpen(false) }
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false) }
-    window.addEventListener('mousedown', onDown); window.addEventListener('keydown', onKey)
-    return () => { window.removeEventListener('mousedown', onDown); window.removeEventListener('keydown', onKey) }
-  }, [open])
-
-  const label = on ? `Watching ${siteName} for redesigns` : 'Watch for redesigns'
+  function act() {
+    if (pro) return void setWatching(siteId, !on)
+    if (status === 'signed-in') router.push('/pro')
+    else openSignIn('join')
+  }
 
   return (
-    <div ref={ref} className="relative">
-      <button
-        onClick={() => (pro ? void setWatching(siteId, !on) : setOpen(v => !v))}
-        aria-pressed={pro ? on : undefined}
-        aria-expanded={pro ? undefined : open}
-        aria-label={label}
-        title={on ? 'Watching: we’ll email you if it redesigns' : 'Watch for redesigns'}
-        className={BTN.icon + (on ? ' !text-ink' : '')}
-      >
-        <Eye className="w-4 h-4" weight={on ? 'fill' : 'bold'} />
-      </button>
-      <AnimatePresence>
-        {open && (
-          <motion.div
-            role="dialog" aria-label="Watch for redesigns"
-            {...MENU}
-            style={{ transformOrigin: 'top right' }}
-            className={CARD.shell + ' absolute right-0 top-10 z-[60] w-[280px] shadow-[0_24px_56px_-20px_rgba(0,0,0,0.35)]'}
-          >
-            <div className={CARD.head}>
-              <span>Watch</span>
-              <span className={CARD.proPill}>Pro</span>
-            </div>
-            <div className={CARD.pad + ' py-3.5'}>
-              <p className={CARD.title}>Know when it redesigns</p>
-              <p className={CARD.body + ' mt-1'}>We re-check watched sites every week and email you a before and after: capture, colours and type.</p>
-            </div>
-            <div className={CARD.foot + ' justify-end'}>
-              {status === 'signed-in'
-                ? <Link href="/pro" className={BTN.primary}>Get Pro</Link>
-                : <button onClick={() => { setOpen(false); openSignIn('join') }} className={BTN.primary}>Join to watch</button>}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
+    <button
+      onClick={act}
+      aria-pressed={pro ? on : undefined}
+      title={pro ? (on ? `Watching ${siteName}: we email you if it redesigns` : 'We re-check weekly and email a before and after') : 'Redesign alerts are part of Pro'}
+      className="w-full h-9 px-2.5 flex items-center gap-2.5 rounded-[10px] text-left text-[13.5px] font-[500] text-ink hover:bg-foreground/[0.045] transition-colors"
+    >
+      <span className={'w-4 h-4 shrink-0 grid place-items-center rounded-[5px] border ' + (on ? 'bg-foreground border-foreground text-background' : 'border-edge-strong')}>
+        {on && <Check className="w-2.5 h-2.5" weight="bold" />}
+      </span>
+      <span className="flex-1 truncate">Email me if it redesigns</span>
+      {!pro && <span className={CARD.proPill}>Pro</span>}
+    </button>
   )
 }

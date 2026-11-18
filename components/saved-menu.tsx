@@ -43,15 +43,19 @@ export function SavedMenu() {
 
   const row = 'h-9 px-2.5 flex items-center justify-between gap-3 rounded-[10px] text-[13.5px] font-[500] text-ink hover:bg-foreground/[0.045] focus-visible:bg-foreground/[0.045] outline-none transition-colors'
 
+  // Signed in, Saved opens from the avatar card (its Hearts and Sets). Signed
+  // out there is no card, so the bookmark shows once something is saved.
+  const showTrigger = status !== 'signed-in' && status !== 'loading' && (counts.hearts > 0 || sets.length > 0)
+
   return (
     <div ref={ref} className="relative">
-      <button
+      {showTrigger && <button
         onClick={() => setOpen(v => !v)}
         aria-expanded={open} aria-haspopup="menu" aria-label="Saved" title="Saved"
         className="relative w-8 h-8 grid place-items-center rounded-[10px] text-ink-3 hover:text-ink hover:bg-foreground/[0.05] transition-colors max-sm:hidden after:absolute after:inset-0 after:-m-1.5 after:content-['']"
       >
         <BookmarkSimple className="w-4 h-4" weight="bold" />
-      </button>
+      </button>}
       <AnimatePresence>
         {open && (
           <motion.div

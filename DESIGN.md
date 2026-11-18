@@ -239,7 +239,7 @@ Elevation is a border plus one soft, low shadow. Never glow, never a gradient.
 | 30 | Floating page links (bottom left) |
 | 40 | Sticky detail panel, site sheet scrim |
 | 50 | Sticky header, site sheet, popovers |
-| 60 | Header popovers (More, Digest, Watch), skip link |
+| 60 | Header popovers (More, Digest), skip link |
 | 70 / 71 | Browse layer scrim / layer |
 | 80 / 81 | Sign-in scrim / sheet |
 | 82 | Toast |
@@ -259,7 +259,7 @@ Elevation is a border plus one soft, low shadow. Never glow, never a gradient.
 
 **In use:** AppWindow (Preview), DeviceMobile (Mobile), Palette (Colors),
 TextAa (Type), ClockCounterClockwise (History), Heart (favourite),
-BookmarkSimple (save, saved), FolderSimple (set), Eye (watch),
+BookmarkSimple (save, saved), FolderSimple (set),
 MagnifyingGlass (search), SlidersHorizontal (Refine), ImageSquare (from image),
 EnvelopeSimple (digest, email), Plus, Minus, X (close, remove), Check,
 Copy, DownloadSimple, ArrowRight (forward action), ArrowUpRight (external),
@@ -287,16 +287,18 @@ Always compose from the tokens. Copy the class strings from
 | `ghost` | 32px, 13px/500 | No border, `ink-3` to `ink` |
 | `primaryLg` / `secondaryLg` | 40px, 13.5px | Forms and full-width actions |
 | `inField` | 32px, radius 6 | The button inside a `FIELD` |
-| `icon` | 32×32 | Square icon button (close, save, watch) |
-| `iconHeader` | 36×36 | The site header's icon buttons only |
+| `icon` | 32×32 | Square icon button (close, save) |
+| `iconHeader` | 32×32, no ground | The site header's icon buttons only |
 | `chip(active)` | 28px, full radius, 12px | Toggles and filters; active = ink fill |
 
 One primary per surface, pushed right. Disabled is `opacity-40`, no pointer.
 Button labels are verbs: "Get Pro", "Show sites", "Make a key". A forward
 action may carry `ArrowRight` (14px) after the label.
 
-`BTN.iconHeader` (36px, `bg-muted/60`, 44×42 hit area) is the one header-only
-variant; use `BTN.icon` everywhere else.
+`BTN.iconHeader` (32px, no ground, 44×40 hit area) is the one header-only
+variant; use `BTN.icon` everywhere else. Every header control (Digest, Pro, the avatar, sound, theme) shares its 32px
+height and quiet register. Saved opens from the avatar card (Hearts, Sets); signed
+out, its bookmark shows only once something is saved.
 
 ### Inputs
 
@@ -354,9 +356,8 @@ from `lib/motion` and `transformOrigin` set to the corner nearest the trigger.
 | --- | --- | --- | --- |
 | Account card | 300 | top right of avatar | `account-button.tsx` |
 | Saved | 264 | top right | `saved-menu.tsx` |
-| Save to set | 260 | under the bookmark | `site-detail-panel.tsx` |
+| Save to set (with the Pro watch row) | 260 | under the bookmark | `site-detail-panel.tsx`, `watch-button.tsx` |
 | Refine (Pro search) | 320 | top left | `refine.tsx` |
-| Watch (upsell) | 280 | top right | `watch-button.tsx` |
 | Digest | 340 | fixed top right | `gallery.tsx` |
 | More (header, under 1024) | 232 | top right | `gallery.tsx` |
 

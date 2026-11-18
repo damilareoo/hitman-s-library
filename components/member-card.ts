@@ -29,11 +29,11 @@ export const BTN = {
   /** Square icon buttons (close, etc). */
   icon: `inline-grid place-items-center shrink-0 w-8 h-8 ${R.control} text-ink-4 hover:text-ink hover:bg-foreground/[0.06] transition-colors focus-visible:outline-2 focus-visible:outline-pro`,
   /**
-   * The site header's icon buttons only: drawn at 36px on a muted ground so the
-   * bar reads as one row of controls; the overlay takes the target to 44×42
-   * (42 because neighbours sit 6px apart). Use `icon` everywhere else.
+   * The site header's icon buttons: drawn at 32px with no ground, the same as
+   * Saved, the Pro word and the avatar beside them, so the bar reads as one
+   * quiet row. The overlay takes the target to 44×40.
    */
-  iconHeader: "relative w-9 h-9 flex items-center justify-center rounded-[10px] border border-transparent bg-muted/60 text-ink-3 hover:text-ink hover:bg-muted active:scale-[0.98] transition-[background-color,border-color,color,transform] duration-[var(--dur-2)] ease-[var(--ease-sig)] focus-visible:outline-2 focus-visible:outline-pro after:absolute after:left-1/2 after:top-1/2 after:h-11 after:w-[42px] after:-translate-x-1/2 after:-translate-y-1/2 after:content-['']",
+  iconHeader: "relative w-8 h-8 flex items-center justify-center rounded-[10px] text-ink-3 hover:text-ink hover:bg-foreground/[0.05] active:scale-[0.98] transition-[background-color,color,transform] duration-[var(--dur-2)] ease-[var(--ease-sig)] focus-visible:outline-2 focus-visible:outline-pro after:absolute after:left-1/2 after:top-1/2 after:h-11 after:w-10 after:-translate-x-1/2 after:-translate-y-1/2 after:content-['']",
   /** Toggle chips; pass the active state through `chip(active)`. */
   chip: (active: boolean) => `${btnBase} h-7 px-3 ${R.chip} border text-[12px] ${active ? 'border-foreground bg-foreground text-background' : 'border-edge text-ink-3 hover:text-ink'}`,
 }
