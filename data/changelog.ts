@@ -90,6 +90,8 @@ const changelog: ChangelogRelease[] = [
     items: [
       { type: 'improved', author: 'damilare', text: 'Header controls share one size and one quiet style, with Saved in your account card' },
       { type: 'improved', author: 'damilare', text: 'Watch for redesigns moved from the panel header into the Save menu' },
+      { type: 'improved', author: 'damilare', text: 'The preview sits under an address bar with reload and open beside it' },
+      { type: 'improved', author: 'damilare', text: 'Panel footer buttons say what they do: Copy CSS, Copy Tailwind, tokens.json' },
       { type: 'improved', author: 'damilare', text: 'Visits are now counted on our own servers, with a random ID, never a name' },
       { type: 'improved', author: 'damilare', text: 'Privacy page explains what the count keeps: source, device type and country' },
     ],

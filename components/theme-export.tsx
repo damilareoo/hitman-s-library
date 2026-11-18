@@ -5,6 +5,7 @@
 // network, no model, nothing to fail.
 'use client'
 
+import { Check, Copy, DownloadSimple } from '@phosphor-icons/react'
 import { CARD } from '@/components/member-card'
 
 import { useSoundsContext } from '@/contexts/sounds-context'
@@ -67,34 +68,37 @@ export function ThemeExport({
     } catch { /* download unavailable */ }
   }
 
-  const btn = CARD.footBtn
+  const done = (id: string) => copy.copiedId === id
+  const mark = (id: string, Icon: typeof Copy) => done(id)
+    ? <Check className="w-3.5 h-3.5" weight="bold" />
+    : <Icon className="w-3.5 h-3.5" weight="bold" />
 
+  // Three labelled buttons: each says what it does, in the footer's own register.
   return (
-    <div className="flex items-center gap-0.5" role="group" aria-label="Copy theme">
-      <span className="pl-2 pr-1 text-[12px] text-ink-4 max-[380px]:hidden">Copy</span>
+    <div className="flex items-center gap-0.5 min-w-0" role="group" aria-label="Copy theme">
       <button
         type="button"
         onClick={() => copyText(buildCssVars(colors, typography, fontImport, siteUrl), 'css')}
-        className={btn}
+        className={CARD.footBtn}
         title="Copy OKLCH custom properties"
       >
-        {copy.copiedId === 'css' ? 'Copied' : 'CSS'}
+        {mark('css', Copy)}{done('css') ? 'Copied' : 'Copy CSS'}
       </button>
       <button
         type="button"
         onClick={() => copyText(buildTailwindTheme(colors, typography, fontImport, siteUrl), 'tw')}
-        className={btn}
+        className={CARD.footBtn}
         title="Copy Tailwind v4 @theme block"
       >
-        {copy.copiedId === 'tw' ? 'Copied' : 'Tailwind'}
+        {mark('tw', Copy)}{done('tw') ? 'Copied' : 'Copy Tailwind'}
       </button>
       <button
         type="button"
         onClick={download}
-        className={btn}
+        className={CARD.footBtn}
         title="Download tokens.json"
       >
-        {copy.copiedId === 'json' ? 'Saved' : 'tokens.json'}
+        {mark('json', DownloadSimple)}{done('json') ? 'Saved' : 'tokens.json'}
       </button>
     </div>
   )

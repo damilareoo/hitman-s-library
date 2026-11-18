@@ -226,64 +226,47 @@ export function PreviewTab({
   }
 
   const showingCapture = Boolean(activeScreenshotUrl)
-  const state: 'loading' | 'live' | 'capture' =
-    showingCapture || proxyFailed || !livePreview ? 'capture' : loaded ? 'live' : 'loading'
-  const stateLabel = state === 'loading' ? 'Loading' : state === 'live' ? 'Live' : showingCapture ? 'Capture' : 'Unavailable'
+  const loading = !showingCapture && !proxyFailed && livePreview && !loaded
   // Offered even after a failure has swapped in the capture: that state is
   // exactly when a retry is wanted. Sites that can never go live have no
   // button, because it would only fail the same way again.
   const canReload = livePreview
 
-  /** The site never draws its own chrome over itself: status lives in the bar,
-   *  and the page sits on a framed screen so busy artwork reads as content. */
+  /** An address bar: what you are looking at on the left, its two actions on
+   *  the right, the same 12px in from the panel as the frame below it. */
   const bar = (
-    <div className="h-10 flex-shrink-0 flex items-center gap-2 px-4 border-b border-edge-faint">
-      {/* The domain is in the panel header; this row is only state and actions. */}
-      <span className="flex-1" />
-      <span className="inline-flex items-center gap-1.5 flex-shrink-0 text-[12px] text-ink-4">
-        {state === 'loading' ? (
-          <span className="w-2.5 h-2.5 rounded-full border-[1.5px] border-edge-strong border-t-ink-3 animate-spin motion-reduce:animate-none" />
-        ) : (
-          <span
-            className={[
-              'w-1.5 h-1.5 rounded-full',
-              state === 'live' ? 'bg-[var(--color-success)]' : 'bg-ink-4',
-            ].join(' ')}
-            style={state === 'live'
-              ? { boxShadow: '0 0 0 3px color-mix(in srgb, var(--color-success) 12%, transparent)' }
-              : undefined}
-          />
+    <div className="flex-shrink-0 px-3 pt-1 max-sm:px-2 max-sm:pt-1">
+      <div className="h-9 pl-3 pr-1 flex items-center gap-1 rounded-[10px] border border-edge-strong bg-foreground/[0.025]">
+        <span className="flex-1 min-w-0 truncate text-[13px] text-ink-2" title={siteUrl}>{domain}</span>
+        {canReload && (
+          <button
+            onClick={reload}
+            aria-label="Reload preview"
+            title="Reload preview"
+            className="w-7 h-7 flex-shrink-0 grid place-items-center rounded-[7px] text-ink-3 hover:text-ink hover:bg-foreground/[0.05] transition-colors"
+          >
+            <ArrowClockwise className={'w-3.5 h-3.5 ' + (loading ? 'animate-spin motion-reduce:animate-none' : '')} weight="bold" />
+          </button>
         )}
-        {stateLabel}
-      </span>
-      {canReload && (
-        <button
-          onClick={reload}
-          aria-label="Reload preview"
-          title="Reload preview"
-          className="w-7 h-7 flex-shrink-0 flex items-center justify-center rounded-[10px] text-ink-3 hover:text-ink hover:bg-muted transition-colors"
+        {/* The one way out of the panel to the real site: the preview itself is
+            proxied and sandboxed, so its own links go nowhere. */}
+        <a
+          href={siteUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label={`Open ${domain} in a new tab`}
+          title={`Open ${domain}`}
+          className="w-7 h-7 flex-shrink-0 grid place-items-center rounded-[7px] text-ink-3 hover:text-ink hover:bg-foreground/[0.05] transition-colors"
         >
-          <ArrowClockwise className="w-3.5 h-3.5" weight="bold" />
-        </button>
-      )}
-      {/* The one way out of the panel to the real site: the preview itself is
-          proxied and sandboxed, so its own links go nowhere. */}
-      <a
-        href={siteUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-        aria-label={`Open ${domain} in a new tab`}
-        title={`Open ${domain}`}
-        className="w-7 h-7 -mr-1 flex-shrink-0 flex items-center justify-center rounded-[10px] text-ink-3 hover:text-ink hover:bg-muted transition-colors"
-      >
-        <ArrowUpRight className="w-3.5 h-3.5" weight="bold" />
-      </a>
+          <ArrowUpRight className="w-3.5 h-3.5" weight="bold" />
+        </a>
+      </div>
     </div>
   )
 
   const stage = (content: ReactNode) => (
     <div className="relative flex-1 min-h-0 bg-background">
-      <div className="absolute inset-3 max-sm:inset-2 rounded-[12px] max-sm:rounded-[10px] border border-edge overflow-hidden bg-muted">
+      <div className="absolute inset-3 top-2 max-sm:inset-2 max-sm:top-2 rounded-[12px] max-sm:rounded-[10px] border border-edge overflow-hidden bg-muted">
         {content}
       </div>
     </div>
