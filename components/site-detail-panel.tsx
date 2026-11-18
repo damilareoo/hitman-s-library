@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
-import { Check, BookmarkSimple, Heart, X, Monitor, DeviceMobile, ArrowClockwise, ArrowUpRight } from '@phosphor-icons/react'
+import { Check, BookmarkSimple, Heart, X } from '@phosphor-icons/react'
 import { useCollections, toggleMembership, sanitizeName } from '@/lib/collections'
 import { PanelTabs, type PanelTab } from './panel-tabs'
 import { useSoundsContext } from '@/contexts/sounds-context'
@@ -67,7 +67,6 @@ interface SiteDetailPanelProps {
 export function SiteDetailPanel({ variant = 'desktop', sourceId, metadata, initialDesign, onClose, onFindColor, initialTab = 'preview', onTabChange }: SiteDetailPanelProps) {
   const isMobile = variant === 'mobile'
   const [activeTab, setActiveTab] = useState<PanelTab>(initialTab)
-  const [reloadKey, setReloadKey] = useState(0)
   const [saveOpen, setSaveOpen] = useState(false)
   const [newSetName, setNewSetName] = useState('')
   const [collections] = useCollections()
@@ -316,31 +315,6 @@ export function SiteDetailPanel({ variant = 'desktop', sourceId, metadata, initi
           variant={variant}
           colorsCount={data?.colors.length}
           typeCount={data?.typography.length}
-          trailing={data && (effectiveTab === 'preview' || effectiveTab === 'mobile') ? (
-            <>
-              {!isMobile && (
-                <div role="group" aria-label="Device" className="flex items-center">
-                  {([['preview', 'Desktop', Monitor], ['mobile', 'Mobile', DeviceMobile]] as const).map(([tab, label, Icon]) => (
-                    <button
-                      key={tab}
-                      onClick={() => { if (activeTab !== tab) { setActiveTab(tab); onTabChange?.(tab) } }}
-                      aria-pressed={activeTab === tab}
-                      aria-label={label}
-                      title={label}
-                      className={BTN.icon + (activeTab === tab ? ' !text-ink bg-foreground/[0.06]' : '')}
-                    >
-                      <Icon className="w-4 h-4" weight={activeTab === tab ? 'fill' : 'bold'} />
-                    </button>
-                  ))}
-                </div>
-              )}
-              {data.live_preview !== false && (
-                <button onClick={() => setReloadKey(k => k + 1)} aria-label="Reload preview" title="Reload preview" className={BTN.icon}>
-                  <ArrowClockwise className="w-4 h-4" weight="bold" />
-                </button>
-              )}
-            </>
-          ) : null}
         />
       </div>
 
@@ -369,7 +343,6 @@ export function SiteDetailPanel({ variant = 'desktop', sourceId, metadata, initi
                     livePreview={data.live_preview !== false}
                     displayMode={isMobile ? 'mobile' : 'live'}
                     fill={isMobile}
-                    reloadSignal={reloadKey}
                   />
                 </motion.div>
               )}
@@ -384,7 +357,6 @@ export function SiteDetailPanel({ variant = 'desktop', sourceId, metadata, initi
                     mobileScreenshotUrl={data.mobile_screenshot_url}
                     extractionError={data.extraction_error}
                     displayMode="mobile"
-                    reloadSignal={reloadKey}
                   />
                 </motion.div>
               )}
@@ -444,17 +416,13 @@ export function SiteDetailPanel({ variant = 'desktop', sourceId, metadata, initi
 
       {/* One footer, like every card: the site's colours and type to copy. */}
       {data && (
-        <div className={CARD.foot + ' flex-shrink-0 px-2'}>
+        <div className={CARD.foot + ' flex-shrink-0 pl-2 pr-2'}>
           <ThemeExport
             siteUrl={data.url}
             siteTitle={hostname}
             colors={data.colors}
             typography={data.typography}
           />
-          {/* The one way out to the real site: the preview is proxied, so its own links go nowhere. */}
-          <a href={data.url} target="_blank" rel="noopener noreferrer" className={CARD.footBtn + ' ml-auto'} aria-label={`Open ${hostname} in a new tab`}>
-            Open site <ArrowUpRight className="w-3.5 h-3.5" weight="bold" />
-          </a>
         </div>
       )}
     </div>

@@ -17,6 +17,7 @@ import { CARD } from '@/components/member-card'
 import { MENU } from '@/lib/motion'
 import { COLLECTIONS_EVENT } from '@/lib/collections'
 import { useAccount, openSignIn, signOut, FAVORITES_EVENT, type AccountUser } from '@/lib/account-client'
+import { OPEN_SAVED_EVENT } from '@/components/saved-menu'
 
 const QUIET = "relative flex items-center gap-1 text-meta text-ink-3 hover:text-ink transition-colors mr-1 after:absolute after:inset-x-0 after:top-1/2 after:h-11 after:-translate-y-1/2 after:content-['']"
 
@@ -145,18 +146,36 @@ export function AccountButton() {
                 </div>
               </div>
 
-              <dl className="mt-4 pt-4 border-t border-edge grid grid-cols-3">
+              <div className="mt-4 pt-4 border-t border-edge grid grid-cols-3">
                 {[
                   { k: 'Hearts', v: String(counts.hearts) },
                   { k: 'Sets', v: String(counts.sets) },
                   { k: pro ? 'Watching' : 'Plan', v: pro ? String(watching?.length ?? 0) : 'Free' },
-                ].map(({ k, v }, i) => (
-                  <div key={k} className={'flex flex-col-reverse ' + (i ? 'pl-3 border-l border-edge' : '')}>
-                    <dt className="mt-1.5 text-[11.5px] text-ink-4">{k}</dt>
-                    <dd className="text-[16px] font-[620] tracking-[-0.02em] leading-none text-ink">{v}</dd>
-                  </div>
-                ))}
-              </dl>
+                ].map(({ k, v }, i) => {
+                  // Hearts and Sets open Saved: the way back to what you kept lives here, not in the bar.
+                  const opens = k === 'Hearts' || k === 'Sets'
+                  const cell = (
+                    <>
+                      <span className="mt-1.5 text-[11.5px] text-ink-4">{k}</span>
+                      <span className="text-[16px] font-[620] tracking-[-0.02em] leading-none text-ink">{v}</span>
+                    </>
+                  )
+                  const edge = i ? 'pl-3 border-l border-edge' : ''
+                  return opens ? (
+                    <button
+                      key={k}
+                      role="menuitem"
+                      onClick={() => { setOpen(false); setTimeout(() => window.dispatchEvent(new Event(OPEN_SAVED_EVENT)), 0) }}
+                      className={'flex flex-col-reverse text-left rounded-[6px] hover:opacity-70 transition-opacity ' + edge}
+                      title="Open saved"
+                    >
+                      {cell}
+                    </button>
+                  ) : (
+                    <div key={k} className={'flex flex-col-reverse ' + edge}>{cell}</div>
+                  )
+                })}
+              </div>
             </div>
 
             <div className={CARD.foot}>

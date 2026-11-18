@@ -257,8 +257,8 @@ Elevation is a border plus one soft, low shadow. Never glow, never a gradient.
   `--color-error` when filled.
 - Icon-only buttons always carry `aria-label` and usually `title`.
 
-**In use:** Monitor and DeviceMobile (the preview's device switch; panel tabs
-are words only), ArrowClockwise (reload), Heart (favourite),
+**In use:** AppWindow (Preview), DeviceMobile (Mobile), Palette (Colors),
+TextAa (Type), ClockCounterClockwise (History), Heart (favourite),
 BookmarkSimple (save, saved), FolderSimple (set),
 MagnifyingGlass (search), SlidersHorizontal (Refine), ImageSquare (from image),
 EnvelopeSimple (digest, email), Plus, Minus, X (close, remove), Check,
@@ -296,8 +296,9 @@ Button labels are verbs: "Get Pro", "Show sites", "Make a key". A forward
 action may carry `ArrowRight` (14px) after the label.
 
 `BTN.iconHeader` (32px, no ground, 44×40 hit area) is the one header-only
-variant; use `BTN.icon` everywhere else. Every header control (Digest, Pro, Saved,
-the avatar, sound, theme) shares its 32px height and quiet register.
+variant; use `BTN.icon` everywhere else. Every header control (Digest, Pro, the avatar, sound, theme) shares its 32px
+height and quiet register. Saved opens from the avatar card (Hearts, Sets); signed
+out, its bookmark shows only once something is saved.
 
 ### Inputs
 
@@ -356,7 +357,6 @@ from `lib/motion` and `transformOrigin` set to the corner nearest the trigger.
 | Account card | 300 | top right of avatar | `account-button.tsx` |
 | Saved | 264 | top right | `saved-menu.tsx` |
 | Save to set (with the Pro watch row) | 260 | under the bookmark | `site-detail-panel.tsx`, `watch-button.tsx` |
-| Copy theme | 240 | above the panel footer, left | `theme-export.tsx` |
 | Refine (Pro search) | 320 | top left | `refine.tsx` |
 | Digest | 340 | fixed top right | `gallery.tsx` |
 | More (header, under 1024) | 232 | top right | `gallery.tsx` |

@@ -1071,9 +1071,10 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
               aria-expanded={digestOpen}
               aria-label="Weekly digest"
               title="Weekly digest"
-              className={ICON_BUTTON + ' max-lg:hidden'}
+              className="relative h-8 px-2 flex items-center gap-1.5 rounded-[10px] text-meta text-ink-3 hover:text-ink hover:bg-foreground/[0.05] transition-colors max-lg:hidden after:absolute after:inset-x-0 after:top-1/2 after:h-11 after:-translate-y-1/2 after:content-['']"
             >
-              <EnvelopeSimple className="w-4 h-4" weight="bold" />
+              <EnvelopeSimple className="w-3.5 h-3.5" weight="bold" />
+              <span>Digest</span>
             </button>
             {/* Pro, in its own language: the pixel word from the Pro card.
                 Submit lives in the footer, the phone menu and the empty search. */}
@@ -1523,7 +1524,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
                 <div className="flex flex-col items-center gap-2 text-center px-6">
                   <p className="text-meta text-ink-4">Select a site</p>
                   <p className="text-micro text-ink-4">
-                    preview · colors · type · history
+                    preview · mobile · colors · type
                   </p>
                 </div>
               </motion.div>
