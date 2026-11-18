@@ -20,7 +20,8 @@ import { useAccount, openSignIn, signOut, FAVORITES_EVENT, type AccountUser } fr
 
 const QUIET = "relative flex items-center gap-1 text-meta text-ink-3 hover:text-ink transition-colors mr-1 after:absolute after:inset-x-0 after:top-1/2 after:h-11 after:-translate-y-1/2 after:content-['']"
 
-function Avatar({ user, size, pro = false }: { user: AccountUser; size: number; pro?: boolean }) {
+function Avatar({ user, size, pro = false, ground = 'popover' }: { user: AccountUser; size: number; pro?: boolean; ground?: 'popover' | 'background' }) {
+  const ring = ground === 'background' ? 'ring-2 ring-pro ring-offset-2 ring-offset-background' : 'ring-2 ring-pro ring-offset-2 ring-offset-popover'
   const [broken, setBroken] = useState(false)
   const initial = (user.name || user.email).trim().charAt(0).toUpperCase()
   if (user.avatar && !broken) {
@@ -30,14 +31,14 @@ function Avatar({ user, size, pro = false }: { user: AccountUser; size: number; 
       <img
         src={user.avatar} alt="" width={size} height={size} referrerPolicy="no-referrer"
         onError={() => setBroken(true)}
-        className={'rounded-full object-cover shrink-0 ' + (pro ? 'ring-2 ring-pro ring-offset-2 ring-offset-popover' : 'ring-1 ring-foreground/10')}
+        className={'rounded-full object-cover shrink-0 ' + (pro ? ring : 'ring-1 ring-foreground/10')}
         style={{ width: size, height: size }}
       />
     )
   }
   return (
     <span
-      className={'rounded-full grid place-items-center shrink-0 bg-foreground text-background font-[640] ' + (pro ? 'ring-2 ring-pro ring-offset-2 ring-offset-popover' : '')}
+      className={'rounded-full grid place-items-center shrink-0 bg-foreground text-background font-[640] ' + (pro ? ring : '')}
       style={{ width: size, height: size, fontSize: Math.round(size * 0.43) }}
     >
       {initial}
@@ -106,13 +107,14 @@ export function AccountButton() {
   const since = new Date(user.since).toLocaleDateString('en-GB', { month: 'short', year: 'numeric' })
 
   return (
-    <div ref={ref} className="relative mr-1">
+    <div ref={ref} className="relative">
+      {/* 32px like every header control: a 24px photo, its Pro ring inside the box. */}
       <button
         onClick={() => setOpen(v => !v)}
         aria-expanded={open} aria-haspopup="menu" aria-label="Your account"
-        className="rounded-full grid place-items-center transition-opacity hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pro"
+        className="relative w-8 h-8 rounded-full grid place-items-center transition-opacity hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pro after:absolute after:left-1/2 after:top-1/2 after:h-11 after:w-10 after:-translate-x-1/2 after:-translate-y-1/2 after:content-['']"
       >
-        <Avatar user={user} size={28} pro={pro} />
+        <Avatar user={user} size={pro ? 24 : 26} pro={pro} ground="background" />
       </button>
 
       <AnimatePresence>

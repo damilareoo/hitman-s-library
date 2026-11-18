@@ -99,7 +99,7 @@ interface GalleryProps {
 // culori into the gallery bundle, and the ranking is loaded on demand.
 const COLOR_FILTER_RE = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i
 
-// The header's icon buttons: BTN.iconHeader (36px drawn, 44px hit area).
+// The header's icon buttons: BTN.iconHeader (32px drawn, 44px hit area).
 const ICON_BUTTON = BTN.iconHeader
 
 function SkeletonCard() {
@@ -1061,7 +1061,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
             </kbd>
           </button>
 
-          <div className="flex items-center gap-1.5 max-sm:gap-0.5 ml-auto">
+          <div className="flex items-center gap-1 max-sm:gap-0.5 ml-auto">
             {/* Deliberately in the same quiet register as Changelog rather
                 than styled as a call to action. The loud version of this
                 belongs in the zero-results state, where it is an answer to
@@ -1071,10 +1071,9 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
               aria-expanded={digestOpen}
               aria-label="Weekly digest"
               title="Weekly digest"
-              className="relative flex items-center gap-1 text-meta text-ink-3 hover:text-ink transition-colors mr-1 max-lg:hidden after:absolute after:inset-x-0 after:top-1/2 after:h-11 after:-translate-y-1/2 after:content-['']"
+              className={ICON_BUTTON + ' max-lg:hidden'}
             >
-              <EnvelopeSimple className="w-3.5 h-3.5" weight="bold" />
-              <span>Digest</span>
+              <EnvelopeSimple className="w-4 h-4" weight="bold" />
             </button>
             {/* Pro, in its own language: the pixel word from the Pro card.
                 Submit lives in the footer, the phone menu and the empty search. */}
@@ -1524,7 +1523,7 @@ export function Gallery({ initialDesigns, initialPagination, initialCategories, 
                 <div className="flex flex-col items-center gap-2 text-center px-6">
                   <p className="text-meta text-ink-4">Select a site</p>
                   <p className="text-micro text-ink-4">
-                    preview · mobile · colors · type
+                    preview · colors · type · history
                   </p>
                 </div>
               </motion.div>

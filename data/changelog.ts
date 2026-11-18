@@ -88,6 +88,10 @@ const changelog: ChangelogRelease[] = [
     date: '2026-11-18',
     title: 'Counted at Home',
     items: [
+      { type: 'improved', author: 'damilare', text: 'Header controls now share one size and one quiet style' },
+      { type: 'improved', author: 'damilare', text: 'Site panel tabs are words only; desktop and mobile switch beside them' },
+      { type: 'improved', author: 'damilare', text: 'Watch for redesigns moved into the Save menu' },
+      { type: 'improved', author: 'damilare', text: 'One Copy theme menu and an Open site link close the panel' },
       { type: 'improved', author: 'damilare', text: 'Visits are now counted on our own servers, with a random ID, never a name' },
       { type: 'improved', author: 'damilare', text: 'Privacy page explains what the count keeps: source, device type and country' },
     ],

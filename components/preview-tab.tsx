@@ -2,7 +2,7 @@
 'use client'
 
 import { useEffect, useRef, useState, type ReactNode } from 'react'
-import { ShieldWarning, LockSimple, Clock, FileDashed, WifiSlash, Warning, ArrowClockwise, ArrowUpRight } from '@phosphor-icons/react'
+import { ShieldWarning, LockSimple, Clock, FileDashed, WifiSlash, Warning } from '@phosphor-icons/react'
 import { classifyExtractionError } from '@/lib/classify-extraction-error'
 import { getDomain } from '@/lib/get-domain'
 import { previewOrigin } from '@/lib/preview-origin'
@@ -65,6 +65,8 @@ interface PreviewTabProps {
   /** Drop the drawn phone frame — on an actual phone it is a picture of the
    *  device you are holding, and it costs the preview most of its width. */
   fill?: boolean
+  /** Bumped by the panel's reload button (on the tab row) to retry the live page. */
+  reloadSignal?: number
 }
 
 /**
@@ -89,6 +91,7 @@ export function PreviewTab({
   livePreview = true,
   displayMode = 'live',
   fill = false,
+  reloadSignal = 0,
 }: PreviewTabProps) {
   const hasDesktop = Boolean(screenshotUrl)
   /** Where this site starts: its capture if live can never work, else live. */
@@ -209,6 +212,16 @@ export function PreviewTab({
     }
   }
 
+  const reloadRef = useRef(reload)
+  reloadRef.current = reload
+  // Only a press reloads: a freshly mounted tab starts from whatever count the panel holds.
+  const lastSignal = useRef(reloadSignal)
+  useEffect(() => {
+    if (reloadSignal === lastSignal.current) return
+    lastSignal.current = reloadSignal
+    reloadRef.current()
+  }, [reloadSignal])
+
   if (extractionError && !siteUrl) {
     const info = classifyExtractionError(extractionError)
     const Icon = ICONS[info.icon]
@@ -225,62 +238,7 @@ export function PreviewTab({
     )
   }
 
-  const showingCapture = Boolean(activeScreenshotUrl)
-  const state: 'loading' | 'live' | 'capture' =
-    showingCapture || proxyFailed || !livePreview ? 'capture' : loaded ? 'live' : 'loading'
-  const stateLabel = state === 'loading' ? 'Loading' : state === 'live' ? 'Live' : showingCapture ? 'Capture' : 'Unavailable'
-  // Offered even after a failure has swapped in the capture: that state is
-  // exactly when a retry is wanted. Sites that can never go live have no
-  // button, because it would only fail the same way again.
-  const canReload = livePreview
-
-  /** The site never draws its own chrome over itself: status lives in the bar,
-   *  and the page sits on a framed screen so busy artwork reads as content. */
-  const bar = (
-    <div className="h-10 flex-shrink-0 flex items-center gap-2 px-4 border-b border-edge-faint">
-      {/* The domain is in the panel header; this row is only state and actions. */}
-      <span className="flex-1" />
-      <span className="inline-flex items-center gap-1.5 flex-shrink-0 text-[12px] text-ink-4">
-        {state === 'loading' ? (
-          <span className="w-2.5 h-2.5 rounded-full border-[1.5px] border-edge-strong border-t-ink-3 animate-spin motion-reduce:animate-none" />
-        ) : (
-          <span
-            className={[
-              'w-1.5 h-1.5 rounded-full',
-              state === 'live' ? 'bg-[var(--color-success)]' : 'bg-ink-4',
-            ].join(' ')}
-            style={state === 'live'
-              ? { boxShadow: '0 0 0 3px color-mix(in srgb, var(--color-success) 12%, transparent)' }
-              : undefined}
-          />
-        )}
-        {stateLabel}
-      </span>
-      {canReload && (
-        <button
-          onClick={reload}
-          aria-label="Reload preview"
-          title="Reload preview"
-          className="w-7 h-7 flex-shrink-0 flex items-center justify-center rounded-[10px] text-ink-3 hover:text-ink hover:bg-muted transition-colors"
-        >
-          <ArrowClockwise className="w-3.5 h-3.5" weight="bold" />
-        </button>
-      )}
-      {/* The one way out of the panel to the real site: the preview itself is
-          proxied and sandboxed, so its own links go nowhere. */}
-      <a
-        href={siteUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-        aria-label={`Open ${domain} in a new tab`}
-        title={`Open ${domain}`}
-        className="w-7 h-7 -mr-1 flex-shrink-0 flex items-center justify-center rounded-[10px] text-ink-3 hover:text-ink hover:bg-muted transition-colors"
-      >
-        <ArrowUpRight className="w-3.5 h-3.5" weight="bold" />
-      </a>
-    </div>
-  )
-
+  // State and actions live on the panel's tab row; the stage is only the page.
   const stage = (content: ReactNode) => (
     <div className="relative flex-1 min-h-0 bg-background">
       <div className="absolute inset-3 max-sm:inset-2 rounded-[12px] max-sm:rounded-[10px] border border-edge overflow-hidden bg-muted">
@@ -312,7 +270,6 @@ export function PreviewTab({
   if (activeScreenshotUrl) {
     return (
       <div className="flex flex-col flex-1 min-h-0">
-        {bar}
         {stage(
           <div data-lenis-prevent className={`absolute inset-0 overflow-auto ${mode === 'mobile' && !fill ? 'flex justify-center' : ''}`}>
             <img
@@ -332,7 +289,6 @@ export function PreviewTab({
   if (mode === 'mobile' && !proxyFailed && livePreview) {
     return (
       <div className="flex flex-col flex-1 min-h-0">
-        {bar}
         {stage(
           <div className="absolute inset-0 flex justify-center">
             <div className={`relative h-full w-full overflow-hidden bg-background ${fill ? '' : 'max-w-[390px] border-x border-edge'}`}>
@@ -358,7 +314,6 @@ export function PreviewTab({
   if (proxyFailed || !livePreview) {
     return (
       <div className="flex flex-col flex-1 min-h-0">
-        {bar}
         {stage(
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 text-center px-6">
             <p className="text-meta text-ink-2">{domain}</p>
@@ -371,7 +326,6 @@ export function PreviewTab({
 
   return (
     <div className="flex flex-col flex-1 min-h-0">
-      {bar}
       {stage(
         <div className="absolute inset-0">
           {underlay(screenshotUrl)}

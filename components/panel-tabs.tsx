@@ -1,7 +1,6 @@
 'use client'
 
 import React from 'react'
-import { DeviceMobile, AppWindow, Palette, TextAa, ClockCounterClockwise } from '@phosphor-icons/react'
 import { useSoundsContext } from '@/contexts/sounds-context'
 import { MOVE_EASE, DUR } from '@/lib/motion'
 
@@ -18,28 +17,21 @@ interface PanelTabsProps {
   variant?: 'desktop' | 'mobile'
   colorsCount?: number
   typeCount?: number
+  /** Controls for the tab on screen, on the same row (the preview's device switch and reload). */
+  trailing?: React.ReactNode
 }
 
-type TabDef = { key: PanelTab; label: string; Icon: React.ComponentType<{ className?: string; weight?: 'bold' | 'fill' }> }
+type TabDef = { key: PanelTab; label: string }
 
-const BASE_TABS: TabDef[] = [
-  { key: 'preview', label: 'Preview', Icon: AppWindow },
-  { key: 'mobile',  label: 'Mobile',  Icon: DeviceMobile },
-  { key: 'colors', label: 'Colors', Icon: Palette },
-  { key: 'type',   label: 'Type',    Icon: TextAa },
-]
-
+// Words only. Mobile is not a tab: it is the Preview tab's other device,
+// switched beside the tabs, so 'mobile' still names a state (and a link).
 // History sits beside Type; the whole tab vanishes with the flag.
-const ALL_TABS: TabDef[] = HISTORY_TAB_ENABLED
-  ? [...BASE_TABS, { key: 'history', label: 'History', Icon: ClockCounterClockwise }]
-  : BASE_TABS
-
-// Offering Mobile to someone already holding a phone is offering them the
-// view they are in. Preview carries the mobile rendering there instead, and
-// the tab keeps the name that describes what it is rather than which device.
-const MOBILE_TABS: TabDef[] = ALL_TABS.filter(t => t.key !== 'mobile').map(t =>
-  t.key === 'preview' ? { ...t, Icon: DeviceMobile } : t,
-)
+const TABS_ALL: TabDef[] = [
+  { key: 'preview', label: 'Preview' },
+  { key: 'colors', label: 'Colors' },
+  { key: 'type', label: 'Type' },
+  ...(HISTORY_TAB_ENABLED ? [{ key: 'history' as const, label: 'History' }] : []),
+]
 
 /**
  * One track, one thumb. The thumb is measured from the active button rather
@@ -48,9 +40,10 @@ const MOBILE_TABS: TabDef[] = ALL_TABS.filter(t => t.key !== 'mobile').map(t =>
  * so the first paint shows it already in place and only later movements
  * animate.
  */
-export function PanelTabs({ active, onChange, variant = 'desktop', colorsCount, typeCount }: PanelTabsProps) {
+export function PanelTabs({ active: current, onChange, colorsCount, typeCount, trailing }: PanelTabsProps) {
   const { playTabChange } = useSoundsContext()
-  const TABS = variant === 'mobile' ? MOBILE_TABS : ALL_TABS
+  const TABS = TABS_ALL
+  const active: PanelTab = current === 'mobile' ? 'preview' : current
   const activeIndex = TABS.findIndex(t => t.key === active)
   const trackRef = React.useRef<HTMLDivElement>(null)
 
@@ -123,17 +116,17 @@ export function PanelTabs({ active, onChange, variant = 'desktop', colorsCount, 
     : 'none'
 
   return (
-    <div className="px-4 pt-1 pb-2.5 flex-shrink-0">
+    <div className="h-12 px-3 flex items-center gap-2 flex-shrink-0 border-b border-edge-faint">
       <div
         ref={trackRef}
         role="tablist"
         aria-label="Site detail tabs"
         onKeyDown={handleKeyDown}
-        className="relative flex w-full h-[38px] p-[3px] rounded-[10px] bg-foreground/[0.05] dark:bg-foreground/[0.07]"
+        className="relative inline-flex h-8 p-[3px] rounded-[10px] bg-foreground/[0.05] dark:bg-foreground/[0.07]"
       >
         <span
           aria-hidden="true"
-          className="absolute top-[3px] left-0 h-8 rounded-[7px] bg-card pointer-events-none shadow-[0_1px_2px_rgba(0,0,0,0.06),0_0_0_1px_rgba(0,0,0,0.03)] dark:bg-[rgba(var(--foreground-rgb),0.12)] dark:shadow-[0_1px_2px_rgba(0,0,0,0.4)]"
+          className="absolute top-[3px] left-0 h-[26px] rounded-[7px] bg-card pointer-events-none shadow-[0_1px_2px_rgba(0,0,0,0.06),0_0_0_1px_rgba(0,0,0,0.03)] dark:bg-[rgba(var(--foreground-rgb),0.12)] dark:shadow-[0_1px_2px_rgba(0,0,0,0.4)]"
           style={{
             width: thumb?.width ?? 0,
             transform: `translateX(${thumb?.left ?? 0}px)`,
@@ -141,38 +134,28 @@ export function PanelTabs({ active, onChange, variant = 'desktop', colorsCount, 
             transition,
           }}
         />
-        {TABS.map(({ key, label, Icon }) => {
+        {TABS.map(({ key, label }) => {
           const isActive = active === key
-          const count = key === 'colors' ? colorsCount : key === 'type' ? typeCount : undefined
           return (
             <button
               key={key}
               role="tab"
               data-tab={key}
               aria-selected={isActive}
-              aria-label={label}
               tabIndex={isActive ? 0 : -1}
-              onClick={() => { viaKeyboard.current = false; playTabChange(); onChange(key) }}
+              onClick={() => { viaKeyboard.current = false; if (!isActive) { playTabChange(); onChange(key) } }}
               className={[
-                'relative z-[1] flex-1 min-w-0 h-8 px-2 rounded-[7px]',
-                'flex items-center justify-center gap-1.5',
+                'relative z-[1] h-[26px] px-2.5 max-[380px]:px-2 rounded-[7px] text-[12.5px] leading-none whitespace-nowrap',
                 'transition-colors duration-[var(--dur-2)] ease-[var(--ease-hover)]',
-                isActive ? 'text-ink' : 'text-ink-3 hover:text-ink',
+                isActive ? 'text-ink font-[600]' : 'text-ink-3 font-[500] hover:text-ink',
               ].join(' ')}
             >
-              <Icon className="w-3.5 h-3.5 shrink-0" weight={isActive ? 'fill' : 'bold'} />
-              {/* On a narrow phone the inactive tabs are icons; the label
-                  names only the tab you're on, so nothing collides. */}
-              <span className={'flex items-center gap-1 text-[12.5px] leading-none whitespace-nowrap ' + (isActive ? 'font-[600]' : 'font-[500] max-[420px]:hidden')}>
-                {label}
-                {typeof count === 'number' && (
-                  <span className="text-[11.5px] font-[500] text-ink-4 max-[420px]:hidden">{count}</span>
-                )}
-              </span>
+              {label}
             </button>
           )
         })}
       </div>
+      {trailing && <div className="ml-auto flex items-center gap-0.5 -mr-1">{trailing}</div>}
     </div>
   )
 }
