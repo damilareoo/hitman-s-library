@@ -18,6 +18,19 @@ describe('sourceOf', () => {
     expect(sourceOf(null, null)).toBe('Direct')
     expect(sourceOf('hitmanslibrary.xyz', null)).toBe('Direct')
   })
+  test('Android apps that report their package name', () => {
+    expect(sourceOf('com.linkedin.android', null)).toBe('LinkedIn')
+    expect(sourceOf('com.twitter.android', null)).toBe('X')
+    expect(sourceOf('com.google.android.gm', null)).toBe('Email')
+  })
+  test('an in-app browser names the platform when nothing else does', () => {
+    expect(sourceOf(null, null, undefined, 'LinkedIn app')).toBe('LinkedIn')
+    expect(sourceOf(null, null, undefined, 'X app')).toBe('X')
+    expect(sourceOf(null, null, undefined, 'Safari')).toBe('Direct')
+    // A tag or a real referrer still wins.
+    expect(sourceOf('google.com', null, undefined, 'X app')).toBe('Google')
+    expect(sourceOf(null, 'newsletter', undefined, 'X app')).toBe('Email')
+  })
   test('unknown hosts are kept as they are', () => {
     expect(sourceOf('sidebar.io', null)).toBe('sidebar.io')
   })

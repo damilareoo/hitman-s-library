@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
       INSERT INTO hits (kind, visitor, session, team, path, site, target, source, referrer, campaign, landing, device, browser, os, country)
       VALUES (
         ${kind}, ${visitor}, ${session}, ${team}, ${clip(b.p, 300)}, ${clip(b.site, 120)}, ${clip(b.t, 120)},
-        ${landing ? sourceOf(referrer, clip(b.src, 60), OWN) : null},
+        ${landing ? sourceOf(referrer, clip(b.src, 60), OWN, agent.browser) : null},
         ${landing ? referrer : null}, ${landing ? clip(b.c, 80) : null}, ${landing},
         ${agent.device}, ${agent.browser}, ${agent.os}, ${clip(req.headers.get('cf-ipcountry'), 2)}
       )`
