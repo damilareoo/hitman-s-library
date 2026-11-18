@@ -440,6 +440,32 @@ its background, text and accent hex, its palette and its typefaces, with its lin
 card as the enclosure image. Feed readers, automations and the bot that posts for
 @hitmanslibrary read it. Cached an hour at the edge.
 
+## Analytics
+
+Our own visit counter runs alongside PostHog and Cloudflare Web Analytics. It is
+first-party (`/api/a`), so ad blockers leave it alone, and it keeps the team's own
+visits apart from everyone else's.
+
+- `lib/beacon/client.ts` (started in `instrumentation-client.ts`) sends one beacon
+  per page view, including the gallery's `/site/` address changes, and per outbound
+  link. Every `track()` call in `lib/analytics.ts` is mirrored to it too: panel
+  opens, copies, exports, pricing, checkout.
+- A visitor is a random ID in localStorage; a session ends after 30 quiet minutes.
+  The first hit of a session carries the referrer and `?utm_source=` / `?ref=`,
+  grouped into a platform (X, LinkedIn, Google and so on) by `lib/beacon/parse.ts`.
+  Device, browser and OS come from the user agent; country from Cloudflare. Bots,
+  scripts and other origins are dropped. Rows live in `hits` (`scripts/033-hits.sql`).
+- Team: `/admin/analytics` makes a signed "this is me" link per teammate. Opening it
+  sets a `hl_team` cookie; any browser that ever carried it counts as team,
+  including its visits from before.
+- `/admin/analytics` (admin session) shows views, unique visitors, clicks and team
+  activity, with sources, clicks per source, sites, a funnel to Pro, devices,
+  countries, return visits, and plain-language insights (`lib/read/analytics.ts`).
+- Add `?ref=x`, `?ref=linkedin` etc. to links you post: in-app browsers often drop
+  the referrer, and the tag names the platform anyway.
+
+---
+
 ## Link cards
 
 Every site has a link card: its capture on a flat field of one of its own colours,
