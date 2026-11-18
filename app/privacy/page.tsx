@@ -30,7 +30,7 @@ const SECTIONS: { title: string; body: React.ReactNode }[] = [
   },
   {
     title: 'Analytics and abuse prevention',
-    body: <>We count visits and clicks with PostHog and Cloudflare Web Analytics, without your email or name. To stop spam we keep a scrambled form of your IP address for a short window, never the address itself.</>,
+    body: <>We count visits and clicks ourselves and with PostHog and Cloudflare Web Analytics. Our own count uses a random ID kept in your browser, the site you came from, your device type and country, never your email or name. To stop spam we keep a scrambled form of your IP address for a short window, never the address itself.</>,
   },
   {
     title: 'Pro features',

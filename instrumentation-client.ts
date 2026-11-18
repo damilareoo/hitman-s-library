@@ -1,4 +1,5 @@
 import posthog from 'posthog-js'
+import { startCounting } from '@/lib/beacon/client'
 
 const projectToken = process.env.NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN
 const host = process.env.NEXT_PUBLIC_POSTHOG_HOST
@@ -22,3 +23,6 @@ if (!projectToken || !host) {
     debug: process.env.NODE_ENV === 'development',
   })
 }
+
+// Our own counter (lib/beacon/client.ts): page views and outbound visits.
+startCounting()

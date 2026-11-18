@@ -563,6 +563,12 @@ export default function AdminPage() {
           </div>
           <div className="flex items-center gap-4">
             <Link
+              href="/admin/analytics"
+              className="flex items-center gap-1.5 text-meta text-ink-3 hover:text-foreground transition-colors"
+            >
+              Analytics
+            </Link>
+            <Link
               href="/changelog"
               className="flex items-center gap-1.5 text-meta text-ink-3 hover:text-foreground transition-colors"
             >

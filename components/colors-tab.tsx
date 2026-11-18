@@ -1,6 +1,7 @@
 // components/colors-tab.tsx
 'use client'
 
+import { track as trackEvent } from '@/lib/analytics'
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { Check, MagnifyingGlass } from '@phosphor-icons/react'
 import { parse, oklch as toOklch, clampChroma } from 'culori'
@@ -156,6 +157,7 @@ export function ColorsTab({ colors, extractionError, onFindColor }: {
   async function copy(text: string, mark: () => void) {
     try {
       await navigator.clipboard.writeText(text)
+      trackEvent('color_copied', { format })
       playCopy()
       mark()
     } catch { /* clipboard unavailable */ }
