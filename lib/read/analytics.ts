@@ -23,7 +23,7 @@ h AS (
   WHERE hits.at > now() - make_interval(days => 2 * $1::int)
 ),
 s AS (
-  SELECT DISTINCT ON (session) session, visitor, source, referrer, campaign, path AS landed_on, who, cur
+  SELECT DISTINCT ON (session) session, visitor, at, source, referrer, campaign, path AS landed_on, who, cur
   FROM h WHERE landing ORDER BY session, at
 )`
 
@@ -43,6 +43,10 @@ export interface Analytics {
   /** One row per bucket of this period; `prev*` is the same slot one period earlier. */
   series: { at: string; views: number; visitors: number; clicks: number; prevViews: number; prevVisitors: number; prevClicks: number }[]
   bucket: 'hour' | 'day'
+  /** Hour by hour (UTC) for the period, for the when-people-visit heatmap; the page shifts it to local time. */
+  hours: { at: string; views: number; visitors: number }[]
+  /** New visitors per bucket by where they came from, for sources over time. */
+  sourceSeries: { at: string; source: string; visitors: number }[]
   sources: { name: string; sessions: number; visitors: number; clicks: number; isNew: boolean }[]
   campaigns: { name: string; sessions: number }[]
   dims: Record<'device' | 'browser' | 'os' | 'country', { name: string; visitors: number }[]>
@@ -66,7 +70,7 @@ export async function loadAnalytics(days: Range, who: Who = 'people'): Promise<A
   // The filter, for a table alias ('' for bare h). Team-only figures below ignore it.
   const W = (t = '') => member ? `${t}who = $2` : who === 'all' ? 'TRUE' : `${t}who IS NULL`
 
-  const [totals, series, sources, campaigns, dims, pages, sites, clicks, funnel, engagement, returning, team, members] = await Promise.all([
+  const [totals, series, sources, campaigns, dims, pages, sites, clicks, funnel, engagement, returning, team, members, hours, sourceSeries] = await Promise.all([
     q(`SELECT cur,
          count(*) FILTER (WHERE kind = 'view' AND ${W()}) AS views,
          count(DISTINCT visitor) FILTER (WHERE ${W()}) AS visitors,
@@ -131,6 +135,10 @@ export async function loadAnalytics(days: Range, who: Who = 'people'): Promise<A
     qAll(`SELECT who AS name, count(*) FILTER (WHERE kind = 'view') AS views, count(*) FILTER (WHERE kind <> 'view') AS clicks, max(at) AS last_seen
        FROM h WHERE cur AND who IS NOT NULL GROUP BY 1 ORDER BY 2 DESC`),
     sql.query(`SELECT DISTINCT team AS name FROM hits WHERE team IS NOT NULL ORDER BY 1`) as Promise<any[]>,
+    q(`SELECT date_trunc('hour', at) AS at, count(*) FILTER (WHERE kind = 'view') AS views, count(DISTINCT visitor) AS visitors
+       FROM h WHERE cur AND ${W()} GROUP BY 1 ORDER BY 1`),
+    q(`SELECT date_trunc('${bucket}', at) AS at, coalesce(source, 'Direct') AS source, count(DISTINCT visitor) AS visitors
+       FROM s WHERE cur AND ${W()} GROUP BY 1, 2 ORDER BY 1`),
   ])
 
   const pick = (cur: boolean) => totals.find(r => r.cur === cur) ?? {}
@@ -155,6 +163,8 @@ export async function loadAnalytics(days: Range, who: Who = 'people'): Promise<A
       teamViews: pair('team_views'), teamClicks: pair('team_clicks'),
     },
     series: mergeSeries(series),
+    hours: hours.map(r => ({ at: new Date(r.at).toISOString(), views: n(r.views), visitors: n(r.visitors) })),
+    sourceSeries: sourceSeries.map(r => ({ at: new Date(r.at).toISOString(), source: r.source, visitors: n(r.visitors) })),
     sources: sources.map(r => ({ name: r.name ?? 'Direct', sessions: n(r.sessions), visitors: n(r.visitors), clicks: n(r.clicks), isNew: Boolean(r.is_new) })),
     campaigns: campaigns.map(r => ({ name: r.name, sessions: n(r.sessions) })),
     dims: dimsOut,
