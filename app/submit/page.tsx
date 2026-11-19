@@ -4,6 +4,7 @@ import { SiteLinks } from '@/components/site-links'
 import { SubmitForm } from '@/components/submit-form'
 
 export const metadata: Metadata = {
+  alternates: { canonical: '/submit' },
   title: 'Submit',
   description: "Share what you made or found — every submission is looked at by a person.",
 }

@@ -6,6 +6,7 @@ import { ProExtras } from '@/components/pro-extras'
 import { loadProSample } from '@/lib/read/pro-sample'
 
 export const metadata: Metadata = {
+  alternates: { canonical: '/pro' },
   title: 'Pro',
   description: "Search by palette and font, redesign alerts, site history, monthly trends, and the library inside your AI tools.",
 }

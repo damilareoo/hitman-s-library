@@ -90,6 +90,7 @@ const changelog: ChangelogRelease[] = [
     items: [
       { type: 'improved', author: 'damilare', text: 'Visit counts read as one chart with unique visitors, views and clicks' },
       { type: 'improved', author: 'damilare', text: 'Our own visits stay out of the count, and each of us can be viewed alone' },
+      { type: 'fixed', author: 'damilare', text: 'Pro, Trends, Changelog and the other pages each name one address for search engines' },
     ],
   },
   {
