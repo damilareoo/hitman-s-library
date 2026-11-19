@@ -8,6 +8,9 @@ import { getSql } from '@/lib/db'
 export const RANGES = [1, 7, 30, 90] as const
 export type Range = (typeof RANGES)[number]
 
+/** Whose visits the page counts: people (no team cookie), everyone, or one teammate by name. */
+export type Who = 'people' | 'all' | { member: string }
+
 // $1 = days. `h` holds this period and the one before it (`cur` marks which).
 const BASE = `
 WITH tv AS (SELECT visitor, max(team) AS team FROM hits WHERE team IS NOT NULL GROUP BY visitor),
@@ -33,66 +36,77 @@ const n = (v: unknown) => Number(v ?? 0)
 export interface Analytics {
   days: Range
   updatedAt: string
+  who: 'people' | 'all' | string
+  /** Every teammate name ever seen, for the filter. */
+  members: string[]
   totals: Record<'views' | 'visitors' | 'sessions' | 'clicks' | 'teamViews' | 'teamClicks', { now: number; before: number }>
-  series: { at: string; people: number; team: number; visitors: number }[]
+  /** One row per bucket of this period; `prev*` is the same slot one period earlier. */
+  series: { at: string; views: number; visitors: number; clicks: number; prevViews: number; prevVisitors: number; prevClicks: number }[]
   bucket: 'hour' | 'day'
   sources: { name: string; sessions: number; visitors: number; clicks: number; isNew: boolean }[]
   campaigns: { name: string; sessions: number }[]
   dims: Record<'device' | 'browser' | 'os' | 'country', { name: string; visitors: number }[]>
   pages: { path: string; views: number; landings: number }[]
   sites: { name: string; views: number; opens: number; outbound: number; takes: number }[]
-  clicks: { kind: string; people: number; team: number }[]
+  clicks: { kind: string; count: number; visitors: number }[]
   funnel: { step: string; visitors: number }[]
   engagement: { returning: number; visitors: number; bounce: number; pagesPerSession: number; medianMinutes: number }
   team: { name: string; views: number; clicks: number; lastSeen: string }[]
   insights: string[]
 }
 
-export async function loadAnalytics(days: Range): Promise<Analytics> {
+export async function loadAnalytics(days: Range, who: Who = 'people'): Promise<Analytics> {
   const sql = getSql()
-  const q = (body: string) => sql.query(`${BASE} ${body}`, [days]) as Promise<any[]>
+  const member = typeof who === 'object' ? who.member : null
+  const params = member ? [days, member] : [days]
+  const q = (body: string) => sql.query(`${BASE} ${body}`, params) as Promise<any[]>
+  // For queries that don't take the filter: Postgres rejects a parameter it can't place.
+  const qAll = (body: string) => sql.query(`${BASE} ${body}`, [days]) as Promise<any[]>
   const bucket = days === 1 ? 'hour' : 'day'
+  // The filter, for a table alias ('' for bare h). Team-only figures below ignore it.
+  const W = (t = '') => member ? `${t}who = $2` : who === 'all' ? 'TRUE' : `${t}who IS NULL`
 
-  const [totals, series, sources, campaigns, dims, pages, sites, clicks, funnel, engagement, returning, team] = await Promise.all([
+  const [totals, series, sources, campaigns, dims, pages, sites, clicks, funnel, engagement, returning, team, members] = await Promise.all([
     q(`SELECT cur,
-         count(*) FILTER (WHERE kind = 'view' AND who IS NULL) AS views,
-         count(DISTINCT visitor) FILTER (WHERE who IS NULL) AS visitors,
-         count(DISTINCT session) FILTER (WHERE who IS NULL) AS sessions,
-         count(*) FILTER (WHERE kind <> 'view' AND who IS NULL) AS clicks,
+         count(*) FILTER (WHERE kind = 'view' AND ${W()}) AS views,
+         count(DISTINCT visitor) FILTER (WHERE ${W()}) AS visitors,
+         count(DISTINCT session) FILTER (WHERE ${W()}) AS sessions,
+         count(*) FILTER (WHERE kind <> 'view' AND ${W()}) AS clicks,
          count(*) FILTER (WHERE kind = 'view' AND who IS NOT NULL) AS team_views,
          count(*) FILTER (WHERE kind <> 'view' AND who IS NOT NULL) AS team_clicks
        FROM h GROUP BY cur`),
-    q(`SELECT date_trunc('${bucket}', at) AS at,
-         count(*) FILTER (WHERE kind = 'view' AND who IS NULL) AS people,
-         count(*) FILTER (WHERE kind = 'view' AND who IS NOT NULL) AS team,
-         count(DISTINCT visitor) FILTER (WHERE who IS NULL) AS visitors
-       FROM h WHERE cur GROUP BY 1 ORDER BY 1`),
+    // The period before is shifted forward by one period so its slots line up with this one's.
+    q(`SELECT date_trunc('${bucket}', CASE WHEN cur THEN at ELSE at + make_interval(days => $1::int) END) AS at, cur,
+         count(*) FILTER (WHERE kind = 'view') AS views,
+         count(DISTINCT visitor) AS visitors,
+         count(*) FILTER (WHERE kind <> 'view') AS clicks
+       FROM h WHERE ${W()} GROUP BY 1, 2 ORDER BY 1`),
     q(`, seen AS (SELECT DISTINCT source FROM hits WHERE landing AND at <= now() - make_interval(days => $1::int))
        SELECT s.source AS name, count(DISTINCT s.session) AS sessions, count(DISTINCT s.visitor) AS visitors,
          count(h.id) FILTER (WHERE h.kind <> 'view') AS clicks,
          bool_and(seen.source IS NULL) AS is_new
        FROM s JOIN h USING (session) LEFT JOIN seen ON seen.source = s.source
-       WHERE s.cur AND s.who IS NULL AND h.cur
+       WHERE s.cur AND ${W('s.')} AND h.cur
        GROUP BY 1 ORDER BY 2 DESC LIMIT 20`),
-    q(`SELECT campaign AS name, count(*) AS sessions FROM s WHERE cur AND who IS NULL AND campaign IS NOT NULL GROUP BY 1 ORDER BY 2 DESC LIMIT 8`),
+    q(`SELECT campaign AS name, count(*) AS sessions FROM s WHERE cur AND ${W()} AND campaign IS NOT NULL GROUP BY 1 ORDER BY 2 DESC LIMIT 8`),
     q(`SELECT dim, name, visitors FROM (
-         SELECT 'device' AS dim, device AS name, count(DISTINCT visitor) AS visitors FROM h WHERE cur AND who IS NULL GROUP BY 2
-         UNION ALL SELECT 'browser', browser, count(DISTINCT visitor) FROM h WHERE cur AND who IS NULL GROUP BY 2
-         UNION ALL SELECT 'os', os, count(DISTINCT visitor) FROM h WHERE cur AND who IS NULL GROUP BY 2
-         UNION ALL SELECT 'country', coalesce(country, '??'), count(DISTINCT visitor) FROM h WHERE cur AND who IS NULL GROUP BY 2
+         SELECT 'device' AS dim, device AS name, count(DISTINCT visitor) AS visitors FROM h WHERE cur AND ${W()} GROUP BY 2
+         UNION ALL SELECT 'browser', browser, count(DISTINCT visitor) FROM h WHERE cur AND ${W()} GROUP BY 2
+         UNION ALL SELECT 'os', os, count(DISTINCT visitor) FROM h WHERE cur AND ${W()} GROUP BY 2
+         UNION ALL SELECT 'country', coalesce(country, '??'), count(DISTINCT visitor) FROM h WHERE cur AND ${W()} GROUP BY 2
        ) d ORDER BY dim, visitors DESC`),
     q(`SELECT path, count(*) FILTER (WHERE kind = 'view') AS views, count(*) FILTER (WHERE landing) AS landings
-       FROM h WHERE cur AND who IS NULL AND path IS NOT NULL GROUP BY 1 ORDER BY 2 DESC LIMIT 12`),
+       FROM h WHERE cur AND ${W()} AND path IS NOT NULL GROUP BY 1 ORDER BY 2 DESC LIMIT 12`),
     q(`SELECT ${SITE_NAME} AS name,
          count(*) FILTER (WHERE h.kind = 'view') AS views,
          count(*) FILTER (WHERE h.kind = 'open') AS opens,
          count(*) FILTER (WHERE h.kind = 'outbound') AS outbound,
          count(*) FILTER (WHERE h.kind IN ('export', 'copy')) AS takes
        FROM h LEFT JOIN design_sources ds ON ds.id::text = h.site
-       WHERE h.cur AND h.who IS NULL AND h.site IS NOT NULL
+       WHERE h.cur AND ${W('h.')} AND h.site IS NOT NULL
        GROUP BY 1 ORDER BY count(*) FILTER (WHERE h.kind IN ('view', 'open')) DESC, 1 LIMIT 15`),
-    q(`SELECT kind, count(*) FILTER (WHERE who IS NULL) AS people, count(*) FILTER (WHERE who IS NOT NULL) AS team
-       FROM h WHERE cur AND kind <> 'view' GROUP BY 1 ORDER BY 2 DESC, 3 DESC`),
+    q(`SELECT kind, count(*) AS count, count(DISTINCT visitor) AS visitors
+       FROM h WHERE cur AND kind <> 'view' AND ${W()} GROUP BY 1 ORDER BY 2 DESC, 3 DESC`),
     q(`SELECT
          count(DISTINCT visitor) AS visited,
          count(DISTINCT visitor) FILTER (WHERE kind = 'open' OR path LIKE '/site/%') AS opened,
@@ -101,21 +115,22 @@ export async function loadAnalytics(days: Range): Promise<Analytics> {
          count(DISTINCT visitor) FILTER (WHERE kind = 'pricing_viewed' OR path = '/pro') AS pricing,
          count(DISTINCT visitor) FILTER (WHERE kind = 'checkout_opened') AS checkout,
          count(DISTINCT visitor) FILTER (WHERE kind = 'upgraded') AS upgraded
-       FROM h WHERE cur AND who IS NULL`),
+       FROM h WHERE cur AND ${W()}`),
     q(`SELECT count(*) AS sessions,
          count(*) FILTER (WHERE hits = 1) AS bounced,
          coalesce(avg(views), 0) AS pages,
          coalesce(percentile_cont(0.5) WITHIN GROUP (ORDER BY secs) FILTER (WHERE hits > 1), 0) AS median_secs
        FROM (SELECT session, count(*) AS hits, count(*) FILTER (WHERE kind = 'view') AS views,
                extract(epoch FROM max(at) - min(at)) AS secs
-             FROM h WHERE cur AND who IS NULL GROUP BY session) x`),
-    q(`, cv AS (SELECT DISTINCT visitor FROM h WHERE cur AND who IS NULL)
+             FROM h WHERE cur AND ${W()} GROUP BY session) x`),
+    q(`, cv AS (SELECT DISTINCT visitor FROM h WHERE cur AND ${W()})
        SELECT count(*) AS visitors,
          count(*) FILTER (WHERE EXISTS (SELECT 1 FROM hits o WHERE o.visitor = cv.visitor AND o.at <= now() - make_interval(days => $1::int))
                           OR (SELECT count(DISTINCT session) FROM h WHERE h.visitor = cv.visitor AND h.cur) > 1) AS returning
        FROM cv`),
-    q(`SELECT who AS name, count(*) FILTER (WHERE kind = 'view') AS views, count(*) FILTER (WHERE kind <> 'view') AS clicks, max(at) AS last_seen
+    qAll(`SELECT who AS name, count(*) FILTER (WHERE kind = 'view') AS views, count(*) FILTER (WHERE kind <> 'view') AS clicks, max(at) AS last_seen
        FROM h WHERE cur AND who IS NOT NULL GROUP BY 1 ORDER BY 2 DESC`),
+    sql.query(`SELECT DISTINCT team AS name FROM hits WHERE team IS NOT NULL ORDER BY 1`) as Promise<any[]>,
   ])
 
   const pick = (cur: boolean) => totals.find(r => r.cur === cur) ?? {}
@@ -131,19 +146,21 @@ export async function loadAnalytics(days: Range): Promise<Analytics> {
 
   const out: Analytics = {
     days,
+    who: member ?? (who as 'people' | 'all'),
+    members: members.map(r => r.name),
     updatedAt: new Date().toISOString(),
     bucket,
     totals: {
       views: pair('views'), visitors: pair('visitors'), sessions: pair('sessions'), clicks: pair('clicks'),
       teamViews: pair('team_views'), teamClicks: pair('team_clicks'),
     },
-    series: series.map(r => ({ at: new Date(r.at).toISOString(), people: n(r.people), team: n(r.team), visitors: n(r.visitors) })),
+    series: mergeSeries(series),
     sources: sources.map(r => ({ name: r.name ?? 'Direct', sessions: n(r.sessions), visitors: n(r.visitors), clicks: n(r.clicks), isNew: Boolean(r.is_new) })),
     campaigns: campaigns.map(r => ({ name: r.name, sessions: n(r.sessions) })),
     dims: dimsOut,
     pages: pages.map(r => ({ path: r.path, views: n(r.views), landings: n(r.landings) })),
     sites: sites.map(r => ({ name: r.name, views: n(r.views), opens: n(r.opens), outbound: n(r.outbound), takes: n(r.takes) })),
-    clicks: clicks.map(r => ({ kind: r.kind, people: n(r.people), team: n(r.team) })),
+    clicks: clicks.map(r => ({ kind: r.kind, count: n(r.count), visitors: n(r.visitors) })),
     funnel: [
       { step: 'Visited', visitors: n(f.visited) },
       { step: 'Opened a site', visitors: n(f.opened) },
@@ -163,8 +180,22 @@ export async function loadAnalytics(days: Range): Promise<Analytics> {
     team: team.map(r => ({ name: r.name, views: n(r.views), clicks: n(r.clicks), lastSeen: new Date(r.last_seen).toISOString() })),
     insights: [],
   }
-  out.insights = insightsFor(out)
+  // Insights read as statements about real visitors, so only that view gets them.
+  out.insights = who === 'people' ? insightsFor(out) : []
   return out
+}
+
+/** This period's slots and the shifted period-before slots, joined on the slot. */
+function mergeSeries(rows: any[]): Analytics['series'] {
+  const by = new Map<string, Analytics['series'][number]>()
+  for (const r of rows) {
+    const at = new Date(r.at).toISOString()
+    const s = by.get(at) ?? { at, views: 0, visitors: 0, clicks: 0, prevViews: 0, prevVisitors: 0, prevClicks: 0 }
+    if (r.cur) { s.views = n(r.views); s.visitors = n(r.visitors); s.clicks = n(r.clicks) }
+    else { s.prevViews = n(r.views); s.prevVisitors = n(r.visitors); s.prevClicks = n(r.clicks) }
+    by.set(at, s)
+  }
+  return [...by.values()].sort((a, b) => a.at.localeCompare(b.at))
 }
 
 const pct = (x: number) => `${Math.round(x * 100)}%`
