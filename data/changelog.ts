@@ -92,6 +92,7 @@ const changelog: ChangelogRelease[] = [
       { type: 'improved', author: 'damilare', text: 'Our own visits stay out of the count, and each of us can be viewed alone' },
       { type: 'fixed', author: 'damilare', text: 'Pro, Trends, Changelog and the other pages each name one address for search engines' },
       { type: 'improved', author: 'damilare', text: 'Visit counts gain a when-people-visit grid, sources by day and a dot map' },
+      { type: 'improved', author: 'damilare', text: 'Visits that look like ours, by browser and country, are marked in the count' },
     ],
   },
   {

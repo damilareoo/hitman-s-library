@@ -56,6 +56,12 @@ export interface Analytics {
   funnel: { step: string; visitors: number }[]
   engagement: { returning: number; visitors: number; bounce: number; pagesPerSession: number; medianMinutes: number }
   team: { name: string; views: number; clicks: number; lastSeen: string }[]
+  /**
+   * Visitors counted as people whose browser setup (browser, system, device,
+   * country) matches one seen on a team-linked browser. A guess, so the page
+   * shows them beside the totals rather than taking them out. Visitors view only.
+   */
+  lookalikes: { visitors: number; setups: { name: string; browser: string; os: string; device: string; country: string; visitors: number }[] }
   insights: string[]
 }
 
@@ -70,7 +76,7 @@ export async function loadAnalytics(days: Range, who: Who = 'people'): Promise<A
   // The filter, for a table alias ('' for bare h). Team-only figures below ignore it.
   const W = (t = '') => member ? `${t}who = $2` : who === 'all' ? 'TRUE' : `${t}who IS NULL`
 
-  const [totals, series, sources, campaigns, dims, pages, sites, clicks, funnel, engagement, returning, team, members, hours, sourceSeries] = await Promise.all([
+  const [totals, series, sources, campaigns, dims, pages, sites, clicks, funnel, engagement, returning, team, members, hours, sourceSeries, lookalikes] = await Promise.all([
     q(`SELECT cur,
          count(*) FILTER (WHERE kind = 'view' AND ${W()}) AS views,
          count(DISTINCT visitor) FILTER (WHERE ${W()}) AS visitors,
@@ -139,6 +145,16 @@ export async function loadAnalytics(days: Range, who: Who = 'people'): Promise<A
        FROM h WHERE cur AND ${W()} GROUP BY 1 ORDER BY 1`),
     q(`SELECT date_trunc('${bucket}', at) AS at, coalesce(source, 'Direct') AS source, count(DISTINCT visitor) AS visitors
        FROM s WHERE cur AND ${W()} GROUP BY 1, 2 ORDER BY 1`),
+    // Each teammate's setups (browser, system, device, country), learned from their
+    // team-linked visits; then people this period on one of those setups.
+    who === 'people' ? qAll(`, ts AS (SELECT DISTINCT team AS name, browser, os, device, country FROM hits WHERE team IS NOT NULL),
+       m AS (SELECT h.visitor, ts.name, h.browser, h.os, h.device, coalesce(h.country, '??') AS country
+             FROM h JOIN ts ON ts.browser IS NOT DISTINCT FROM h.browser AND ts.os IS NOT DISTINCT FROM h.os
+                           AND ts.device IS NOT DISTINCT FROM h.device AND ts.country IS NOT DISTINCT FROM h.country
+             WHERE h.cur AND h.who IS NULL)
+       SELECT name, browser, os, device, country, count(DISTINCT visitor) AS visitors,
+              (SELECT count(DISTINCT visitor) FROM m) AS total
+       FROM m GROUP BY 1, 2, 3, 4, 5 ORDER BY 6 DESC`) : Promise.resolve([] as any[]),
   ])
 
   const pick = (cur: boolean) => totals.find(r => r.cur === cur) ?? {}
@@ -188,6 +204,10 @@ export async function loadAnalytics(days: Range, who: Who = 'people'): Promise<A
       medianMinutes: n(e.median_secs) / 60,
     },
     team: team.map(r => ({ name: r.name, views: n(r.views), clicks: n(r.clicks), lastSeen: new Date(r.last_seen).toISOString() })),
+    lookalikes: {
+      visitors: n(lookalikes[0]?.total),
+      setups: lookalikes.map(r => ({ name: r.name, browser: r.browser ?? 'Unknown', os: r.os ?? 'Unknown', device: r.device ?? 'Unknown', country: r.country, visitors: n(r.visitors) })),
+    },
     insights: [],
   }
   // Insights read as statements about real visitors, so only that view gets them.

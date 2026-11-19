@@ -33,6 +33,7 @@ const KIND_LABEL: Record<string, string> = {
 }
 
 const fmt = (v: number) => v.toLocaleString('en')
+const listNames = (n: string[]) => n.length < 2 ? (n[0] ?? '') : `${n.slice(0, -1).join(', ')} or ${n[n.length - 1]}`
 const pct = (v: number) => `${Math.round(v * 100)}%`
 const compact = (v: number) => v >= 10000 ? `${Math.round(v / 1000)}k` : v >= 1000 ? `${(v / 1000).toFixed(1).replace(/\.0$/, '')}k` : String(v)
 
@@ -183,12 +184,17 @@ function Dashboard({ a, reload }: { a: Analytics; reload: () => void }) {
             const on = metric === m.id
             return (
               <button key={m.id} role="tab" aria-selected={on} type="button" onClick={() => setMetric(m.id)}
-                className={`relative text-left px-4 py-4 transition-colors focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-pro ${i ? 'border-l border-edge' : ''} ${on ? '' : 'bg-foreground/[0.025] hover:bg-foreground/[0.04]'}`}>
+                className={`relative flex flex-col justify-start text-left px-4 py-4 transition-colors focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-pro ${i ? 'border-l border-edge' : ''} ${on ? '' : 'bg-foreground/[0.025] hover:bg-foreground/[0.04]'}`}>
                 <span className={`block text-[12px] font-[500] ${on ? 'text-ink-2' : 'text-ink-4'}`}>{m.label}</span>
                 <span className="mt-2 flex items-baseline gap-2 flex-wrap">
                   <span className={`text-[26px] max-sm:text-[21px] leading-none font-[640] tracking-[-0.03em] tabular-nums ${on ? 'text-ink' : 'text-ink-3'}`}>{fmt(t[m.id].now)}</span>
                   <span className={`text-[12px] font-[560] tabular-nums ${d.tone === 'down' ? 'text-error-ink' : d.tone === 'up' ? 'text-ink-2' : 'text-ink-4'}`}>{d.text}</span>
                 </span>
+                {m.id === 'visitors' && a.lookalikes.visitors > 0 && (
+                  <span className="mt-1.5 block text-[11.5px] text-ink-4 tabular-nums">
+                    {fmt(a.lookalikes.visitors)} may be {listNames([...new Set(a.lookalikes.setups.map(x => x.name))])}
+                  </span>
+                )}
                 {on && <span aria-hidden className="absolute left-0 right-0 bottom-[-1px] h-[2px] bg-foreground" />}
               </button>
             )
@@ -262,7 +268,7 @@ function Dashboard({ a, reload }: { a: Analytics; reload: () => void }) {
           empty="No views yet."
         />
         <Engagement e={a.engagement} />
-        <Team team={a.team} reload={reload} />
+        <Team team={a.team} lookalikes={a.lookalikes} reload={reload} />
       </div>
     </>
   )
@@ -514,7 +520,7 @@ function Engagement({ e }: { e: Analytics['engagement'] }) {
   )
 }
 
-function Team({ team, reload }: { team: Analytics['team']; reload: () => void }) {
+function Team({ team, lookalikes, reload }: { team: Analytics['team']; lookalikes: Analytics['lookalikes']; reload: () => void }) {
   const [name, setName] = useState('')
   const [link, setLink] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
@@ -552,6 +558,20 @@ function Team({ team, reload }: { team: Analytics['team']; reload: () => void })
               </li>
             ))}
           </ul>
+        )}
+        {lookalikes.setups.length > 0 && (
+          <div className="border-t border-edge-faint px-4 pt-3 pb-2">
+            <p className="text-[12px] font-[500] text-ink-3">Look like the team</p>
+            <p className={`${CARD.meta} mt-0.5 text-pretty`}>No team link, but the same browser, system, device and country as one of you. Still counted as visitors.</p>
+            <ul className="mt-2">
+              {lookalikes.setups.map(x => (
+                <li key={`${x.name}${x.browser}${x.os}${x.device}${x.country}`} className="flex items-center h-8 text-[13px]">
+                  <span className="flex-1 min-w-0 truncate text-ink-2 pr-3">{x.name} <span className="text-ink-4">· {x.browser} · {x.os} · {x.device} · {countryName(x.country)}</span></span>
+                  <span className="w-[58px] text-right tabular-nums text-ink font-[560]">{fmt(x.visitors)}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
         )}
         {link && <p className={`${CARD.meta} px-4 pb-3 break-all`}>{link}</p>}
         {error && <p className="px-4 pb-3 text-[12px] text-error-ink">{error}</p>}
