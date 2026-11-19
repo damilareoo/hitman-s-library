@@ -4,6 +4,7 @@ import { SiteLinks } from '@/components/site-links'
 import { TrendsReport } from '@/components/trends-report'
 
 export const metadata: Metadata = {
+  alternates: { canonical: '/trends' },
   title: 'Trends',
   description: "What the newest sites in Hitman's Library do differently: typefaces, colours and kinds on the rise.",
 }

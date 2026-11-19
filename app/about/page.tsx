@@ -8,6 +8,7 @@ import { Signature } from '@/components/signature'
 import { queryDesigns } from '@/lib/design-queries'
 
 export const metadata: Metadata = {
+  alternates: { canonical: '/about' },
   title: 'About',
   description: "How a spreadsheet of links became Hitman's Library.",
 }

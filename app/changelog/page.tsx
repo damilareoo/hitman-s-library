@@ -9,6 +9,7 @@ import { ChangelogSiteHistory } from '@/components/changelog-site-history'
 import { DRIFT_ENABLED } from '@/lib/drift'
 
 export const metadata: Metadata = {
+  alternates: { canonical: '/changelog' },
   title: 'Changelog',
   description: "What's new in Hitman's Library.",
 }

@@ -5,6 +5,7 @@ import { SiteLinks } from '@/components/site-links'
 import { DeleteAccount } from '@/components/delete-account'
 
 export const metadata: Metadata = {
+  alternates: { canonical: '/privacy' },
   title: 'Privacy',
   description: "What Hitman's Library keeps about you, why, and how to remove it.",
 }

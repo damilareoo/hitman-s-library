@@ -16,7 +16,7 @@ const slugOf = (parts: string[]) => parts.map(decodeURIComponent).join('/').toLo
 
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
   const site = await loadSitePage(slugOf((await params).slug))
-  if (!site) return { title: "Not found · Hitman's Library", robots: { index: false } }
+  if (!site) return { title: { absolute: "Not found · Hitman's Library" }, robots: { index: false } }
   const title = `${site.name}: colours, fonts and design tokens`
   const description = `${site.name} (${site.domain}) in Hitman's Library${site.kind ? `, filed under ${site.kind}` : ''}. ${describeSite(site)} Copy the palette as CSS or Tailwind.`
   const path = `/site/${site.slug}`

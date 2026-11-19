@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { LegalPage, type LegalSection } from '@/components/legal-page'
 
 export const metadata: Metadata = {
+  alternates: { canonical: '/terms' },
   title: 'Terms',
   description: "The terms for using Hitman's Library and Hitman's Library Pro.",
 }
