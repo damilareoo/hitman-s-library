@@ -10,6 +10,7 @@ import Link from 'next/link'
 import { ArrowLeft, Copy, Check } from '@phosphor-icons/react'
 import { CARD } from '@/components/member-card'
 import type { Analytics, Range } from '@/lib/read/analytics'
+import { FunnelFlow, Heatmap, SourcesOverTime, WorldMap } from './charts'
 
 const RANGE_LABEL: Record<Range, string> = { 1: '24 hours', 7: '7 days', 30: '30 days', 90: '90 days' }
 const RANGE_SHORT: Record<Range, string> = { 1: '24h', 7: '7d', 30: '30d', 90: '90d' }
@@ -212,6 +213,8 @@ function Dashboard({ a, reload }: { a: Analytics; reload: () => void }) {
         />
       )}
 
+      <Heatmap a={a} />
+
       {a.insights.length > 0 && (
         <section className={CARD.shell}>
           <div className={CARD.head}><span>What stands out</span><span className={CARD.pill}>{a.insights.length}</span></div>
@@ -227,6 +230,7 @@ function Dashboard({ a, reload }: { a: Analytics; reload: () => void }) {
       <div className="grid gap-4 md:grid-cols-2 items-start">
         <Table
           title="Sources"
+          top={<SourcesOverTime a={a} />}
           cols={['Visitors', 'Clicks']}
           rows={a.sources.map(s => ({
             key: s.name,
@@ -243,7 +247,7 @@ function Dashboard({ a, reload }: { a: Analytics; reload: () => void }) {
           rows={a.clicks.map(c => ({ key: c.kind, label: KIND_LABEL[c.kind] ?? c.kind.replace(/_/g, ' '), value: c.count, cells: [c.count, c.visitors] }))}
           empty="No clicks yet."
         />
-        <Funnel steps={a.funnel} />
+        <FunnelFlow steps={a.funnel} />
         <Audience dims={a.dims} />
         <Table
           title="Sites"
@@ -408,7 +412,7 @@ function AreaChart({ a, metric }: { a: Analytics; metric: Metric }) {
 interface Row { key: string; label: React.ReactNode; value: number; cells: number[] }
 
 /** Ranked rows with a bar behind each, and one column heading per number. */
-function Table({ title, cols, rows, empty, foot }: { title: string; cols: string[]; rows: Row[]; empty: string; foot?: string }) {
+function Table({ title, cols, rows, empty, foot, top }: { title: string; cols: string[]; rows: Row[]; empty: string; foot?: string; top?: React.ReactNode }) {
   const max = Math.max(1, ...rows.map(r => r.value))
   return (
     <section className={`${CARD.shell} flex flex-col`}>
@@ -420,6 +424,7 @@ function Table({ title, cols, rows, empty, foot }: { title: string; cols: string
           </span>
         )}
       </div>
+      {top}
       <div className="flex-1">
         {!rows.length ? <p className={`${CARD.body} px-4 py-4`}>{empty}</p> : (
           <ul className="px-2 py-2">
@@ -436,31 +441,6 @@ function Table({ title, cols, rows, empty, foot }: { title: string; cols: string
         )}
       </div>
       {foot && <div className={`${CARD.foot} px-4`}><span className={`${CARD.meta} truncate`}>{foot}</span></div>}
-    </section>
-  )
-}
-
-/** Each step as a share of everyone who visited, with the drop from the step before. */
-function Funnel({ steps }: { steps: Analytics['funnel'] }) {
-  const top = steps[0]?.visitors || 0
-  return (
-    <section className={`${CARD.shell} flex flex-col`}>
-      <div className={CARD.head}>
-        <span>From visit to Pro</span>
-        {top > 0 && <span className="flex">{['Visitors', 'Share'].map(c => <span key={c} className="w-[58px] text-right text-[11px] text-ink-4">{c}</span>)}</span>}
-      </div>
-      {!top ? <p className={`${CARD.body} px-4 py-4`}>No visits yet.</p> : (
-        <ol className="px-2 py-2">
-          {steps.map(s => (
-            <li key={s.step} className="relative flex items-center h-9 px-2 text-[13px]">
-              <span aria-hidden className="absolute inset-y-1 left-0 rounded-[6px] bg-foreground/[0.055]" style={{ width: `${Math.max(1.5, (s.visitors / top) * 100)}%` }} />
-              <span className="relative flex-1 min-w-0 truncate text-ink-2 pr-3">{s.step}</span>
-              <span className="relative w-[58px] text-right tabular-nums text-ink font-[560]">{fmt(s.visitors)}</span>
-              <span className="relative w-[58px] text-right tabular-nums text-ink-4">{pct(s.visitors / top)}</span>
-            </li>
-          ))}
-        </ol>
-      )}
     </section>
   )
 }
@@ -484,6 +464,7 @@ function Audience({ dims }: { dims: Analytics['dims'] }) {
           ))}
         </span>
       </div>
+      {dims.country.length > 0 && <WorldMap countries={dims.country} name={countryName} />}
       {!rows.length ? <p className={`${CARD.body} px-4 py-4`}>No visitors yet.</p> : (
         <>
           {/* Cloudflare-style share bar: the whole audience at a glance. */}
