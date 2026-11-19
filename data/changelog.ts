@@ -85,6 +85,14 @@ export function releaseAuthors(release: ChangelogRelease): Author[] {
 // only case where the question is actually being asked.
 const changelog: ChangelogRelease[] = [
   {
+    date: '2026-11-19',
+    title: 'Clearer Counts',
+    items: [
+      { type: 'improved', author: 'damilare', text: 'Visit counts read as one chart with unique visitors, views and clicks' },
+      { type: 'improved', author: 'damilare', text: 'Our own visits stay out of the count, and each of us can be viewed alone' },
+    ],
+  },
+  {
     date: '2026-11-18',
     title: 'Counted at Home',
     items: [
